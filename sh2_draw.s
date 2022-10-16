@@ -188,13 +188,13 @@ _I_DrawSpanLowA:
         /* test if dst & 2 == 2 */
         mov     r8,r0
         tst     #2,r0
-        bt/s    begin_span_low_loop
-        mov     r2,r1           /* yfrac */
+        bt      begin_span_low_loop
 
         /* draw 1px so that dst & 1 == 0 afterwards */
 
         .p2alignw 2, 0x0009
 draw_span_low_1px:
+        mov     r2,r1           /* yfrac */
         swap.w  r2,r0           /* xfrac */
         shlr8   r0              /* 8.8 fixed point */
         and     r11,r1          /* yfrac & 63*256 */
@@ -213,8 +213,7 @@ begin_span_low_loop:
         /* test if count == 1 */
         mov     r6,r0
         cmp/eq  #1,r0
-        bt/s    draw_span_low_1px
-        mov     r2,r1           /* yfrac */
+        bt      draw_span_low_1px
 
         /* count = count / 2 */
         shlr    r6
@@ -222,6 +221,7 @@ begin_span_low_loop:
 
         .p2alignw 2, 0x0009
 do_span_low_loop:
+        mov     r2,r1           /* yfrac */
         swap.w  r2,r0           /* xfrac */
         shlr8   r0              /* 8.8 fixed point */
         and     r11,r1          /* yfrac & 63*256 */
@@ -231,7 +231,7 @@ do_span_low_loop:
         add     r3,r2           /* xfrac += xstep */
         add     r0,r0
         mov     r2,r1           /* yfrac */
-        mov.w   @(r0,r7),r4    /* dpix = ds_colormap[pix] */
+        mov.w   @(r0,r7),r4     /* dpix = ds_colormap[pix] */
 
         swap.w  r2,r0           /* xfrac */
         shlr8   r0              /* 8.8 fixed point */
@@ -248,7 +248,6 @@ do_span_low_loop:
         extu.w  r0,r0
         or      r4,r0
         mov.l   r0,@r8          /* *fb = dpix */
-        mov     r2,r1           /* yfrac */
         bf/s    do_span_low_loop
         add     #4,r8           /* fb += 2 */
 
@@ -435,13 +434,13 @@ _I_DrawSpanA:
         /* test if dst & 1 == 1 */
         mov     r8,r0
         tst     #1,r0
-        bt/s    begin_span_loop
+        bt      begin_span_loop
 
         /* draw 1px so that dst & 1 == 0 afterwards */
-        mov     r2,r1           /* yfrac */
 
         .p2alignw 2, 0x0009
 draw_span_1px:
+        mov     r2,r1           /* yfrac */
         swap.w  r2,r0           /* xfrac */
         shlr8   r0              /* 8.8 fixed point */
         and     r11,r1          /* yfrac & 63*256 */
@@ -452,7 +451,6 @@ draw_span_1px:
         mov.b   @(r0,r7),r0     /* dpix = ds_colormap[pix] */
         dt      r6              /* count-- */
         mov.b   r0,@r8          /* *fb = dpix */
-        mov     r2,r1           /* yfrac */
         bt/s    exit_span_loop
         add     #1,r8           /* fb++ */
 
@@ -460,8 +458,7 @@ begin_span_loop:
         /* test if count == 1 */
         mov     r6,r0
         cmp/eq  #1,r0
-        bt/s    draw_span_1px
-        mov     r2,r1           /* yfrac */
+        bt      draw_span_1px
 
         /* count = count / 2 */
         shlr    r6
@@ -469,6 +466,7 @@ begin_span_loop:
 
         .p2alignw 2, 0x0009
 do_span_loop:
+        mov     r2,r1           /* yfrac */
         swap.w  r2,r0           /* xfrac */
         shlr8   r0              /* 8.8 fixed point */
         and     r11,r1          /* yfrac & 63*256 */
@@ -478,7 +476,7 @@ do_span_loop:
         add     r3,r2           /* xfrac += xstep */
         mov     r2,r1           /* yfrac */
         dt      r6              /* count-- */
-        mov.b   @(r0,r7),r4    /* dpix = ds_colormap[pix] */
+        mov.b   @(r0,r7),r4     /* dpix = ds_colormap[pix] */
 
         and     r11,r1          /* yfrac & 63*256 */
         swap.w  r2,r0           /* xfrac */
@@ -493,7 +491,6 @@ do_span_loop:
         extu.b  r0,r0
         or      r4,r0
         mov.w   r0,@r8          /* *fb = dpix */
-        mov     r2,r1           /* yfrac */
         bf/s    do_span_loop
         add     #2,r8           /* fb += 2 */
 
