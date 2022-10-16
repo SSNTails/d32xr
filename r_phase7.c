@@ -84,7 +84,7 @@ static void R_MapPlane(localplane_t* lpl, int y, int x, int x2)
     FixedMul2(yfrac, (finesine(angle)), length);
     yfrac = lpl->y - yfrac;
 #ifdef MARS
-    yfrac *= 64;
+    //yfrac *= 64;
 #endif
 
     FixedMul2(xstep, distance, lpl->basexscale);
@@ -115,6 +115,19 @@ static void R_MapPlane(localplane_t* lpl, int y, int x, int x2)
     {
         light = lpl->lightmax;
     }
+
+    // convert from 16.16 to 8.8 fixed point
+    xfrac >>= 8; xfrac &= 0xffff;
+    yfrac >>= 8; yfrac &= 0xffff;
+    xstep >>= 8; xstep &= 0xffff;
+    ystep >>= 8; ystep &= 0xffff;
+
+    xfrac <<= 16;
+    xstep <<= 16;
+    yfrac >>= 2;
+    ystep >>= 2;
+    xfrac |= yfrac;
+    xstep |= ystep;
 
     drawspan(y, x, x2, light, xfrac, yfrac, xstep, ystep, lpl->ds_source);
 }
@@ -249,7 +262,7 @@ static void R_DrawPlanes2(void)
     lpl.basexscale = FixedDiv(finecosine(angle), centerXFrac);
     lpl.baseyscale = -FixedDiv(finesine(angle), centerXFrac);
 #ifdef MARS
-    lpl.baseyscale *= 64;
+    //lpl.baseyscale *= 64;
 #endif
 
     extralight = vd.extralight;
