@@ -256,6 +256,9 @@ _I_DrawSpanLowA:
         add     r4,r8
         shlr2   r4
         add     r4,r8           /* fb += (ds_y*256 + ds_y*64) */
+        add     r6,r8
+        add     r6,r8
+
         mov.l   @(28,r15),r2    /* xfrac */
         mov.l   @(32,r15),r4    /* yfrac */
         mov.l   @(36,r15),r3    /* xstep */
@@ -265,7 +268,7 @@ _I_DrawSpanLowA:
 
         mov     r14,r11
         dt      r11
-        mulu.w   r14,r11        /* (ds_height-1) * ds_height */
+        mulu.w  r14,r11         /* (ds_height-1) * ds_height */
         dt      r14             /* (ds_height-1) */
 
         /* test if dst & 2 == 2 */
@@ -289,9 +292,8 @@ draw_span_low_1px:
         add     r0,r0
         mov.w   @(r0,r7),r0     /* dpix = ds_colormap[pix] */
         dt      r6              /* count-- */
-        mov.w   r0,@r8          /* *fb = dpix */
-        bt/s    exit_span_low_loop
-        add     #2,r8           /* fb++ */
+        mov.w   r0,@-r8          /* *fb = dpix */
+        bt      exit_span_low_loop
 
 begin_span_low_loop:
         swap.w  r2,r0           /* (xfrac >> 16) */
@@ -331,17 +333,16 @@ do_span_low_loop:
         mov.w   @(r0,r7),r10    /* dpix = ds_colormap[pix] */
 
         swap.w  r2,r0           /* (xfrac >> 16) */
-        and     r14,r0          /* (xfrac >> 16) & 63 */
-        or      r1,r0           /* spot = ((yfrac >> 16) & *64) | ((xfrac >> 16) & 63) */
 
         dt      r6              /* count-- */
 
-        shll16  r13
-        extu.w  r10,r10
+        extu.w  r13,r13
+        shll16  r10
         or      r13,r10
-        mov.l   r10,@r8         /* *fb = dpix */
+        mov.l   r10,@-r8        /* *fb = dpix */
+        and     r14,r0          /* (xfrac >> 16) & 63 */
         bf/s    do_span_low_loop
-        add     #4,r8           /* fb += 2 */
+        or      r1,r0           /* spot = ((yfrac >> 16) & *64) | ((xfrac >> 16) & 63) */
 
         /* test if r12 is 0, draw additional pixel if it's not */
         tst     r12,r12
@@ -600,6 +601,7 @@ _I_DrawSpanA:
         add     r4,r8
         shlr2   r4
         add     r4,r8           /* fb += (ds_y*256 + ds_y*64) */
+        add     r6,r8
         mov.l   @(28,r15),r2    /* xfrac */
         mov.l   @(32,r15),r4    /* yfrac */
         mov.l   @(36,r15),r3    /* xstep */
@@ -631,10 +633,9 @@ draw_span_1px:
         add     r3,r2           /* xfrac += xstep */
         mov.b   @(r0,r7),r0     /* dpix = ds_colormap[pix] */
         add     r5,r4           /* yfrac += ystep */
-        mov.b   r0,@r8          /* *fb = dpix */
+        mov.b   r0,@-r8         /* *fb = dpix */
         dt      r6              /* count-- */
-        bt/s    exit_span_loop
-        add     #1,r8           /* fb++ */
+        bt      exit_span_loop
 
 begin_span_loop:
         swap.w  r2,r0           /* (xfrac >> 16) */
@@ -670,18 +671,17 @@ do_span_loop:
         add     r5,r4           /* yfrac += ystep */
         swap.w  r4,r1           /* (yfrac >> 16) */
         and     r11,r1          /* (yfrac >> 16) & 63*64 */
-        shll8   r13
+        extu.b  r13,r13
         mov.b   @(r0,r7),r10    /* dpix = ds_colormap[pix] */
 
         swap.w  r2,r0           /* (xfrac >> 16) */
-        and     r14,r0          /* (xfrac >> 16) & 63 */
-        or      r1,r0           /* spot = ((yfrac >> 16) & *64) | ((xfrac >> 16) & 63) */
 
-        extu.b  r10,r10
+        shll8   r10
         or      r13,r10
-        mov.w   r10,@r8         /* *fb = dpix */
+        mov.w   r10,@-r8        /* *fb = dpix */
+        and     r14,r0          /* (xfrac >> 16) & 63 */
         bf/s    do_span_loop
-        add     #2,r8           /* fb += 2 */
+        or      r1,r0           /* spot = ((yfrac >> 16) & *64) | ((xfrac >> 16) & 63) */
 
         /* test if r12 is 0, draw additional pixel if it's not */
         tst     r12,r12

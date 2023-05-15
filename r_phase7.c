@@ -69,11 +69,6 @@ static void R_MapPlane(localplane_t* lpl, int y, int x, int x2)
     unsigned scale;
     unsigned miplevel;
 
-    remaining = x2 - x + 1;
-
-    if (remaining <= 0)
-        return; // nothing to draw (shouldn't happen)
-
     distance = FixedMul(lpl->height, yslope[y]);
 
 #ifdef MARS
@@ -85,7 +80,12 @@ static void R_MapPlane(localplane_t* lpl, int y, int x, int x2)
         : : "r" (distance), "r" (LIGHTCOEF) : "r0");
 #endif
 
-    length = FixedMul(distance, distscale[x]);
+    remaining = x2 - x + 1;
+
+    if (remaining <= 0)
+        return; // nothing to draw (shouldn't happen)
+
+    length = FixedMul(distance, distscale[x2]);
 
     xstep = FixedMul(distance, lpl->basexscale);
     ystep = FixedMul(distance, lpl->baseyscale);
@@ -94,7 +94,7 @@ static void R_MapPlane(localplane_t* lpl, int y, int x, int x2)
     if (miplevel > lpl->maxmip)
         miplevel = lpl->maxmip;
 
-    angle = (lpl->angle + (xtoviewangle[x]<<FRACBITS)) >> ANGLETOFINESHIFT;
+    angle = (lpl->angle + (xtoviewangle[x2]<<FRACBITS)) >> ANGLETOFINESHIFT;
 
     xfrac = FixedMul(finecosine(angle), length);
     xfrac = lpl->x + xfrac;
@@ -111,6 +111,7 @@ static void R_MapPlane(localplane_t* lpl, int y, int x, int x2)
             yfrac >>= 2, ystep >>= 2;
         } while (--m);
     }
+    xfrac *= -1, yfrac *= -1;
 
     if (lpl->lightmin != lpl->lightmax)
     {
