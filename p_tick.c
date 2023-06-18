@@ -310,6 +310,7 @@ int		ticphase;
 #else
 #define frtc samplecount
 #endif
+int aaa = 0;
 
 int P_Ticker (void)
 {
@@ -373,6 +374,7 @@ int P_Ticker (void)
 		}
 	playertics = frtc - start;
 
+aaa = sfx_pistol;
 #ifdef THINKERS_30HZ
 	start = frtc;
 	P_RunThinkers();
@@ -382,21 +384,21 @@ int P_Ticker (void)
 	if (gametic != prevgametic)
 	{
 		ticstart = frtc;
-
+aaa = sfx_pistol+1;
 #ifndef THINKERS_30HZ
 		start = frtc;
 		P_RunThinkers();
 		thinkertics = frtc - start;
 #endif
-
+aaa = sfx_pistol+2;
 		start = frtc;
 		P_CheckSights();
 		sighttics = frtc - start;
-
+aaa = sfx_pistol+3;
 		start = frtc;
 		P_RunMobjBase();
 		basetics = frtc - start;
-
+aaa = sfx_pistol+4;
 		start = frtc;
 		P_RunMobjLate();
 		latetics = frtc - start;
@@ -404,7 +406,7 @@ int P_Ticker (void)
 		P_UpdateSpecials();
 
 		P_RespawnSpecials();
-
+aaa = sfx_pistol+5;
 		ST_Ticker();			/* update status bar */
 
 		tictics = frtc - ticstart;
@@ -519,7 +521,7 @@ void P_Drawer (void)
 	extern	boolean	debugscreenactive;
 
 	drawtics = frtc;
-
+aaa = sfx_pistol+8;
 	if ((!optionsactive && o_wasactive) || (!automapactive && am_wasactive))
 		clearscreen = 2;
 
@@ -543,7 +545,7 @@ void P_Drawer (void)
 		R_InitMathTables();
 		initmathtables--;
 	}
-
+aaa = sfx_pistol+9;
 	/* view the guy you are playing */
 	R_RenderPlayerView(consoleplayer);
 	/* view the other guy in split screen mode */
@@ -551,11 +553,11 @@ void P_Drawer (void)
 		Mars_R_SecWait();
 		R_RenderPlayerView(consoleplayer ^ 1);
 	}
-
+aaa = sfx_pistol+10;
 	ST_Drawer();
-
+aaa = sfx_pistol+11;
 	Mars_R_SecWait();
-
+aaa = sfx_pistol+12;
 	if (automapactive)
 		AM_Drawer();
 

@@ -313,6 +313,8 @@ static void D_Wipe(void)
 	wipe_ExitMelt();
 }
 
+extern int aaa;
+
 int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		,  int (*ticker)(void), void (*drawer)(void)
 		,  void (*update)(void) )
@@ -438,14 +440,15 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 		if (gametic > prevgametic)
 			S_UpdateSounds();
-
+aaa = sfx_pistol+6;
 		/* */
 		/* sync up with the refresh */
 		/* */
 		while (!I_RefreshCompleted())
 			;
-
+aaa = sfx_pistol+7;
 		drawer();
+aaa = sfx_pistol+13;
 
 		if (!exit && wipe)
 		{
@@ -825,7 +828,7 @@ void RunMenu (void)
 	do {
 		int i;
 		char demo[9];
-
+break;
 		for (i = 1; i < 10; i++)
 		{
 			int lump;
@@ -879,7 +882,7 @@ reselect:
 */ 
  
 skill_t		startskill = sk_medium;
-int			startmap = 1;
+int			startmap = 3;
 gametype_t	starttype = gt_single;
 int			startsave = -1;
 boolean 	startsplitscreen = 0;
@@ -939,7 +942,7 @@ D_printf ("DM_Main\n");
 #ifdef MARS
 	while (1)
 	{
-		RunTitle();
+		//RunTitle();
 		RunMenu();
 	}
 #else

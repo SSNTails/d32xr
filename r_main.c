@@ -872,7 +872,7 @@ extern	ref6_start;
 extern	ref7_start;
 extern	ref8_start;
 
-void R_RenderPlayerView(int displayplayer)
+void (int displayplayer)
 {
 	visplane_t visplanes[MAXVISPLANES];
 	visplane_t *visplanes_hash_[NUM_VISPLANES_BUCKETS];
@@ -928,7 +928,7 @@ void R_RenderPlayerView(int displayplayer)
 }
 
 #else
-
+extern int aaa;
 void R_RenderPlayerView(int displayplayer)
 {
 	int t_bsp, t_prep, t_segs, t_planes, t_sprites, t_total;
@@ -942,31 +942,31 @@ void R_RenderPlayerView(int displayplayer)
     uint32_t sortedvisplanes[MAXVISPLANES];
 
 	t_total = I_GetFRTCounter();
-
+aaa = sfx_pistol+10;
 	R_Setup(displayplayer, visplanes_, visplanes_hash_, vissectors_, viswallex_, (uint16_t *)sortedvisplanes);
-
+aaa = sfx_pistol+11;
 	Mars_R_BeginWallPrep(drawworld);
-
+aaa = sfx_pistol+12;
 	t_bsp = I_GetFRTCounter();
 	R_BSP();
 	t_bsp = I_GetFRTCounter() - t_bsp;
-
+aaa = sfx_pistol+13;
 	Mars_R_EndWallPrep();
-
+aaa = sfx_pistol+14;
 	if (!drawworld)
 		return;
-
+aaa = sfx_pistol+15;
 	t_prep = I_GetFRTCounter();
 	R_Cache();
 	t_prep = I_GetFRTCounter() - t_prep;
-
+aaa = sfx_pistol+16;
 	t_segs = I_GetFRTCounter();
 	R_SegCommands();
 	t_segs = I_GetFRTCounter() - t_segs;
-
+aaa = sfx_pistol+17;
 	// wait for the secondary CPU to finish phase 2
 	Mars_R_WaitSecWallPrep();
-
+aaa = sfx_pistol+18;
 	Mars_ClearCacheLine(&lastsegclip);
 	Mars_ClearCacheLine(&lastopening);
 
@@ -976,18 +976,19 @@ void R_RenderPlayerView(int displayplayer)
 		I_Error("lastopening > MAXOPENINGS: %d", lastopening - openings);
 	if (lastvissector - vissectors > MAXVISSSEC)
 		I_Error("lastvissector > MAXVISSSEC: %d", lastvissector - vissectors);
-
+aaa = sfx_pistol+19;
 	t_planes = I_GetFRTCounter();
 	R_DrawPlanes();
 	t_planes = I_GetFRTCounter() - t_planes;
-
+aaa = sfx_pistol+20;
 	t_sprites = I_GetFRTCounter();
 	R_SpritePrep();
+aaa = sfx_pistol+21;
 	R_Sprites();
 	t_sprites = I_GetFRTCounter() - t_sprites;
-	
+	aaa = sfx_pistol+22;
 	R_Update();
-
+aaa = sfx_pistol+23;
 	t_total = I_GetFRTCounter() - t_total;
 
 	t_ref_cnt = (t_ref_cnt + 1) & 3;

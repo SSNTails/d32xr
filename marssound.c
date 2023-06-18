@@ -621,6 +621,7 @@ static void S_PaintChannel(sfxchannel_t *ch, int16_t* buffer)
 			}
 
 			i = paintch(ch, (int16_t *)(end - i), i, 64);
+			break;
 		} while (i > 0);
 	}
 	else
@@ -640,7 +641,7 @@ static void S_Update(int16_t* buffer)
 	int c, l, h;
 	mobj_t* mo;
 	boolean spatialize;
-
+#if 1
 	S_UpdatePCM();
 
 	Mars_ClearCacheLine(&sfxvolume);
@@ -665,9 +666,9 @@ static void S_Update(int16_t* buffer)
 		// we haven't painted the sound channels to the output buffer
 		// for over two frames, both buffers are cleared and safe to
 		// point the DMA to
-		return;
+		//return;
 	}
-
+#endif
 	b2 = (int32_t *)buffer;
 	for (i = 0; i < MAX_SAMPLES / 8; i++)
 	{
@@ -681,6 +682,16 @@ static void S_Update(int16_t* buffer)
 
 	/* keep updating the channel until done */
 	S_PaintChannel(&pcmchannel, buffer);
+static int last_time =0;
+extern int aaa;
+
+if (I_GetTime() - last_time > 60)
+{
+	Mars_ClearCacheLine(&aaa);
+	if (aaa > 0)
+		S_StartSoundReal (players[0].mo, aaa, sfxvolume, NULL);
+		last_time = I_GetTime();
+}
 
 	spatialize = samplecount >= SPATIALIZATION_SRATE;
 	if (samplecount >= SPATIALIZATION_SRATE)
