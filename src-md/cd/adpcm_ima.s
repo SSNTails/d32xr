@@ -59,18 +59,22 @@ adpcm_load_bytes_fast_ima:
 
 		moveq	#0,d0
 		moveq   #0,d1
+
+		move    #0x0F,d4
+		move    #0xF0,d5
+ 
 samplePair:
 
 		move.b	(a5)+,d1		| 8
 		move.b	d1,d0			| 4
 
-		andi.b	#0x0F,d0		| 8
-		andi.b  #0xF0,d1		| 8
+		and		d4,d0		    | 4
+		and 	d5,d1		    | 4
 
 		lsr.b	#3,d1			| 12
 		add.b	d0,d0			| 4
 
-								| = 44
+								| = 36
 
 firstSample:
 		move.w  d2,d3			| 4
@@ -79,14 +83,15 @@ firstSample:
 
 		add.w   d3,d3			| 4
 		add.l	(a2,d3.w),d6	| 18
-		spl		d3				| 4
-		ext.w	d3				| 4
-		and.w	d3,d6			| 4		| d6 == 0 if d6 < 0
-clampMin0Done:
-		btst.l  #16,d6			| 6		| test for bit 16 - 1 if d6 > 0xffff
-		beq.s	clampMax0Done	| 10 or 12
-		move.l	d3,d6
-clampMax0Done:
+		| The minimum negative step is +-61436:
+		| +-(32767/8 + 32767 + 32767/2 + 32767/4). Values in ranges 
+		| [-61436,-1] and [0x10000,0x1ffff] are all going to have
+		| bit 16 set to 1
+		btst.l  #16,d6			| 6
+		beq.s	clamp0Done		| 10 or 16
+		spl		d6				| 4
+		ext.w	d6				| 4     | d3 is either 0 or 0xffff now
+clamp0Done:
 		move.w	d6,-(sp)		| 8
 		move.b	(sp)+,d0		| 8
 		move.b  (a4,d0.w),(a1)  | 18
@@ -98,21 +103,18 @@ secondSample:
 
 		add.w   d3,d3			| 4
 		add.l	(a2,d3.w),d6	| 16
-		spl		d3				| 4
-		ext.w	d3				| 4
-		and.w	d3,d6			| 4		| d6 == 0 if d6 < 0
-clampMin1Done:
-		btst.l  #16,d6			| 6		| test for bit 16 - 1 if d6 > 0xffff
-		beq.s	clampMax1Done	| 10 or 12
-		move.l	d3,d6
-clampMax1Done:
+		btst.l  #16,d6			| 6
+		beq.s	clamp1Done		| 10 or 16
+		spl		d6				| 4
+		ext.w	d6				| 4     | d3 is either 0 or 0xffff now
+clamp1Done:
 		move.w	d6,-(sp)		| 8
 		move.b	(sp)+,d0		| 8
 		move.b  (a4,d0.w),2(a1) | 22
 
-	    addq    #4,a1			| 8
+		addq    #4,a1			| 8
 
-								| = 220-224
+								| = 208-220
 
 		dbf	d7, samplePair		| 12
 
