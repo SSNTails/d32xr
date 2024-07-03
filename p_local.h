@@ -176,7 +176,7 @@ int 	P_PointOnLineSide (fixed_t x, fixed_t y, line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, divline_t *line);
 int 	P_BoxOnLineSide (fixed_t *tmbox, line_t *ld);
 
-fixed_t	P_LineOpening (line_t *linedef);
+fixed_t	P_LineOpening (line_t *linedef, fixed_t *opentop, fixed_t *openbottom);
 
 void 	P_LineBBox(line_t* ld, fixed_t*bbox);
 

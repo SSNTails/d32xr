@@ -166,7 +166,8 @@ boolean	PIT_UseLines (line_t *li, plineuse_t *lu)
 /* */
 	if (!li->special)
 	{
-		fixed_t openrange = P_LineOpening (li);
+		fixed_t opentop, openbottom;
+		fixed_t openrange = P_LineOpening (li, &opentop, &openbottom);
 		if (openrange > 0)
 			return true;	/* keep going */
 	}

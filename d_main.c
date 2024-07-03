@@ -834,7 +834,7 @@ void RunMenu (void)
 {
 #ifdef MARS
 	M_Start();
-	if (!gameinfo.noAttractDemo) {
+/*	if (!gameinfo.noAttractDemo) {
 		do {
 			int i;
 			char demo[9];
@@ -851,7 +851,7 @@ void RunMenu (void)
 				RunDemo(demo);
 			}
 		} while (true);
-	}
+	}*/
 	M_Stop();
 #else
 reselect:
