@@ -7,7 +7,7 @@
 fixed_t P_AproxDistance(fixed_t dx, fixed_t dy) ATTR_DATA_CACHE_ALIGN;
 int P_PointOnLineSide(fixed_t x, fixed_t y, line_t* line) ATTR_DATA_CACHE_ALIGN;
 int P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t* line) ATTR_DATA_CACHE_ALIGN;
-fixed_t P_LineOpening(line_t* linedef) ATTR_DATA_CACHE_ALIGN;
+fixed_t P_LineOpening(line_t* linedef, fixed_t *opentop, fixed_t *openbottom) ATTR_DATA_CACHE_ALIGN;
 void P_LineBBox(line_t* ld, fixed_t* bbox) ATTR_DATA_CACHE_ALIGN;
 void P_UnsetThingPosition(mobj_t* thing) ATTR_DATA_CACHE_ALIGN;
 void P_SetThingPosition(mobj_t* thing) ATTR_DATA_CACHE_ALIGN;
@@ -111,10 +111,9 @@ int P_PointOnDivlineSide (fixed_t x, fixed_t y, divline_t *line)
 ==================
 */
 
-fixed_t P_LineOpening (line_t *linedef)
+fixed_t P_LineOpening (line_t *linedef, fixed_t *opentop, fixed_t *openbottom)
 {
 	sector_t	*front, *back;
-	fixed_t opentop, openbottom;
 	
 	if (linedef->sidenum[1] == -1)
 	{	/* single sided line */
@@ -125,15 +124,15 @@ fixed_t P_LineOpening (line_t *linedef)
 	back = LD_BACKSECTOR(linedef);
 	
 	if (front->ceilingheight < back->ceilingheight)
-		opentop = front->ceilingheight;
+		*opentop = front->ceilingheight;
 	else
-		opentop = back->ceilingheight;
+		*opentop = back->ceilingheight;
 	if (front->floorheight > back->floorheight)
-		openbottom = front->floorheight;
+		*openbottom = front->floorheight;
 	else
-		openbottom = back->floorheight;
+		*openbottom = back->floorheight;
 	
-	return opentop - openbottom;
+	return *opentop - *openbottom;
 }
 
 void P_LineBBox(line_t* ld, fixed_t *bbox)

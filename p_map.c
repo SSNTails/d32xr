@@ -19,14 +19,12 @@ typedef struct
 	int			bombdamage;
 } pradiusattack_t;
 
-static fixed_t P_InterceptVector(divline_t* v2, divline_t* v1) ATTR_DATA_CACHE_ALIGN;
 boolean	PIT_UseLines(line_t* li, plineuse_t *lu) ATTR_DATA_CACHE_ALIGN;
 void P_UseLines(player_t* player) __attribute__((noinline));
 boolean PIT_RadiusAttack(mobj_t* thing, pradiusattack_t *ra) ATTR_DATA_CACHE_ALIGN;
 void P_RadiusAttack(mobj_t* spot, mobj_t* source, int damage) ATTR_DATA_CACHE_ALIGN;
 fixed_t P_AimLineAttack(lineattack_t *la, mobj_t* t1, angle_t angle, fixed_t distance) ATTR_DATA_CACHE_ALIGN;
 void P_LineAttack(lineattack_t *la, mobj_t* t1, angle_t angle, fixed_t distance, fixed_t slope, int damage) ATTR_DATA_CACHE_ALIGN;
-static void P_MakeDivline(line_t* li, divline_t* dl) ATTR_DATA_CACHE_ALIGN;
 
 /*============================================================================= */
 
@@ -94,17 +92,11 @@ boolean P_TryMove (ptrymove_t *tm, mobj_t *thing, fixed_t x, fixed_t y)
 ===============
 */
 
-fixed_t P_InterceptVector (divline_t *v2, divline_t *v1)
+fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
 {
-	fixed_t	frac, num, den;
-	
-	den = (v1->dy>>16)*(v2->dx>>16) - (v1->dx>>16)*(v2->dy>>16);
-   	if(den == 0)
-    	return -1;
-	num  = ((v1->x-v2->x)>>16) *(v1->dy>>16) + ((v2->y-v1->y)>>16) * (v1->dx>>16);
-	frac = IDiv((num<<16), den);
-
-	return frac;
+  fixed_t den = FixedMul(v1->dy>>8, v2->dx) - FixedMul(v1->dx>>8, v2->dy);
+  return den ? FixedDiv((FixedMul((v1->x-v2->x)>>8, v1->dy) +
+                         FixedMul((v2->y-v1->y)>>8, v1->dx)), den) : 0;
 }
 
 
@@ -166,7 +158,8 @@ boolean	PIT_UseLines (line_t *li, plineuse_t *lu)
 /* */
 	if (!li->special)
 	{
-		fixed_t openrange = P_LineOpening (li);
+		fixed_t opentop, openbottom;
+		fixed_t openrange = P_LineOpening (li, &opentop, &openbottom);
 		if (openrange > 0)
 			return true;	/* keep going */
 	}

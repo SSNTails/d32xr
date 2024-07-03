@@ -2,6 +2,7 @@
 
 #include "doomdef.h"
 #include "st_main.h"
+#include <stdio.h>
 
 stbar_t	*stbar;
 int stbar_tics;
@@ -32,6 +33,39 @@ static jagobj_t	*sbobj[NUMSBOBJ];
 #endif
 
 static void ST_EraseBlock(int x, int y, int width, int height);
+
+typedef struct
+{
+    short lumpStart;
+    char lumpStartChar;
+    boolean fixedWidth;
+    int8_t fixedWidthSize;
+    char minChar;
+    char maxChar;
+} font_t;
+
+font_t menuFont;
+
+int V_DrawStringLeft(const font_t *font, int x, int y, const char *string)
+{
+	int i,c;
+	int w;
+
+	for (i = 0; i < mystrlen(string); i++)
+	{
+		c = string[i];
+	
+        if (c == 0x20) // Space
+            x += font->fixedWidth ? font->fixedWidthSize / 2 : w;
+		else if (c >= font->minChar && c <= font->maxChar)
+		{
+			DrawJagobjLump(font->lumpStart + (c - font->lumpStartChar), x, y, &w, NULL);
+			x += font->fixedWidth ? font->fixedWidthSize : w;
+		}
+	}
+
+    return x;
+}
 
 /*
 ====================
@@ -75,6 +109,15 @@ void ST_Init (void)
 
 	l = W_CheckNumForName("MICRO_2");
 	micronums = l;
+
+	stbar->msgTics = 0;
+
+	menuFont.lumpStart = W_GetNumForName("STCFN022");
+    menuFont.lumpStartChar = 22;
+    menuFont.minChar = 22;
+    menuFont.maxChar = 126;
+    menuFont.fixedWidth = true;
+    menuFont.fixedWidthSize = 8;
 }
 
 void ST_ForceDraw(void)
@@ -536,6 +579,17 @@ static void ST_Ticker_(stbar_t* sb)
 	sb->forcedraw = false;
 }
 
+void CONS_Printf(char *msg, ...) 
+{
+	va_list argptr;
+
+	va_start(argptr, msg);
+	vsprintf(stbar->msg, msg, argptr);
+	va_end(argptr);
+
+	stbar->msgTics = 4 * TICRATE;
+}
+
 void ST_Ticker(void)
 {
 	int	p = splitscreen ? 0 : consoleplayer;
@@ -679,6 +733,12 @@ void ST_Drawer(void)
 		if (playeringame[p])
 			ST_Drawer_(&stbar[p]);
 		p++;
+	}
+
+	if (stbar->msgTics)
+	{
+		V_DrawStringLeft(&menuFont, 0, 24, stbar->msg);
+		stbar->msgTics--;
 	}
 }
 

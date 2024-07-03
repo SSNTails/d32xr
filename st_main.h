@@ -153,6 +153,9 @@ typedef struct
 	char	gotgibbed;			/* Got gibbed */
 	char	tryopen[NUMCARDS];	/* Tried to open a card or skull door */
 	char	forcedraw;
+
+	char msg[128];
+	VINT msgTics;
 } stbar_t;
 
 extern	stbar_t	*stbar;

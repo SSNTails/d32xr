@@ -23,55 +23,55 @@ fixed_t			fastangleturn[] =
 
 void P_PlayerMove (mobj_t *mo)
 {
-	fixed_t		momx, momy;
+	fixed_t   ptryx;
+  	fixed_t   ptryy;
+//	fixed_t oldx, oldy;
+	fixed_t		xmove, ymove;
 	int 		i;
 	pslidemove_t sm;
 	ptrymove_t	tm;
 
-	momx = vblsinframe*(mo->momx>>2);
-	momy = vblsinframe*(mo->momy>>2);
+	xmove = mo->momx;//vblsinframe*(mo->momx>>2);
+	ymove = mo->momy;//vblsinframe*(mo->momy>>2);
 
 	sm.slidething = mo;
+
+	if (xmove > MAXMOVE)
+		xmove = MAXMOVE;
+	if (xmove < -MAXMOVE)
+		xmove = -MAXMOVE;
+	if (ymove > MAXMOVE)
+		ymove = MAXMOVE;
+	if (ymove < -MAXMOVE)
+		ymove = -MAXMOVE;
+
+//	oldx = mo->x; // phares 9/10/98: new code to reduce bobbing/momentum
+//  	oldy = mo->y; // when on ice & up against wall. These will be compared
+                // to your x,y values later to see if you were able to move
 	
-	P_SlideMove(&sm);
+    do
+    {
+        if (xmove > MAXMOVE/2 || ymove > MAXMOVE/2)
+        {
+            ptryx = mo->x + xmove/2;
+            ptryy = mo->y + ymove/2;
+            xmove >>= 1;
+            ymove >>= 1;
+        }
+        else
+        {
+            ptryx = mo->x + xmove;
+            ptryy = mo->y + ymove;
+            xmove = ymove = 0;
+        }
 
-	if (sm.slidex == mo->x && sm.slidey == mo->y)
-		goto stairstep;
-		
-	if ( P_TryMove (&tm, mo, sm.slidex, sm.slidey) )
-		goto dospecial;
-		
-stairstep:
-	if (momx > MAXMOVE)
-		momx = MAXMOVE;
-	if (momx < -MAXMOVE)
-		momx = -MAXMOVE;
-	if (momy > MAXMOVE)
-		momy = MAXMOVE;
-	if (momy < -MAXMOVE)
-		momy = -MAXMOVE;
-		
-/* something fucked up in slidemove, so stairstep */
-
-	if (P_TryMove (&tm, mo, mo->x, mo->y + momy))
-	{
-		mo->momx = 0;
-		mo->momy = momy;
-		goto dospecial;
-	}
-	
-	if (P_TryMove (&tm, mo, mo->x + momx, mo->y))
-	{
-		mo->momx = momx;
-		mo->momy = 0;
-		goto dospecial;
-	}
-
-	mo->momx = mo->momy = 0;
-
-dospecial:
-	for (i = 0; i < sm.numspechit; i++)
-		P_CrossSpecialLine (sm.spechit[i], mo);
+        if (!P_TryMove (&tm, mo, ptryx, ptryy))
+        {
+    	    // blocked move
+    	    // try to slide along it
+    	    P_SlideMove (mo);
+        }
+    } while (xmove || ymove);
 }
 
 

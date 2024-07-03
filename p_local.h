@@ -176,7 +176,7 @@ int 	P_PointOnLineSide (fixed_t x, fixed_t y, line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, divline_t *line);
 int 	P_BoxOnLineSide (fixed_t *tmbox, line_t *ld);
 
-fixed_t	P_LineOpening (line_t *linedef);
+fixed_t	P_LineOpening (line_t *linedef, fixed_t *opentop, fixed_t *openbottom);
 
 void 	P_LineBBox(line_t* ld, fixed_t*bbox);
 
@@ -280,6 +280,18 @@ void P_RespawnSpecials (void);
 ===============================================================================
 */
 
+fixed_t P_InterceptVector(divline_t* v2, divline_t* v1) ATTR_DATA_CACHE_ALIGN;
+typedef struct
+{
+   mobj_t      *checkthing, *hitthing;
+   fixed_t      testx, testy;
+   fixed_t      testfloorz, testceilingz, testdropoffz;
+   subsector_t *testsubsec;
+   line_t      *ceilingline;
+   fixed_t      testbbox[4];
+   int          testflags;
+} pmovetest_t;
+
 // 
 // keep track of special lines as they are hit,
 // but don't process them until the move is proven valid
@@ -326,7 +338,8 @@ typedef struct
 	fixed_t	slidex, slidey;
 } pslidemove_t;
 
-void P_SlideMove (pslidemove_t *sm);
+void P_SlideMove (mobj_t *mo);
+void P_MakeDivline(line_t* li, divline_t* dl) ATTR_DATA_CACHE_ALIGN;
 
 #endif	/* __P_LOCAL__ */
 

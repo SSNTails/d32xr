@@ -32,17 +32,6 @@
 #include "p_local.h"
 #include "mars.h"
 
-typedef struct
-{
-   mobj_t      *checkthing, *hitthing;
-   fixed_t      testx, testy;
-   fixed_t      testfloorz, testceilingz, testdropoffz;
-   subsector_t *testsubsec;
-   line_t      *ceilingline;
-   fixed_t      testbbox[4];
-   int          testflags;
-} pmovetest_t;
-
 static boolean PB_CheckThing(mobj_t* thing, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_BoxCrossLine(line_t* ld, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_CheckLine(line_t* ld, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
