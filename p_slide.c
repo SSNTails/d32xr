@@ -188,16 +188,26 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
    else
       openbottom = back->floorheight;
 
-   if(openbottom - sw->slidething->z > 24*FRACUNIT)
-      goto findfrac; // too big a step up
-
    if(front->ceilingheight < back->ceilingheight)
       opentop = front->ceilingheight;
    else
       opentop = back->ceilingheight;
 
-   if(opentop - openbottom >= 56*FRACUNIT)
-      return true; // the line doesn't block movement
+   fixed_t openrange = opentop - openbottom;
+
+   if(openrange < sw->slidething->height)
+      goto isblocking; // doesn't fit
+
+   if (opentop - sw->slidething->z < sw->slidething->height)
+      goto isblocking; // mobj is too high
+
+   if(openbottom - sw->slidething->z > 24*FRACUNIT)
+      goto isblocking; // too big a step up
+
+   goto findfrac;
+
+   isblocking:
+   return true;
 
    // the line is definitely blocking movement at this point
 findfrac:
