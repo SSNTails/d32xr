@@ -1,7 +1,10 @@
 /* D_main.c  */
  
 #include "doomdef.h"
+
+#ifdef PLAY_POS_DEMO
 #include "v_font.h"
+#endif
 
 #ifdef MARS
 #include "marshw.h"
@@ -416,7 +419,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 			
 			#ifdef PLAY_POS_DEMO
 			if (demo_p == demobuffer + 0xA) {
-				// Record initial values
+				// This is the first frame, so grab the initial values.
 				prev_rec_values[0] = players[0].mo->x;
 				prev_rec_values[1] = players[0].mo->y;
 				prev_rec_values[2] = players[0].mo->z;
@@ -425,17 +428,22 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 				demo_p += 16;
 			}
 			else {
+				// Beyond the first frame, we update only the values that
+				// have changed.
 				unsigned char key = *demo_p++;
 
 				int rec_value;
 				unsigned char *prev_rec_values_bytes;
 
 				for (int i=0; i < 4; i++) {
+					// Check to see which values have changed and save them
+					// in 'prev_rec_values' so the next frame's comparisons
+					// can be done against the current frame.
 					prev_rec_values_bytes = &prev_rec_values[i];
 					rec_value = 0;
 
 					switch (key&3) {
-						case 3:
+						case 3: // Long -- update the value as recorded (i.e. no delta).
 							rec_value = *demo_p++;
 							rec_value <<= 8;
 							rec_value |= *demo_p++;
@@ -446,21 +454,25 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 							prev_rec_values[i] = rec_value;
 							break;
 
-						case 2:
+						case 2: // Short -- add the difference to the current value.
 							rec_value = *demo_p++;
 							rec_value <<= 8;
 							rec_value |= *demo_p++;
 							prev_rec_values[i] += (signed short)rec_value;
 							break;
 
-						case 1:
+						case 1: // Byte -- add the difference to the current value.
 							rec_value = *demo_p++;
 							prev_rec_values[i] += (signed char)rec_value;
 					}
 
+					// Advance the key so the next two bits can be read to
+					// check for updates.
 					key >>= 2;
 				}
 
+				// Update the player variables with the newly updated
+				// frame values.
 				players[0].mo->x = prev_rec_values[0];
 				players[0].mo->y = prev_rec_values[1];
 				players[0].mo->z = prev_rec_values[2];
@@ -473,6 +485,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 			#endif
 
 			#ifndef PLAY_POS_DEMO
+			// This is for reading convention input-based demos.
 			ticbuttons[consoleplayer] = buttons = *((long *)demobuffer);
 			demobuffer += 4;
 			#endif
@@ -489,7 +502,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		if (demorecording) {
 			#ifdef REC_POS_DEMO
 			if (((short *)demobuffer)[3] == -1) {
-				// Record initial values
+				// This is the first frame, so record the initial values in full.
 				prev_rec_values[0] = players[0].mo->x;
 				prev_rec_values[1] = players[0].mo->y;
 				prev_rec_values[2] = players[0].mo->z;
@@ -506,15 +519,21 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 				((short *)demobuffer)[2] += 16; // 16 bytes written.
 			}
 			else {
-				// Record delta values for new frame
+				// Beyond the first frame, we record only the values that
+				// have changed.
 				unsigned char frame_bytes = 1; // At least one byte will be written.
 
+				// Calculate the difference between values in the current
+				// frame and previous frame.
 				fixed_t delta[4];
 				delta[0] = players[0].mo->x - prev_rec_values[0];
 				delta[1] = players[0].mo->y - prev_rec_values[1];
 				delta[2] = players[0].mo->z - prev_rec_values[2];
 				delta[3] = (players[0].mo->angle >> ANGLETOFINESHIFT) - prev_rec_values[3];
 
+				// Save the current frame's values in 'prev_rec_values' so
+				// the next frame's comparisons can be done against the
+				// current frame.
 				prev_rec_values[0] = players[0].mo->x;
 				prev_rec_values[1] = players[0].mo->y;
 				prev_rec_values[2] = players[0].mo->z;
@@ -522,6 +541,8 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 				unsigned char key = 0;
 
+				// Record the values that have changed and the minimum number
+				// of bytes needed to represent the deltas.
 				for (int i=0; i < 4; i++) {
 					key >>= 2;
 
@@ -547,6 +568,9 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 				*demo_p++ = key;
 
+				// Based on the sizes put into the key, we record either the
+				// deltas (in the case of char and short) or the full value.
+				// Values with no difference will not be recorded.
 				for (int i=0; i < 4; i++) {
 					delta_bytes = &delta[i];
 					prev_rec_values_bytes = &prev_rec_values[i];
@@ -566,6 +590,8 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 							*demo_p++ = delta_bytes[3];
 					}
 
+					// Advance the key so the next two bits can be read to
+					// check for updated values.
 					key >>= 2;
 				}
 
