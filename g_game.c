@@ -744,7 +744,7 @@ int G_PlayPositionDemoPtr (unsigned char *demo)
 #ifdef REC_INPUT_DEMO
 void G_RecordInputDemo (void)
 {
-	demo_p = demobuffer = Z_Malloc (0x4000, PU_STATIC);
+	demo_p = demobuffer = Z_Malloc (0x5000, PU_STATIC);
 	
 	((long *)demo_p)[0] = 0; // startskill
 	((long *)demo_p)[1] = startmap;
@@ -773,7 +773,7 @@ void G_RecordInputDemo (void)
 #ifdef REC_POS_DEMO
 void G_RecordPositionDemo (void)
 {
-	demo_p = demobuffer = Z_Malloc (0x4000, PU_STATIC);
+	demo_p = demobuffer = Z_Malloc (0x5000, PU_STATIC);
 	
 	*demo_p++ = 'P';
 	*demo_p++ = 'D';

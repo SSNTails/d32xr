@@ -22,11 +22,13 @@ boolean canwipe = false;
 
 int 		ticstart;
 
-#ifdef REC_POS_DEMO
+#ifdef PLAY_POS_DEMO
 	int			realtic;
 	fixed_t prev_rec_values[4];
-#elif PLAY_POS_DEMO
+#else 
+#ifdef REC_POS_DEMO
 	fixed_t prev_rec_values[4];
+#endif
 #endif
 
 unsigned configuration[NUMCONTROLOPTIONS][3] =
@@ -463,6 +465,10 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 				players[0].mo->y = prev_rec_values[1];
 				players[0].mo->z = prev_rec_values[2];
 				players[0].mo->angle = prev_rec_values[3] << ANGLETOFINESHIFT;
+
+				players[0].mo->momx = 0;
+				players[0].mo->momy = 0;
+				players[0].mo->momz = 0;
 			}
 			#endif
 
@@ -610,10 +616,9 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 		drawer();
 
-#ifdef REC_POS_DEMO
+#ifdef PLAY_POS_DEMO
 		if (leveltime > 30) {
 			V_DrawValueCenter(&menuFont, 160, 40, I_GetTime() - realtic);
-			V_DrawValueCenter(&menuFont, 160, 50, I_GetFRTCounter());
 		}
 		else {
 			realtic = I_GetTime();
