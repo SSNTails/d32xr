@@ -20,9 +20,9 @@ typedef struct camera_s
 	fixed_t distFromPlayer;
 } camera_t;
 
-#define CAM_HEIGHT (20<<FRACBITS)
-#define CAM_RADIUS (20<<FRACBITS)
-#define CAM_DIST (192<<FRACBITS)
+#define CAM_HEIGHT (20<<(FRACBITS-1))
+#define CAM_RADIUS (20<<(FRACBITS-1))
+#define CAM_DIST (192<<(FRACBITS-1))
 
 extern mobj_t *camBossMobj;
 extern camera_t camera;

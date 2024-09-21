@@ -44,7 +44,7 @@ static void R_PrepMobj(mobj_t *thing)
    if(tz < MINZ)
       return;
 
-   if (tz > 2048*FRACUNIT) // Cull draw distance
+   if (tz > 1024*FRACUNIT) // Cull draw distance
       return;
 
    gxt = FixedMul(tr_x, vd.viewsin);
@@ -231,7 +231,7 @@ static void R_PrepRing(mobj_t *thing)
    if(tz < MINZ)
       return;
 
-   if (tz > 2048*FRACUNIT) // Cull draw distance
+   if (tz > 1024*FRACUNIT) // Cull draw distance
       return;
 
    gxt = FixedMul(tr_x, vd.viewsin);
@@ -390,7 +390,7 @@ static void R_PrepScenery(scenerymobj_t *thing)
    if(tz < MINZ)
       return;
 
-   if (tz > 1536*FRACUNIT) // Cull draw distance
+   if (tz > 768*FRACUNIT) // Cull draw distance
       return;
 
    gxt = FixedMul(tr_x, vd.viewsin);

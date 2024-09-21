@@ -404,7 +404,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 
 	camspeed = FRACUNIT / 4;
 	camdist = CAM_DIST;
-	camheight = 20 << FRACBITS;
+	camheight = (20 << (FRACBITS-1));
 
    if (player->stillTimer > TICRATE/2)
       camspeed >>= 2;

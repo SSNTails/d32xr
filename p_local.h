@@ -7,14 +7,14 @@
 #include "r_local.h"
 #endif
 
-#define	FLOATSPEED		(FRACUNIT*8)
+#define	FLOATSPEED		(FRACUNIT*4)
 
-#define	GRAVITY			(FRACUNIT)
+#define	GRAVITY			(FRACUNIT/2)
 #define	MAXMOVE			(24*FRACUNIT)
 
 
 #define	MAXHEALTH			100
-#define	VIEWHEIGHT			(41*FRACUNIT)
+#define	VIEWHEIGHT			(41 << (FRACBITS-1))
 
 /* mapblocks are used to check movement against lines and things */
 #define MAPBLOCKUNITS	128
@@ -25,7 +25,7 @@
 
 
 /* player radius for movement checking */
-#define	PLAYERRADIUS	16*FRACUNIT
+#define	PLAYERRADIUS	8*FRACUNIT
 
 /* MAXRADIUS is for precalculated sector block boxes */
 /* the spider demon is larger, but we don't have any moving sectors */

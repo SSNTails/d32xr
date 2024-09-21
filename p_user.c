@@ -833,7 +833,7 @@ static void P_DoJump(player_t *player)
 	if (!(player->pflags & PF_SPINNING))
 		P_ResetScore(player);
 
-	fixed_t jumpStrength = 12*FRACUNIT;
+	fixed_t jumpStrength = 6*FRACUNIT;
 
 	player->mo->momz = jumpStrength;
 
@@ -934,7 +934,7 @@ static void P_HomingAttack(mobj_t *source, mobj_t *dest)
 	if (dist < 1) // Don't divide by zero
 		dist = 1;
 
-	const fixed_t ns = 30*FRACUNIT;
+	const fixed_t ns = 15*FRACUNIT;
 	source->momx = FixedMul(FixedDiv(dest->x - source->x, dist), ns);
 	source->momy = FixedMul(FixedDiv(dest->y - source->y, dist), ns);
 	source->momz = FixedMul(FixedDiv(dest->z - source->z, dist), ns);
@@ -1076,7 +1076,7 @@ void P_MovePlayer(player_t *player)
 			// Gas pedal does not apply here
 			if (player->forwardmove || player->sidemove)
 			{
-				fixed_t acc = FRACUNIT >> 3;
+				fixed_t acc = FRACUNIT >> 4;
 				if (player->powers[pw_sneakers])
 					acc <<= 1;
 				controlAngle = R_PointToAngle2(0, 0, controlX, controlY);
@@ -1119,7 +1119,7 @@ void P_MovePlayer(player_t *player)
 
 					player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, player->mo->x + player->mo->momx, player->mo->y + player->mo->momy);*/
 
-			fixed_t acc = 6144 * 4;//FRACUNIT / 2;
+			fixed_t acc = 6144 * 2;//FRACUNIT / 2;
 			if (player->powers[pw_sneakers])
 				acc <<= 1;
 	//		angle_t speedDir = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
@@ -1235,8 +1235,8 @@ void P_MovePlayer(player_t *player)
 				player->homingTimer = 0;
 				player->pflags &= ~PF_THOKKED;
 
-				if (player->mo->momz < 8*FRACUNIT)
-					player->mo->momz = 8*FRACUNIT;
+				if (player->mo->momz < 4*FRACUNIT)
+					player->mo->momz = 4*FRACUNIT;
 			}
 			else
 				P_HomingAttack(player->mo, player->mo->target);

@@ -435,8 +435,8 @@ STATE(SPR_LASR,FF_FULLBRIGHT|0,2,NULL,S_NULL), // S_LASER
 STATE(SPR_LASR,FF_FULLBRIGHT|1,2,NULL,S_NULL), // S_LASER2
 
 STATE(SPR_LASF,FF_FULLBRIGHT|0,2,NULL,S_LASERFLAME2), // S_LASERFLAME1
-STATE2(SPR_LASF,FF_FULLBRIGHT|1,1,A_ChangeHeight,156,3,S_LASERFLAME3), // S_LASERFLAME2
-STATE2(SPR_LASF,FF_FULLBRIGHT|2,0,A_ChangeHeight,32,3,S_LASERFLAME4), // S_LASERFLAME3
+STATE2(SPR_LASF,FF_FULLBRIGHT|1,1,A_ChangeHeight,156/2,3,S_LASERFLAME3), // S_LASERFLAME2
+STATE2(SPR_LASF,FF_FULLBRIGHT|2,0,A_ChangeHeight,32/2,3,S_LASERFLAME4), // S_LASERFLAME3
 STATE(SPR_LASF,FF_FULLBRIGHT|2,4,NULL,S_LASERFLAME4A), // S_LASERFLAME4
 STATE(SPR_LASF,FF_FULLBRIGHT|3,2,NULL,S_NULL), // S_LASERFLAME4A
 
@@ -469,8 +469,8 @@ S_PLAY_DIE,		/* deathstate */
 S_PLAY_DIE,		/* xdeathstate */
 sfx_None,		/* deathsound */
 0,		/* speed */
-16*FRACUNIT,		/* radius */
-48*FRACUNIT,		/* height */
+8*FRACUNIT,		/* radius */
+24*FRACUNIT,		/* height */
 100,		/* mass */
 0,		/* damage */
 sfx_None,		/* activesound */
@@ -494,8 +494,8 @@ S_NULL,		/* deathstate */
 S_NULL,		/* xdeathstate */
 sfx_None,		/* deathsound */
 8,		/* speed */
-20*FRACUNIT,		/* radius */
-12*FRACUNIT,		/* height */
+10*FRACUNIT,		/* radius */
+6*FRACUNIT,		/* height */
 100,		/* mass */
 0,		/* damage */
 sfx_None,		/* activesound */
@@ -519,8 +519,8 @@ sfx_None,		/* activesound */
 	S_NULL,         // xdeathstate
 	sfx_None,       // deathsound
 	1*FRACUNIT,     // speed
-	8*FRACUNIT,     // radius
-	16*FRACUNIT,    // height
+	4*FRACUNIT,     // radius
+	8*FRACUNIT,    // height
 	100,            // mass
 	0,              // damage
 	sfx_None,       // activesound
@@ -544,8 +544,8 @@ S_XPLD_FLICKY,		/* deathstate */
 S_NULL,		/* xdeathstate */
 sfx_s3k_3d,		/* deathsound */
 2,		/* speed */
-24*FRACUNIT,		/* radius */
-32*FRACUNIT,		/* height */
+12*FRACUNIT,		/* radius */
+16*FRACUNIT,		/* height */
 100,		/* mass */
 0,		/* damage */
 sfx_None,		/* activesound */
@@ -569,8 +569,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_FISH4,        // xdeathstate
 		sfx_s3k_3d,     // deathsound
 		0,              // speed
-		8*FRACUNIT,     // radius
-		28*FRACUNIT,    // height
+		4*FRACUNIT,     // radius
+		14*FRACUNIT,    // height
 		100,            // mass
 		1,              // damage
 		sfx_None,       // activesound
@@ -594,8 +594,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_s3k_33,     // deathsound
 	38,    // speed
-	16*FRACUNIT,    // radius
-	24*FRACUNIT,    // height
+	8*FRACUNIT,    // radius
+	12*FRACUNIT,    // height
 	100,            // mass
 	0,              // damage
 	sfx_None,       // activesound
@@ -618,8 +618,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,     // deathsound
 	38,    // speed
-	16*FRACUNIT,    // radius
-	24*FRACUNIT,    // height
+	8*FRACUNIT,    // radius
+	12*FRACUNIT,    // height
 	100,            // mass
 	0,              // damage
 	sfx_None,       // activesound
@@ -642,8 +642,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_s3k_33,     // deathsound
 	38,    // speed
-	16*FRACUNIT,    // radius
-	24*FRACUNIT,    // height
+	8*FRACUNIT,    // radius
+	12*FRACUNIT,    // height
 	100,            // mass
 	0,              // damage
 	sfx_None,       // activesound
@@ -666,8 +666,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,     // deathsound
 	38,    // speed
-	16*FRACUNIT,    // radius
-	40*FRACUNIT,    // height
+	8*FRACUNIT,    // radius
+	20*FRACUNIT,    // height
 	100,            // mass
 	0,              // damage
 	sfx_None,       // activesound
@@ -690,8 +690,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,     // deathsound
 	38,    // speed
-	16*FRACUNIT,    // radius
-	96*FRACUNIT,    // height
+	8*FRACUNIT,    // radius
+	48*FRACUNIT,    // height
 	100,            // mass
 	0,              // damage
 	sfx_None,       // activesound
@@ -714,8 +714,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,     // deathsound
 	38,    // speed
-	8*FRACUNIT,    // radius
-	32*FRACUNIT,    // height
+	4*FRACUNIT,    // radius
+	16*FRACUNIT,    // height
 	100,            // mass
 	0,              // damage
 	sfx_None,       // activesound
@@ -738,8 +738,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,     // deathsound
 	38,    // speed
-	16*FRACUNIT,    // radius
-	16*FRACUNIT,    // height
+	8*FRACUNIT,    // radius
+	8*FRACUNIT,    // height
 	100,            // mass
 	0,              // damage
 	sfx_None,       // activesound
@@ -762,8 +762,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,     // deathsound
 	38,    // speed
-	16*FRACUNIT,    // radius
-	16*FRACUNIT,    // height
+	8*FRACUNIT,    // radius
+	8*FRACUNIT,    // height
 	100,            // mass
 	0,              // damage
 	sfx_None,       // activesound
@@ -786,9 +786,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,       // deathsound
 	0,              // speed
-	20*FRACUNIT,    // radius
-	16*FRACUNIT,    // height
-	20,    // mass
+	10*FRACUNIT,    // radius
+	8*FRACUNIT,    // height
+	10,    // mass
 	0,              // damage
 	sfx_None,       // activesound
 	MF_SPECIAL|MF_STATIC, // flags
@@ -811,9 +811,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,       // deathsound
 	0,              // speed
-	20*FRACUNIT,    // radius
-	16*FRACUNIT,    // height
-	32,    // mass
+	10*FRACUNIT,    // radius
+	8*FRACUNIT,    // height
+	16,    // mass
 	0,              // damage
 	sfx_None,       // activesound
 	MF_SPECIAL|MF_STATIC, // flags
@@ -835,10 +835,10 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,       // deathsound
 	0,              // speed
-	16*FRACUNIT,    // radius
-	16*FRACUNIT,    // height
-	20,    // mass
-	20,    // damage
+	8*FRACUNIT,    // radius
+	8*FRACUNIT,    // height
+	10,    // mass
+	10,    // damage
 	sfx_None,       // activesound
 	MF_SPECIAL|MF_STATIC, // flags
 },
@@ -860,10 +860,10 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,       // deathsound
 	0,              // speed
-	16*FRACUNIT,    // radius
-	16*FRACUNIT,    // height
-	32,    // mass
-	32,    // damage
+	8*FRACUNIT,    // radius
+	8*FRACUNIT,    // height
+	16,    // mass
+	16,    // damage
 	sfx_None,       // activesound
 	MF_SPECIAL|MF_STATIC, // flags
 },
@@ -884,10 +884,10 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,       // deathsound
 	0,              // speed
-	16*FRACUNIT,    // radius
-	32*FRACUNIT,    // height
+	8*FRACUNIT,    // radius
+	16*FRACUNIT,    // height
 	0,              // mass
-	40,    // damage
+	20,    // damage
 	sfx_None,       // activesound
 	MF_SPECIAL|MF_STATIC, // flags
 },
@@ -909,10 +909,10 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // xdeathstate
 	sfx_None,       // deathsound
 	0,              // speed
-	16*FRACUNIT,    // radius
-	32*FRACUNIT,    // height
+	8*FRACUNIT,    // radius
+	16*FRACUNIT,    // height
 	0,              // mass
-	80,    // damage
+	40,    // damage
 	sfx_None,       // activesound
 	MF_SPECIAL|MF_STATIC, // flags
 },
@@ -932,9 +932,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 	S_NULL,         // deathstate
 	S_NULL,         // xdeathstate
 	sfx_None,       // deathsound
-	4*FRACUNIT,     // speed
-	8*FRACUNIT,     // radius
-	8*FRACUNIT,     // height
+	2*FRACUNIT,     // speed
+	4*FRACUNIT,     // radius
+	4*FRACUNIT,     // height
 	100,            // mass
 	0,              // damage
 	sfx_None,       // activesound
@@ -957,8 +957,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		0,              // speed
-		16*FRACUNIT,    // radius
-		48*FRACUNIT,    // height
+		8*FRACUNIT,    // radius
+		24*FRACUNIT,    // height
 		1000,           // mass
 		8,              // damage
 		sfx_None,       // activesound
@@ -981,8 +981,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_s3k_3d,     // deathsound
 		1,              // speed
-		18*FRACUNIT,    // radius
-		40*FRACUNIT,    // height
+		9*FRACUNIT,    // radius
+		20*FRACUNIT,    // height
 		100,            // mass
 		MT_RING_ICON,   // damage
 		sfx_None,       // activesound
@@ -1005,8 +1005,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_s3k_3d,        // deathsound
 		1,              // speed
-		18*FRACUNIT,    // radius
-		40*FRACUNIT,    // height
+		9*FRACUNIT,    // radius
+		20*FRACUNIT,    // height
 		100,            // mass
 		MT_ATTRACT_ICON,// damage
 		sfx_None,       // activesound
@@ -1030,8 +1030,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_s3k_3d,        // deathsound
 		1,              // speed
-		18*FRACUNIT,    // radius
-		40*FRACUNIT,    // height
+		9*FRACUNIT,    // radius
+		20*FRACUNIT,    // height
 		100,            // mass
 		MT_FORCE_ICON,  // damage
 		sfx_None,       // activesound
@@ -1055,8 +1055,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_s3k_3d,        // deathsound
 		1,              // speed
-		18*FRACUNIT,    // radius
-		40*FRACUNIT,    // height
+		9*FRACUNIT,    // radius
+		20*FRACUNIT,    // height
 		100,            // mass
 		MT_ARMAGEDDON_ICON, // damage
 		sfx_None,       // activesound
@@ -1080,8 +1080,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_s3k_3d,        // deathsound
 		1,              // speed
-		18*FRACUNIT,    // radius
-		40*FRACUNIT,    // height
+		9*FRACUNIT,    // radius
+		20*FRACUNIT,    // height
 		100,            // mass
 		MT_WHIRLWIND_ICON, // damage
 		sfx_None,       // activesound
@@ -1105,8 +1105,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_s3k_3d,        // deathsound
 		1,              // speed
-		18*FRACUNIT,    // radius
-		40*FRACUNIT,    // height
+		9*FRACUNIT,    // radius
+		20*FRACUNIT,    // height
 		100,            // mass
 		MT_ELEMENTAL_ICON, // damage
 		sfx_None,       // activesound
@@ -1130,8 +1130,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_s3k_3d,        // deathsound
 		1,              // speed
-		18*FRACUNIT,    // radius
-		40*FRACUNIT,    // height
+		9*FRACUNIT,    // radius
+		20*FRACUNIT,    // height
 		100,            // mass
 		MT_SNEAKERS_ICON, // damage
 		sfx_None,       // activesound
@@ -1155,8 +1155,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_s3k_3d,        // deathsound
 		1,              // speed
-		18*FRACUNIT,    // radius
-		40*FRACUNIT,    // height
+		9*FRACUNIT,    // radius
+		20*FRACUNIT,    // height
 		100,            // mass
 		MT_INVULN_ICON, // damage
 		sfx_None,       // activesound
@@ -1179,8 +1179,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_s3k_3d,        // deathsound
 		1,              // speed
-		18*FRACUNIT,    // radius
-		40*FRACUNIT,    // height
+		9*FRACUNIT,    // radius
+		20*FRACUNIT,    // height
 		100,            // mass
 		MT_1UP_ICON,    // damage
 		sfx_None,       // activesound
@@ -1202,9 +1202,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,          // deathstate
 		S_NULL,          // xdeathstate
 		sfx_None,        // deathsound
-		4*FRACUNIT,      // speed
-		8*FRACUNIT,      // radius
-		14*FRACUNIT,     // height
+		2*FRACUNIT,      // speed
+		4*FRACUNIT,      // radius
+		7*FRACUNIT,     // height
 		100,             // mass
 		62,     // damage
 		sfx_None,        // activesound
@@ -1226,9 +1226,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		4*FRACUNIT,     // speed
-		8*FRACUNIT,     // radius
-		14*FRACUNIT,    // height
+		2*FRACUNIT,     // speed
+		4*FRACUNIT,     // radius
+		7*FRACUNIT,    // height
 		100,            // mass
 		62,    // damage
 		sfx_None,       // activesound
@@ -1250,9 +1250,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		4*FRACUNIT,     // speed
-		8*FRACUNIT,     // radius
-		14*FRACUNIT,    // height
+		2*FRACUNIT,     // speed
+		4*FRACUNIT,     // radius
+		7*FRACUNIT,    // height
 		100,            // mass
 		62,    // damage
 		sfx_None,       // activesound
@@ -1274,9 +1274,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		4*FRACUNIT,     // speed
-		8*FRACUNIT,     // radius
-		14*FRACUNIT,    // height
+		2*FRACUNIT,     // speed
+		4*FRACUNIT,     // radius
+		7*FRACUNIT,    // height
 		100,            // mass
 		62,    // damage
 		sfx_None,       // activesound
@@ -1298,9 +1298,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		4*FRACUNIT,     // speed
-		8*FRACUNIT,     // radius
-		14*FRACUNIT,    // height
+		2*FRACUNIT,     // speed
+		4*FRACUNIT,     // radius
+		7*FRACUNIT,    // height
 		100,            // mass
 		62,    // damage
 		sfx_None,       // activesound
@@ -1322,9 +1322,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		4*FRACUNIT,     // speed
-		8*FRACUNIT,     // radius
-		14*FRACUNIT,    // height
+		2*FRACUNIT,     // speed
+		4*FRACUNIT,     // radius
+		7*FRACUNIT,    // height
 		100,            // mass
 		62,    // damage
 		sfx_None,       // activesound
@@ -1346,9 +1346,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		4*FRACUNIT,     // speed
-		8*FRACUNIT,     // radius
-		14*FRACUNIT,    // height
+		2*FRACUNIT,     // speed
+		4*FRACUNIT,     // radius
+		7*FRACUNIT,    // height
 		100,            // mass
 		62,    // damage
 		sfx_None,       // activesound
@@ -1370,9 +1370,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		4*FRACUNIT,     // speed
-		8*FRACUNIT,     // radius
-		14*FRACUNIT,    // height
+		2*FRACUNIT,     // speed
+		4*FRACUNIT,     // radius
+		7*FRACUNIT,    // height
 		100,            // mass
 		62,             // damage
 		sfx_None,       // activesound
@@ -1394,9 +1394,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		4*FRACUNIT,     // speed
-		8*FRACUNIT,     // radius
-		14*FRACUNIT,    // height
+		2*FRACUNIT,     // speed
+		4*FRACUNIT,     // radius
+		7*FRACUNIT,    // height
 		100,            // mass
 		62,             // damage
 		sfx_None,       // activesound
@@ -1420,8 +1420,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		0,              // speed
-		4*FRACUNIT,     // radius
-		4*FRACUNIT,     // height
+		2*FRACUNIT,     // radius
+		2*FRACUNIT,     // height
 		16,             // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1445,8 +1445,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		0,              // speed
-		4*FRACUNIT,     // radius
-		4*FRACUNIT,     // height
+		2*FRACUNIT,     // radius
+		2*FRACUNIT,     // height
 		16,             // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1470,8 +1470,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		0,              // speed
-		4*FRACUNIT,     // radius
-		4*FRACUNIT,     // height
+		2*FRACUNIT,     // radius
+		2*FRACUNIT,     // height
 		16,             // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1495,8 +1495,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		0,              // speed
-		4*FRACUNIT,     // radius
-		4*FRACUNIT,     // height
+		2*FRACUNIT,     // radius
+		2*FRACUNIT,     // height
 		16,             // mass
 		SH_FORCE1,      // damage
 		sfx_None,       // activesound
@@ -1520,8 +1520,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		0,              // speed
-		4*FRACUNIT,     // radius
-		4*FRACUNIT,     // height
+		2*FRACUNIT,     // radius
+		2*FRACUNIT,     // height
 		16,             // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1545,8 +1545,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		0,              // speed
-		4*FRACUNIT,     // radius
-		4*FRACUNIT,     // height
+		2*FRACUNIT,     // radius
+		2*FRACUNIT,     // height
 		16,             // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1570,9 +1570,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		2*FRACUNIT,     // speed
-		8*FRACUNIT,     // radius
-		20*FRACUNIT,    // height
+		1*FRACUNIT,     // speed
+		4*FRACUNIT,     // radius
+		10*FRACUNIT,    // height
 		4,              // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1595,9 +1595,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		2*FRACUNIT,     // speed
-		8*FRACUNIT,     // radius
-		20*FRACUNIT,    // height
+		1*FRACUNIT,     // speed
+		4*FRACUNIT,     // radius
+		10*FRACUNIT,    // height
 		4,             // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1620,9 +1620,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		1*FRACUNIT + (FRACUNIT/2),     // speed
-		8*FRACUNIT,     // radius
-		20*FRACUNIT,    // height
+		FRACUNIT/4*3,     // speed
+		4*FRACUNIT,     // radius
+		10*FRACUNIT,    // height
 		3,              // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1645,9 +1645,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		3*FRACUNIT,     // speed
-		8*FRACUNIT,     // radius
-		20*FRACUNIT,    // height
+		1*FRACUNIT + (FRACUNIT/2),     // speed
+		4*FRACUNIT,     // radius
+		10*FRACUNIT,    // height
 		2,              // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1671,8 +1671,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		0,              // speed
-		32*FRACUNIT,    // radius
-		64*FRACUNIT,    // height
+		8*FRACUNIT,    // radius
+		16*FRACUNIT,    // height
 		100,            // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1696,8 +1696,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		8,              // speed
-		4*FRACUNIT,     // radius
-		4*FRACUNIT,     // height
+		2*FRACUNIT,     // radius
+		2*FRACUNIT,     // height
 		16,             // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1721,8 +1721,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		8,              // speed
-		8*FRACUNIT,     // radius
-		8*FRACUNIT,     // height
+		4*FRACUNIT,     // radius
+		4*FRACUNIT,     // height
 		16,             // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1746,8 +1746,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_s3k_38,     // deathsound
 		8,              // speed
-		23*FRACUNIT,    // radius
-		43*FRACUNIT,    // height
+		23*FRACUNIT/2,    // radius
+		43*FRACUNIT/2,    // height
 		16,             // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1771,8 +1771,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		0,              // speed
-		6*FRACUNIT,     // radius
-		1*FRACUNIT,     // height
+		6*FRACUNIT/2,     // radius
+		1*FRACUNIT/2,     // height
 		100,            // mass
 		1,              // damage
 		sfx_None,       // activesound
@@ -1796,8 +1796,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,                  // xdeathstate
 		sfx_None,                // deathsound
 		1,                       // speed
-		8*FRACUNIT,              // radius
-		16*FRACUNIT,             // height
+		8*FRACUNIT/2,              // radius
+		16*FRACUNIT/2,             // height
 		4,                       // mass
 		0,                       // damage
 		sfx_None,                // activesound
@@ -1821,8 +1821,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		1,              // speed
-		2*FRACUNIT,     // radius
-		4*FRACUNIT,     // height
+		2*FRACUNIT/2,     // radius
+		4*FRACUNIT/2,     // height
 		4,              // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1846,8 +1846,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_s3k_3d,        // deathsound
 		1,              // speed
-		8*FRACUNIT,     // radius
-		16*FRACUNIT,    // height
+		8*FRACUNIT/2,     // radius
+		16*FRACUNIT/2,    // height
 		4,              // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1871,8 +1871,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		0,              // speed
-		8*FRACUNIT,     // radius
-		64*FRACUNIT,    // height
+		8*FRACUNIT/2,     // radius
+		64*FRACUNIT/2,    // height
 		100,            // mass
 		1,              // damage
 		sfx_None,       // activesound
@@ -1896,8 +1896,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_EGGMOBILE_FLEE1, // xdeathstate
 		sfx_s3k_b4,         // deathsound
 		4,                 // speed
-		36*FRACUNIT,       // radius
-		84*FRACUNIT,       // height
+		36*FRACUNIT/2,       // radius
+		84*FRACUNIT/2,       // height
 		S_EGGMOBILE_PANIC1,// mass
 		3,                 // damage
 		sfx_telept,        // activesound
@@ -1921,8 +1921,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		1,              // speed
-		8*FRACUNIT,     // radius
-		16*FRACUNIT,    // height
+		8*FRACUNIT/2,     // radius
+		16*FRACUNIT/2,    // height
 		4,              // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -1945,7 +1945,7 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		2*FRACUNIT,     // speed
+		2*FRACUNIT/2,     // speed
 		0,              // radius
 		0,              // height
 		0,              // mass
@@ -1971,8 +1971,8 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		0,              // speed
-		24*FRACUNIT,    // radius
-		84*FRACUNIT,    // height
+		24*FRACUNIT/2,    // radius
+		84*FRACUNIT/2,    // height
 		0,       // mass
 		1,              // damage
 		sfx_None,       // activesound
@@ -1995,9 +1995,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		20*FRACUNIT,    // speed
-		11*FRACUNIT,    // radius
-		8*FRACUNIT,     // height
+		20*FRACUNIT/2,    // speed
+		11*FRACUNIT/2,    // radius
+		8*FRACUNIT/2,     // height
 		0,              // mass
 		20,             // damage
 		sfx_None,       // activesound
@@ -2020,9 +2020,9 @@ MF_SHOOTABLE|MF_ENEMY		/* flags */
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		3*FRACUNIT,     // speed
-		FRACUNIT,       // radius
-		FRACUNIT,       // height
+		3*FRACUNIT/2,     // speed
+		FRACUNIT/2,       // radius
+		FRACUNIT/2,       // height
 		4,              // mass
 		0,              // damage
 		sfx_None,       // activesound

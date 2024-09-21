@@ -816,9 +816,9 @@ void A_FishJump(mobj_t *mo, int16_t var1, int16_t var2)
 		fixed_t jumpval;
 
 		if (mo->angle)
-			jumpval = (mo->angle / ANGLE_1)<<(FRACBITS-2);
+			jumpval = (mo->angle / ANGLE_1)<<(FRACBITS-3);
 		else
-			jumpval = 16 << FRACBITS;
+			jumpval = 8 << FRACBITS;
 
 		jumpval = FixedMul(jumpval, FixedDiv(30 << FRACBITS, 35 << FRACBITS));
 
