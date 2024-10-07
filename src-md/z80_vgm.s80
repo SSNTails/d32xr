@@ -132,6 +132,108 @@ play_loop
     CALL    Z,next_buffer       ; done two pages (each buffer is two pages)
 dispatch
     LD      B,A
+    CP      $0
+    JP      Z,cmd_type_note_off
+
+compare_type_spec
+    CP      $C0
+    JP      C,compare_type_note
+
+jmp_spec
+    LD      H,0
+    LD      L,A
+    LD      HL,HL
+    LD      DE,spec_table
+    ADD     HL,DE
+
+    LD      B,(HL)
+    INC     HL
+    LD      H,(HL)
+    LD      L,B
+    JP      (HL)
+
+spec_table:
+    .DW     cmd_wait_8bit
+    .DW     cmd_wait_16bit
+    .DW     0
+    .DW     0
+    .DW     0
+    .DW     0
+    .DW     0
+    .DW     0
+    .DW     cmd_stereo_off
+    .DW     cmd_stereo_right
+    .DW     cmd_stereo_left
+    .DW     cmd_stereo_both
+    .DW     cmd_octave_set
+    .DW     cmd_voice_set
+    .DW     cmd_vibrato_off
+    .DW     cmd_vibrato_set
+
+compare_type_note
+    CP      $40
+    JP      C,cmd_type_wait
+
+cmd_type_note_off
+
+cmd_type_note
+    LD      H,0
+    LD      L,A
+    LD      HL,HL
+    LD      DE,freq_table
+    ADD     HL,DE
+
+    LD      B,(HL)
+    INC     HL
+    LD      H,(HL)
+    LD      L,B
+
+    LD      A,$A4
+    LD      B,(HL)
+    LD      HL,VGMBUF
+    INC     L
+    LD      (IY+YMPORT0),A      ; Set the address at port 0
+    LD      (IY+YMPORT1),B      ; Set the data at port 1
+    JP      play_loop
+
+freq_table
+    .DW     644     ; C
+    .DW     681     ; C#
+    .DW     722     ; D
+    .DW     765     ; D#
+    .DW     810     ; E
+    .DW     858     ; F
+    .DW     910     ; F#
+    .DW     964     ; G
+    .DW     1021    ; G#
+    .DW     1081    ; A
+    .DW     1146    ; A#
+    .DW     1214    ; B
+
+cmd_type_wait
+    ; COMMAND: wait
+
+cmd_wait_8bit
+cmd_wait_16bit
+cmd_stereo_off
+cmd_stereo_right
+cmd_stereo_left
+cmd_stereo_both
+cmd_octave_set
+cmd_voice_set
+cmd_vibrato_off
+cmd_vibrato_set
+
+
+
+
+
+
+
+
+
+
+    LD      B,A
     AND     $F0
     CP      $70
     JP      Z,wait_nn           ; wait nn+1 sample periods
