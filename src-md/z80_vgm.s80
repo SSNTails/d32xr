@@ -130,8 +130,11 @@ play_loop
     INC     H
     BIT     0,H
     CALL    Z,next_buffer       ; done two pages (each buffer is two pages)
+
 dispatch
     LD      B,A
+
+compare_type_note_off
     CP      $0
     JP      Z,cmd_type_note_off
 
@@ -140,16 +143,18 @@ compare_type_spec
     JP      C,compare_type_note
 
 jmp_spec
+    LD      BC,spec_table
+    PUSH    HL
+
     LD      H,0
     LD      L,A
-    LD      HL,HL
-    LD      DE,spec_table
-    ADD     HL,DE
+    ADD     HL,HL
+    ADD     HL,BC
 
-    LD      B,(HL)
+    LD      A,(HL)
     INC     HL
     LD      H,(HL)
-    LD      L,B
+    LD      L,A
     JP      (HL)
 
 spec_table:
@@ -177,23 +182,28 @@ compare_type_note
 cmd_type_note_off
 
 cmd_type_note
+    ;;;;; THIS IS ALL KINDS OF SCREWED UP! REWRITE!!
+    PUSH    DE
+    LD      D,(HL)
+    INC     L
+    LD      BC,freq_table
+
+    PUSH    HL
     LD      H,0
     LD      L,A
-    LD      HL,HL
-    LD      DE,freq_table
-    ADD     HL,DE
+    ADD     HL,HL
+    ADD     HL,BC
 
-    LD      B,(HL)
+    LD      A,(HL)
     INC     HL
     LD      H,(HL)
-    LD      L,B
+    LD      L,A
+    JP      (HL)    ;;;;;;; THIS SHOULD NOT BE A JUMP!
 
     LD      A,$A4
-    LD      B,(HL)
-    LD      HL,VGMBUF
-    INC     L
     LD      (IY+YMPORT0),A      ; Set the address at port 0
-    LD      (IY+YMPORT1),B      ; Set the data at port 1
+    LD      (IY+YMPORT1),D      ; Set the data at port 1
+    POP     HL
     JP      play_loop
 
 freq_table
@@ -214,15 +224,25 @@ cmd_type_wait
     ; COMMAND: wait
 
 cmd_wait_8bit
+    POP     HL
 cmd_wait_16bit
+    POP     HL
 cmd_stereo_off
+    POP     HL
 cmd_stereo_right
+    POP     HL
 cmd_stereo_left
+    POP     HL
 cmd_stereo_both
+    POP     HL
 cmd_octave_set
+    POP     HL
 cmd_voice_set
+    POP     HL
 cmd_vibrato_off
+    POP     HL
 cmd_vibrato_set
+    POP     HL
 
 
 
