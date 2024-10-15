@@ -120,6 +120,9 @@ start_loop
     LD      IX,LOCAL_MEM
     LD      IY,YM2612
 
+    JP      load_voice
+load_voice_return
+
 play_loop_exx
     EXX
 play_loop
@@ -130,7 +133,201 @@ play_loop
     INC     H
     BIT     0,H
     CALL    Z,next_buffer       ; done two pages (each buffer is two pages)
+
 dispatch
+    LD      C,A
+
+compare_type_note_off
+    CP      $0                      ; if command == $0 (is it a note off command?)
+    JP      Z,cmd_type_note_off
+
+compare_type_spec
+    CP      $C0                     ; if command < $C0 (is it NOT a special command?)
+    JP      C,compare_type_note
+
+jmp_spec
+    JP      play_loop
+    ; REMOVE JUMP ABOVE!
+    LD      BC,spec_table
+    PUSH    HL
+
+    LD      H,0
+    LD      L,A                     ; move command byte into HL
+    ADD     HL,HL                   ; double HL
+    ADD     HL,BC                   ; add spec_table offset to HL
+
+    LD      A,(HL)                  ; retrieve first byte from spec_table
+    INC     HL
+    LD      H,(HL)                  ; retrieve second byte from spec_table
+    LD      L,A
+    JP      (HL)                    ; jump to appropriate command code
+
+spec_table:
+    .DW     cmd_wait_8bit
+    .DW     cmd_wait_16bit
+    .DW     0
+    .DW     0
+    .DW     0
+    .DW     0
+    .DW     0
+    .DW     0
+    .DW     cmd_stereo_off
+    .DW     cmd_stereo_right
+    .DW     cmd_stereo_left
+    .DW     cmd_stereo_both
+    .DW     cmd_octave_set
+    .DW     cmd_voice_set
+    .DW     cmd_vibrato_off
+    .DW     cmd_vibrato_set
+
+cmd_type_note_off
+    ; TODO: Add code here!
+    JP      play_loop
+
+compare_type_note
+    CP      $40                     ; if command < $40 (is it a wait command?)
+    JP      C,cmd_type_wait
+    ; Continue into cmd_type_note
+
+cmd_type_note
+    ; A = command (note) value
+
+    PUSH    HL
+
+    SUB     $40
+    ADD     A,A
+    LD      L,A
+    LD      BC,freq_table           ; Get the note's frequency.
+    ADD     HL,BC
+
+    LD      A,$A4               ; address: channel frequency high byte
+    LD      (IY+YMPORT0),A
+    LD      (IY+YMPORT1),B      ; write dd to YM2612 port 0 register aa
+
+    LD      A,$A0               ; address: channel frequency low byte
+    LD      (IY+YMPORT0),A
+    LD      (IY+YMPORT1),C      ; write dd to YM2612 port 0 register aa
+
+    LD      A,$28               ; address: note on/off
+    LD      B,$F0               ; play note on channel 1 with all operators
+    LD      (IY+YMPORT0),A
+    LD      (IY+YMPORT1),B      ; write dd to YM2612 port 0 register aa
+
+    POP     HL
+    JP      wait_test
+
+    JP      play_loop
+
+
+load_voice
+    PUSH    HL
+
+    LD      HL,voice_param_table
+    
+    LD      B,$B0               ; register
+    LD      A,(HL)  ; $B0
+    LD      (IY+YMPORT0),B
+    LD      (IY+YMPORT1),A      ; write dd to YM2612 port 0 register aa
+    INC     HL
+
+    LD      B,$30               ; set initial destination register
+load_voice_byte_loop
+    LD      A,(HL)              ; read voice byte
+    LD      (IY+YMPORT0),B
+    LD      (IY+YMPORT1),A      ; write dd to YM2612 port 0 register aa
+    INC     HL
+    LD      A,B
+    ADD     A,$4
+    LD      B,A
+    CP      $90
+    JP      NZ,load_voice_byte_loop
+
+    JP      load_voice_return
+
+
+voice_param_table
+    .DB     $38                     ; $B0 : FB/ALG
+    .DB     $71, $72, $64, $73      ; $30 : DT/MUL
+    .DB     $25, $19, $07, $11      ; $40 : TL
+    .DB     $55, $5B, $1D, $1D      ; $50 : RS/AR
+    .DB     $02, $8F, $0F, $04      ; $60 : AM/D1R
+    .DB     $03, $00, $03, $01      ; $70 : D2R
+    .DB     $66, $03, $13, $56      ; $80 : D1L/RR
+
+
+
+    ;;;;; THIS IS ALL KINDS OF SCREWED UP! REWRITE!!
+    PUSH    DE
+    LD      D,(HL)                  ; 
+    INC     L
+    LD      BC,freq_table
+
+    PUSH    HL
+    LD      H,0
+    LD      L,A
+    ADD     HL,HL
+    ADD     HL,BC
+
+    LD      A,(HL)
+    INC     HL
+    LD      H,(HL)
+    LD      L,A
+    JP      (HL)    ;;;;;;; THIS SHOULD NOT BE A JUMP!
+
+    LD      A,$A4
+    LD      (IY+YMPORT0),A      ; Set the address at port 0
+    LD      (IY+YMPORT1),D      ; Set the data at port 1
+    POP     HL
+    JP      play_loop
+
+freq_table
+    .DW     644     ; C
+    .DW     681     ; C#
+    .DW     722     ; D
+    .DW     765     ; D#
+    .DW     810     ; E
+    .DW     858     ; F
+    .DW     910     ; F#
+    .DW     964     ; G
+    .DW     1021    ; G#
+    .DW     1081    ; A
+    .DW     1146    ; A#
+    .DW     1214    ; B
+
+cmd_type_wait
+    ; COMMAND: wait
+    JP      play_loop
+
+cmd_wait_8bit
+    POP     HL
+cmd_wait_16bit
+    POP     HL
+cmd_stereo_off
+    POP     HL
+cmd_stereo_right
+    POP     HL
+cmd_stereo_left
+    POP     HL
+cmd_stereo_both
+    POP     HL
+cmd_octave_set
+    POP     HL
+cmd_voice_set
+    POP     HL
+cmd_vibrato_off
+    POP     HL
+cmd_vibrato_set
+    POP     HL
+
+
+
+
+
+
+
+
+
+
     LD      B,A
     AND     $F0
     CP      $70
@@ -144,7 +341,7 @@ dispatch
     JP      Z,write_fm1         ; write value dd to YM2612 Port 1 register aa
     CP      $62
     JP      Z,wait_735          ; wait 735 sample periods (1/60th sec)
-    CP      $63
+    CP      $61
     JP      Z,wait_nnnn         ; wait nnnn sample periods
     CP      $95
     JP      Z,strm_fast         ; stream fast start
@@ -384,6 +581,13 @@ set_nnnn
 ; wait 735 sample periods (1/60th sec)
 wait_735
     LD      BC,735
+    LD      (LOCAL_MEM+FM_SMPL),BC
+    EXX
+    JP      calc_timer
+
+; wait 22050 sample periods (1/2 sec)
+wait_test
+    LD      BC,22050
     LD      (LOCAL_MEM+FM_SMPL),BC
     EXX
     JP      calc_timer
