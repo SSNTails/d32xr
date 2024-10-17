@@ -181,7 +181,11 @@ spec_table:
     .DW     cmd_vibrato_set
 
 cmd_type_note_off
-    ; TODO: Add code here!
+    LD      A,$28               ; address: note on/off
+    LD      B,$00               ; stop note on channel 1 with all operators
+    LD      (IY+YMPORT0),A
+    LD      (IY+YMPORT1),B      ; write dd to YM2612 port 0 register aa
+
     JP      play_loop
 
 compare_type_note
@@ -190,33 +194,239 @@ compare_type_note
     ; Continue into cmd_type_note
 
 cmd_type_note
-    ; A = command (note) value
+    ; A = command (note) values
 
     PUSH    HL
 
-    SUB     $40
+    ; Store the note's frequency table offset in HL.
+    SUB     $29
     ADD     A,A
+    LD      H,0
     LD      L,A
-    LD      BC,freq_table           ; Get the note's frequency.
+    LD      BC,freq_table       ; Get the note's frequency.
     ADD     HL,BC
 
-    LD      A,$A4               ; address: channel frequency high byte
+    ; Stop any note that is currently playing on the channel.
+    LD      A,$28               ; address: note on/off
+    LD      B,$00               ; stop note on channel 1 with all operators
     LD      (IY+YMPORT0),A
     LD      (IY+YMPORT1),B      ; write dd to YM2612 port 0 register aa
 
-    LD      A,$A0               ; address: channel frequency low byte
+    ; Fetch the frequency for the new note.
+    LD      A,(HL)
+    LD      B,A
+    INC     HL
+    LD      A,(HL)
+    LD      C,A
+
+    ; Store the frequency high-byte value in register 0xA4
+    LD      A,$A4               ; address: channel frequency high byte
     LD      (IY+YMPORT0),A
     LD      (IY+YMPORT1),C      ; write dd to YM2612 port 0 register aa
 
+    ; Store the frequency low-byte value in register 0xA0
+    LD      A,$A0               ; address: channel frequency low byte
+    LD      (IY+YMPORT0),A
+    LD      (IY+YMPORT1),B      ; write dd to YM2612 port 0 register aa
+
+    ; Play the new note.
     LD      A,$28               ; address: note on/off
     LD      B,$F0               ; play note on channel 1 with all operators
     LD      (IY+YMPORT0),A
     LD      (IY+YMPORT1),B      ; write dd to YM2612 port 0 register aa
 
     POP     HL
-    JP      wait_test
 
     JP      play_loop
+
+
+freq_table
+    ; 606
+    ; 644
+    ; 683
+    ; 1084
+
+    .DW     (2048*0)+81     ; C
+    .DW     (2048*0)+85     ; C#
+    .DW     (2048*0)+91     ; D
+    .DW     (2048*0)+96     ; D#
+    .DW     (2048*0)+102     ; E
+    .DW     (2048*0)+108     ; F
+    .DW     (2048*0)+114     ; F#
+    .DW     (2048*0)+121     ; G
+
+    .DW     (2048*0)+128    ; G#
+    .DW     (2048*0)+136    ; A
+    .DW     (2048*0)+144    ; A#
+    .DW     (2048*0)+152    ; B
+    .DW     (2048*0)+161     ; C
+    .DW     (2048*0)+171     ; C#
+    .DW     (2048*0)+181     ; D
+    .DW     (2048*0)+192     ; D#
+    .DW     (2048*0)+203     ; E
+    .DW     (2048*0)+215     ; F
+    .DW     (2048*0)+228     ; F#
+    .DW     (2048*0)+242     ; G
+
+    .DW     (2048*0)+256    ; G#
+    .DW     (2048*0)+271    ; A
+    .DW     (2048*0)+287    ; A#
+    .DW     (2048*0)+304    ; B
+    .DW     (2048*0)+323     ; C
+    .DW     (2048*0)+342     ; C#
+    .DW     (2048*0)+362     ; D
+    .DW     (2048*0)+384     ; D#
+    .DW     (2048*0)+406     ; E
+    .DW     (2048*0)+431     ; F
+    .DW     (2048*0)+456     ; F#
+    .DW     (2048*0)+483     ; G
+
+    .DW     (2048*0)+512    ; G#
+    .DW     (2048*0)+542    ; A
+    .DW     (2048*0)+575    ; A#
+    .DW     (2048*0)+609    ; B
+    .DW     (2048*0)+645     ; C
+    .DW     (2048*0)+683     ; C#
+    .DW     (2048*0)+724     ; D
+    .DW     (2048*0)+767     ; D#
+    .DW     (2048*0)+813     ; E
+    .DW     (2048*0)+861     ; F
+    .DW     (2048*0)+912     ; F#
+    .DW     (2048*0)+967     ; G
+
+    .DW     (2048*0)+1024    ; G#
+    .DW     (2048*0)+1085    ; A
+    .DW     (2048*0)+1149    ; A#
+    .DW     (2048*0)+1218    ; B
+    .DW     (2048*0)+1290     ; C
+    .DW     (2048*0)+1367     ; C#
+    .DW     (2048*0)+1448     ; D
+    .DW     (2048*0)+1534     ; D#
+    .DW     (2048*0)+1625     ; E
+    .DW     (2048*0)+1722     ; F
+    .DW     (2048*0)+1825     ; F#
+    .DW     (2048*0)+1933     ; G
+
+    .DW     (2048*1)+1024    ; G#
+    .DW     (2048*1)+1085    ; A
+    .DW     (2048*1)+1149    ; A#
+    .DW     (2048*1)+1218    ; B
+    .DW     (2048*1)+1290     ; C
+    .DW     (2048*1)+1367     ; C#
+    .DW     (2048*1)+1448     ; D
+    .DW     (2048*1)+1534     ; D#
+    .DW     (2048*1)+1625     ; E
+    .DW     (2048*1)+1722     ; F
+    .DW     (2048*1)+1825     ; F#
+    .DW     (2048*1)+1933     ; G
+
+    .DW     (2048*2)+1024    ; G#
+    .DW     (2048*2)+1085    ; A
+    .DW     (2048*2)+1149    ; A#
+    .DW     (2048*2)+1218    ; B
+    .DW     (2048*2)+1290     ; C
+    .DW     (2048*2)+1367     ; C#
+    .DW     (2048*2)+1448     ; D
+    .DW     (2048*2)+1534     ; D#
+    .DW     (2048*2)+1625     ; E
+    .DW     (2048*2)+1722     ; F
+    .DW     (2048*2)+1825     ; F#
+    .DW     (2048*2)+1933     ; G
+
+    .DW     (2048*3)+1024    ; G#
+    .DW     (2048*3)+1085    ; A
+    .DW     (2048*3)+1149    ; A#
+    .DW     (2048*3)+1218    ; B
+    .DW     (2048*3)+1290     ; C
+    .DW     (2048*3)+1367     ; C#
+    .DW     (2048*3)+1448     ; D
+    .DW     (2048*3)+1534     ; D#
+    .DW     (2048*3)+1625     ; E
+    .DW     (2048*3)+1722     ; F
+    .DW     (2048*3)+1825     ; F#
+    .DW     (2048*3)+1933     ; G
+
+    .DW     (2048*4)+1024    ; G#
+    .DW     (2048*4)+1085    ; A
+    .DW     (2048*4)+1149    ; A#
+    .DW     (2048*4)+1218    ; B
+    .DW     (2048*4)+1290     ; C
+    .DW     (2048*4)+1367     ; C#
+    .DW     (2048*4)+1448     ; D
+    .DW     (2048*4)+1534     ; D#
+    .DW     (2048*4)+1625     ; E
+    .DW     (2048*4)+1722     ; F
+    .DW     (2048*4)+1825     ; F#
+    .DW     (2048*4)+1933     ; G
+
+    .DW     (2048*5)+1024    ; G#
+    .DW     (2048*5)+1085    ; A
+    .DW     (2048*5)+1149    ; A#
+    .DW     (2048*5)+1218    ; B
+    .DW     (2048*5)+1290     ; C
+    .DW     (2048*5)+1367     ; C#
+    .DW     (2048*5)+1448     ; D
+    .DW     (2048*5)+1534     ; D#
+    .DW     (2048*5)+1625     ; E
+    .DW     (2048*5)+1722     ; F
+    .DW     (2048*5)+1825     ; F#
+    .DW     (2048*5)+1933     ; G
+
+    .DW     (2048*6)+1024    ; G#
+    .DW     (2048*6)+1085    ; A
+    .DW     (2048*6)+1149    ; A#
+    .DW     (2048*6)+1218    ; B
+    .DW     (2048*6)+1290     ; C
+    .DW     (2048*6)+1367     ; C#
+    .DW     (2048*6)+1448     ; D
+    .DW     (2048*6)+1534     ; D#
+    .DW     (2048*6)+1625     ; E
+    .DW     (2048*6)+1722     ; F
+    .DW     (2048*6)+1825     ; F#
+    .DW     (2048*6)+1933     ; G
+
+    .DW     (2048*7)+1024    ; G#
+    .DW     (2048*7)+1085    ; A
+    .DW     (2048*7)+1149    ; A#
+    .DW     (2048*7)+1218    ; B
+    .DW     (2048*7)+1290     ; C
+    .DW     (2048*7)+1367     ; C#
+    .DW     (2048*7)+1448     ; D
+    .DW     (2048*7)+1534     ; D#
+    .DW     (2048*7)+1625     ; E
+    .DW     (2048*7)+1722     ; F
+    .DW     (2048*7)+1825     ; F#
+    .DW     (2048*7)+1933     ; G
+
+    .DW     (2048*8)+1024    ; G#
+    .DW     (2048*8)+1085    ; A
+    .DW     (2048*8)+1149    ; A#
+    .DW     (2048*8)+1218    ; B
+    .DW     (2048*8)+1290     ; C
+    .DW     (2048*8)+1367     ; C#
+    .DW     (2048*8)+1448     ; D
+    .DW     (2048*8)+1534     ; D#
+    .DW     (2048*8)+1625     ; E
+    .DW     (2048*8)+1722     ; F
+    .DW     (2048*8)+1825     ; F#
+    .DW     (2048*8)+1933     ; G
+
+cmd_type_wait
+    ; COMMAND: wait
+    ; A = wait value
+
+    PUSH    HL
+    LD      HL,0
+    LD      BC,1024
+cmd_type_wait_loop
+    ADD     HL,BC
+    SUB     A,1
+    CP      0
+    JP      NZ,cmd_type_wait_loop
+    LD      (LOCAL_MEM+FM_SMPL),HL
+    POP     HL
+    EXX
+    JP      calc_timer
 
 
 load_voice
@@ -242,61 +452,30 @@ load_voice_byte_loop
     CP      $90
     JP      NZ,load_voice_byte_loop
 
+    POP     HL
+    
     JP      load_voice_return
 
 
 voice_param_table
-    .DB     $38                     ; $B0 : FB/ALG
-    .DB     $71, $72, $64, $73      ; $30 : DT/MUL
-    .DB     $25, $19, $07, $11      ; $40 : TL
-    .DB     $55, $5B, $1D, $1D      ; $50 : RS/AR
-    .DB     $02, $8F, $0F, $04      ; $60 : AM/D1R
-    .DB     $03, $00, $03, $01      ; $70 : D2R
-    .DB     $66, $03, $13, $56      ; $80 : D1L/RR
+    ; Guitar (Kid Chameleon)
+    ;.DB     $38                     ; $B0 : FB/ALG
+    ;.DB     $71, $72, $64, $73      ; $30 : DT/MUL
+    ;.DB     $25, $19, $07, $11      ; $40 : TL
+    ;.DB     $55, $5B, $1D, $1D      ; $50 : RS/AR
+    ;.DB     $02, $8F, $0F, $04      ; $60 : AM/D1R
+    ;.DB     $03, $00, $03, $01      ; $70 : D2R
+    ;.DB     $66, $03, $13, $56      ; $80 : D1L/RR
 
+    ; Bass (Sonic 2 (SW) - Casino Night Zone 2P)
+    .DB     $08                     ; $B0 : FB/ALG
+    .DB     $09, $30, $70, $00      ; $30 : DT/MUL
+    .DB     $25, $13, $30, $80      ; $40 : TL
+    .DB     $1F, $5F, $1F, $5F      ; $50 : RS/AR
+    .DB     $12, $0A, $0E, $0A      ; $60 : AM/D1R
+    .DB     $00, $04, $04, $03      ; $70 : D2R
+    .DB     $2F, $2F, $2F, $2F      ; $80 : D1L/RR
 
-
-    ;;;;; THIS IS ALL KINDS OF SCREWED UP! REWRITE!!
-    PUSH    DE
-    LD      D,(HL)                  ; 
-    INC     L
-    LD      BC,freq_table
-
-    PUSH    HL
-    LD      H,0
-    LD      L,A
-    ADD     HL,HL
-    ADD     HL,BC
-
-    LD      A,(HL)
-    INC     HL
-    LD      H,(HL)
-    LD      L,A
-    JP      (HL)    ;;;;;;; THIS SHOULD NOT BE A JUMP!
-
-    LD      A,$A4
-    LD      (IY+YMPORT0),A      ; Set the address at port 0
-    LD      (IY+YMPORT1),D      ; Set the data at port 1
-    POP     HL
-    JP      play_loop
-
-freq_table
-    .DW     644     ; C
-    .DW     681     ; C#
-    .DW     722     ; D
-    .DW     765     ; D#
-    .DW     810     ; E
-    .DW     858     ; F
-    .DW     910     ; F#
-    .DW     964     ; G
-    .DW     1021    ; G#
-    .DW     1081    ; A
-    .DW     1146    ; A#
-    .DW     1214    ; B
-
-cmd_type_wait
-    ; COMMAND: wait
-    JP      play_loop
 
 cmd_wait_8bit
     POP     HL
@@ -587,7 +766,7 @@ wait_735
 
 ; wait 22050 sample periods (1/2 sec)
 wait_test
-    LD      BC,22050
+    LD      BC,735
     LD      (LOCAL_MEM+FM_SMPL),BC
     EXX
     JP      calc_timer
