@@ -51,6 +51,50 @@ PSGPORT     EQU $7F11   ; PSG port
 
 MD_BANK     EQU $8000   ; base address of MD space bank in Z80 map
 
+
+;;;; DLG: New variables! ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+FM1_WAIT    EQU $FFB0
+FM1_POS     EQU $FFB3
+
+FM2_WAIT    EQU $FFB4
+FM2_POS     EQU $FFB7
+
+FM3_WAIT    EQU $FFB8
+FM3_POS     EQU $FFBB
+
+FM4_WAIT    EQU $FFBC
+FM4_POS     EQU $FFBF
+
+FM5_WAIT    EQU $FFC0
+FM5_POS     EQU $FFC3
+
+FM6_WAIT    EQU $FFC4
+FM6_POS     EQU $FFC7
+
+PSG1_WAIT   EQU $FFC8
+PSG1_POS    EQU $FFCB
+
+PSG2_WAIT   EQU $FFCC
+PSG2_POS    EQU $FFCF
+
+PSG3_WAIT   EQU $FFD0
+PSG3_POS    EQU $FFD3
+
+PSG4_WAIT   EQU $FFD4
+PSG4_POS    EQU $FFD7
+
+PWM1_WAIT   EQU $FFD8
+PWM1_POS    EQU $FFDB
+
+PWM2_WAIT   EQU $FFDC
+PWM2_POS    EQU $FFDF
+
+NEXT_WAIT   EQU $FFE8
+
+CUR_CH      EQU $FFEC
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 REQ_ATTR    EQU $FFEE
 REQ_ACT     EQU $FFEF   ; request action by 68000
 
@@ -120,8 +164,24 @@ start_loop
     LD      IX,LOCAL_MEM
     LD      IY,YM2612
 
+init_vars
+    LD      A,1
+    LD      (CUR_CH),A
+
     JP      load_voice
 load_voice_return
+
+init_timer
+    LD      (IY+YMPORT0),$27
+    LD      A,$10
+    LD      (IY+YMPORT1),A      ; reset timer A
+    LD      (IY+YMPORT0),$24
+    LD      (IY+YMPORT1),A      ; set timer A msbs
+    LD      (IY+YMPORT0),$25
+    LD      (IY+YMPORT1),A      ; set timer A lsbs
+    LD      (IY+YMPORT0),$27
+    LD      A,5
+    LD      (IY+YMPORT1),A      ; start timer A
 
 play_loop_exx
     EXX
@@ -181,10 +241,10 @@ spec_table:
     .DW     cmd_vibrato_set
 
 cmd_type_note_off
-    LD      A,$28               ; address: note on/off
-    LD      B,$00               ; stop note on channel 1 with all operators
-    LD      (IY+YMPORT0),A
-    LD      (IY+YMPORT1),B      ; write dd to YM2612 port 0 register aa
+    LD      A,(CUR_CH)          ; stop note on current channel with all operators
+    LD      B,$28               ; address: note on/off
+    LD      (IY+YMPORT0),B
+    LD      (IY+YMPORT1),A      ; write dd to YM2612 port 0 register aa
 
     JP      play_loop
 
@@ -207,10 +267,10 @@ cmd_type_note
     ADD     HL,BC
 
     ; Stop any note that is currently playing on the channel.
-    LD      A,$28               ; address: note on/off
-    LD      B,$00               ; stop note on channel 1 with all operators
-    LD      (IY+YMPORT0),A
-    LD      (IY+YMPORT1),B      ; write dd to YM2612 port 0 register aa
+    LD      A,(CUR_CH)          ; stop note on channel 1 with all operators
+    LD      B,$28               ; address: note on/off
+    LD      (IY+YMPORT0),B
+    LD      (IY+YMPORT1),A      ; write dd to YM2612 port 0 register aa
 
     ; Fetch the frequency for the new note.
     LD      A,(HL)
@@ -218,22 +278,32 @@ cmd_type_note
     INC     HL
     LD      A,(HL)
     LD      C,A
+    
+    PUSH    DE
+
+    LD      A,(CUR_CH)
+    LD      D,A
 
     ; Store the frequency high-byte value in register 0xA4
     LD      A,$A4               ; address: channel frequency high byte
+    ADD     A,D
     LD      (IY+YMPORT0),A
     LD      (IY+YMPORT1),C      ; write dd to YM2612 port 0 register aa
 
     ; Store the frequency low-byte value in register 0xA0
     LD      A,$A0               ; address: channel frequency low byte
+    ADD     A,D
     LD      (IY+YMPORT0),A
     LD      (IY+YMPORT1),B      ; write dd to YM2612 port 0 register aa
 
     ; Play the new note.
-    LD      A,$28               ; address: note on/off
-    LD      B,$F0               ; play note on channel 1 with all operators
-    LD      (IY+YMPORT0),A
-    LD      (IY+YMPORT1),B      ; write dd to YM2612 port 0 register aa
+    LD      B,$28               ; address: note on/off
+    LD      A,$F0               ; play note on channel 1 with all operators
+    ADD     A,D
+    LD      (IY+YMPORT0),B
+    LD      (IY+YMPORT1),A      ; write dd to YM2612 port 0 register aa
+
+    POP     DE
 
     POP     HL
 
@@ -241,11 +311,6 @@ cmd_type_note
 
 
 freq_table
-    ; 606
-    ; 644
-    ; 683
-    ; 1084
-
     .DW     (2048*0)+81     ; C
     .DW     (2048*0)+85     ; C#
     .DW     (2048*0)+91     ; D
@@ -398,19 +463,6 @@ freq_table
     .DW     (2048*7)+1825     ; F#
     .DW     (2048*7)+1933     ; G
 
-    .DW     (2048*8)+1024    ; G#
-    .DW     (2048*8)+1085    ; A
-    .DW     (2048*8)+1149    ; A#
-    .DW     (2048*8)+1218    ; B
-    .DW     (2048*8)+1290     ; C
-    .DW     (2048*8)+1367     ; C#
-    .DW     (2048*8)+1448     ; D
-    .DW     (2048*8)+1534     ; D#
-    .DW     (2048*8)+1625     ; E
-    .DW     (2048*8)+1722     ; F
-    .DW     (2048*8)+1825     ; F#
-    .DW     (2048*8)+1933     ; G
-
 cmd_type_wait
     ; COMMAND: wait
     ; A = wait value
@@ -433,14 +485,20 @@ load_voice
     PUSH    HL
 
     LD      HL,voice_param_table
+
+    LD      A,(CUR_CH)
+    LD      C,A
     
-    LD      B,$B0               ; register
-    LD      A,(HL)  ; $B0
-    LD      (IY+YMPORT0),B
-    LD      (IY+YMPORT1),A      ; write dd to YM2612 port 0 register aa
+    LD      A,$B0               ; register
+    ADD     A,C
+    LD      B,(HL)
+    LD      (IY+YMPORT0),A
+    LD      (IY+YMPORT1),B      ; write dd to YM2612 port 0 register aa
     INC     HL
 
-    LD      B,$30               ; set initial destination register
+    LD      A,$30               ; set initial destination register
+    ADD     A,C
+    LD      B,A
 load_voice_byte_loop
     LD      A,(HL)              ; read voice byte
     LD      (IY+YMPORT0),B
@@ -450,7 +508,7 @@ load_voice_byte_loop
     ADD     A,$4
     LD      B,A
     CP      $90
-    JP      NZ,load_voice_byte_loop
+    JP      C,load_voice_byte_loop  ; If register number < 0x90, keep looping
 
     POP     HL
     
@@ -475,6 +533,15 @@ voice_param_table
     .DB     $12, $0A, $0E, $0A      ; $60 : AM/D1R
     .DB     $00, $04, $04, $03      ; $70 : D2R
     .DB     $2F, $2F, $2F, $2F      ; $80 : D1L/RR
+
+    ; Lead (SOnic 2 (SW) - Casino Night Zone 2P)
+    .DB     $3A                     ; $B0 : FB/ALG
+    .DB     $01, $01, $07, $01      ; $30 : DT/MUL
+    .DB     $17, $27, $28, $80      ; $40 : TL
+    .DB     $8E, $8D, $8E, $53      ; $50 : RS/AR
+    .DB     $0E, $0E, $0E, $03      ; $60 : AM/D1R
+    .DB     $00, $00, $00, $00      ; $70 : D2R
+    .DB     $1F, $1F, $FF, $0F      ; $80 : D1L/RR
 
 
 cmd_wait_8bit
