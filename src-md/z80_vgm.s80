@@ -53,41 +53,77 @@ MD_BANK     EQU $8000   ; base address of MD space bank in Z80 map
 
 
 ;;;; DLG: New variables! ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-FM1_WAIT    EQU $FFB0
-FM1_POS     EQU $FFB3
+FM1_POS     EQU $10
+FM1_TICH    EQU $11
+FM1_TICL    EQU $12
+FM1_TICLL   EQU $12
+FM1_TICLH   EQU $13
 
-FM2_WAIT    EQU $FFB4
-FM2_POS     EQU $FFB7
+FM2_POS     EQU $14
+FM2_TICH    EQU $15
+FM2_TICL    EQU $16
+FM2_TICLL   EQU $16
+FM2_TICLH   EQU $17
 
-FM3_WAIT    EQU $FFB8
-FM3_POS     EQU $FFBB
+FM3_POS     EQU $18
+FM3_TICH    EQU $19
+FM3_TICL    EQU $1A
+FM3_TICLL   EQU $1A
+FM3_TICLH   EQU $1B
 
-FM4_WAIT    EQU $FFBC
-FM4_POS     EQU $FFBF
+FM4_POS     EQU $1C
+FM4_TICH    EQU $1D
+FM4_TICL    EQU $1E
+FM4_TICLL   EQU $1E
+FM4_TICLH   EQU $1F
 
-FM5_WAIT    EQU $FFC0
-FM5_POS     EQU $FFC3
+FM5_POS     EQU $20
+FM5_TICH    EQU $21
+FM5_TICL    EQU $22
+FM5_TICLL   EQU $22
+FM5_TICLH   EQU $23
 
-FM6_WAIT    EQU $FFC4
-FM6_POS     EQU $FFC7
+FM6_POS     EQU $24
+FM6_TICH    EQU $25
+FM6_TICL    EQU $26
+FM6_TICLL   EQU $26
+FM6_TICLH   EQU $27
 
-PSG1_WAIT   EQU $FFC8
-PSG1_POS    EQU $FFCB
+PSG1_POS    EQU $28
+PSG1_TICH   EQU $29
+PSG1_TICL   EQU $2A
+PSG1_TICLL  EQU $2A
+PSG1_TICLH  EQU $2B
 
-PSG2_WAIT   EQU $FFCC
-PSG2_POS    EQU $FFCF
+PSG2_POS    EQU $2C
+PSG2_TICH   EQU $2D
+PSG2_TICL   EQU $2E
+PSG2_TICLL  EQU $2E
+PSG2_TICLH  EQU $2F
 
-PSG3_WAIT   EQU $FFD0
-PSG3_POS    EQU $FFD3
+PSG3_POS    EQU $30
+PSG3_TICH   EQU $31
+PSG3_TICL   EQU $32
+PSG3_TICLL  EQU $32
+PSG3_TICLH  EQU $33
 
-PSG4_WAIT   EQU $FFD4
-PSG4_POS    EQU $FFD7
+PSG4_POS    EQU $34
+PSG4_TICH   EQU $35
+PSG4_TICL   EQU $36
+PSG4_TICLL  EQU $36
+PSG4_TICLH  EQU $37
 
-PWM1_WAIT   EQU $FFD8
-PWM1_POS    EQU $FFDB
+PWM1_POS    EQU $38
+PWM1_TICH   EQU $39
+PWM1_TICL   EQU $3A
+PWM1_TICLL  EQU $3A
+PWM1_TICLH  EQU $3B
 
-PWM2_WAIT   EQU $FFDC
-PWM2_POS    EQU $FFDF
+PWM2_POS    EQU $3C
+PWM2_TICH   EQU $3D
+PWM2_TICL   EQU $3E
+PWM2_TICLL  EQU $3E
+PWM2_TICLH  EQU $3F
 
 NEXT_WAIT   EQU $FFE8
 
@@ -132,8 +168,8 @@ STRM_DRUMP  EQU $FFFB
 
 ; ########################## Interrupt handler ##############################
 
-;   ORG     $0038
-    defs    $0038 - $
+;   ORG     $0058
+    defs    $0058 - $
 
 interrupt
     RETI
@@ -141,8 +177,8 @@ interrupt
 
 ; ############################## Main code ##################################
 
-;   ORG     $0080
-    defs    $0080 - $
+;   ORG     $00A0
+    defs    $00A0 - $
 
 start
     LD      DE,$FF80            ; bank set to top 32KB of 68000 Work RAM
@@ -182,6 +218,9 @@ init_timer
     LD      (IY+YMPORT0),$27
     LD      A,5
     LD      (IY+YMPORT1),A      ; start timer A
+
+next_channel
+    LD      ; DLG: Finish me!!!
 
 play_loop_exx
     EXX
@@ -468,17 +507,52 @@ cmd_type_wait
     ; A = wait value
 
     PUSH    HL
-    LD      HL,0
-    LD      BC,1024
-cmd_type_wait_loop
+    PUSH    IY
+
+    LD      IY,(CUR_CH)
+
+    LD      C,A             ; Backup the command
+
+    LD      H,0
+    LD      L,A
+    LD      BC,(IY+FM1_TICL)
     ADD     HL,BC
-    SUB     A,1
-    CP      0
-    JP      NZ,cmd_type_wait_loop
-    LD      (LOCAL_MEM+FM_SMPL),HL
+
+    LD      A,B
+    CP      0                           ; if MSB != 0 (time hasn't wrapped around)
+    JP      NZ,cmd_type_wait_continue
+    LD      A,C
+    CP      L                           ; if command value <= timer LSB
+    JP      C,cmd_type_wait_continue
+    JP      Z,cmd_type_wait_continue
+
+cmd_type_wait_extend_timer
+    LD      A,(IY+FM1_TICH);
+    INC     A
+    LD      (IY+FM1_TICH),A
+
+cmd_type_wait_continue
+    LD      (IY+FM1_TICL),HL
+
+    POP     IY
     POP     HL
-    EXX
-    JP      calc_timer
+
+    JP      next_channel
+
+
+;    ;;;;;;; OLD STUFF ;;;;;;;
+;    PUSH    HL
+;    LD      HL,0
+;    LD      BC,1024
+;cmd_type_wait_loop
+;    ADD     HL,BC
+;    SUB     A,1
+;    CP      0
+;    JP      NZ,cmd_type_wait_loop
+;    LD      (LOCAL_MEM+FM_SMPL),HL
+;    POP     HL
+;    EXX
+;    JP      calc_timer
 
 
 load_voice
