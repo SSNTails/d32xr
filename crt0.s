@@ -510,9 +510,9 @@ pri_no_irq:
 
 pri_v_irq:
         /* Clear H-blank count */
-        mov     #0,r0
-        mov.l   phi_line,r1
-        mov.l   r0,@r1
+        ;mov     #0,r0
+        ;mov.l   phi_line,r1
+        ;mov.l   r0,@r1
 
         ! bump ints if necessary
         mov.l   pvi_sh2_frtctl,r1
@@ -562,32 +562,32 @@ pvi_sh2_frtctl:
 !-----------------------------------------------------------------------
         
 pri_h_irq:
-        mov.l   phi_effects,r1
-        mov.l   @r1,r0
-        cmp/pl  r0
-        bf      0f                      /* If effects are disabled, skip to 0f. */
+        ;mov.l   phi_effects,r1
+        ;mov.l   @r1,r0
+        ;cmp/pl  r0
+        ;bf      0f                      /* If effects are disabled, skip to 0f. */
 
         /* Set screen shift register for the current line */
-        mov.l   phi_line,r1
-        mov.l   @r1,r0
-        shlr2   r0
-        shlr2   r0
-        shlr    r0
-        shll2   r0
-        mov.l   phi_line_bit_shift,r1
-        add     r0,r1
-        mov.l   @r1,r0
-        rotl    r0
-        mov.l   r0,@r1
-        and     #1,r0
-        mov.l   phi_screen_shift_register,r1
-        mov.w   r0,@r1
+        ;mov.l   phi_line,r1
+        ;mov.l   @r1,r0
+        ;shlr2   r0
+        ;shlr2   r0
+        ;shlr    r0
+        ;shll2   r0
+        ;mov.l   phi_line_bit_shift,r1
+        ;add     r0,r1
+        ;mov.l   @r1,r0
+        ;rotl    r0
+        ;mov.l   r0,@r1
+        ;and     #1,r0
+        ;mov.l   phi_screen_shift_register,r1
+        ;mov.w   r0,@r1
 
         /* Increase H-blank line count */
-        mov.l   phi_line,r1
-        mov.l   @r1,r0
-        add     #1,r0
-        mov.l   r0,@r1
+        ;mov.l   phi_line,r1
+        ;mov.l   @r1,r0
+        ;add     #1,r0
+        ;mov.l   r0,@r1
 0:
         ! bump ints if necessary
         mov.l   phi_sh2_frtctl,r1

@@ -1212,19 +1212,19 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 	uint16_t *lines = Mars_FrameBufferLines();
 	short pixel_offset = (512/2);
 
-	for (int i=0; i < 7; i++) {
+	/*for (int i=0; i < 7; i++) {
 		phi_line_bit_shift[i] = 0;
-	}
+	}*/
 
 	for (int i=0; i < 224; i++) {
 		signed char shift_value;
 
-		phi_line_bit_shift[i>>5] <<= 1;
+		//phi_line_bit_shift[i>>5] <<= 1;
 
 		if (i >= 22 && i < 224-22) {
 			// Only shift lines within the viewport.
 			shift_value = water_filter[(filter_offset + i) & 127];
-			phi_line_bit_shift[i>>5] |= (shift_value & 1);
+			//phi_line_bit_shift[i>>5] |= (shift_value & 1);
 		}
 		else {
 			// Letter box area should be left alone.
