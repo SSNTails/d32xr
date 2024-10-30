@@ -53,6 +53,8 @@ MD_BANK     EQU $8000   ; base address of MD space bank in Z80 map
 
 
 ;;;; DLG: New variables! ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+CH_PARAMS   EQU $10
+
 FM1_POS     EQU $10
 FM1_TICH    EQU $11
 FM1_TICL    EQU $12
@@ -201,9 +203,22 @@ start_loop
     LD      IY,YM2612
 
 init_vars
-    LD      A,1
+    PUSH    HL
+    LD      HL,CH_PARAMS
+    LD      BC,0
+init_vars_loop
+    LD      (HL),BC
+    INC     L
+    INC     L
+    LD      L,A
+    CP      $40
+    JP      NZ,init_vars_loop
+
+    POP     HL
+
     LD      (CUR_CH),A
 
+init_voices
     JP      load_voice
 load_voice_return
 
@@ -220,7 +235,14 @@ init_timer
     LD      (IY+YMPORT1),A      ; start timer A
 
 next_channel
-    LD      ; DLG: Finish me!!!
+    ; READ TIMER REGISTERS
+    ; STORE TIMER *SOMEWHERE*
+    ; COMPARE EACH WAIT VALUE
+    ; FIND THE LOWEST WAIT AND STORE IN 'NEXT_WAIT'
+    ; WHENEVER 'NEXT_WAIT' IS UPDATED, UPDATE 'CUR_CH' WITH IT
+    ; IF 'NEXT_WAIT' IS HIGHER THAN CURRENT TIME, LOOP UNTIL DIFFERENCE IS ZERO
+
+    ;LD      ; DLG: Finish me!!!
 
 play_loop_exx
     EXX
