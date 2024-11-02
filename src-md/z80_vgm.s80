@@ -121,11 +121,11 @@ PWM1_TICLH  EQU $39
 PWM1_TICH   EQU $3A
 PWM1_POS    EQU $3B
 
-PWM2_TICL   EQU $3C
-PWM2_TICLL  EQU $3C
-PWM2_TICLH  EQU $3D
-PWM2_TICH   EQU $3E
-PWM2_POS    EQU $3F
+;PWM2_TICL   EQU $3C
+;PWM2_TICLL  EQU $3C
+;PWM2_TICLH  EQU $3D
+;PWM2_TICH   EQU $3E
+;PWM2_POS    EQU $3F
 
 NEXT_WAIT   EQU $FFE8
 
@@ -235,20 +235,44 @@ init_timer
     LD      (IY+YMPORT1),A      ; start timer A
 
 next_channel
+    PUSH    DE
+    PUSH    HL
+    PUSH    IY
+    
+    LD      IY,0
+    LD      HL,(NEXT_WAIT)
+    LD      A,0
+compare_channel_tics_loop
+    LD      BC,(IY+FM1_TICL)
+    SBC     HL,BC
+    ADD     HL,BC
+    JP      C,compare_next_channel_tic
+    LD      HL,BC   ; Use shorter tic interval
+    LD      D,A     ; Store channel number (times 4)
+compare_next_channel_tic
+    ADD     A,4
+    CP      $3C
+    JP      Z,done_compare
+    LD      B,0
+    LD      C,A
+    LD      IY,BC
+    JP      compare_channel_tics_loop
+done_compare
+    LD      A,D
+    SRL     A
+    SRL     A
+    LD      (NEXT_WAIT),HL
+    LD      (CUR_CH),A
+
+    POP     IY
+    POP     HL
+    POP     DE
+
+wait_tics_loop
     ; READ TIMER REGISTERS
     ; 0x24 -> Timer A MSBs
     ; 0x25 -> Timer A LSBs
     ;LD      C,$24
-
-    PUSH    HL
-    LD      HL,(NEXT_WAIT)
-    
-    
-    LD      BC,(FM1_TICL)
-    ; Compare BC to HL
-
-    POP     HL
-    
 
     
 
@@ -258,7 +282,8 @@ next_channel
     ; WHENEVER 'NEXT_WAIT' IS UPDATED, UPDATE 'CUR_CH' WITH IT
     ; IF 'NEXT_WAIT' IS HIGHER THAN CURRENT TIME, LOOP UNTIL DIFFERENCE IS ZERO
 
-    ;LD      ; DLG: Finish me!!!
+
+    
 
 play_loop_exx
     EXX
