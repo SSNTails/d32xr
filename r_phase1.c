@@ -342,8 +342,28 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             actionbits |= AC_MIDTEXTURE; // set bottom and top masks
          }
 
+/*         if (back_sector && back_sector->fofsec != -1 && vd.viewz >= sectors[back_sector->fofsec].floorheight + ((sectors[back_sector->fofsec].ceilingheight - sectors[back_sector->fofsec].floorheight) / 2))
+         {
+            sector_t *fofsec = &sectors[back_sector->fofsec];
+            for (short i=0; i < fofsec->linecount ; i++)
+            {
+               line_t *check = lines + fofsec->lines[i];
+               if (check->special == 100 && check->tag == back_sector->tag)
+               {
+                  const side_t *fofsi = &sides[check->sidenum[0]];
+                  SETLOWER8(segl->tb_texturenum, texturetranslation[fofsi->midtexture]);
+                  b_texturemid = fofsec->floorheight - vd.viewz;
+                  b_texturemid += rowoffset<<FRACBITS;
+                  segl->b_topheight = *floornewheight = fofsec->ceilingheight - vd.viewz;
+                  segl->b_bottomheight = fofsec->floorheight - vd.viewz;
+                  actionbits |= (AC_BOTTOMTEXTURE|AC_NEWFLOOR);
+                  break;
+               }
+            }
+         }
+
          // is bottom texture visible?
-         if(b_floorheight > f_floorheight)
+         else */if(b_floorheight > f_floorheight)
          {
 //            if (si->bottomtexture > 0)
             {
@@ -364,8 +384,27 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             }
          }
 
+         /*if (back_sector && back_sector->fofsec != -1 && vd.viewz < sectors[back_sector->fofsec].floorheight + ((sectors[back_sector->fofsec].ceilingheight - sectors[back_sector->fofsec].floorheight) / 2))
+         {
+            sector_t *fofsec = &sectors[back_sector->fofsec];
+            for (short i=0; i < fofsec->linecount ; i++)
+            {
+               line_t *check = lines + fofsec->lines[i];
+               if (check->special == 100 && check->tag == back_sector->tag)
+               {
+                  const side_t *fofsi = &sides[check->sidenum[0]];
+                  SETUPPER8(segl->tb_texturenum, texturetranslation[fofsi->midtexture]);
+                  t_texturemid = fofsec->ceilingheight - vd.viewz;
+                  t_texturemid += rowoffset<<FRACBITS;
+                  segl->t_topheight = fofsec->ceilingheight - vd.viewz;
+                  segl->t_bottomheight = *ceilingnewheight = fofsec->floorheight - vd.viewz;
+                  actionbits |= (AC_TOPTEXTURE|AC_NEWCEILING);
+                  break;
+               }
+            }
+         }
          // is top texture visible?
-         if(b_ceilingheight < f_ceilingheight && !skyhack)
+         else */if(b_ceilingheight < f_ceilingheight && !skyhack)
          {
 //            if (si->toptexture > 0)
             {
