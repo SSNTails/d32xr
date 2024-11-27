@@ -239,7 +239,7 @@ angle_t R_PointToAngle2(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 
 struct subsector_s *R_PointInSubsector (fixed_t x, fixed_t y)
 {
-	node_t	*node;
+	mapnode_t	*node;
 	int		side, nodenum;
 	
 	if (!numnodes)				/* single subsector is a special case */
@@ -253,12 +253,12 @@ struct subsector_s *R_PointInSubsector (fixed_t x, fixed_t y)
 		side = R_PointOnSide(x, y, node);
 		nodenum = node->children[side];
 	}
-#ifdef MARS
+	#ifdef MARS
 	while ( (int16_t)nodenum >= 0 );
 #else
 	while (! (nodenum & NF_SUBSECTOR) );
 #endif
-	
+
 	return &subsectors[nodenum & ~NF_SUBSECTOR];
 	
 }

@@ -76,6 +76,43 @@ static boolean PA_CrossBSPNode(shootWork_t *sw, int bspnum);
 void P_Shoot2(lineattack_t *la);
 
 //
+// Returns side 0 (front or on), 1 (back)
+//
+//#define PA_NodeSide(xx,yy,n) (!((((xx) - (n)->x * FRACUNIT)>>FRACBITS) * ((n)->dy) > (((yy) - (n)->y * FRACUNIT)>>FRACBITS) * ((n)->dx)))
+ATTR_DATA_CACHE_ALIGN
+static inline int PA_NodeSide(int x, int y, mapnode_t *node)
+{
+	int32_t	dx,dy;
+	int32_t r1, r2;
+
+	dx = x - ((fixed_t)node->x << FRACBITS);
+#ifdef MARS
+	dx = (unsigned)dx >> FRACBITS;
+	__asm volatile(
+		"muls.w %0,%1\n\t"
+		: : "r"(node->dy), "r"(dx) : "macl", "mach");
+#else
+	dx >>= FRACBITS;
+	r1 = node->dy * dx;
+#endif
+
+	dy = y - ((fixed_t)node->y << FRACBITS);
+#ifdef MARS
+	dy = (unsigned)dy >> FRACBITS;
+	__asm volatile(
+		"sts macl, %0\n\t"
+		"muls.w %2,%3\n\t"
+		"sts macl, %1\n\t"
+		: "=&r"(r1), "=&r"(r2) : "r"(dy), "r"(node->dx) : "macl", "mach");
+#else
+	dy >>= FRACBITS;
+	r2 = dy * node->dx;
+#endif
+
+    return (r1 <= r2);
+}
+
+//
 // First checks the endpoints of the line to make sure that they cross the
 // sight trace treated as an infinite line.
 //
@@ -372,8 +409,7 @@ static boolean PA_CrossSubsector(shootWork_t *sw, int bspnum)
 //
 static boolean PA_CrossBSPNode(shootWork_t *sw, int bspnum)
 {
-   node_t *bsp;
-   divline_t dl;
+   mapnode_t *bsp;
    int side, side2;
 
 check:
@@ -384,14 +420,10 @@ check:
    }
 
    bsp = &nodes[bspnum];
-   dl.dx = (fixed_t)bsp->dx << 16;
-   dl.dy = (fixed_t)bsp->dy << 16;
-   dl.x = (fixed_t)bsp->x << 16;
-   dl.y = (fixed_t)bsp->y << 16;
 
    // decide which side the start point is on
-   side = P_DivlineSide(sw->shootdiv.x, sw->shootdiv.y, &dl) == 1;
-   side2 = P_DivlineSide(sw->shootx2, sw->shooty2, &dl) == 1;
+   side = PA_NodeSide(sw->shootdiv.x, sw->shootdiv.y, bsp);
+   side2 = PA_NodeSide(sw->shootx2, sw->shooty2, bsp);
 
    // cross the starting side
    if(!PA_CrossBSPNode(sw, bsp->children[side]))
@@ -400,7 +432,7 @@ check:
    // the partition plane is crossed here
    if(side == side2)
       return true; // the line doesn't touch the other side
-
+   
    // cross the ending side
    bspnum = bsp->children[side ^ 1];
    goto check;

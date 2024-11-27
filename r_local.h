@@ -228,15 +228,13 @@ extern	int			numsubsectors;
 extern	subsector_t	*subsectors;
 
 extern	int			numnodes;
-extern	node_t		*nodes;
+extern	mapnode_t		*nodes;
 
 extern	int			numlines;
 extern	line_t		*lines;
 
 extern	int			numsides;
 extern	side_t		*sides;
-
-extern int16_t      worldbbox[4];
 
 /*============================================================================= */
 
@@ -252,7 +250,7 @@ extern const VINT numViewports;
 ===============================================================================
 */
 ATTR_DATA_CACHE_ALIGN
-static inline int R_PointOnSide (int x, int y, node_t *node)
+static inline int R_PointOnSide (int x, int y, mapnode_t *node)
 {
 	int32_t	dx,dy;
 	int32_t r1, r2;

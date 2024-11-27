@@ -43,7 +43,7 @@ static void R_ClipWallSegment(rbspWork_t *rbsp, fixed_t first, fixed_t last, boo
 static boolean R_CheckBBox(rbspWork_t *rbsp, int16_t bspcoord[4]) ATTR_DATA_CACHE_ALIGN;
 static void R_Subsector(rbspWork_t *rbsp, int num) ATTR_DATA_CACHE_ALIGN;
 static void R_StoreWallRange(rbspWork_t *rbsp, int start, int stop) ATTR_DATA_CACHE_ALIGN;
-static void R_RenderBSPNode(rbspWork_t *rbsp, int bspnum, int16_t *outerbbox) ATTR_DATA_CACHE_ALIGN;
+static void R_RenderBSPNode(rbspWork_t *rbsp, int bspnum) ATTR_DATA_CACHE_ALIGN;
 static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    fixed_t *restrict floorheight, fixed_t *restrict floornewheight, 
    fixed_t *restrict ceilingnewheight, uint32_t *restrict fofInfo) ATTR_DATA_CACHE_ALIGN  __attribute__((noinline));
@@ -796,26 +796,10 @@ static void R_Subsector(rbspWork_t *rbsp, int num)
 // Recursively descend through the BSP, classifying nodes according to the
 // player's point of view, and render subsectors in view.
 //
-
-static void R_DecodeBBox(int16_t *bbox, const int16_t *outerbbox, uint16_t encbbox)
+static void R_RenderBSPNode(rbspWork_t *rbsp, int bspnum)
 {
-   uint16_t l;
-
-   l = outerbbox[BOXTOP] - outerbbox[BOXBOTTOM];
-   bbox[BOXBOTTOM] = outerbbox[BOXBOTTOM] + ((l * (encbbox & 0x0f)) >> 4);
-   bbox[BOXTOP] = outerbbox[BOXTOP] - ((l * (encbbox & 0xf0)) >> 8);
-
-   encbbox >>= 8;
-   l = outerbbox[BOXRIGHT] - outerbbox[BOXLEFT];
-   bbox[BOXLEFT] = outerbbox[BOXLEFT] + ((l * (encbbox & 0x0f)) >> 4);
-   bbox[BOXRIGHT] = outerbbox[BOXRIGHT] - ((l * (encbbox & 0xf0)) >> 8);
-}
-
-static void R_RenderBSPNode(rbspWork_t *rbsp, int bspnum, int16_t *outerbbox)
-{
-   node_t *bsp;
-   int     i, side;
-   int16_t bbox[2][4];
+   mapnode_t *bsp;
+   int     side;
 
 #ifdef MARS
    if((int16_t)bspnum < 0) // reached a subsector leaf?
@@ -831,16 +815,14 @@ static void R_RenderBSPNode(rbspWork_t *rbsp, int bspnum, int16_t *outerbbox)
 
    // decide which side the view point is on
    side = R_PointOnSide(vd.viewx, vd.viewy, bsp);
-   for (i = 0; i < 2; i++)
-      R_DecodeBBox(bbox[i], outerbbox, bsp->encbbox[i]);
 
    // recursively render front space
-   R_RenderBSPNode(rbsp, bsp->children[side], bbox[side]);
+   R_RenderBSPNode(rbsp, bsp->children[side]);
 
    // possibly divide back space
    side ^= 1;
-   if(R_CheckBBox(rbsp, bbox[side])) {
-      R_RenderBSPNode(rbsp, bsp->children[side], bbox[side]);
+   if(R_CheckBBox(rbsp, bsp->bbox[side])) {
+      R_RenderBSPNode(rbsp, bsp->children[side]);
    }
 }
 
@@ -867,7 +849,7 @@ void R_BSP(void)
    rbsp.lastv1 = -1;
    rbsp.lastv2 = -1;
 
-   R_RenderBSPNode(&rbsp, numnodes-1, worldbbox);
+   R_RenderBSPNode(&rbsp, numnodes-1);
 }
 
 // EOF
