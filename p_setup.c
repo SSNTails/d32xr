@@ -45,6 +45,8 @@ mapthing_t	playerstarts[MAXPLAYERS];
 int			numthings;
 spawnthing_t* spawnthings;
 
+int16_t     worldbbox[4];
+
 /*
 =================
 =
@@ -229,7 +231,26 @@ void P_LoadSectors (int lump)
 void P_LoadNodes (int lump)
 {
 #ifdef MARS	
-	numnodes = W_LumpLength (lump) / sizeof(node_t);
+	// Calculate worldbbox
+	worldbbox[BOXLEFT] = INT16_MAX;
+	worldbbox[BOXRIGHT] = INT16_MIN;
+	worldbbox[BOXBOTTOM] = INT16_MAX;
+	worldbbox[BOXTOP] = INT16_MIN;
+	for (int i = 0; i < numvertexes; i++)
+	{
+		const mapvertex_t *v = &vertexes[i];
+
+		if (v->x < worldbbox[BOXLEFT])
+			worldbbox[BOXLEFT] = v->x;
+		if (v->x > worldbbox[BOXRIGHT])
+			worldbbox[BOXRIGHT] = v->x;
+		if (v->y < worldbbox[BOXBOTTOM])
+			worldbbox[BOXBOTTOM] = v->y;
+		if (v->y > worldbbox[BOXTOP])
+			worldbbox[BOXTOP] = v->y;
+	}
+
+	numnodes = W_LumpLength(lump) / sizeof(node_t);
 	nodes = (node_t *)W_POINTLUMPNUM(lump);
 #else
 	byte		*data;
