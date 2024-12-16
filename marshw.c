@@ -158,6 +158,13 @@ char Mars_UploadPalette(const uint8_t* palette)
 	return 1;
 }
 
+void Mars_EnableMDHINT(void)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM0 = 0x1A00;
+	while (MARS_SYS_COMM0);
+}
+
 int Mars_PollMouse(void)
 {
 	unsigned int mouse1, mouse2;
@@ -688,7 +695,7 @@ void Mars_FadeMDPaletteFromBlack(int fade_degree)
 }
 
 void Mars_ScrollMDSky(short scroll_x, short scroll_y_base, short scroll_y_offset, short scroll_y_pan) {
-	while (MARS_SYS_COMM0);
+	/*while (MARS_SYS_COMM0);
 	MARS_SYS_COMM2 = scroll_y_base;
 	MARS_SYS_COMM0 = 0x1101;
 
@@ -702,7 +709,7 @@ void Mars_ScrollMDSky(short scroll_x, short scroll_y_base, short scroll_y_offset
 
 	while (MARS_SYS_COMM0);
 	MARS_SYS_COMM2 = scroll_x;
-	MARS_SYS_COMM0 = 0x1104;
+	MARS_SYS_COMM0 = 0x1104;*/
 }
 
 /*

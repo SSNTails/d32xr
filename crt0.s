@@ -395,6 +395,10 @@ pri_start:
         mov     #0x10,r0
         ldc     r0,sr                   /* allow ints */
 
+        !mov     #2,r0
+        !mov.l   pvi_hint_counter,r1
+        !mov.w   r0,@r1
+
         ! purge cache, turn it on, and run main()
         mov.l   _pri_cctl,r0
         mov     #0x11,r1                /* CP = cache purge, CE = cache enabled */
@@ -509,35 +513,28 @@ pri_no_irq:
 !-----------------------------------------------------------------------
 
 pri_v_irq:
-        /*
         mov.l   r0,@-r15
         mov.l   r1,@-r15
 
-        mov.l   mars_thru_rgb_reference,r0
-        mov.w   @r0,r1
-        mov.l   phi_mars_color_palette,r0
-        add     r1,r0
-        add     r1,r0
-        mov.w   @r0,r1
+        mov     #0,r0
+        mov.l   pvi_mars_adapter,r1
+        mov.w   r0,@(0x16,r1)           /* clear V IRQ */
 
-        mov.w   phi_mars_color_mask,r0
-        and     r0,r1
+        /* For testing */
+        !mov.l   pvi_hint_counter,r0
+        !mov.w   @r0,r0
+        mov.l   phi_line,r0
+        mov.l   @r0,r0
+        mov.l   phi_line_peak,r1
+        mov.l   r0,@r1
+        /* ~~~~~~~~~~~ */
         
-        mov.l   phi_rgb,r0
+        mov.l   phi_line,r0
+        mov     #0,r1
         mov.l   r1,@r0
 
         mov.l   @r15+,r1
         mov.l   @r15+,r0
-        */
-
-        ! bump ints if necessary
-        mov.l   pvi_sh2_frtctl,r1
-        mov     #0xE2,r0                /* TOCR = select OCRA, output 1 on compare match */
-        mov.b   r0,@(0x07,r1)           /* write TOCR */
-        mov.b   @(0x07,r1),r0           /* read TOCR */
-
-        mov.l   pvi_mars_adapter,r1
-        mov.w   r0,@(0x16,r1)           /* clear V IRQ */
 
         ! handle V IRQ - save registers
         sts.l   pr,@-r15
@@ -568,6 +565,8 @@ pri_v_irq:
         .align  2
 pvi_mars_adapter:
         .long   0x20004000
+pvi_hint_counter:
+        .long   0x20004004
 pvbi_handler_ptr:
         .long   _pri_vbi_handler
 pvi_sh2_frtctl:
@@ -578,25 +577,15 @@ pvi_sh2_frtctl:
 !-----------------------------------------------------------------------
         
 pri_h_irq:
-        /*
-        mov.l   phi_rgb,r1
+
+        mov     #0,r0
+        mov.l   phi_int_clr,r1
+        mov.w   r0,@r1           /* clear H IRQ */        
+        mov.l   phi_line,r1
         mov.l   @r1,r0
-
-        mov.l   phi_mars_thru_color,r2
-        mov.w   r0,@r2
-
         add     #1,r0
         mov.l   r0,@r1
-        */
 
-        ! bump ints if necessary
-        mov.l   phi_sh2_frtctl,r1
-        mov     #0xE2,r0                /* TOCR = select OCRA, output 1 on compare match */
-        mov.b   r0,@(0x07,r1)           /* write TOCR */
-        mov.b   @(0x07,r1),r0           /* read TOCR */
-
-        mov.l   phi_mars_adapter,r1
-        mov.w   r0,@(0x18,r1)           /* clear H IRQ */
         nop
         nop
         nop
@@ -609,13 +598,19 @@ pri_h_irq:
 
         .align  4
 phi_rgb:
+        .long   _phi_rgb
+phi_line:
         .long   _phi_line
+phi_line_peak:
+        .long   _phi_line_peak
 phi_mars_adapter:
         .long   0x20004000
 phi_mars_color_palette:
         .long   0x20004200
 phi_mars_thru_color:
         .long   0x200043F8
+phi_int_clr:
+        .long   0x20004018              /* one word passed last int clr reg */
 
 phi_sh2_frtctl:
         .long   0xfffffe10
@@ -640,77 +635,15 @@ pri_cmd_irq:
         mov.b   r0,@(0x07,r1)           /* write TOCR */
         mov.b   @(0x07,r1),r0           /* read TOCR */
 
-        mov.l   pci_cmd_comm0,r1
-        mov.b   @(12,r1),r0
-        cmp/eq  #0,r0
-        bt      70f                     /* if we're not playing a drum sample, branch. */
+        mov.l   pci_mars_adapter,r1
+        mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
 
         ! handle wait in sdram
         mov.l   pci_cmd_comm0,r1
-
-        ! read sound queue
-        mov.b   @(13,r1),r0             /* high priority sound queue COMM13 */
-        mov     #0,r2
-        cmp/eq  r0,r2
-        bt      70f                     /* branch if no sound is in the queue */
-
-        ! handle V IRQ - save registers
-        sts.l   pr,@-r15
-        mov.l   r3,@-r15
-        mov.l   r4,@-r15
-        mov.l   r5,@-r15
-        mov.l   r6,@-r15
-        mov.l   r7,@-r15
-        sts.l   mach,@-r15
-        sts.l   macl,@-r15
-
-        mov     r0,r4                   /* pass in the drum sample ID */
-        mov.b   @(14,r1),r0
-        mov     r0,r5                   /* pass in the drum sample volume from COMM14 */
-        mov.b   @(15,r1),r0
-        mov     r0,r6                   /* pass in the drum sample panning from COMM15 */
-        mov.l   S_StartDrumId,r1
-        jsr     @r1                     /* call S_StartDrumId() */
-        nop
-
-        ! restore registers
-        lds.l   @r15+,macl
-        lds.l   @r15+,mach
-        mov.l   @r15+,r7
-        mov.l   @r15+,r6
-        mov.l   @r15+,r5
-        mov.l   @r15+,r4
-        mov.l   @r15+,r3
-        lds.l   @r15+,pr
-
-        !mov.l   pci_mars_adapter,r1
-        !mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
-        
-        mov.l   cmd_int_clr,r1          /* Write to CMD interrupt clear register */
-        mov     #0,r0
-        mov.w   r0,@r1
-
-        mov.l   pci_cmd_comm0,r1
-        mov.b   @(12,r1),r0
-        cmp/eq  #0,r0
-        bt      77f
-        mov     #0,r0                   /* remove COMM12 value */
-        mov.b   r0,@(12,r1)
-        mov     #0,r0                   /* remove COMM13 value */
-        mov.b   r0,@(13,r1)
-77:
-        rts
-        nop
-        nop
-        nop
-        nop
-70:
-        ! mov.l   pci_cmd_comm0,r1
         mov.w   @r1,r0
         mov.l   r0,@-r15                /* save COMM0 reg */
         mov.w   @(2,r1),r0
         mov.l   r0,@-r15                /* save COMM2 regs */
-
         mov.w   pci_cmd_resp,r0
         mov.w   r0,@r1                  /* respond to m68k */
 0:
@@ -730,26 +663,7 @@ pri_cmd_irq:
         mov.l   @r15+,r0
         mov.w   r0,@r1                  /* restore COMM0 reg */
 
-        !mov.l   pci_mars_adapter,r1
-        !mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
-        
-        mov.l   cmd_int_clr,r1          /* Write to CMD interrupt clear register */
-        mov     #0,r0
-        mov.w   r0,@r1
-
-        mov.l   pci_cmd_comm0,r1
-        mov.b   @(12,r1),r0
-        cmp/eq  #0,r0
-        bt      88f
-        mov     #0,r0                   /* remove COMM12 value */
-        mov.b   r0,@(12,r1)
-        mov     #0,r0                   /* remove COMM13 value */
-        mov.b   r0,@(13,r1)
-88:
         rts
-        nop
-        nop
-        nop
         nop
 3:
         ! handle general CMD IRQ
@@ -789,26 +703,7 @@ pri_cmd_irq:
         mov.l   @r15+,r0
         mov.w   r0,@r1                  /* restore COMM0 reg */
 
-        !mov.l   pci_mars_adapter,r1
-        !mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
-        
-        mov.l   cmd_int_clr,r1          /* Write to CMD interrupt clear register */
-        mov     #0,r0
-        mov.w   r0,@r1
-
-        mov.l   pci_cmd_comm0,r1
-        mov.b   @(12,r1),r0
-        cmp/eq  #0,r0
-        bt      99f
-        mov     #0,r0                   /* remove COMM12 value */
-        mov.b   r0,@(12,r1)
-        mov     #0,r0                   /* remove COMM13 value */
-        mov.b   r0,@(13,r1)
-99:
         rts
-        nop
-        nop
-        nop
         nop
 
         .align  2
@@ -818,10 +713,6 @@ pci_sh2_frtctl:
         .long   0xfffffe10
 pci_cmd_handler:
         .long   _pri_cmd_handler
-S_StartDrumId:
-        .long   _S_StartDrumId
-cmd_int_clr:
-        .long   0x2000401A              /* one word passed last int clr reg */
 
 pci_cmd_comm0:
         .long   0x20004020

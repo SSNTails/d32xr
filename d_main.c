@@ -16,7 +16,11 @@ VINT		controltype = 0;		/* determine settings for BT_* */
 boolean		sky_md_layer = false;
 boolean		sky_32x_layer = false;
 
-unsigned int	phi_line;
+unsigned int	phi_rgb = 0;
+unsigned int	phi_line = 0;
+unsigned int	phi_line_peak = 0;
+
+boolean		md_hint_on = false;
 
 int			gamevbls;		/* may not really be vbls in multiplayer */
 int			vblsinframe;		/* range from ticrate to ticrate*2 */
@@ -718,6 +722,11 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		firstdraw = false;
 
 		S_PreUpdateSounds();
+
+		if (leveltime == 240 && md_hint_on == false) {
+			Mars_EnableMDHINT();
+			md_hint_on = true;
+		}
 
 		gametic++;
 		ticon++;

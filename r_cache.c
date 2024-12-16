@@ -146,6 +146,7 @@ void R_PostTexCacheFrame(r_texcache_t* c)
 */
 void R_AddToTexCache(r_texcache_t* c, int id, int pixels, void **userp)
 {
+	return;
 	int size;
 	int trynum;
 	const int pad = 16;

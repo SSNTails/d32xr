@@ -32,6 +32,8 @@ static short chaos;
 static short ltzz_blue_lump, chev_blue_lump, lt_blue_lump;
 static short ltzz_red_lump, chev_red_lump, lt_red_lump;
 
+extern unsigned int		phi_line_peak;
+
 #ifndef MARS
 byte		*sbartop;
 #endif
@@ -335,6 +337,7 @@ static void ST_Drawer_ (stbar_t* sb)
 	else
 	{
 //		CONS_Printf("skyOffsetY: %d", -(vd.viewz >> 16) - (((signed int)vd.aimingangle) >> 22));	//DLG: Remove me!
+		CONS_Printf("phi_line_peak: %d", phi_line_peak);	//DLG: Remove me!
 
 		const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
 		int worldTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;

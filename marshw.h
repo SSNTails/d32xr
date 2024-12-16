@@ -50,6 +50,7 @@ void Mars_InitLineTable(void);
 void Mars_SetBrightness(int16_t brightness);
 int Mars_BackBuffer(void);
 char Mars_UploadPalette(const uint8_t* palette) MARS_ATTR_DATA_CACHE_ALIGN;
+void Mars_EnableMDHINT(void);
 int Mars_PollMouse(void);
 int Mars_ParseMousePacket(int mouse, int* pmx, int* pmy);
 
