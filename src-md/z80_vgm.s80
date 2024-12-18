@@ -32,6 +32,8 @@ FM_RQARG    EQU $0B     ;   request argument (if any)
 
 FM_START    EQU $0C     ; start offset in sram (for starting/looping vgm)
 
+FM_PLAYING  EQU $0E     ; pause and unpause playback
+
 CRITICAL    EQU $0F     ; Z80 critical section flag
 
 VGMBUF      EQU $1000   ; last 4KB of sram holds VGM data (eight banks of 512 bytes)
@@ -105,7 +107,7 @@ start
     CALL    set_bank
 
 start_loop
-    LD      A,(LOCAL_MEM+FM_IDX)
+    LD      A,(LOCAL_MEM+FM_PLAYING)
     OR      A
     JR      Z,start_loop        ; not playing VGM music
 
@@ -405,6 +407,8 @@ end_wait
     JR      NZ,end_wait
 
     LD      SP,$1000            ; reset stack (half-way to end of sram)
+    LD      A,$0
+    LD      (LOCAL_MEM+FM_PLAYING),A
     LD      A,(LOCAL_MEM+FM_IDX)
     OR      A
     JP      Z,start_loop        ; not playing VGM music

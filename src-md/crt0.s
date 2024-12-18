@@ -6,20 +6,21 @@
         .equ DEFAULT_LINK_TIMEOUT, 0x3FFF
 
         /* Z80 local mem variable offsets */
-        .equ FM_IDX,    0x40        /* music track index */
-        .equ FM_CSM,    0x41        /* music CSM mode */
-        .equ FM_SMPL,   0x42        /* music delay in samples (low) */
-        .equ FM_SMPH,   0x43        /* music delay in samples (high) */
-        .equ FM_TICL,   0x44        /* music timer ticks (low) */
-        .equ FM_TICH,   0x45        /* music timer ticks (high) */
-        .equ FM_TTTL,   0x46        /* music time to tick (low) */
-        .equ FM_TTTH,   0x47        /* music time to tick (high) */
-        .equ FM_BUFCSM, 0x48        /* music buffer reads requested */
-        .equ FM_BUFGEN, 0x49        /* music buffer reads available */
-        .equ FM_RQPND,  0x4A        /* 68000 request pending */
-        .equ FM_RQARG,  0x4B        /* 68000 request arg */
-        .equ FM_START,  0x4C        /* start offset in sram (for starting/looping vgm) */
-        .equ CRITICAL,  0x4F        /* Z80 critical section flag */
+        .equ FM_IDX,     0x40       /* music track index */
+        .equ FM_CSM,     0x41       /* music CSM mode */
+        .equ FM_SMPL,    0x42       /* music delay in samples (low) */
+        .equ FM_SMPH,    0x43       /* music delay in samples (high) */
+        .equ FM_TICL,    0x44       /* music timer ticks (low) */
+        .equ FM_TICH,    0x45       /* music timer ticks (high) */
+        .equ FM_TTTL,    0x46       /* music time to tick (low) */
+        .equ FM_TTTH,    0x47       /* music time to tick (high) */
+        .equ FM_BUFCSM,  0x48       /* music buffer reads requested */
+        .equ FM_BUFGEN,  0x49       /* music buffer reads available */
+        .equ FM_RQPND,   0x4A       /* 68000 request pending */
+        .equ FM_RQARG,   0x4B       /* 68000 request arg */
+        .equ FM_START,   0x4C       /* start offset in sram (for starting/looping vgm) */
+        .equ FM_PLAYING, 0x4E       /* play or pause music */
+        .equ CRITICAL,   0x4F       /* Z80 critical section flag */
 
         .equ REQ_ATTR,   0xFFEE
         .equ REQ_ACT,    0xFFEF     /* Request 68000 Action */
@@ -482,7 +483,7 @@ no_cmd:
         dc.w    net_set_link_timeout - prireqtbl  /* 0x17 */
         dc.w    set_music_volume - prireqtbl      /* 0x18 */
         dc.w    ctl_md_vdp - prireqtbl            /* 0x19 */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1A */ /* DLG: */
+        dc.w    pause_music - prireqtbl           /* 0x1A */
         dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1B */ /* DLG: */
         dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1C */ /* DLG: */
         dc.w    load_sfx - prireqtbl              /* 0x1D */
@@ -624,6 +625,24 @@ set_rom_bank:
         ori.l   #0x900000,d3
         movea.l d3,a1
         rts
+
+pause_music:
+        move.w  #0x2700,sr          /* disable ints */
+        move.l  d0,-(sp)
+        
+        z80rd   FM_PLAYING,d0
+        eor.b   #1,d0
+        z80wr   FM_PLAYING,d0
+
+        move.l  (sp)+,d0
+
+        move.w  #0,0xA15120         /* done */
+
+        move.w  #0x2000,sr          /* enable ints */
+
+        bra     main_loop
+
+
 
 start_music:
         tst.w   use_cd
@@ -777,6 +796,7 @@ start_music:
 
         move.w  fm_idx,d0
         z80wr   FM_IDX,d0           /* set FM_IDX */
+        z80wr   FM_PLAYING,#1
 
         jsr     vgm_read
         move.w  #6, preread_cnt     /* preread blocks to fill buffer */
@@ -881,7 +901,7 @@ start_cd:
 
 stop_music:
         tst.w    use_cd
-        bne.b    stop_cd
+        bne.w    stop_cd
 
         /* stop VGM */
         move.w  #0x0100,0xA11100    /* Z80 assert bus request */
@@ -909,6 +929,7 @@ stop_music:
 |        bne.b   2b
 
         z80wr   FM_IDX,#0           /* no music playing */
+        z80wr   FM_PLAYING,#0
         z80wr   FM_RQPND,#0         /* no requests pending */
         z80wr   CRITICAL,#0         /* not in a critical section */
 
@@ -2747,8 +2768,9 @@ play_drum_sound:
         tst.w   fm_rep
         bne.b   50f                 /* repeat, loop vgm */
         /* no repeat, reset FM */
-        jsr     rst_ym2612
-        bra.b   7f
+        movem.l (sp)+,d0-d7/a0-a6
+        move.w  (sp)+,sr            /* restore int level */
+        jmp     stop_music
 50:
         move.w  fm_loop2,d0
         z80wr   FM_START,d0
@@ -3214,6 +3236,7 @@ vgm_ptr:
         .global    vgm_size
 vgm_size:
         dc.l    0
+
         .global    fm_rep
 fm_rep:
         dc.w    0
