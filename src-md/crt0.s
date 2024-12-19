@@ -1547,16 +1547,16 @@ set_music_volume:
 
 
 test_proc:
-        move.w  #0x2700,sr          /* disable ints */
-        move.l  a0,-(sp)
+        |move.w  #0x2700,sr          /* disable ints */
+        |move.l  a0,-(sp)
 
         /* Enable HINT */
-        lea     0xC00004,a0
-        move.w  #0x8014,(a0) /* reg 0 = /IE1 (no HBL INT), /M3 (enable read H/V cnt) */
+        |lea     0xC00004,a0
+        |move.w  #0x8014,(a0) /* reg 0 = /IE1 (no HBL INT), /M3 (enable read H/V cnt) */
 
-        move.l  (sp)+,a0
-        move.w  #0,0xA15120         /* done */
-        move.w  #0x2000,sr          /* enable ints */
+        |move.l  (sp)+,a0
+        |move.w  #0,0xA15120         /* done */
+        |move.w  #0x2000,sr          /* enable ints */
 
         bra     main_loop
 
@@ -3148,8 +3148,8 @@ chk_ports:
 
 
 hint:
-        move.l  d0,-(sp)
-        move.l  d1,-(sp)
+        |move.l  d0,-(sp)
+        |move.l  d1,-(sp)
 
 0:
         |move.w  0xA1518A,d0
@@ -3164,7 +3164,7 @@ hint:
 
         |TODO: Call CMD interrupt and have it wait until the color change finishes
 
-        move.w  #0x2700,sr          /* disable ints */
+        |move.w  #0x2700,sr          /* disable ints */
 
         |sh2_wait
         
@@ -3181,8 +3181,8 @@ hint:
 
         |sh2_cont
 
-        move.w  #0x2000,sr          /* enable ints */
-        move.w  #0x0,0xA15120    /* release SH2 now */
+        |move.w  #0x2000,sr          /* enable ints */
+        |move.w  #0x0,0xA15120    /* release SH2 now */
         |move.w  #0x1000,0xA15124    /* release SH2 now */
 
 
@@ -3191,8 +3191,8 @@ hint:
         |move.w  d0,0xA15180         /* Packed pixel mode */
 
 
-        move.l  (sp)+,d1
-        move.l  (sp)+,d0
+        |move.l  (sp)+,d1
+        |move.l  (sp)+,d0
 
         rte
 
