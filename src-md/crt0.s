@@ -134,12 +134,16 @@ _start:
 
 | 0x880880 - 68000 Level 4 interrupt handler - HBlank IRQ
 
-        jmp     hint
+        bra.w     hint_block
 
         .align  64
 
 | 0x8808C0 - 68000 Level 6 interrupt handler - VBlank IRQ
 
+        cmpi.b  #0,copper_effects
+        beq.s   0f
+        bsr.s   vint_block
+0:
         move.l  d0,-(sp)
         move.l  vblank,d0
         beq.b   1f
@@ -167,6 +171,58 @@ _start:
 
 
         .align  64
+
+
+
+vint_block:
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+
+        move.w  #0x2700,sr          /* disable ints */
+
+191:
+        cmpi.b  #0,0xA1512A
+        bne.s   191b                 /* wait for CMD interrupt to finish */
+192:
+        move.b  #3,0xA1512A         /* queue sound playback on COMM10 */
+        move.b  #2,0xA15103         /* call CMD interrupt on slave SH-2 */
+193:
+        cmpi.b  #0,0xA1512A
+        bne.s   193b                 /* wait for CMD interrupt to finish */
+
+        move.w  #0x2000,sr          /* enable ints */
+
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+
+        rts
+
+
+
+hint_block:
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+
+        move.w  #0x2700,sr          /* disable ints */
+
+191:
+        cmpi.b  #0,0xA1512A
+        bne.s   191b                 /* wait for CMD interrupt to finish */
+192:
+        move.b  #2,0xA1512A         /* queue sound playback on COMM10 */
+        move.b  #2,0xA15103         /* call CMD interrupt on slave SH-2 */
+193:
+        cmpi.b  #0,0xA1512A
+        bne.s   193b                 /* wait for CMD interrupt to finish */
+
+        move.w  #0x2000,sr          /* enable ints */
+
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+
+        rte
+
+
 
 | Initialize the MD side to a known state for the game
 
@@ -1547,16 +1603,18 @@ set_music_volume:
 
 
 test_proc:
-        |move.w  #0x2700,sr          /* disable ints */
-        |move.l  a0,-(sp)
+        move.w  #0x2700,sr          /* disable ints */
+        move.l  a0,-(sp)
 
         /* Enable HINT */
-        |lea     0xC00004,a0
-        |move.w  #0x8014,(a0) /* reg 0 = /IE1 (no HBL INT), /M3 (enable read H/V cnt) */
+        lea     0xC00004,a0
+        move.w  #0x8014,(a0) /* reg 0 = /IE1 (no HBL INT), /M3 (enable read H/V cnt) */
 
-        |move.l  (sp)+,a0
-        |move.w  #0,0xA15120         /* done */
-        |move.w  #0x2000,sr          /* enable ints */
+        move.l  (sp)+,a0
+        move.w  #0,0xA15120         /* done */
+        move.w  #0x2000,sr          /* enable ints */
+
+        move.b  #1,copper_effects
 
         bra     main_loop
 
@@ -3147,67 +3205,7 @@ chk_ports:
         rts
 
 
-hint:
-        move.l  d0,-(sp)
-        move.l  d1,-(sp)
 
-0:
-        |move.w  0xA1518A,d0
-        |andi.w  #0x2000,d0
-        |cmp.w   #0,d0
-        |beq.s   0b                 /* Wait for color palette access */
-
-        |move.w  0xA15180,d0
-        |andi.w  #0xFFFC,d0
-        |move.w  d0,0xA15180         /* Blank mode */
-
-
-        |TODO: Call CMD interrupt and have it wait until the color change finishes
-
-        |move.w  #0x2700,sr          /* disable ints */
-
-        |sh2_wait
-        
-        |move.w  0xA15100,d0
-        |move.w  d0,d1
-        |and.w   #0x7FFF,d0
-        |move.w  d0,0xA15100         /* unset FM - disallow SH2 access to FB */
-
-        |move.w  0xA153F8,d0
-        |add.w   #1,d0
-        |move.w  d0,0xA153F8         /* Alter the thru color RGB values */
-
-        |move.w  d1,0xA15100         /* restore FM */
-
-        |sh2_cont
-
-        |move.w  #0x2000,sr          /* enable ints */
-        |move.w  #0x0,0xA15120    /* release SH2 now */
-        |move.w  #0x1000,0xA15124    /* release SH2 now */
-
-
-        |move.w  0xA15180,d0
-        |ori.w   #3,d0
-        |move.w  d0,0xA15180         /* Packed pixel mode */
-
-
-
-191:
-        cmpi.b  #0,0xA1512C
-        bne.s   191b                 /* wait for CMD interrupt to finish */
-192:
-        move.b  #2,0xA1512C         /* queue sound playback on COMM12 */
-        move.b  #2,0xA15103         /* call CMD interrupt on slave SH-2 */
-193:
-        cmpi.b  #0,0xA15120
-        bne.s   193b                 /* wait for CMD interrupt to finish */
-
-
-
-        move.l  (sp)+,d1
-        move.l  (sp)+,d0
-
-        rte
 
 
 | Global variables for 68000
@@ -3326,6 +3324,10 @@ crsr_y:
         dc.w    0
 dbug_color:
         dc.w    0
+
+copper_effects:
+        dc.b    0
+        dc.b    0
 
 scroll_b_vert_offset:
         dc.w    0
