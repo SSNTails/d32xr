@@ -3148,8 +3148,8 @@ chk_ports:
 
 
 hint:
-        |move.l  d0,-(sp)
-        |move.l  d1,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
 
 0:
         |move.w  0xA1518A,d0
@@ -3191,8 +3191,21 @@ hint:
         |move.w  d0,0xA15180         /* Packed pixel mode */
 
 
-        |move.l  (sp)+,d1
-        |move.l  (sp)+,d0
+
+191:
+        cmpi.b  #0,0xA1512C
+        bne.s   191b                 /* wait for CMD interrupt to finish */
+192:
+        move.b  #2,0xA1512C         /* queue sound playback on COMM12 */
+        move.b  #2,0xA15103         /* call CMD interrupt on slave SH-2 */
+193:
+        cmpi.b  #0,0xA15120
+        bne.s   193b                 /* wait for CMD interrupt to finish */
+
+
+
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
 
         rte
 
