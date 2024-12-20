@@ -604,6 +604,75 @@ pri_cmd_irq:
         mov.b   r0,@(0x07,r1)           /* write TOCR */
         mov.b   @(0x07,r1),r0           /* read TOCR */
 
+        mov.l   pci_cmd_comm10,r1
+        mov.b   @r1,r0
+        cmp/eq  #2,r0
+        bt      2f                       /* if we're not playing a drum sample, branch. */
+        cmp/eq  #3,r0
+        bf      111f
+        bra     3f
+
+2:
+        mov.l   pci_rgb,r1
+        mov.l   @r1,r0
+
+        mov.l   pci_mars_thru_color,r2
+        mov.w   r0,@r2
+
+        add     #1,r0
+        mov.l   r0,@r1
+
+        mov.l   pci_line,r1
+        mov.l   @r1,r0
+        add     #1,r0
+        mov.l   r0,@r1
+
+        mov.l   pci_mars_adapter,r1
+        mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
+
+        mov.l   pci_cmd_comm10,r1
+        mov     #0,r0
+        mov.b   r0,@r1
+
+        rts
+        nop
+
+3:
+        ! Get the original color
+        mov.l   pci_mars_thru_rgb_reference,r0
+        mov.w   @r0,r1
+        mov.l   pci_mars_color_palette,r0
+        add     r1,r0
+        add     r1,r0
+        mov.w   @r0,r1
+
+        ! Restore the thru color
+        mov.w   pci_mars_color_mask,r0
+        and     r0,r1
+        
+        mov.l   pci_rgb,r0
+        mov.l   r1,@r0
+
+        mov.l   pci_line,r1
+        mov.l   pci_line_peak,r2
+        mov.l   @r1,r0
+        mov.l   r0,@r2
+        mov     #0,r0
+        mov.l   r0,@r1
+
+
+        mov.l   pci_mars_adapter,r1
+        mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
+
+        mov.l   pci_cmd_comm10,r1
+        mov     #0,r0
+        mov.b   r0,@r1
+
+        rts
+        nop
+
+
+111:
         mov.l   pci_cmd_comm0,r1
         mov.b   @(12,r1),r0
         cmp/eq  #0,r0
@@ -793,6 +862,25 @@ pci_cmd_resp:
         .word   0xA55A
 pci_cmd_exit:
         .word   0xFFFE
+
+pci_cmd_comm10:
+        .long   0x2000402A
+pci_rgb:
+        .long   _phi_rgb
+pci_mars_thru_color:
+        .long   0x200043F8
+pci_line:
+        .long   _phi_line
+pci_line_peak:
+        .long   _phi_line_peak
+pci_mars_thru_rgb_reference:
+        .long   _mars_thru_rgb_reference
+pci_mars_thru_bit_mask:
+        .word   0x8000
+pci_mars_color_mask:
+        .word   0x7FFF
+pci_mars_color_palette:
+        .long   0x20004200
 
 !-----------------------------------------------------------------------
 ! Primary PWM IRQ handler
@@ -1132,7 +1220,7 @@ sec_cmd_irq:
         mov.b   r0,@(0x07,r1)           /* write TOCR */
         mov.b   @(0x07,r1),r0           /* read TOCR */
 
-        mov.l   sci_cmd_comm10,r1
+        mov.l   sci_cmd_comm11,r1
         mov.b   @r1,r0
         cmp/eq  #2,r0
         bt      2f                       /* if we're not playing a drum sample, branch. */
@@ -1150,11 +1238,15 @@ sec_cmd_irq:
         add     #1,r0
         mov.l   r0,@r1
 
+        mov.l   sci_line,r1
+        mov.l   @r1,r0
+        add     #1,r0
+        mov.l   r0,@r1
 
         mov.l   sci_mars_adapter,r1
         mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
 
-        mov.l   sci_cmd_comm10,r1
+        mov.l   sci_cmd_comm11,r1
         mov     #0,r0
         mov.b   r0,@r1
 
@@ -1163,25 +1255,32 @@ sec_cmd_irq:
 
 3:
         ! Get the original color
-        mov.l   mars_thru_rgb_reference,r0
+        mov.l   sci_mars_thru_rgb_reference,r0
         mov.w   @r0,r1
-        mov.l   phi_mars_color_palette,r0
+        mov.l   sci_mars_color_palette,r0
         add     r1,r0
         add     r1,r0
         mov.w   @r0,r1
 
         ! Restore the thru color
-        mov.w   phi_mars_color_mask,r0
+        mov.w   sci_mars_color_mask,r0
         and     r0,r1
         
-        mov.l   phi_rgb,r0
+        mov.l   sci_rgb,r0
         mov.l   r1,@r0
+
+        mov.l   sci_line,r1
+        mov.l   sci_line_peak,r2
+        mov.l   @r1,r0
+        mov.l   r0,@r2
+        mov     #0,r0
+        mov.l   r0,@r1
 
 
         mov.l   sci_mars_adapter,r1
         mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
 
-        mov.l   sci_cmd_comm10,r1
+        mov.l   sci_cmd_comm11,r1
         mov     #0,r0
         mov.b   r0,@r1
 
@@ -1263,27 +1362,32 @@ sci_cmd_handler:
 
 sci_cmd_comm4:
         .long   0x20004024
-sci_cmd_comm10:
-        .long   0x2000402A
+sci_cmd_comm11:
+        .long   0x2000402B
 sci_cmd_resp:
         .word   0xA55A
 sci_cmd_exit:
         .word   0xFFFE
 
 sci_rgb:
-        .long   _phi_line
+        .long   _phi_rgb
 sci_mars_thru_color:
         .long   0x200043F8
 
-mars_thru_rgb_reference:
-        .long   _mars_thru_rgb_reference
-phi_mars_color_palette:
-        .long   0x20004200
-phi_rgb:
+sci_line:
         .long   _phi_line
-phi_mars_thru_bit_mask:
+sci_line_peak:
+        .long   _phi_line_peak
+
+sci_mars_thru_rgb_reference:
+        .long   _mars_thru_rgb_reference
+sci_mars_color_palette:
+        .long   0x20004200
+sci_rgb:
+        .long   _phi_rgb
+sci_mars_thru_bit_mask:
         .word   0x8000
-phi_mars_color_mask:
+sci_mars_color_mask:
         .word   0x7FFF
         .align  4
 

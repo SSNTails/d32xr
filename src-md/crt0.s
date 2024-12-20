@@ -181,14 +181,14 @@ vint_block:
         move.w  #0x2700,sr          /* disable ints */
 
 191:
-        cmpi.b  #0,0xA1512A
-        bne.s   191b                 /* wait for CMD interrupt to finish */
+        |cmpi.b  #0,0xA1512A
+        |bne.s   191b                 /* wait for CMD interrupt to finish */
 192:
-        move.b  #3,0xA1512A         /* queue sound playback on COMM10 */
-        move.b  #2,0xA15103         /* call CMD interrupt on slave SH-2 */
+        move.w  #0x0303,0xA1512A         /* queue sound playback on COMM10 and COMM11 */
+        move.b  #3,0xA15103         /* call CMD interrupt on slave SH-2 */
 193:
-        cmpi.b  #0,0xA1512A
-        bne.s   193b                 /* wait for CMD interrupt to finish */
+        |cmpi.b  #0,0xA1512A
+        |bne.s   193b                 /* wait for CMD interrupt to finish */
 
         move.w  #0x2000,sr          /* enable ints */
 
@@ -206,14 +206,14 @@ hint_block:
         move.w  #0x2700,sr          /* disable ints */
 
 191:
-        cmpi.b  #0,0xA1512A
-        bne.s   191b                 /* wait for CMD interrupt to finish */
+        |cmpi.b  #0,0xA1512A
+        |bne.s   191b                 /* wait for CMD interrupt to finish */
 192:
-        move.b  #2,0xA1512A         /* queue sound playback on COMM10 */
-        move.b  #2,0xA15103         /* call CMD interrupt on slave SH-2 */
+        move.w  #0x0303,0xA1512A         /* queue sound playback on COMM10 and COMM11 */
+        move.b  #3,0xA15103         /* call CMD interrupt on slave SH-2 */
 193:
-        cmpi.b  #0,0xA1512A
-        bne.s   193b                 /* wait for CMD interrupt to finish */
+        |cmpi.b  #0,0xA1512A
+        |bne.s   193b                 /* wait for CMD interrupt to finish */
 
         move.w  #0x2000,sr          /* enable ints */
 
