@@ -613,6 +613,30 @@ pri_cmd_irq:
         bra     3f
 
 2:
+        mov     #4,r0
+        mov.b   r0,@r1
+        nop
+        nop
+        nop
+21:
+        mov.b   @r1,r0
+        cmp/eq  #4,r0
+        bt      21b
+        nop
+
+        mov.l   pci_mars_adapter,r1
+        mov.w   r0,@(0x1A,r1)           ! clear CMD IRQ
+        nop
+        nop
+        nop
+        nop
+
+        rts
+        nop
+        nop
+        nop
+
+        /*
         mov.l   pci_rgb,r1
         mov.l   @r1,r0
 
@@ -628,7 +652,7 @@ pri_cmd_irq:
         mov.l   r0,@r1
 
         mov.l   pci_mars_adapter,r1
-        mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
+        mov.w   r0,@(0x1A,r1)           ! clear CMD IRQ
 
         mov.l   pci_cmd_comm10,r1
         mov     #0,r0
@@ -636,8 +660,33 @@ pri_cmd_irq:
 
         rts
         nop
+        */
 
 3:
+        mov     #5,r0
+        mov.b   r0,@r1
+        nop
+        nop
+        nop
+31:
+        mov.b   @r1,r0
+        cmp/eq  #5,r0
+        bt      31b
+        nop
+
+        mov.l   pci_mars_adapter,r1
+        mov.w   r0,@(0x1A,r1)           ! clear CMD IRQ
+        nop
+        nop
+        nop
+        nop
+
+        rts
+        nop
+        nop
+        nop
+
+        /*
         ! Get the original color
         mov.l   pci_mars_thru_rgb_reference,r0
         mov.w   @r0,r1
@@ -662,7 +711,7 @@ pri_cmd_irq:
 
 
         mov.l   pci_mars_adapter,r1
-        mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
+        mov.w   r0,@(0x1A,r1)           ! clear CMD IRQ
 
         mov.l   pci_cmd_comm10,r1
         mov     #0,r0
@@ -670,6 +719,7 @@ pri_cmd_irq:
 
         rts
         nop
+        */
 
 
 111:
@@ -1229,6 +1279,30 @@ sec_cmd_irq:
         bra     3f
 
 2:
+        mov     #4,r0
+        mov.b   r0,@r1
+        nop
+        nop
+        nop
+21:
+        mov.b   @r1,r0
+        cmp/eq  #4,r0
+        bt      21b
+        nop
+
+        mov.l   sci_mars_adapter,r1
+        mov.w   r0,@(0x1A,r1)           ! clear CMD IRQ
+        nop
+        nop
+        nop
+        nop
+
+        rts
+        nop
+        nop
+        nop
+
+        /*
         mov.l   sci_rgb,r1
         mov.l   @r1,r0
 
@@ -1244,7 +1318,7 @@ sec_cmd_irq:
         mov.l   r0,@r1
 
         mov.l   sci_mars_adapter,r1
-        mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
+        mov.w   r0,@(0x1A,r1)           ! clear CMD IRQ
 
         mov.l   sci_cmd_comm11,r1
         mov     #0,r0
@@ -1252,8 +1326,33 @@ sec_cmd_irq:
 
         rts
         nop
+        */
 
 3:
+        mov     #5,r0
+        mov.b   r0,@r1
+        nop
+        nop
+        nop
+31:
+        mov.b   @r1,r0
+        cmp/eq  #5,r0
+        bt      31b
+        nop
+
+        mov.l   sci_mars_adapter,r1
+        mov.w   r0,@(0x1A,r1)           ! clear CMD IRQ
+        nop
+        nop
+        nop
+        nop
+
+        rts
+        nop
+        nop
+        nop
+
+        /*
         ! Get the original color
         mov.l   sci_mars_thru_rgb_reference,r0
         mov.w   @r0,r1
@@ -1278,7 +1377,7 @@ sec_cmd_irq:
 
 
         mov.l   sci_mars_adapter,r1
-        mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
+        mov.w   r0,@(0x1A,r1)           ! clear CMD IRQ
 
         mov.l   sci_cmd_comm11,r1
         mov     #0,r0
@@ -1286,12 +1385,10 @@ sec_cmd_irq:
 
         rts
         nop
+        */
 
 
 111:
-        mov.l   sci_mars_adapter,r1
-        mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
-
         ! handle wait in sdram
         mov.l   sci_cmd_comm4,r1
         mov.w   @r1,r0
@@ -1310,6 +1407,9 @@ sec_cmd_irq:
 
         mov.l   @r15+,r0
         mov.w   r0,@r1                  /* restore COMM4 reg */
+        
+        mov.l   sci_mars_adapter,r1
+        mov.w   r0,@(0x1A,r1)           /* clear CMD IRQ */
         
         rts
         nop
@@ -1369,8 +1469,6 @@ sci_cmd_resp:
 sci_cmd_exit:
         .word   0xFFFE
 
-sci_rgb:
-        .long   _phi_rgb
 sci_mars_thru_color:
         .long   0x200043F8
 

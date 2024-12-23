@@ -181,14 +181,26 @@ vint_block:
         move.w  #0x2700,sr          /* disable ints */
 
 191:
-        |cmpi.b  #0,0xA1512A
-        |bne.s   191b                 /* wait for CMD interrupt to finish */
+        cmpi.w  #0,0xA1512A
+        bne.s   191b                 /* wait for CMD interrupt to finish */
 192:
         move.w  #0x0303,0xA1512A         /* queue sound playback on COMM10 and COMM11 */
         move.b  #3,0xA15103         /* call CMD interrupt on slave SH-2 */
 193:
-        |cmpi.b  #0,0xA1512A
-        |bne.s   193b                 /* wait for CMD interrupt to finish */
+        cmpi.b  #0x05,0xA1512A
+        bne.s   193b                 /* wait for CMD interrupt to finish */
+194:
+        cmpi.b  #0x05,0xA1512B
+        bne.s   194b
+
+        move.b  #0,0xA15100         /* Set FM bit to MD priority */
+
+        move.w  #0x7C00,d0
+        move.w  d0,0xA153F8
+
+        move.b  #128,0xA15100       /* Set FM bit to 32X priority */
+
+        move.w  #0x0000,0xA1512A
 
         move.w  #0x2000,sr          /* enable ints */
 
@@ -206,14 +218,27 @@ hint_block:
         move.w  #0x2700,sr          /* disable ints */
 
 191:
-        |cmpi.b  #0,0xA1512A
-        |bne.s   191b                 /* wait for CMD interrupt to finish */
+        cmpi.w  #0,0xA15120
+        bne.s   191b                 /* wait for CMD interrupt to finish */
 192:
-        move.w  #0x0303,0xA1512A         /* queue sound playback on COMM10 and COMM11 */
+        move.w  #0x0202,0xA1512A         /* queue sound playback on COMM10 and COMM11 */
         move.b  #3,0xA15103         /* call CMD interrupt on slave SH-2 */
 193:
-        |cmpi.b  #0,0xA1512A
-        |bne.s   193b                 /* wait for CMD interrupt to finish */
+        cmpi.b  #0x04,0xA1512A
+        bne.s   193b
+194:
+        cmpi.b  #0x04,0xA1512B
+        bne.s   194b
+
+        move.b  #0,0xA15100         /* Set FM bit to MD priority */
+
+        move.w  0xA153F8,d0
+        addq    #1,d0
+        move.w  d0,0xA153F8
+
+        move.b  #128,0xA15100       /* Set FM bit to 32X priority */
+
+        move.w  #0x0000,0xA1512A
 
         move.w  #0x2000,sr          /* enable ints */
 
