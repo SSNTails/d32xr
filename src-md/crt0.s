@@ -76,6 +76,14 @@
         beq.b   98b
         .endm
 
+        .macro  set_fm
+        bset    #7,0xA15100         /* set FM */
+        .endm
+
+        .macro  clr_fm
+        bclr    #7,0xA15100         /* clear FM */
+        .endm
+
         .macro  set_rv
         bset    #0,0xA15107         /* set RV */
         .endm
@@ -140,9 +148,9 @@ _start:
 
 | 0x8808C0 - 68000 Level 6 interrupt handler - VBlank IRQ
 
-        cmpi.b  #0,copper_effects
-        beq.s   0f
-        bsr.s   vint_block
+        |cmpi.b  #0,copper_effects
+        |beq.s   0f
+        |bsr.s   vint_block
 0:
         move.l  d0,-(sp)
         move.l  vblank,d0
@@ -178,31 +186,35 @@ vint_block:
         move.l  d0,-(sp)
         move.l  d1,-(sp)
 
-        move.w  #0x2700,sr          /* disable ints */
+|        move.w  #0x2700,sr          /* disable ints */
 
 191:
         cmpi.w  #0,0xA1512A
         bne.s   191b                 /* wait for CMD interrupt to finish */
 192:
-        move.w  #0x0303,0xA1512A         /* queue sound playback on COMM10 and COMM11 */
-        move.b  #3,0xA15103         /* call CMD interrupt on slave SH-2 */
+|        move.w  #0x0303,0xA1512A         /* queue sound playback on COMM10 and COMM11 */
+|        move.b  #3,0xA15103         /* call CMD interrupt on slave SH-2 */
 193:
-        cmpi.b  #0x05,0xA1512A
-        bne.s   193b                 /* wait for CMD interrupt to finish */
+|        cmpi.b  #0x05,0xA1512A
+|        bne.s   193b                 /* wait for CMD interrupt to finish */
 194:
-        cmpi.b  #0x05,0xA1512B
-        bne.s   194b
+|        cmpi.b  #0x05,0xA1512B
+|        bne.s   194b
 
-        move.b  #0,0xA15100         /* Set FM bit to MD priority */
+        sh2_wait
+
+        clr_fm                      /* Give VDP control to MD */
 
         move.w  #0x7C00,d0
         move.w  d0,0xA153F8
 
-        move.b  #128,0xA15100       /* Set FM bit to 32X priority */
+        set_fm                      /* Give VDP control to 32X */
 
-        move.w  #0x0000,0xA1512A
+        sh2_cont
 
-        move.w  #0x2000,sr          /* enable ints */
+|        move.w  #0x0000,0xA1512A
+
+|        move.w  #0x2000,sr          /* enable ints */
 
         move.l  (sp)+,d1
         move.l  (sp)+,d0
@@ -215,32 +227,36 @@ hint_block:
         move.l  d0,-(sp)
         move.l  d1,-(sp)
 
-        move.w  #0x2700,sr          /* disable ints */
+|        move.w  #0x2700,sr          /* disable ints */
 
 191:
-        cmpi.w  #0,0xA15120
-        bne.s   191b                 /* wait for CMD interrupt to finish */
+|        cmpi.w  #0,0xA15120
+|        bne.s   191b                 /* wait for CMD interrupt to finish */
 192:
-        move.w  #0x0202,0xA1512A         /* queue sound playback on COMM10 and COMM11 */
-        move.b  #3,0xA15103         /* call CMD interrupt on slave SH-2 */
+|        move.w  #0x0202,0xA1512A         /* queue sound playback on COMM10 and COMM11 */
+|        move.b  #3,0xA15103         /* call CMD interrupt on slave SH-2 */
 193:
-        cmpi.b  #0x04,0xA1512A
-        bne.s   193b
+|        cmpi.b  #0x04,0xA1512A
+|        bne.s   193b
 194:
-        cmpi.b  #0x04,0xA1512B
-        bne.s   194b
+|        cmpi.b  #0x04,0xA1512B
+|        bne.s   194b
 
-        move.b  #0,0xA15100         /* Set FM bit to MD priority */
+        sh2_wait
+
+        clr_fm                      /* Give VDP control to MD */
 
         move.w  0xA153F8,d0
         addq    #1,d0
         move.w  d0,0xA153F8
 
-        move.b  #128,0xA15100       /* Set FM bit to 32X priority */
+        set_fm                      /* Give VDP control to 32X */
 
-        move.w  #0x0000,0xA1512A
+        sh2_cont
 
-        move.w  #0x2000,sr          /* enable ints */
+|        move.w  #0x0000,0xA1512A
+
+|        move.w  #0x2000,sr          /* enable ints */
 
         move.l  (sp)+,d1
         move.l  (sp)+,d0
@@ -2761,18 +2777,18 @@ play_drum_sound:
         cmpi.   #0,d0
         beq.s   20f
 191:
-        |cmpi.b  #0,0xA1512C
-        |bne.s   191b                 /* wait for CMD interrupt to finish */
+        cmpi.b  #0,0xA1512C
+        bne.s   191b                 /* wait for CMD interrupt to finish */
         nop
 192:
         move.w  STRM_DRUMV.w,d1     /* move both volume and panning to D1 */
-        |move.b  #1,0xA1512C         /* queue sound playback on COMM12 */
-        |move.b  d0,0xA1512D         /* pass drum sample ID to COMM13 */
-        |move.w  d1,0xA1512E         /* pass drum sample volume and panning to COMM14 and COMM15 */
-        |move.b  #1,0xA15103         /* call CMD interrupt on master SH-2 */
+        move.b  #1,0xA1512C         /* queue sound playback on COMM12 */
+        move.b  d0,0xA1512D         /* pass drum sample ID to COMM13 */
+        move.w  d1,0xA1512E         /* pass drum sample volume and panning to COMM14 and COMM15 */
+        move.b  #1,0xA15103         /* call CMD interrupt on master SH-2 */
 193:
-        |cmpi.b  #0,0xA1512C
-        |bne.s   193b                 /* wait for CMD interrupt to finish */
+        cmpi.b  #0,0xA1512C
+        bne.s   193b                 /* wait for CMD interrupt to finish */
         nop
 20:
         moveq   #0,d0

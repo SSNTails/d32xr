@@ -445,6 +445,8 @@ pri_irq:
         mov.l   r2,@-r15
 
         stc     sr,r1                   /* SR holds IRQ level in I3-I0 */
+        mov     #0x10,r2
+        or      r2,r1                   /* IRQ level for bumped irq */
         mov.w   p_int_off,r2
         ldc     r2,sr                   /* disallow ints */
 
@@ -457,10 +459,10 @@ pri_irq:
         mov     r1,r0
         shlr2   r0
         and     #0x3C,r0                /* int level to table offset */
-        mov.l   p_int_jtable,r1
-        mov.l   @(r0,r1),r0
+        mov.l   p_int_jtable,r2
+        mov.l   @(r0,r2),r0
         jsr     @r0
-        nop
+        ldc     r1,sr                   /* restore IRQ level */
 
         lds.l   @r15+,pr
         mov.l   @r15+,r2
@@ -518,6 +520,31 @@ pri_v_irq:
         mov.l   pvi_mars_adapter,r1
         mov.w   r0,@(0x16,r1)           /* clear V IRQ */
 
+
+        ! Get the original color
+        mov.l   pvi_mars_thru_rgb_reference,r0
+        mov.w   @r0,r1
+        mov.l   pvi_mars_color_palette,r0
+        add     r1,r0
+        add     r1,r0
+        mov.w   @r0,r1
+
+        ! Restore the thru color
+        mov.w   pvi_mars_color_mask,r0
+        and     r0,r1
+        
+        mov.l   pvi_rgb,r0
+        mov.l   r1,@r0
+
+/*
+        mov.l   pvi_line,r1
+        mov.l   pvi_line_peak,r2
+        mov.l   @r1,r0
+        mov.l   r0,@r2
+        mov     #0,r0
+        mov.l   r0,@r1
+*/
+
         ! handle V IRQ - save registers
         sts.l   pr,@-r15
         mov.l   r3,@-r15
@@ -552,22 +579,28 @@ pvbi_handler_ptr:
 pvi_sh2_frtctl:
         .long   0xfffffe10
 
+pvi_rgb:
+        .long   _phi_rgb
+pvi_mars_thru_color:
+        .long   0x200043F8
+pvi_line:
+        .long   _phi_line
+pvi_line_peak:
+        .long   _phi_line_peak
+pvi_mars_thru_bit_mask:
+        .word   0x8000
+pvi_mars_color_mask:
+        .word   0x7FFF
+pvi_mars_color_palette:
+        .long   0x20004200
+pvi_mars_thru_rgb_reference:
+        .long   _mars_thru_rgb_reference
+
 !-----------------------------------------------------------------------
 ! Primary H Blank IRQ handler
 !-----------------------------------------------------------------------
         
 pri_h_irq:
-        /*
-        mov.l   phi_rgb,r1
-        mov.l   @r1,r0
-
-        mov.l   phi_mars_thru_color,r2
-        mov.w   r0,@r2
-
-        add     #1,r0
-        mov.l   r0,@r1
-        */
-
         ! bump ints if necessary
         mov.l   phi_sh2_frtctl,r1
         mov     #0xE2,r0                /* TOCR = select OCRA, output 1 on compare match */
@@ -576,6 +609,23 @@ pri_h_irq:
 
         mov.l   phi_mars_adapter,r1
         mov.w   r0,@(0x18,r1)           /* clear H IRQ */
+
+
+        mov.l   phi_rgb,r1
+        mov.l   @r1,r0
+
+        mov.l   phi_mars_thru_color,r2
+        mov.w   r0,@r2
+
+        add     #1,r0
+        mov.l   r0,@r1
+
+        mov.l   phi_line,r1
+        mov.l   @r1,r0
+        add     #1,r0
+        mov.l   r0,@r1
+
+
         nop
         nop
         nop
@@ -592,6 +642,13 @@ phi_mars_adapter:
 
 phi_sh2_frtctl:
         .long   0xfffffe10
+
+phi_rgb:
+        .long   _phi_rgb
+phi_line:
+        .long   _phi_line
+phi_mars_thru_color:
+        .long   0x200043F8
 
 !-----------------------------------------------------------------------
 ! Primary Command IRQ handler
@@ -915,22 +972,6 @@ pci_cmd_exit:
 
 pci_cmd_comm10:
         .long   0x2000402A
-pci_rgb:
-        .long   _phi_rgb
-pci_mars_thru_color:
-        .long   0x200043F8
-pci_line:
-        .long   _phi_line
-pci_line_peak:
-        .long   _phi_line_peak
-pci_mars_thru_rgb_reference:
-        .long   _mars_thru_rgb_reference
-pci_mars_thru_bit_mask:
-        .word   0x8000
-pci_mars_color_mask:
-        .word   0x7FFF
-pci_mars_color_palette:
-        .long   0x20004200
 
 !-----------------------------------------------------------------------
 ! Primary PWM IRQ handler
@@ -1142,6 +1183,8 @@ sec_irq:
         mov.l   r2,@-r15
 
         stc     sr,r1                   /* SR holds IRQ level in I3-I0 */
+        mov     #0x10,r2
+        or      r2,r1                   /* IRQ level for bumped irq */
         mov.w   s_int_off,r2
         ldc     r2,sr                   /* disallow ints */
 
@@ -1154,10 +1197,10 @@ sec_irq:
         mov     r1,r0
         shlr2   r0
         and     #0x3C,r0                /* int level to table offset */
-        mov.l   s_int_jtable,r1
-        mov.l   @(r0,r1),r0
+        mov.l   s_int_jtable,r2
+        mov.l   @(r0,r2),r0
         jsr     @r0
-        nop
+        ldc     r1,sr                   /* restore IRQ level */
 
         lds.l   @r15+,pr
         mov.l   @r15+,r2

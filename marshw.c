@@ -32,6 +32,10 @@ static char mars_gamepadport[MARS_MAX_CONTROLLERS];
 static char mars_mouseport;
 static volatile uint16_t mars_controlval[2];
 
+volatile unsigned int	phi_rgb = 0;
+volatile unsigned int	phi_line = 0;
+volatile unsigned int	phi_line_peak = 0;
+
 volatile unsigned mars_vblank_count = 0;
 volatile unsigned mars_pwdt_ovf_count = 0;
 volatile unsigned mars_swdt_ovf_count = 0;
@@ -160,9 +164,9 @@ char Mars_UploadPalette(const uint8_t* palette)
 
 void Mars_EnableMDHINT(void)
 {
-	while (MARS_SYS_COMM0);
+	/*while (MARS_SYS_COMM0);
 	MARS_SYS_COMM0 = 0x1A00;
-	while (MARS_SYS_COMM0);
+	while (MARS_SYS_COMM0);*/
 }
 
 int Mars_PollMouse(void)
@@ -251,6 +255,8 @@ void Mars_InitVideo(int lines)
 
 		Mars_FlipFrameBuffers(1);
 	}
+
+	//MARS_SYS_HCOUNT = 15;	// Fire the HINT every other line.
 
 	Mars_SetMDColor(1, 0);
 }
@@ -823,6 +829,8 @@ void Mars_Finish(void)
 void pri_vbi_handler(void)
 {
 	mars_vblank_count++;
+	phi_line_peak = phi_line;
+	phi_line = 0;
 
 	if (mars_newpalette)
 	{
