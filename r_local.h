@@ -553,6 +553,8 @@ void R_PostTexCacheFrame(r_texcache_t* c);
 #define	AC_MIDTEXTURE		2048
 #define	AC_ADDFLOORSKY		4096
 #define AC_FOF              8192
+#define AC_FOFFLOOR         16384
+#define AC_FOFCEILING       32768
 
 typedef struct
 {
@@ -583,7 +585,8 @@ typedef struct
 	int 		m_texturemid;
 
 	VINT 	m_texturenum;
-	VINT     fof_texturenum;
+	uint8_t     fof_texturenum;
+	uint8_t     fof_picnum;
 	uint16_t     tb_texturenum; // t_texturenum top word, b_texturenum bottom word
 
 	uint16_t     floorceilpicnum; // ceilingpicnum top word, floorpicnum bottom word (just like a ceiling and floor!)
@@ -621,6 +624,7 @@ typedef struct
 	fixed_t			floorheight;
 
 	uint16_t 		*clipbounds;
+	uint16_t        *fofclipbounds;
 } viswall_t;
 
 #define UPPER8(x) ((uint8_t)((uint16_t)x >> 8))

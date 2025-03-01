@@ -153,7 +153,7 @@ void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts)
     const int width = stop - start + 1;
     if (wc->actionbits & (AC_NEWFLOOR | AC_NEWCEILING | AC_TOPSIL | AC_BOTTOMSIL | AC_MIDTEXTURE | AC_FOF))
     {
-        wc->clipbounds = vd.lastsegclip - start;
+        wc->fofclipbounds = wc->clipbounds = vd.lastsegclip - start;
         vd.lastsegclip += width;
     }
     if ((wc->actionbits & AC_MIDTEXTURE) || (wc->actionbits & AC_FOF))
@@ -169,6 +169,13 @@ void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts)
         wc->scalestep = SH2_DIVU_DVDNT; // get 32-bit quotient
     }
 #endif
+}
+
+// Clipping loop only for FOF planes
+static void R_FOFSegLoop(viswall_t* segl, unsigned short* clipbounds, 
+    fixed_t floorheight, fixed_t floornewheight, fixed_t ceilingheight, fixed_t ceilingnewheight)
+{
+
 }
 
 //
@@ -305,11 +312,14 @@ void Mars_Sec_R_WallPrep(void)
     viswall_t *first, *last, *verylast;
     uint32_t clipbounds_[SCREENWIDTH/2+1];
     uint16_t *clipbounds = (uint16_t *)clipbounds_;
+    uint32_t fofclipbounds_[SCREENWIDTH/2+1];
+    uint16_t *fofclipbounds = (uint16_t *)fofclipbounds_;
     mapvertex_t *verts;
     volatile uint8_t *addedsegs = (volatile uint8_t *)&MARS_SYS_COMM6;
     volatile uint8_t *readysegs = addedsegs + 1;
 
     R_InitClipBounds(clipbounds_);
+    R_InitClipBounds(fofclipbounds_);
 
     first = last = vd.viswalls;
     verylast = NULL;
@@ -338,34 +348,25 @@ void Mars_Sec_R_WallPrep(void)
             Mars_ClearCacheLine(seglex);
 #endif
             R_WallLatePrep(segl, verts);
-#ifdef FLOOR_OVER_FLOOR_CRAZY
+
+            R_SegLoop(segl, clipbounds, seglex->floorheight, seglex->floornewheight, segl->ceilingheight, seglex->ceilnewheight);
+
             if (segl->fofSector >= 0)
             {
-                sector_t *fofSector = &sectors[segl->fofSector];
+                const sector_t *fofSector = &sectors[segl->fofSector];
                 if (fofSector->ceilingheight < vd.viewz)
                 {
-                    uint16_t oldpicnum = segl->floorceilpicnum;
-                    short oldbits = segl->actionbits;
-                    segl->actionbits |= AC_ADDFLOOR|AC_NEWFLOOR;
-                    SETLOWER8(segl->floorceilpicnum, fofSector->ceilingpic);
-                    R_SegLoop(segl, clipbounds, fofSector->ceilingheight - vd.viewz, fofSector->ceilingheight - vd.viewz, segl->ceilingheight, seglex->ceilnewheight);
-                    segl->actionbits = oldbits;
-                    segl->floorceilpicnum = oldpicnum;
+                    // Rendering the ceiling
+
+                    // Need to set the picnum. Sky is not an option, so -1 (255) can work as 'none'
+                
                 }
                 else if (fofSector->floorheight > vd.viewz)
                 {
-                    uint16_t oldpicnum = segl->floorceilpicnum;
-                    short oldbits = segl->actionbits;
-                    segl->actionbits |= AC_ADDCEILING|AC_NEWCEILING;
-                    SETUPPER8(segl->floorceilpicnum, fofSector->floorpic);
-                    R_SegLoop(segl, clipbounds, seglex->floorheight, seglex->floornewheight, fofSector->floorheight - vd.viewz, fofSector->floorheight - vd.viewz);
-                    segl->actionbits = oldbits;
-                    segl->floorceilpicnum = oldpicnum;
+                    // Rendering the floor
                 }
+                // else rendering just the wall
             }
-#endif
-
-            R_SegLoop(segl, clipbounds, seglex->floorheight, seglex->floornewheight, segl->ceilingheight, seglex->ceilnewheight);
 
             seglex++;
             *readysegs = *readysegs + 1;
