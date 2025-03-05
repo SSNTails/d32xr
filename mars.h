@@ -31,6 +31,13 @@
 
 #include "marshw.h"
 
+//DLG: //TODO: Move this somewhere more appropriate...
+typedef struct
+{
+	fixed_t x, y, z;
+} dvector3_t;
+
+
 enum
 {
 	MARS_SECCMD_NONE,

@@ -1185,3 +1185,150 @@ void RemoveDistortionFilters()
 
 	MARS_VDP_SCRSHFT = 0;
 }
+
+
+
+
+
+
+
+
+#define SPANSIZE 16
+#define INVSPAN 0x10000 >> 4	// (0.0625)
+
+//void R_DrawTiltedSpan_8(void)
+//void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
+//	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight)
+void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, inpixel_t* ds_source)
+{
+	//DLG: Temporarily set these here for testing:
+	dvector3_t ds_sz;
+		ds_sz.x = 1 << FRACBITS;
+		ds_sz.y = 1 << FRACBITS;
+		ds_sz.z = 1 << FRACBITS;
+
+	dvector3_t ds_su;
+		ds_su.x = 1 << FRACBITS;
+		ds_su.y = 1 << FRACBITS;
+		ds_su.z = 1 << FRACBITS;
+
+	dvector3_t ds_sv;
+		ds_sv.x = 1 << FRACBITS;
+		ds_sv.y = 1 << FRACBITS;
+		ds_sv.z = 1 << FRACBITS;
+
+	double centerx = 1;
+	double centery = 1;
+
+	uint32_t nflatxshift;
+	uint32_t nflatyshift;
+	uint32_t nflatshiftup;
+	uint32_t nflatmask;
+	
+
+
+	// x1, x2 = ds_x1, ds_x2
+	int width = ds_x2 - ds_x1;
+	fixed_t iz, uz, vz;
+	uint32_t u, v;
+	int i;
+
+	uint8_t *source;
+	//uint8_t *colormap;
+	int16_t* dc_colormap;
+	uint8_t *dest;
+
+	fixed_t startz, startu, startv;
+	fixed_t izstep, uzstep, vzstep;
+	fixed_t endz, endu, endv;
+	uint32_t stepu, stepv;
+
+	iz = ds_sz.z + ds_sz.y*(centery-ds_y) + ds_sz.x*(ds_x1-centerx);
+	uz = ds_su.z + ds_su.y*(centery-ds_y) + ds_su.x*(ds_x1-centerx);
+	vz = ds_sv.z + ds_sv.y*(centery-ds_y) + ds_sv.x*(ds_x1-centerx);
+
+	//DLG: R_CalcSlopeLight();
+
+	//DLG: dest = &topleft[ds_y*vid.width + ds_x1];
+	dest = (int8_t *)viewportbuffer + ds_y * 320 + ds_x1;
+	source = ds_source;
+	//colormap = ds_colormap;
+
+	startz = (1<<FRACBITS) / iz;
+	startu = uz * startz;
+	startv = vz * startz;
+
+	izstep = ds_sz.x * SPANSIZE;
+	uzstep = ds_su.x * SPANSIZE;
+	vzstep = ds_sv.x * SPANSIZE;
+	//x1 = 0;
+	width++;
+
+	while (width >= SPANSIZE)
+	{
+		iz += izstep;
+		uz += uzstep;
+		vz += vzstep;
+
+		endz = (1<<FRACBITS) / iz;
+		endu = uz * endz;
+		endv = vz * endz;
+		stepu = (int)((endu - startu) * INVSPAN);
+		stepv = (int)((endv - startv) * INVSPAN);
+		u = (int)(startu);
+		v = (int)(startv);
+
+		for (i = SPANSIZE-1; i >= 0; i--)
+		{
+			//DLG: colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
+			dc_colormap = (int16_t *)dc_colormaps + light;
+			//DLG: *dest = colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
+			*dest = dc_colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
+			dest++;
+			u += stepu;
+			v += stepv;
+		}
+		startu = endu;
+		startv = endv;
+		width -= SPANSIZE;
+	}
+	if (width > 0)
+	{
+		if (width == 1)
+		{
+			u = (int)(startu);
+			v = (int)(startv);
+			//DLG: colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
+			dc_colormap = (int16_t *)dc_colormaps + light;
+			//DLG: *dest = colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
+			*dest = dc_colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
+		}
+		else
+		{
+			fixed_t left = width;
+			iz += ds_sz.x * left;
+			uz += ds_su.x * left;
+			vz += ds_sv.x * left;
+
+			endz = 1.f/iz;
+			endu = uz*endz;
+			endv = vz*endz;
+			left = (1<<FRACBITS) / left;
+			stepu = (int)((endu - startu) * left);
+			stepv = (int)((endv - startv) * left);
+			u = (int)(startu);
+			v = (int)(startv);
+
+			for (; width != 0; width--)
+			{
+				//DLG: colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
+				dc_colormap = (int16_t *)dc_colormaps + light;
+				*dest = dc_colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
+				dest++;
+				u += stepu;
+				v += stepv;
+			}
+		}
+	}
+/*#endif*/
+}
