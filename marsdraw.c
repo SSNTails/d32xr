@@ -46,6 +46,9 @@ void I_DrawColumnNPo2LowC(int dc_x, int dc_yl, int dc_yh, int light, fixed_t fra
 	fixed_t fracstep, inpixel_t* dc_source, int dc_texheight) ATTR_DATA_CACHE_ALIGN;
 void I_DrawSpanLowC(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
 	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight) ATTR_DATA_CACHE_ALIGN;
+//void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, inpixel_t* ds_source) ATTR_DATA_CACHE_ALIGN;
+void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
+	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight) ATTR_DATA_CACHE_ALIGN;
 
 void I_DrawColumnC(int dc_x, int dc_yl, int dc_yh, int light, fixed_t frac_,
 	fixed_t fracstep, inpixel_t* dc_source, int dc_texheight) ATTR_DATA_CACHE_ALIGN;
@@ -1197,33 +1200,33 @@ void RemoveDistortionFilters()
 #define INVSPAN 0x10000 >> 4	// (0.0625)
 
 //void R_DrawTiltedSpan_8(void)
-//void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
-//	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight)
-void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, inpixel_t* ds_source)
+void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
+	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight)
+//void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, inpixel_t* ds_source)
 {
 	//DLG: Temporarily set these here for testing:
 	dvector3_t ds_sz;
-		ds_sz.x = 1 << FRACBITS;
-		ds_sz.y = 1 << FRACBITS;
-		ds_sz.z = 1 << FRACBITS;
+		ds_sz.x = 2 << FRACBITS;
+		ds_sz.y = 2 << FRACBITS;
+		ds_sz.z = 2 << FRACBITS;
 
 	dvector3_t ds_su;
-		ds_su.x = 1 << FRACBITS;
-		ds_su.y = 1 << FRACBITS;
-		ds_su.z = 1 << FRACBITS;
+		ds_su.x = 2 << FRACBITS;
+		ds_su.y = 2 << FRACBITS;
+		ds_su.z = 2 << FRACBITS;
 
 	dvector3_t ds_sv;
-		ds_sv.x = 1 << FRACBITS;
-		ds_sv.y = 1 << FRACBITS;
-		ds_sv.z = 1 << FRACBITS;
+		ds_sv.x = 2 << FRACBITS;
+		ds_sv.y = 2 << FRACBITS;
+		ds_sv.z = 2 << FRACBITS;
 
-	double centerx = 1;
-	double centery = 1;
+	int centerx = 160;
+	int centery = 90;
 
-	uint32_t nflatxshift;
-	uint32_t nflatyshift;
-	uint32_t nflatshiftup;
-	uint32_t nflatmask;
+	uint32_t nflatxshift = ds_xfrac;
+	uint32_t nflatyshift = ds_yfrac;
+	//uint32_t nflatshiftup;
+	uint32_t nflatmask = (dc_texheight-1)*dc_texheight;
 	
 
 
@@ -1250,8 +1253,8 @@ void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, inpixel_t* ds
 	//DLG: R_CalcSlopeLight();
 
 	//DLG: dest = &topleft[ds_y*vid.width + ds_x1];
-	dest = (int8_t *)viewportbuffer + ds_y * 320 + ds_x1;
-	source = ds_source;
+	dest = viewportbuffer + ds_y * 320 / 2 + ds_x1;
+	//source = ds_source;
 	//colormap = ds_colormap;
 
 	startz = (1<<FRACBITS) / iz;
@@ -1283,7 +1286,7 @@ void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, inpixel_t* ds
 			//DLG: colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
 			dc_colormap = (int16_t *)dc_colormaps + light;
 			//DLG: *dest = colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
-			*dest = dc_colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
+			*dest = dc_colormap[ds_source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
 			dest++;
 			u += stepu;
 			v += stepv;
@@ -1301,7 +1304,7 @@ void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, inpixel_t* ds
 			//DLG: colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
 			dc_colormap = (int16_t *)dc_colormaps + light;
 			//DLG: *dest = colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
-			*dest = dc_colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
+			*dest = dc_colormap[ds_source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
 		}
 		else
 		{
@@ -1323,7 +1326,7 @@ void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, inpixel_t* ds
 			{
 				//DLG: colormap = planezlight[tiltlighting[ds_x1++]] + (ds_colormap - colormaps);
 				dc_colormap = (int16_t *)dc_colormaps + light;
-				*dest = dc_colormap[source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
+				*dest = dc_colormap[ds_source[((v >> nflatyshift) & nflatmask) | (u >> nflatxshift)]];
 				dest++;
 				u += stepu;
 				v += stepv;

@@ -859,6 +859,10 @@ void I_DrawColumnNPo2(int dc_x, int dc_yl, int dc_yh, int light, fixed_t dc_isca
 
 void I_DrawSpanColorLow(int ds_y, int ds_x1, int ds_x2, int color_index);
 
+//void R_DrawTiltedSpan_8(int, int, int, int, inpixel_t*);
+void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
+	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight);
+
 #ifdef POTATO_MODE
 void I_DrawSpanPotatoLow(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
 	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight);

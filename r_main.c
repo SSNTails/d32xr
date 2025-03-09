@@ -411,6 +411,7 @@ void R_SetDrawMode(void)
 	drawspan = I_DrawSpanPotatoLow;
 	#else
 	drawspan = I_DrawSpanLow;
+	//drawspan = R_DrawTiltedSpan_8;
 	#endif
 	drawspancolor = I_DrawSpanColorLow;
 

@@ -62,6 +62,18 @@ static char pl_lock = 0;
 static int pl_next = 0;
 #endif
 
+static void R_MapTiltedPlane(localplane_t* lpl, int y, int x, int x2)
+{
+    int remaining;
+
+    remaining = x2 - x + 1;
+
+    if (remaining <= 0)
+        return; // nothing to draw (shouldn't happen)
+
+    //drawspan(y, x, x2);
+}
+
 //
 // Render the horizontal spans determined by R_PlaneLoop
 //
@@ -172,6 +184,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
         yfrac += FixedMul(finesine(angle), bgofs << FRACBITS);
     }
 
+    //drawspan(y, x, x2, light, xfrac, yfrac, xstep, ystep, lpl->ds_source[miplevel], mipsize);
     drawspan(y, x, x2, light, xfrac, yfrac, xstep, ystep, lpl->ds_source[miplevel], mipsize);
 }
 
