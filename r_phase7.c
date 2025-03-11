@@ -232,6 +232,9 @@ static void R_PlaneLoop(localplane_t *lpl)
     if (flatpixels[flatnum].size <= 2) {
         mapplane = &R_MapColorPlane;
     }
+    else if (pl->slope) {
+        mapplane = &R_MapTiltedPlane;
+    }
     else {
         mapplane = &R_MapFlatPlane;
     }
@@ -338,6 +341,8 @@ static void R_DrawPlanes2(void)
     visplane_t* pl;
     int extralight;
 
+    fixed_t xoffs, yoffs; // Scrolling flats.
+
 #ifdef MARS
     Mars_ClearCacheLine(&vd.lastvisplane);
     Mars_ClearCacheLine(&vd.gsortedvisplanes);
@@ -385,6 +390,18 @@ static void R_DrawPlanes2(void)
 #endif
 
         I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
+
+        // Don't mess with angle on slopes! We'll handle this ourselves later
+		//DLG: //if (!pl->slope && viewangle != pl->viewangle+pl->plangle)
+        if (!pl->slope && angle != pl->viewangle+pl->plangle)
+		{
+			memset(cachedheight, 0, sizeof (cachedheight));
+			//DLG: viewangle = pl->viewangle+pl->plangle;
+            angle = pl->viewangle+pl->plangle;
+		}
+
+        xoffs = pl->xoffs;
+	    yoffs = pl->yoffs;
 
         lpl.pl = pl;
         lpl.ds_source[0] = flatpixels[flatnum].data[0];
@@ -458,6 +475,52 @@ static void R_DrawPlanes2(void)
             }
 #endif
         }
+
+        if (pl->slope)
+	    {
+            //DLG: //mapfunc = R_MapTiltedPlane;
+
+			if (!pl->plangle /*&& !ds_solidcolor*/)
+			{
+				//DLG: //if (ds_powersoftwo)
+				//DLG: //	R_AdjustSlopeCoordinates(&pl->slope->o);
+				//DLG: //else
+					R_AdjustSlopeCoordinatesNPO2(&pl->slope->o);
+			}
+
+            R_SetSlopePlaneVectors(pl, 0, xoffs, yoffs);
+
+            //DLG: //spanfunctype = SPANDRAWFUNC_TILTEDSOLID;
+
+            //DLG: //planezlight = scalelight[light];
+        }
+        //DLG:
+        /*else
+	    {
+		    planeheight = abs(pl->height - pl->viewz);
+    		planezlight = zlight[light];
+	    }*/
+
+        //DLG:
+        // Set the span drawer
+        /*if (!ds_powersoftwo)
+        {
+            if (spanfuncs_npo2[spanfunctype])
+                spanfunc = spanfuncs_npo2[spanfunctype];
+            else
+                spanfunc = spanfuncs[spanfunctype];
+        }
+        else
+            spanfunc = spanfuncs[spanfunctype];
+
+        // set the maximum value for unsigned
+        pl->top[pl->maxx+1] = 0xffff;
+        pl->top[pl->minx-1] = 0xffff;
+        pl->bottom[pl->maxx+1] = 0x0000;
+        pl->bottom[pl->minx-1] = 0x0000;
+
+        currentplane = pl;
+        stop = pl->maxx + 1;*/
 
         R_PlaneLoop(&lpl);
     }
