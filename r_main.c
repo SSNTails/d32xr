@@ -1243,6 +1243,9 @@ void Mars_Sec_R_Setup(void)
 #define R_PlaneHash(height, lightlevel) \
 	((((unsigned)(height) >> 8) + (flatandlight>>16)) ^ (flatandlight&0xffff)) & (NUM_VISPLANES_BUCKETS - 1)
 
+#define R_Grok_PlaneHash(height, flatandlight, textureid) \
+    ((((unsigned)(height) >> 8) + (flatandlight >> 16) + ((textureid) & 0xff)) ^ (flatandlight & 0xffff) ^ ((textureid) >> 8)) & (NUM_VISPLANES_BUCKETS - 1)
+
 void R_MarkOpenPlane(visplane_t* pl)
 {
 	int i;
