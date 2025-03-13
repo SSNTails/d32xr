@@ -651,6 +651,10 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		}
 		#endif
 
+		if (leveltime >= 240) {
+			TestLoop();
+		}
+
 #if 0
 while (!I_RefreshCompleted ())
 ;	/* DEBUG */
@@ -1173,4 +1177,54 @@ D_printf ("DM_Main\n");
 		RunInputDemo("DEMO2");
 	}
 #endif
+}
+
+
+
+void TestLoop()
+{
+	#define COLOR_WORD_GREY			0x0F0F	//127, 127, 127
+	#define COLOR_WORD_BLACK		0x1F1F	//000, 000, 000
+	#define COLOR_WORD_RED			0x2323	//255, 000, 000
+	#define COLOR_WORD_DARK RED		0x2B2B	//127, 000, 000
+	#define COLOR_WORD_YELLOW		0x4949	//255, 255, 000
+	#define COLOR_WORD_GREEN		0x7070	//000, 255, 000
+	#define COLOR_WORD_DARK GREEN	0x7474	//000, 127, 000
+	#define COLOR_WORD_BLUE			0x9898	//000, 000, 255
+	#define COLOR_WORD_DARK BLUE	0x9D9D	//000, 000, 128
+	#define COLOR_WORD_PURPLE		0xB5B5	//255, 000, 255
+	#define COLOR_WORD_THRU			0xFCFC	//---, ---, ---
+	#define COLOR_WORD_WHITE		0xFFFF	//255, 255, 255
+
+	pixel_t *frame = I_FrameBuffer();
+
+	int frame_number = 0;
+
+	Mars_TurnOffVideo();
+	Mars_SwitchMDVideo(0x0E);
+
+	while (true)
+	{
+		if (frame_number == 2) {
+			Mars_TurnOnVideo();
+		}
+		short color_word;
+		switch (frame_number & 1) {
+			case 0:
+				color_word = COLOR_WORD_PURPLE;
+				break;
+			case 1:
+				color_word = COLOR_WORD_GREEN;
+				break;
+		}
+
+		for (int i=0; i < 320/2; i++)
+		{
+			frame[((320/2)*24) + i] = color_word;
+		}
+
+		Mars_WaitFrameBuffersFlip();
+		Mars_FlipFrameBuffers(false);
+		frame_number += 1;
+	}
 }
