@@ -68,6 +68,11 @@ static void (*pri_cmd_cb)(void) = &intr_handler_stub;
 static void (*sci_cmd_cb)(void) = &intr_handler_stub;
 static void (*sci_dma1_cb)(void) = &intr_handler_stub;
 
+void Mars_WaitVBlank(void)
+{
+	while ((MARS_VDP_FBCTL & MARS_VDP_VBLK) != 0);
+}
+
 void Mars_WaitFrameBuffersFlip(void)
 {
 	while ((MARS_VDP_FBCTL & MARS_VDP_FS) != mars_activescreen);

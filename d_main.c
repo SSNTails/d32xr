@@ -1196,19 +1196,18 @@ void TestLoop()
 	#define COLOR_WORD_THRU			0xFCFC	//---, ---, ---
 	#define COLOR_WORD_WHITE		0xFFFF	//255, 255, 255
 
-	pixel_t *frame = I_FrameBuffer();
-
 	int frame_number = 0;
 
-	Mars_TurnOffVideo();
-	Mars_SwitchMDVideo(0x0E);
+	pixel_t *frame = I_FrameBuffer();
+
+	//Mars_TurnOffVideo();
+	//Mars_SwitchMDVideo(0x0E);
+	//Mars_TurnOnVideo();
 
 	while (true)
 	{
-		if (frame_number == 2) {
-			Mars_TurnOnVideo();
-		}
 		short color_word;
+
 		switch (frame_number & 1) {
 			case 0:
 				color_word = COLOR_WORD_PURPLE;
@@ -1223,8 +1222,16 @@ void TestLoop()
 			frame[((320/2)*24) + i] = color_word;
 		}
 
-		Mars_WaitFrameBuffersFlip();
-		Mars_FlipFrameBuffers(false);
+		//while (I_RefreshCompleted() == false);
+
+		Mars_WaitVBlank();
+		Mars_FlipFrameBuffers(1);
+		//Mars_WaitFrameBuffersFlip();
+
 		frame_number += 1;
+
+		//if (frame_number == 60) {
+		//	return;
+		//}
 	}
 }

@@ -55,6 +55,8 @@ int Mars_ParseMousePacket(int mouse, int* pmx, int* pmy);
 
 void Mars_SwitchMDVideo(unsigned char reg12);
 
+void Mars_WaitVBlank(void);
+
 void Mars_TurnOffVideo();
 void Mars_TurnOnVideo();
 
