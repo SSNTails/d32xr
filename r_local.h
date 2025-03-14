@@ -678,14 +678,61 @@ typedef struct vissprite_s
 
 #define	MAXVISSSEC		128
 
+
+
+typedef struct
+{
+	fixed_t x;
+	fixed_t y;
+} vector2_t;
+
+typedef struct
+{
+	fixed_t x, y, z;
+} vector3_t;
+
+typedef struct pslope_s
+{
+	short id;				// The number of the slope, mostly used for netgame syncing purposes
+	struct pslope_s *next;	// Make a linked list of dynamic slopes, for easy reference later
+
+	// The plane's definition.
+	vector3_t o;			/// Plane origin.
+	vector3_t normal;		/// Plane normal.
+
+	vector2_t d;			/// Precomputed normalized projection of the normal over XY.
+	fixed_t zdelta;			/// Precomputed Z unit increase per XY unit.
+
+	// This values only check and must be updated if the slope itself is modified
+	angle_t zangle;			/// Precomputed angle of the plane going up from the ground (not measured in degrees).
+	angle_t xydirection;	/// Precomputed angle of the normal's projection on the XY plane.
+
+	char flags;				// Slope options
+} pslope_t;
+
 typedef struct visplane_s
 {
 	fixed_t		height;
+	fixed_t		viewx, viewy, viewz;
+	angle_t		viewangle;
+	angle_t		plangle;
 	VINT		minx, maxx;
+	fixed_t		xoffs, yoffs; // Scrolling flats.
 	int 		flatandlight;
 	struct visplane_s	*next;
 	unsigned short		*open/*[SCREENWIDTH+2]*/;		/* top<<8 | bottom */ /* leave pads for [minx-1]/[maxx+1] */
+
+	pslope_t	*slope;
 } visplane_t;
+
+vector3_t *ds_su, *ds_sv, *ds_sz;
+vector3_t *ds_sup, *ds_svp, *ds_szp;
+fixed_t focallengthf, zeroheight;
+
+static fixed_t xoffs, yoffs;
+static vector3_t ds_slope_origin, ds_slope_u, ds_slope_v;
+
+
 
 #define	MAXVISPLANES	32
 

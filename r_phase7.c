@@ -62,6 +62,173 @@ static char pl_lock = 0;
 static int pl_next = 0;
 #endif
 
+
+/*
+==============================================================================
+==============================================================================
+==============================================================================
+TODO:
+
+Replace sin() and cos() function calls.
+==============================================================================
+==============================================================================
+==============================================================================
+*/
+
+// Returns the height of the sloped plane at (x, y) as a 32.16 fixed_t
+static int R_GetSlopeZAt(const pslope_t *slope, fixed_t x, fixed_t y)
+{
+	int x64 = ((int)x - (int)slope->o.x);
+	int y64 = ((int)y - (int)slope->o.y);
+
+	x64 = (x64 * (int)slope->d.x) / FRACUNIT;
+	y64 = (y64 * (int)slope->d.y) / FRACUNIT;
+
+	return (int)slope->o.z + ((x64 + y64) * (int)slope->zdelta) / FRACUNIT;
+}
+
+// Sets the texture origin vector of the sloped plane.
+static void R_SetSlopePlaneOrigin(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, fixed_t xoff, fixed_t yoff, fixed_t angle)
+{
+	vector3_t *p = &ds_slope_origin;
+
+	int vx = (int)xpos + (int)xoff;
+	int vy = (int)ypos - (int)yoff;
+
+	fixed_t vxf = vx / (fixed_t)FRACUNIT;
+	fixed_t vyf = vy / (fixed_t)FRACUNIT;
+	fixed_t ang = ANG2RAD(ANG270 - angle);
+
+	// p is the texture origin in view space
+	// Don't add in the offsets at this stage, because doing so can result in
+	// errors if the flat is rotated.
+	p->x = vxf * cos(ang) - vyf * sin(ang);
+	p->z = vxf * sin(ang) + vyf * cos(ang);
+	p->y = (R_GetSlopeZAt(slope, -xoff, yoff) - zpos) / (fixed_t)FRACUNIT;
+}
+
+// This function calculates all of the vectors necessary for drawing a sloped plane.
+void R_SetSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, fixed_t xoff, fixed_t yoff, angle_t angle, angle_t plangle)
+{
+	// Potentially override other stuff for now cus we're mean. :< But draw a slope plane!
+	// I copied ZDoom's code and adapted it to SRB2... -Red
+	vector3_t *m = &ds_slope_v, *n = &ds_slope_u;
+	fixed_t height, temp;
+	fixed_t ang;
+
+	R_SetSlopePlaneOrigin(slope, xpos, ypos, zpos, xoff, yoff, angle);
+	height = P_GetSlopeZAt(slope, xpos, ypos);
+	zeroheight = FixedToFloat(height - zpos);
+
+	// m is the v direction vector in view space
+	ang = ANG2RAD(ANG180 - (angle + plangle));
+	m->x = cos(ang);
+	m->z = sin(ang);
+
+	// n is the u direction vector in view space
+	n->x = sin(ang);
+	n->z = -cos(ang);
+
+	plangle >>= ANGLETOFINESHIFT;
+	temp = P_GetSlopeZAt(slope, xpos + FINESINE(plangle), ypos + FINECOSINE(plangle));
+	m->y = FixedToFloat(temp - height);
+	temp = P_GetSlopeZAt(slope, xpos + FINECOSINE(plangle), ypos - FINESINE(plangle));
+	n->y = FixedToFloat(temp - height);
+}
+
+// This function calculates all of the vectors necessary for drawing a sloped and scaled plane.
+/*void R_SetScaledSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, fixed_t xs, fixed_t ys, fixed_t xoff, fixed_t yoff, angle_t angle, angle_t plangle)
+{
+	floatv3_t *m = &ds_slope_v, *n = &ds_slope_u;
+	fixed_t height, temp;
+
+	float xscale = FixedToFloat(xs);
+	float yscale = FixedToFloat(ys);
+	float ang;
+
+	R_SetSlopePlaneOrigin(slope, xpos, ypos, zpos, xoff, yoff, angle);
+	height = P_GetSlopeZAt(slope, xpos, ypos);
+	zeroheight = FixedToFloat(height - zpos);
+
+	// m is the v direction vector in view space
+	ang = ANG2RAD(ANG180 - (angle + plangle));
+	m->x = yscale * cos(ang);
+	m->z = yscale * sin(ang);
+
+	// n is the u direction vector in view space
+	n->x = xscale * sin(ang);
+	n->z = -xscale * cos(ang);
+
+	ang = ANG2RAD(plangle);
+	temp = P_GetSlopeZAt(slope, xpos + FloatToFixed(yscale * sin(ang)), ypos + FloatToFixed(yscale * cos(ang)));
+	m->y = FixedToFloat(temp - height);
+	temp = P_GetSlopeZAt(slope, xpos + FloatToFixed(xscale * cos(ang)), ypos - FloatToFixed(xscale * sin(ang)));
+	n->y = FixedToFloat(temp - height);
+}*/
+
+void R_CalculateSlopeVectors(void)
+{
+	//float sfmult = 65536.f;
+    fixed_t sfmult = 65536 << FRACBITS;
+
+	// Eh. I tried making this stuff fixed-point and it exploded on me. Here's a macro for the only floating-point vector function I recall using.
+#define CROSS(d, v1, v2) \
+d->x = (v1.y * v2.z) - (v1.z * v2.y);\
+d->y = (v1.z * v2.x) - (v1.x * v2.z);\
+d->z = (v1.x * v2.y) - (v1.y * v2.x)
+	CROSS(ds_sup, ds_slope_origin, ds_slope_v);
+	CROSS(ds_svp, ds_slope_origin, ds_slope_u);
+	CROSS(ds_szp, ds_slope_v, ds_slope_u);
+#undef CROSS
+
+	ds_sup->z *= focallengthf;
+	ds_svp->z *= focallengthf;
+	ds_szp->z *= focallengthf;
+
+	//DLG: //if (ds_solidcolor)
+		//DLG: //return;
+
+	// Premultiply the texture vectors with the scale factors
+	//DLG: //if (ds_powersoftwo)
+		//DLG: //sfmult *= (1 << nflatshiftup);
+
+	ds_sup->x *= sfmult;
+	ds_sup->y *= sfmult;
+	ds_sup->z *= sfmult;
+	ds_svp->x *= sfmult;
+	ds_svp->y *= sfmult;
+	ds_svp->z *= sfmult;
+}
+
+void R_SetTiltedSpan(int span)
+{
+/*
+	if (ds_su == NULL)
+		ds_su = Z_Malloc(sizeof(*ds_su) * vid.height, PU_STATIC);
+	if (ds_sv == NULL)
+		ds_sv = Z_Malloc(sizeof(*ds_sv) * vid.height, PU_STATIC);
+	if (ds_sz == NULL)
+		ds_sz = Z_Malloc(sizeof(*ds_sz) * vid.height, PU_STATIC);
+*/
+	if (ds_su == NULL)
+		ds_su = Z_Malloc(sizeof(*ds_su) * viewportHeight, PU_STATIC);
+	if (ds_sv == NULL)
+		ds_sv = Z_Malloc(sizeof(*ds_sv) * viewportHeight, PU_STATIC);
+	if (ds_sz == NULL)
+		ds_sz = Z_Malloc(sizeof(*ds_sz) * viewportHeight, PU_STATIC);
+
+	ds_sup = &ds_su[span];
+	ds_svp = &ds_sv[span];
+	ds_szp = &ds_sz[span];
+}
+
+static void R_SetSlopePlaneVectors(visplane_t *pl, int y, fixed_t xoff, fixed_t yoff)
+{
+	R_SetTiltedSpan(y);
+	R_SetSlopePlane(pl->slope, pl->viewx, pl->viewy, pl->viewz, xoff, yoff, pl->viewangle, pl->plangle);
+	R_CalculateSlopeVectors();
+}
+
 static void R_MapTiltedPlane(localplane_t* lpl, int y, int x, int x2)
 {
     int remaining;
@@ -395,7 +562,7 @@ static void R_DrawPlanes2(void)
 		//DLG: //if (!pl->slope && viewangle != pl->viewangle+pl->plangle)
         if (!pl->slope && angle != pl->viewangle+pl->plangle)
 		{
-			memset(cachedheight, 0, sizeof (cachedheight));
+			//DLG: memset(cachedheight, 0, sizeof (cachedheight));
 			//DLG: viewangle = pl->viewangle+pl->plangle;
             angle = pl->viewangle+pl->plangle;
 		}
