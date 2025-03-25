@@ -1188,30 +1188,14 @@ void TestLoop()
 {
 	int frame_number = 0;
 
-	Mars_TurnOffVideo();
-	Mars_SwitchMDVideo(0x87);
-
 	LoadInterlacedImage();
 
-	short vdp_status = 0;
-	
-	// Wait for an odd frame to display
-	while ((vdp_status & 0x10) == 0) {
-		vdp_status = Mars_ReadMDVDPStatus();
-	}
-	
-	// Wait for an even frame to display
-	while ((vdp_status & 0x10) == 1) {
-		vdp_status = Mars_ReadMDVDPStatus();
-	}
-
-	Mars_SwitchMDVideo(0x81);
-	Mars_TurnOnVideo();
+	Mars_SyncMDVDP();
 
 	while (true)
 	{
-		Mars_WaitVBlank();
 		Mars_FlipFrameBuffers(1);
+		Mars_WaitVBlank();
 
 		frame_number += 1;
 	}

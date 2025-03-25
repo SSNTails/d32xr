@@ -703,7 +703,7 @@ void Mars_SwitchMDVideo(unsigned char reg12) {
 	while (MARS_SYS_COMM0);
 }
 
-short Mars_ReadMDVDPStatus(void) {
+short Mars_SyncMDVDP(void) {
 	while (MARS_SYS_COMM0);
 	MARS_SYS_COMM0 = 0x1B00;
 

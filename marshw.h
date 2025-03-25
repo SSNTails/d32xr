@@ -56,7 +56,7 @@ int Mars_PollMouse(void);
 int Mars_ParseMousePacket(int mouse, int* pmx, int* pmy);
 
 void Mars_SwitchMDVideo(unsigned char reg12);
-short Mars_ReadMDVDPStatus(void);
+short Mars_SyncMDVDP(void);
 
 void Mars_TurnOffVideo();
 void Mars_TurnOnVideo();

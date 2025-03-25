@@ -555,7 +555,7 @@ no_cmd:
         dc.w    set_music_volume - prireqtbl      /* 0x18 */
         dc.w    ctl_md_vdp - prireqtbl            /* 0x19 */
         dc.w    switch_video - prireqtbl          /* 0x1A */
-        dc.w    read_vdp_status - prireqtbl       /* 0x1B */
+        dc.w    vdp_sync - prireqtbl              /* 0x1B */
         dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1C */ /* DLG: */
         dc.w    load_sfx - prireqtbl              /* 0x1D */
         dc.w    play_sfx - prireqtbl              /* 0x1E */
@@ -1688,15 +1688,39 @@ switch_video:
 
 
 
-read_vdp_status:
+vdp_sync:
+        move.w  #0x2700,sr          /* disable ints */
+
+        move.l  a0,-(sp)
         move.l  d0,-(sp)
 
-        move.w  (0xC00004),d0       /* read VDP Status reg */
-        move.w  d0,0xA15122         /* done with upper word */
+        lea     0xC00004,a0
+
+        /* Enable interlaced mode */
+        move.w  #0x8C87,d0
+        move.w  d0,(a0)
+1:
+        /* Wait for even field */
+        move.w  (a0),d0             /* read VDP Status reg */
+        btst    #4,d0
+        beq.s   1b
+2:
+        /* Wait for odd field */
+        move.w  (a0),d0             /* read VDP Status reg */
+        btst    #4,d0
+        bne.s   2b
+
+        /* Let the SH-2s continue */
+        move.w  #0x0000,0xA15120    /* done */
+
+        /* Disable interlaced mode */
+        move.w  #0x8C81,d0
+        move.w  d0,(a0)
         
         move.l  (sp)+,d0
+        move.l  (sp)+,a0
 
-        move.w  #0x0000,0xA15120         /* done */
+        move.w  #0x2000,sr          /* enable ints */
 
         bra     main_loop
 
