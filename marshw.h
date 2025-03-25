@@ -41,6 +41,8 @@
 #define MARS_MD_PIXEL_THRU_INDEX	252
 #endif
 
+void Mars_WaitVBlank(void);
+
 void Mars_FlipFrameBuffers(char wait);
 void Mars_WaitFrameBuffersFlip(void);
 char Mars_FramebuffersFlipped(void);
@@ -52,6 +54,12 @@ int Mars_BackBuffer(void);
 char Mars_UploadPalette(const uint8_t* palette) MARS_ATTR_DATA_CACHE_ALIGN;
 int Mars_PollMouse(void);
 int Mars_ParseMousePacket(int mouse, int* pmx, int* pmy);
+
+void Mars_SwitchMDVideo(unsigned char reg12);
+short Mars_ReadMDVDPStatus(void);
+
+void Mars_TurnOffVideo();
+void Mars_TurnOnVideo();
 
 extern volatile uint8_t enable_hints;
 

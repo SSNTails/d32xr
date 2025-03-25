@@ -68,6 +68,11 @@ static void (*pri_cmd_cb)(void) = &intr_handler_stub;
 static void (*sci_cmd_cb)(void) = &intr_handler_stub;
 static void (*sci_dma1_cb)(void) = &intr_handler_stub;
 
+void Mars_WaitVBlank(void)
+{
+	while ((MARS_VDP_FBCTL & MARS_VDP_VBLK) != 0);
+}
+
 void Mars_WaitFrameBuffersFlip(void)
 {
 	while ((MARS_VDP_FBCTL & MARS_VDP_FS) != mars_activescreen);
@@ -212,6 +217,16 @@ int Mars_GetWDTCount(void)
 {
 	unsigned int cnt = SH2_WDT_RTCNT;
 	return (int)((mars_pwdt_ovf_count << 8) | cnt);
+}
+
+void Mars_TurnOffVideo()
+{
+	MARS_VDP_DISPMODE = (MARS_VDP_DISPMODE & 0xFFFC) | MARS_VDP_MODE_OFF;
+}
+
+void Mars_TurnOnVideo()
+{
+	MARS_VDP_DISPMODE = (MARS_VDP_DISPMODE & 0xFFFC) | MARS_VDP_MODE_256;
 }
 
 void Mars_InitVideo(int lines)
@@ -679,6 +694,22 @@ int Mars_ReadController(int ctrl)
 	val = mars_controlval[port];
 	mars_controlval[port] = 0;
 	return val;
+}
+
+void Mars_SwitchMDVideo(unsigned char reg12) {
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM0 = 0x1A00 + reg12;
+
+	while (MARS_SYS_COMM0);
+}
+
+short Mars_ReadMDVDPStatus(void) {
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM0 = 0x1B00;
+
+	while (MARS_SYS_COMM0);
+
+	return MARS_SYS_COMM2;
 }
 
 #ifdef MDSKY

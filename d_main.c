@@ -651,6 +651,10 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		}
 		#endif
 
+		if (leveltime >= 240) {
+			TestLoop();
+		}
+
 #if 0
 while (!I_RefreshCompleted ())
 ;	/* DEBUG */
@@ -1174,4 +1178,96 @@ D_printf ("DM_Main\n");
 		RunInputDemo("DEMO2");
 	}
 #endif
+}
+
+
+
+
+
+void TestLoop()
+{
+	int frame_number = 0;
+
+	Mars_TurnOffVideo();
+	Mars_SwitchMDVideo(0x87);
+
+	LoadInterlacedImage();
+
+	short vdp_status = 0;
+	
+	// Wait for an odd frame to display
+	while ((vdp_status & 0x10) == 0) {
+		vdp_status = Mars_ReadMDVDPStatus();
+	}
+	
+	// Wait for an even frame to display
+	while ((vdp_status & 0x10) == 1) {
+		vdp_status = Mars_ReadMDVDPStatus();
+	}
+
+	Mars_SwitchMDVideo(0x81);
+	Mars_TurnOnVideo();
+
+	while (true)
+	{
+		Mars_WaitVBlank();
+		Mars_FlipFrameBuffers(1);
+
+		frame_number += 1;
+	}
+}
+
+
+void LoadInterlacedImage()
+{
+	short lump = W_CheckNumForName("INTRO1");
+
+	jagobj_t *lump_ptr = (jagobj_t *)W_POINTLUMPNUM(lump);
+	
+	//uint16_t width = lump_ptr->width;
+	//uint16_t height = lump_ptr->height;
+
+	Mars_WaitVBlank();
+	Mars_FlipFrameBuffers(1);
+
+	// Even line
+	pixel_t *pixels_words = (pixel_t *)lump_ptr->data;
+	pixel_t *frame = I_FrameBuffer();
+	for (int row=0; row < (256/2); row++) {
+		for (int x=0; x < (320/2); x++) {
+			*frame = *pixels_words;
+			frame++;
+			pixels_words++;
+		}
+		pixels_words += (320/2);
+	}
+
+	uint16_t *lines = Mars_FrameBufferLines();
+	short pixel_offset = (512/2);
+	for (int i=0; i < 224; i++) {
+		lines[i] = pixel_offset;
+		pixel_offset += (320/2);
+	}
+
+	Mars_WaitVBlank();
+	Mars_FlipFrameBuffers(1);
+
+	// Odd lines
+	pixels_words = (pixel_t *)lump_ptr->data;
+	frame = I_FrameBuffer();
+	for (int row=0; row < (256/2); row++) {
+		pixels_words += (320/2);
+		for (int x=0; x < (320/2); x++) {
+			*frame = *pixels_words;
+			frame++;
+			pixels_words++;
+		}
+	}
+
+	lines = Mars_FrameBufferLines();
+	pixel_offset = (512/2);
+	for (int i=0; i < 224; i++) {
+		lines[i] = pixel_offset;
+		pixel_offset += (320/2);
+	}
 }

@@ -554,8 +554,8 @@ no_cmd:
         dc.w    net_set_link_timeout - prireqtbl  /* 0x17 */
         dc.w    set_music_volume - prireqtbl      /* 0x18 */
         dc.w    ctl_md_vdp - prireqtbl            /* 0x19 */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1A */ /* DLG: */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1B */ /* DLG: */
+        dc.w    switch_video - prireqtbl          /* 0x1A */
+        dc.w    read_vdp_status - prireqtbl       /* 0x1B */
         dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1C */ /* DLG: */
         dc.w    load_sfx - prireqtbl              /* 0x1D */
         dc.w    play_sfx - prireqtbl              /* 0x1E */
@@ -1660,6 +1660,45 @@ decompress_lump:
         lea     decomp_buffer,a1
         jmp     Kos_Decomp_Main
         |rts    /* Kos_Decomp_Main will do an 'rts' for us. */
+
+
+
+switch_video:
+        move.w  #0x2700,sr          /* disable ints */
+
+        move.l  a0,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+
+        lea     0xC00004,a0
+        move.b  0xA15121,d0
+        move.w  #0x8C00,d1
+        add.b   d0,d1
+        move.w  d1,(a0)
+        
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a0
+
+        move.w  #0x0000,0xA15120         /* done */
+
+        move.w  #0x2000,sr          /* enable ints */
+
+        bra     main_loop
+
+
+
+read_vdp_status:
+        move.l  d0,-(sp)
+
+        move.w  (0xC00004),d0       /* read VDP Status reg */
+        move.w  d0,0xA15122         /* done with upper word */
+        
+        move.l  (sp)+,d0
+
+        move.w  #0x0000,0xA15120         /* done */
+
+        bra     main_loop
 
 
 
