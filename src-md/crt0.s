@@ -1694,6 +1694,8 @@ vdp_sync:
         move.l  a0,-(sp)
         move.l  d0,-(sp)
 
+        move.b  #0,0xA15100         /* give the 68000 control of the 32X VDP */
+
         lea     0xC00004,a0
 
         /* Enable interlaced mode */
@@ -1709,6 +1711,9 @@ vdp_sync:
         move.w  (a0),d0             /* read VDP Status reg */
         btst    #4,d0
         bne.s   2b
+
+        eori.w  #1,0xA1518A         /* flip the 32X frame buffer */
+        move.b  #0x80,0xA15100      /* give the SH-2s control of the 32X VDP */
 
         /* Let the SH-2s continue */
         move.w  #0x0000,0xA15120    /* done */

@@ -73,6 +73,11 @@ void Mars_WaitVBlank(void)
 	while ((MARS_VDP_FBCTL & MARS_VDP_VBLK) != 0);
 }
 
+void Mars_WaitNotVBlank(void)
+{
+	while ((MARS_VDP_FBCTL & MARS_VDP_VBLK) == 0);
+}
+
 void Mars_WaitFrameBuffersFlip(void)
 {
 	while ((MARS_VDP_FBCTL & MARS_VDP_FS) != mars_activescreen);

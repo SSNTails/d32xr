@@ -651,7 +651,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		}
 		#endif
 
-		if (leveltime >= 240) {
+		if (leveltime >= 50) {
 			TestLoop();
 		}
 
@@ -1191,6 +1191,8 @@ void TestLoop()
 	LoadInterlacedImage();
 
 	Mars_SyncMDVDP();
+
+	Mars_WaitNotVBlank();
 
 	while (true)
 	{

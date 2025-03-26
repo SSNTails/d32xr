@@ -42,6 +42,7 @@
 #endif
 
 void Mars_WaitVBlank(void);
+void Mars_WaitNotVBlank(void);
 
 void Mars_FlipFrameBuffers(char wait);
 void Mars_WaitFrameBuffersFlip(void);
