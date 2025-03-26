@@ -69,7 +69,11 @@ static int pl_next = 0;
 ==============================================================================
 TODO:
 
-Replace sin() and cos() function calls.
+Incorrect usage in 'marsdraw.c':
+
+ds_sz
+ds_su
+ds_sv
 ==============================================================================
 ==============================================================================
 ==============================================================================
@@ -87,6 +91,31 @@ static int R_GetSlopeZAt(const pslope_t *slope, fixed_t x, fixed_t y)
 	return (int)slope->o.z + ((x64 + y64) * (int)slope->zdelta) / FRACUNIT;
 }
 
+//DLG: This should probably be moved into 'p_slopes.c'.
+static fixed_t P_GetSlopeZAt(const pslope_t *slope, fixed_t x, fixed_t y)
+{
+    fixed_t dist = (FixedMul(x - slope->o.x, slope->d.x) >> 1) +
+                   (FixedMul(y - slope->o.y, slope->d.y) >> 1);
+
+    return slope->o.z + FixedMul(dist, slope->zdelta) << 1;
+}
+
+//DLG: From 'r_plane.c'
+static inline void R_AdjustSlopeCoordinatesNPO2(vector3_t *origin)
+{
+    const fixed_t modmaskw = (ds_flatwidth << FRACBITS);
+    const fixed_t modmaskh = (ds_flatheight << FRACBITS);
+
+    fixed_t ox = (origin->x % modmaskw);
+    fixed_t oy = -(origin->y % modmaskh);
+
+    xoffs %= modmaskw;
+    yoffs %= modmaskh;
+
+    xoffs -= (origin->x - ox);
+    yoffs += (origin->y + oy);
+}
+
 // Sets the texture origin vector of the sloped plane.
 static void R_SetSlopePlaneOrigin(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, fixed_t xoff, fixed_t yoff, fixed_t angle)
 {
@@ -97,13 +126,16 @@ static void R_SetSlopePlaneOrigin(pslope_t *slope, fixed_t xpos, fixed_t ypos, f
 
 	fixed_t vxf = vx / (fixed_t)FRACUNIT;
 	fixed_t vyf = vy / (fixed_t)FRACUNIT;
-	fixed_t ang = ANG2RAD(ANG270 - angle);
+	//fixed_t ang = ANG2RAD(ANG270 - angle);
+    fixed_t ang = ANG270 - angle;
 
 	// p is the texture origin in view space
 	// Don't add in the offsets at this stage, because doing so can result in
 	// errors if the flat is rotated.
-	p->x = vxf * cos(ang) - vyf * sin(ang);
-	p->z = vxf * sin(ang) + vyf * cos(ang);
+	//p->x = vxf * cos(ang) - vyf * sin(ang);
+	//p->z = vxf * sin(ang) + vyf * cos(ang);
+    p->x = FixedMul(vxf, finecosine(ang)) - FixedMul(vyf, finesine(ang));
+	p->z = FixedMul(vxf, finesine(ang)) + FixedMul(vyf, finecosine(ang));
 	p->y = (R_GetSlopeZAt(slope, -xoff, yoff) - zpos) / (fixed_t)FRACUNIT;
 }
 
@@ -118,22 +150,30 @@ void R_SetSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, 
 
 	R_SetSlopePlaneOrigin(slope, xpos, ypos, zpos, xoff, yoff, angle);
 	height = P_GetSlopeZAt(slope, xpos, ypos);
-	zeroheight = FixedToFloat(height - zpos);
+	//zeroheight = FixedToFloat(height - zpos);
+    zeroheight = height - zpos;
 
 	// m is the v direction vector in view space
-	ang = ANG2RAD(ANG180 - (angle + plangle));
-	m->x = cos(ang);
-	m->z = sin(ang);
+	//ang = ANG2RAD(ANG180 - (angle + plangle));
+    ang = ANG180 - (angle + plangle);
+	//m->x = cos(ang);
+	//m->z = sin(ang);
+    m->x = finecosine(ang);
+	m->z = finesine(ang);
 
 	// n is the u direction vector in view space
-	n->x = sin(ang);
-	n->z = -cos(ang);
+	//n->x = sin(ang);
+	//n->z = -cos(ang);
+    n->x = finesine(ang);
+	n->z = -finecosine(ang);
 
 	plangle >>= ANGLETOFINESHIFT;
-	temp = P_GetSlopeZAt(slope, xpos + FINESINE(plangle), ypos + FINECOSINE(plangle));
-	m->y = FixedToFloat(temp - height);
-	temp = P_GetSlopeZAt(slope, xpos + FINECOSINE(plangle), ypos - FINESINE(plangle));
-	n->y = FixedToFloat(temp - height);
+	temp = P_GetSlopeZAt(slope, xpos + finesine(plangle), ypos + finecosine(plangle));
+	//m->y = FixedToFloat(temp - height);
+    m->y = temp - height;
+	temp = P_GetSlopeZAt(slope, xpos + finecosine(plangle), ypos - finesine(plangle));
+	//n->y = FixedToFloat(temp - height);
+    n->y = temp - height;
 }
 
 // This function calculates all of the vectors necessary for drawing a sloped and scaled plane.
@@ -151,15 +191,21 @@ void R_SetSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, 
 	zeroheight = FixedToFloat(height - zpos);
 
 	// m is the v direction vector in view space
-	ang = ANG2RAD(ANG180 - (angle + plangle));
-	m->x = yscale * cos(ang);
-	m->z = yscale * sin(ang);
+	//ang = ANG2RAD(ANG180 - (angle + plangle));
+    ang = ANG180 - (angle + plangle);
+	//m->x = yscale * cos(ang);
+	//m->z = yscale * sin(ang);
+	m->x = FixedMul(yscale, finecosine(ang));
+	m->z = FixedMul(yscale, finesine(ang));
 
 	// n is the u direction vector in view space
-	n->x = xscale * sin(ang);
-	n->z = -xscale * cos(ang);
+	//n->x = xscale * sin(ang);
+	//n->z = -xscale * cos(ang);
+	n->x = FixedMul(xscale, finesine(ang));
+	n->z = -FixedMul(xscale, finecosine(ang));
 
-	ang = ANG2RAD(plangle);
+	//ang = ANG2RAD(plangle);
+    ang = plangle;
 	temp = P_GetSlopeZAt(slope, xpos + FloatToFixed(yscale * sin(ang)), ypos + FloatToFixed(yscale * cos(ang)));
 	m->y = FixedToFloat(temp - height);
 	temp = P_GetSlopeZAt(slope, xpos + FloatToFixed(xscale * cos(ang)), ypos - FloatToFixed(xscale * sin(ang)));

@@ -732,6 +732,8 @@ fixed_t focallengthf, zeroheight;
 static fixed_t xoffs, yoffs;
 static vector3_t ds_slope_origin, ds_slope_u, ds_slope_v;
 
+uint16_t ds_flatwidth, ds_flatheight;
+
 
 
 #define	MAXVISPLANES	32

@@ -1205,17 +1205,17 @@ void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xf
 //void R_DrawTiltedSpan_8(int ds_y, int ds_x1, int ds_x2, int light, inpixel_t* ds_source)
 {
 	//DLG: Temporarily set these here for testing:
-	dvector3_t ds_sz;
+	//dvector3_t ds_sz;
 		ds_sz.x = 2 << FRACBITS;
 		ds_sz.y = 2 << FRACBITS;
 		ds_sz.z = 2 << FRACBITS;
 
-	dvector3_t ds_su;
+	//dvector3_t ds_su;
 		ds_su.x = 2 << FRACBITS;
 		ds_su.y = 2 << FRACBITS;
 		ds_su.z = 2 << FRACBITS;
 
-	dvector3_t ds_sv;
+	//dvector3_t ds_sv;
 		ds_sv.x = 2 << FRACBITS;
 		ds_sv.y = 2 << FRACBITS;
 		ds_sv.z = 2 << FRACBITS;
