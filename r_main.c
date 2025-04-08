@@ -1434,17 +1434,17 @@ void R_RenderPlayerView(int displayplayer)
 
 
 #ifdef MDSKY
-if (delay_sky_update > 0) {
-	if (delay_sky_update == 1) {
+//if (delay_sky_update > 0) {
+//	if (delay_sky_update == 1) {
 		Mars_ScrollMDSky(next_scroll_x, next_scroll_y_base, next_scroll_y_offset, next_scroll_y_pan);
 
 		current_scroll_x = next_scroll_x;
 		current_scroll_y_base = next_scroll_y_base;
 		current_scroll_y_offset = next_scroll_y_base;
 		current_scroll_y_pan = next_scroll_y_pan;
-	}
-	delay_sky_update -= 1;
-}
+//	}
+//	delay_sky_update -= 1;
+//}
 #endif
 
 	/* */
