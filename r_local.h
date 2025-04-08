@@ -387,6 +387,7 @@ __attribute__((aligned(4)))
 #endif
 extern int8_t effects_used;
 extern int8_t effects_enabled;
+extern int8_t delay_sky_update;
 
 #ifdef MARS
 __attribute__((aligned(2)))
@@ -427,6 +428,46 @@ extern unsigned short copper_table_height;
 __attribute__((aligned(4)))
 #endif
 extern volatile unsigned short *copper_color_table;
+
+#ifdef MARS
+__attribute__((aligned(2)))
+#endif
+extern unsigned short next_scroll_x;
+
+#ifdef MARS
+__attribute__((aligned(2)))
+#endif
+extern unsigned short next_scroll_y_base;
+
+#ifdef MARS
+__attribute__((aligned(2)))
+#endif
+extern unsigned short next_scroll_y_offset;
+
+#ifdef MARS
+__attribute__((aligned(2)))
+#endif
+extern unsigned short next_scroll_y_pan;
+
+#ifdef MARS
+__attribute__((aligned(2)))
+#endif
+extern unsigned short current_scroll_x;
+
+#ifdef MARS
+__attribute__((aligned(2)))
+#endif
+extern unsigned short current_scroll_y_base;
+
+#ifdef MARS
+__attribute__((aligned(2)))
+#endif
+extern unsigned short current_scroll_y_offset;
+
+#ifdef MARS
+__attribute__((aligned(2)))
+#endif
+extern unsigned short current_scroll_y_pan;
 
 #ifdef MARS
 __attribute__((aligned(16)))

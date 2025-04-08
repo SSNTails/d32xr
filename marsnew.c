@@ -774,27 +774,37 @@ void I_Update(void)
 	const int ticwait = (demoplayback || demorecording ? 4 : ticsperframe); // demos were recorded at 15-20fps
 
 	// Adjust sky position.
-	unsigned short scroll_y_base = gamemapinfo.skyOffsetY;
-	unsigned short scroll_y_offset = (vd.viewz >> 16);
-	unsigned short scroll_y_pan = (vd.aimingangle >> 22);
+	next_scroll_y_base = gamemapinfo.skyOffsetY;
+	next_scroll_y_offset = (vd.viewz >> 16);
+	next_scroll_y_pan = (vd.aimingangle >> 22);
+
+	current_scroll_y_base += ((signed short)(next_scroll_y_base - current_scroll_y_base) >> 1);
+	current_scroll_y_offset += ((signed short)(next_scroll_y_offset - current_scroll_y_offset) >> 1);
+	current_scroll_y_pan += ((signed short)(next_scroll_y_pan - current_scroll_y_pan) >> 1);
 
 	if (effects_enabled & EFFECTS_MASK_COPPER) {
 		copper_color_index = (copper_vertical_offset
-				- scroll_y_base - (scroll_y_offset >> (16-copper_vertical_rate)) - scroll_y_pan) & 511;
+				- current_scroll_y_base
+				- (current_scroll_y_offset >> (16-copper_vertical_rate))
+				- current_scroll_y_pan) & 511;
 	}
 
 #ifdef MDSKY
 	if (sky_md_layer) {
-		unsigned short scroll_x = (*((unsigned short *)&vd.viewangle) >> 6);
+		next_scroll_x = (*((unsigned short *)&vd.viewangle) >> 6);
+
+		current_scroll_x += ((signed short)(next_scroll_x - current_scroll_x) >> 1);
 
 		if (extended_sky) {
 			// Use this to scroll the sky 1280 pixels. Works well for 256-width skies.
-			scroll_x += (scroll_x >> 2);
+			current_scroll_x += (current_scroll_x >> 2);
 		}
 
-		Mars_ScrollMDSky(scroll_x, scroll_y_base, scroll_y_offset, scroll_y_pan);
+		Mars_ScrollMDSky(current_scroll_x, current_scroll_y_base, current_scroll_y_offset, current_scroll_y_pan);
 	}
 #endif
+
+	delay_sky_update = 1;
 
 	Mars_FlipFrameBuffers(false);
 	do

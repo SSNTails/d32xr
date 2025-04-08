@@ -70,6 +70,7 @@ static int16_t	curpalette = -1;
 __attribute__((aligned(4)))
 int8_t effects_used;
 int8_t effects_enabled;
+int8_t delay_sky_update;
 
 __attribute__((aligned(2)))
 short distortion_filter_index;
@@ -94,6 +95,30 @@ unsigned short copper_table_height;
 
 __attribute__((aligned(4)))
 volatile unsigned short *copper_color_table = NULL;
+
+__attribute__((aligned(2)))
+unsigned short next_scroll_x;
+
+__attribute__((aligned(2)))
+unsigned short next_scroll_y_base;
+
+__attribute__((aligned(2)))
+unsigned short next_scroll_y_offset;
+
+__attribute__((aligned(2)))
+unsigned short next_scroll_y_pan;
+
+__attribute__((aligned(2)))
+unsigned short current_scroll_x;
+
+__attribute__((aligned(2)))
+unsigned short current_scroll_y_base;
+
+__attribute__((aligned(2)))
+unsigned short current_scroll_y_offset;
+
+__attribute__((aligned(2)))
+unsigned short current_scroll_y_pan;
 
 __attribute__((aligned(16)))
 pixel_t* viewportbuffer;
@@ -1405,6 +1430,21 @@ void R_RenderPlayerView(int displayplayer)
 #if defined(JAGUAR)
 	while (!I_RefreshCompleted())
 		;
+#endif
+
+
+#ifdef MDSKY
+if (delay_sky_update > 0) {
+	if (delay_sky_update == 1) {
+		Mars_ScrollMDSky(next_scroll_x, next_scroll_y_base, next_scroll_y_offset, next_scroll_y_pan);
+
+		current_scroll_x = next_scroll_x;
+		current_scroll_y_base = next_scroll_y_base;
+		current_scroll_y_offset = next_scroll_y_base;
+		current_scroll_y_pan = next_scroll_y_pan;
+	}
+	delay_sky_update -= 1;
+}
 #endif
 
 	/* */
