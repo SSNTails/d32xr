@@ -11,6 +11,8 @@ void G_DoReborn (int playernum);
 
 void G_DoLoadLevel (void);
 
+uint16_t test_value;
+
 
 gameaction_t    gameaction;
 VINT			gamemaplump;
@@ -94,6 +96,8 @@ static char* G_GetMapNameForLump(int lump)
 
 void G_DoLoadLevel (void) 
 { 
+	Mars_ReadUSB();
+	
 	int             i; 
 	int		skytexturel;
 	int 		gamemap;
@@ -174,6 +178,9 @@ void G_DoLoadLevel (void)
 
 	/* DMAPINFO can override the map number */
 	gamemap = gamemapinfo.mapNumber;
+	if(test_value > 0) {
+		gamemap = test_value;
+	}
 
 	/* update the start map */
 	startmap = gamemap;

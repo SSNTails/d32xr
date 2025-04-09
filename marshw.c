@@ -681,6 +681,15 @@ int Mars_ReadController(int ctrl)
 	return val;
 }
 
+void Mars_ReadUSB(void)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM0 = 0x1A00;
+	while (MARS_SYS_COMM0);
+
+	test_value = MARS_SYS_COMM2;
+}
+
 #ifdef MDSKY
 /*
 Fade the MD palette

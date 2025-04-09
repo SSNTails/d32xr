@@ -32,6 +32,8 @@ static short chaos;
 static short ltzz_blue_lump, chev_blue_lump, lt_blue_lump;
 static short ltzz_red_lump, chev_red_lump, lt_red_lump;
 
+extern uint16_t test_value;
+
 #ifndef MARS
 byte		*sbartop;
 #endif
@@ -291,6 +293,8 @@ static void ST_Drawer_ (stbar_t* sb)
 	}
 	else if (gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)
 	{
+		CONS_Printf("MED FIFO: 0x%X", test_value);	//DLG: Remove me!
+
 		if (gametic < 120)
 		{
 			char getSpheres[16];
@@ -348,7 +352,7 @@ static void ST_Drawer_ (stbar_t* sb)
 	}
 	else
 	{
-//		CONS_Printf("skyOffsetY: %d", -(vd.viewz >> 16) - (((signed int)vd.aimingangle) >> 22));	//DLG: Remove me!
+		CONS_Printf("MED FIFO: 0x%X", test_value);	//DLG: Remove me!
 
 		const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
 		int worldTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;

@@ -606,7 +606,7 @@ no_cmd:
         dc.w    net_set_link_timeout - prireqtbl  /* 0x17 */
         dc.w    set_music_volume - prireqtbl      /* 0x18 */
         dc.w    ctl_md_vdp - prireqtbl            /* 0x19 */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1A */ /* DLG: */
+        dc.w    read_med_usb_port - prireqtbl     /* 0x1A */
         dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1B */ /* DLG: */
         dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1C */ /* DLG: */
         dc.w    load_sfx - prireqtbl              /* 0x1D */
@@ -1665,6 +1665,24 @@ set_music_volume:
         move.b  #0x00,0xA1200E      /* acknowledge receipt of command result */
 4:
         move.w  #0,0xA15120         /* done */
+        bra     main_loop
+
+
+
+read_med_usb_port:
+        move.w  #0x2700,sr          /* disable ints */
+
+        move.l  d0,-(sp)
+        
+        move.w  0xA130D0,d0         /* read MED FIFO register */
+        move.w  d0,0xA15122         /* copy value to COMM2 */
+
+        move.l  (sp)+,d0
+
+        move.w  #0,0xA15120         /* done */
+
+        move.w  #0x2000,sr          /* enable ints */
+
         bra     main_loop
 
 

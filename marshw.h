@@ -53,6 +53,8 @@ char Mars_UploadPalette(const uint8_t* palette) MARS_ATTR_DATA_CACHE_ALIGN;
 int Mars_PollMouse(void);
 int Mars_ParseMousePacket(int mouse, int* pmx, int* pmy);
 
+extern uint16_t test_value;
+
 extern volatile uint8_t enable_hints;
 
 extern volatile unsigned mars_vblank_count;
@@ -134,6 +136,8 @@ void Mars_SetBankPageSec(int bank, int page) MARS_ATTR_DATA_CACHE_ALIGN;
 int Mars_ReadController(int port);
 
 int Mars_ROMSize(void);
+
+void Mars_ReadUSB(void);
 
 #ifdef MDSKY
 void Mars_FadeMDPaletteFromBlack(int fade_degree);
