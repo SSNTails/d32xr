@@ -681,13 +681,33 @@ int Mars_ReadController(int ctrl)
 	return val;
 }
 
-void Mars_ReadUSB(void)
+void Mars_ReadUSB(int length, unsigned char *data)
 {
 	while (MARS_SYS_COMM0);
 	MARS_SYS_COMM0 = 0x1A00;
-	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = length;
 
-	test_value = MARS_SYS_COMM2;
+	unsigned char *data_ptr = data;
+	int bytes_read = 0;
+
+	while (MARS_SYS_COMM0)
+	{
+		if (bytes_read >= 16) {
+			MARS_SYS_COMM1_BYTE = 0;
+		}
+		else if (MARS_SYS_COMM1_BYTE)
+		{
+			*data_ptr++ = MARS_SYS_COMM2_BYTE;
+			bytes_read++;
+
+			if (MARS_SYS_COMM1_BYTE == 2) {
+				*data_ptr++ = MARS_SYS_COMM3_BYTE;
+				bytes_read++;
+			}
+
+			MARS_SYS_COMM1_BYTE = 0;
+		}
+	}
 }
 
 #ifdef MDSKY

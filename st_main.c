@@ -9,6 +9,8 @@
 #include "mars.h"
 #include "p_camera.h"
 
+extern uint8_t test_data[16];
+
 stbar_t	*stbar;
 int stbar_tics;
 
@@ -31,8 +33,6 @@ static short chaos;
 
 static short ltzz_blue_lump, chev_blue_lump, lt_blue_lump;
 static short ltzz_red_lump, chev_red_lump, lt_red_lump;
-
-extern uint16_t test_value;
 
 #ifndef MARS
 byte		*sbartop;
@@ -293,7 +293,16 @@ static void ST_Drawer_ (stbar_t* sb)
 	}
 	else if (gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)
 	{
-		CONS_Printf("MED FIFO: 0x%X", test_value);	//DLG: Remove me!
+		CONS_Printf("MED FIFO: %02X %02X %02X %02X %02X %02X %02X %02X",
+			test_data[0],
+			test_data[1],
+			test_data[2],
+			test_data[3],
+			test_data[4],
+			test_data[5],
+			test_data[6],
+			test_data[7]
+		);	//DLG: Remove me!
 
 		if (gametic < 120)
 		{
@@ -352,7 +361,16 @@ static void ST_Drawer_ (stbar_t* sb)
 	}
 	else
 	{
-		CONS_Printf("MED FIFO: 0x%X", test_value);	//DLG: Remove me!
+		CONS_Printf("MED FIFO: %02X %02X %02X %02X %02X %02X %02X %02X",
+			test_data[0],
+			test_data[1],
+			test_data[2],
+			test_data[3],
+			test_data[4],
+			test_data[5],
+			test_data[6],
+			test_data[7]
+		);	//DLG: Remove me!
 
 		const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
 		int worldTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;

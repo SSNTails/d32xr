@@ -4,6 +4,7 @@
 #include "marshw.h"
 #include "p_local.h"
 #include <string.h>
+#include "marshw.h"
 
 void G_PlayerReborn (int player);
 
@@ -11,7 +12,7 @@ void G_DoReborn (int playernum);
 
 void G_DoLoadLevel (void);
 
-uint16_t test_value;
+uint8_t test_data[16];
 
 
 gameaction_t    gameaction;
@@ -95,9 +96,7 @@ static char* G_GetMapNameForLump(int lump)
 }
 
 void G_DoLoadLevel (void) 
-{ 
-	Mars_ReadUSB();
-	
+{
 	int             i; 
 	int		skytexturel;
 	int 		gamemap;
@@ -178,9 +177,6 @@ void G_DoLoadLevel (void)
 
 	/* DMAPINFO can override the map number */
 	gamemap = gamemapinfo.mapNumber;
-	if(test_value > 0) {
-		gamemap = test_value;
-	}
 
 	/* update the start map */
 	startmap = gamemap;

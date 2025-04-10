@@ -1673,10 +1673,86 @@ read_med_usb_port:
         move.w  #0x2700,sr          /* disable ints */
 
         move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+        move.l  d3,-(sp)
+        move.l  d4,-(sp)
+        move.l  d5,-(sp)
         
-        move.w  0xA130D0,d0         /* read MED FIFO register */
-        move.w  d0,0xA15122         /* copy value to COMM2 */
+0:
+        move.w  0xA130D2,d1         /* read MED FIFO status register */
+        andi.w  #0x7FF,d1           /* read the block size */
+        move.w  0xA15122,d0         /* number of bytes to read */
 
+        cmp.w   d1,d0
+        ble.s   1f
+
+        move.w  d0,d1
+1:
+        sub.w   d1,d0
+
+        cmpi.w  #2,d1
+        blt.s   4f
+2:
+        move.w  0xA130D0,d2
+        move.w  0xA130D0,d3
+        move.w  0xA130D0,d4
+        move.w  0xA130D0,d5
+
+        move.b  d2,0xA15122
+        move.b  d3,0xA15123
+        move.b  #2,0xA15121
+3:
+        cmpi.b  #0,0xA15121
+        bne.s   3b
+
+        move.b  d4,0xA15123
+        move.b  d5,0xA15123
+        move.b  #2,0xA15121
+4:
+        cmpi.b  #0,0xA15121
+        bne.s   4b
+
+        sub.w   #2,d1
+        cmpi.w  #2,d1
+        bge.s   2b
+5:
+        cmpi.w  #0,d1
+        beq.s   8f
+6:
+        move.b  0xA130D0,d2
+        move.b  d2,0xA15122
+        move.b  #1,0xA15121
+7:
+        cmpi.b  #0,0xA15121
+        bne.s   7b
+
+        sub.w   #1,d1
+        cmpi.w  #0,d1
+        beq.s   6b
+8:
+        cmpi.w  #0,d0
+        bne.w   0b
+
+flush:
+        |move.w  #0,0xA130D0
+        |move.w  #0,0xA130D0
+flush_2:
+        |move.w  0xA130D2,d1         /* read MED FIFO status register */
+        |andi.w  #0x7FF,d1           /* read the block size */
+        |cmpi.w  #0,d1
+        |beq.s   flush_done
+        |move.w  0xA130D0,d0
+        |bra.s   flush_2
+flush_done:
+
+
+
+        move.l  (sp)+,d5
+        move.l  (sp)+,d4
+        move.l  (sp)+,d3
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
         move.l  (sp)+,d0
 
         move.w  #0,0xA15120         /* done */

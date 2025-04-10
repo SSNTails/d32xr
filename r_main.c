@@ -8,6 +8,8 @@
 #include "marshw.h"
 #endif
 
+extern uint8_t test_data[16];
+
 int16_t viewportWidth, viewportHeight;
 int16_t centerX, centerY;
 fixed_t centerXFrac, centerYFrac;
@@ -614,7 +616,16 @@ static void R_SetupMDSky(void)
 
 	char lumpname[9];
 
-	D_snprintf(lumpname, 8, "%sMD", gamemapinfo.sky);
+	if (gamemapinfo.mapNumber != TITLE_MAP_NUMBER) {
+		Mars_ReadUSB(8, test_data);
+	}
+
+	if(test_data[0] == 'S' && test_data[1] == 'K' && test_data[2] == 'Y') {
+		D_snprintf(lumpname, 8, "%sMD", test_data);
+	}
+	else {
+		D_snprintf(lumpname, 8, "%sMD", gamemapinfo.sky);
+	}
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		// This map uses an MD sky.
@@ -628,7 +639,12 @@ static void R_SetupMDSky(void)
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sA", gamemapinfo.sky);
+	if(test_data[0] == 'S' && test_data[1] == 'K' && test_data[2] == 'Y') {
+		D_snprintf(lumpname, 8, "%sA", test_data);
+	}
+	else {
+		D_snprintf(lumpname, 8, "%sA", gamemapinfo.sky);
+	}
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_names_a_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -638,7 +654,12 @@ static void R_SetupMDSky(void)
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sB", gamemapinfo.sky);
+	if(test_data[0] == 'S' && test_data[1] == 'K' && test_data[2] == 'Y') {
+		D_snprintf(lumpname, 8, "%sB", test_data);
+	}
+	else {
+		D_snprintf(lumpname, 8, "%sB", gamemapinfo.sky);
+	}
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_names_b_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -648,7 +669,12 @@ static void R_SetupMDSky(void)
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sPAL", gamemapinfo.sky);
+	if(test_data[0] == 'S' && test_data[1] == 'K' && test_data[2] == 'Y') {
+		D_snprintf(lumpname, 8, "%sPAL", test_data);
+	}
+	else {
+		D_snprintf(lumpname, 8, "%sPAL", gamemapinfo.sky);
+	}
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_palettes_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -658,7 +684,12 @@ static void R_SetupMDSky(void)
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sTIL", gamemapinfo.sky);
+	if(test_data[0] == 'S' && test_data[1] == 'K' && test_data[2] == 'Y') {
+		D_snprintf(lumpname, 8, "%sTIL", test_data);
+	}
+	else {
+		D_snprintf(lumpname, 8, "%sTIL", gamemapinfo.sky);
+	}
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_tiles_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
