@@ -133,6 +133,7 @@ _start:
 
 | 0x880880 - 68000 Level 4 interrupt handler - HBlank IRQ
 
+        jmp     horz_blank
         rte
 
         .align  64
@@ -1727,6 +1728,7 @@ load_md_sky:
 
         lea     0xC00004,a0
         lea     0xC00000,a1
+        move.w  #0x8016,(a0) /* reg 0 = /IE1 (enable HBL INT), /M3 (enable read H/V cnt) */
         ||move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
         ||move.w  #0x832C,(a0) /* reg 3 = Name Tbl W = 0xB000 */
         ||move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
@@ -1914,9 +1916,11 @@ scroll_md_sky:
         sub.w   d0,d2
         swap    d2
         sub.w   d0,d2
+        move.w  d2,vert_scroll_pos_1
         swap    d2
+        move.w  d2,vert_scroll_pos_2
 
-        move.l  d2,(a1)
+        |move.l  d2,(a1)
 
         move.w  #0,0xA15120         /* done with horizontal scroll */
 4:
@@ -2955,6 +2959,53 @@ rst_ym2612:
         move.b  #0xFF,0xC00011
         rts
 
+horz_blank:
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a2,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        lea     0xC00008,a2     | H/V counter
+
+        move.l  #0x40000010,(a0)
+
+        move.l  original_vert_scroll_pos_1,d0
+        move.l  d0,d2
+        moveq   #0,d1
+        move.w  (a2),d1
+        lsr.w   #8,d1
+        andi.w  #0xFF,d1
+        add.w   d1,d0
+        |cmpi.w  #0x60,d0
+        |blt.s   2f
+        cmpi.w  #0xD0,d1
+        blt.s   1f
+
+0:
+        move.l  original_vert_scroll_pos_1,d0
+        move.l  d0,(a1)
+        bra.s   2f
+
+1:
+        move.l  current_vert_scroll_pos_1,d0
+        addi.l  #0x00010001,d0
+        move.l  d0,current_vert_scroll_pos_1
+        move.l  d0,(a1)
+
+2:
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a2
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        rte
+
 
 | Vertical Blank handler
 
@@ -2962,6 +3013,22 @@ vert_blank:
         move.l  d1,-(sp)
         move.l  d2,-(sp)
         move.l  a2,-(sp)
+
+        move.w  vert_scroll_pos_1,d1
+        move.w  d1,original_vert_scroll_pos_1
+        move.w  d1,current_vert_scroll_pos_1
+
+        swap    d1
+        move.w  vert_scroll_pos_2,d1
+        move.w  d1,original_vert_scroll_pos_2
+        move.w  d1,current_vert_scroll_pos_2
+
+        move.l  a1,-(sp)
+        lea     0xC00004,a1
+        lea     0xC00000,a2
+        move.l  #0x40000010,(a1)
+        move.l  d1,(a2)
+        move.l  (sp)+,a1
 
         move.b  #1,need_bump_fm
         move.b  #1,need_ctrl_int
@@ -3388,6 +3455,21 @@ scroll_b_vert_rate:
         dc.b    0
 scroll_a_vert_rate:
         dc.b    0
+
+vert_scroll_pos_1:
+        dc.w    0
+vert_scroll_pos_2:
+        dc.w    0
+
+current_vert_scroll_pos_1:
+        dc.w    0
+current_vert_scroll_pos_2:
+        dc.w    0
+
+original_vert_scroll_pos_1:
+        dc.w    0
+original_vert_scroll_pos_2:
+        dc.w    0
 
 lump_ptr:
         dc.l    0
