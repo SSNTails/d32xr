@@ -693,8 +693,10 @@ typedef struct visplane_s
 } visplane_t;
 
 #define	MAXVISPLANES	32
+#define MAXFOFPLANES     8
 
 #define NUM_VISPLANES_BUCKETS 32
+#define NUM_FOFPLANES_BUCKETS  8
 
 void R_MarkOpenPlane(visplane_t* pl)
 ATTR_DATA_CACHE_ALIGN
@@ -760,6 +762,12 @@ __attribute__((aligned(16)))
 	visplane_t		* volatile visplanes/*[MAXVISPLANES]*/, * volatile lastvisplane;
 	int * volatile gsortedvisplanes;
 	visplane_t * volatile * visplanes_hash;
+
+	//
+	// FOFplanes
+	//
+	visplane_t      * volatile fofplanes, * volatile lastfofplane;
+	visplane_t * volatile *fofplanes_hash;
 
 	/* */
 	/* openings / misc refresh memory */

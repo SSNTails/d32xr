@@ -891,7 +891,7 @@ extern	pixel_t	*screens[2];	/* [viewportWidth*viewportHeight];  */
 #define AIMINGTODY(a) ((finetangent((2048+(((int)a)>>ANGLETOFINESHIFT)) & FINEMASK)*160)>>FRACBITS)
 
 static void R_Setup (int displayplayer, visplane_t *visplanes_,
-	visplane_t **visplanes_hash_, sector_t **vissectors_, viswallextra_t *viswallex_)
+	visplane_t **visplanes_hash_, visplane_t **fofplanes_hash_, sector_t **vissectors_, viswallextra_t *viswallex_)
 {
 	VINT waterpal = 0;
 	int 		i;
@@ -1197,6 +1197,9 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	vd.lastvisplane = vd.visplanes + 1;		/* visplanes[0] is left empty */
 	vd.visplanes_hash = visplanes_hash_;
 
+	vd.lastfofplane = vd.fofplanes + 1;
+	vd.fofplanes_hash = fofplanes_hash_;
+
 	vd.gsortedvisplanes = NULL;
 
 	vd.columncache[0] = (uint8_t*)(((intptr_t)tempbuf + 3) & ~3);
@@ -1352,12 +1355,12 @@ visplane_t* R_FindPlaneFOF(fixed_t height,
 		}
 	}
 
-	if (vd.lastvisplane == vd.visplanes + MAXVISPLANES)
-		return vd.visplanes;
+	if (vd.lastfofplane == vd.fofplanes + MAXVISPLANES)
+		return vd.fofplanes;
 
 	// make a new plane
-	check = vd.lastvisplane;
-	++vd.lastvisplane;
+	check = vd.lastfofplane;
+	++vd.lastfofplane;
 
 	check->height = height;
 	check->flatandlight = flatandlight;
@@ -1427,7 +1430,7 @@ void R_RenderPlayerView(int displayplayer)
 	if (debugscreenactive)
 		I_DebugScreen();
 
-	R_Setup(displayplayer, visplanes_, visplanes_hash_, vissectors_, viswallex_);
+	R_Setup(displayplayer, visplanes_, visplanes_hash_, fofplanes_hash_, vissectors_, viswallex_);
 
 #ifndef JAGUAR
 	R_BSP();
@@ -1469,14 +1472,18 @@ void R_RenderPlayerView(int displayplayer)
 	boolean drawworld = true;//!(optionsMenuOn);
 	__attribute__((aligned(16)))
 		visplane_t visplanes_[MAXVISPLANES];
-	__attribute__((aligned(16)))
+		__attribute__((aligned(16)))
 		visplane_t *visplanes_hash_[NUM_VISPLANES_BUCKETS];
 	sector_t *vissectors_[(MAXVISSSEC > MAXVISSPRITES ? MAXVISSSEC : MAXVISSPRITES) + 1];
 	viswallextra_t viswallex_[MAXWALLCMDS + 1] __attribute__((aligned(16)));
+	__attribute__((aligned(16)))
+		visplane_t fofplanes_[MAXFOFPLANES];
+		__attribute__((aligned(16)))
+		visplane_t *fofplanes_hash_[NUM_FOFPLANES_BUCKETS];
 
 	t_total = I_GetFRTCounter();
 
-	R_Setup(displayplayer, visplanes_, visplanes_hash_, vissectors_, viswallex_);
+	R_Setup(displayplayer, visplanes_, visplanes_hash_, fofplanes_hash_, vissectors_, viswallex_);
 
 	Mars_R_BeginWallPrep(drawworld);
 

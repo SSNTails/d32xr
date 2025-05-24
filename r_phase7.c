@@ -46,12 +46,12 @@ static void (*mapplane)(localplane_t*, int, int, int);
 static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2) ATTR_DATA_CACHE_ALIGN;
 static void R_MapColorPlane(localplane_t* lpl, int y, int x, int x2) ATTR_DATA_CACHE_ALIGN;
 static void R_PlaneLoop(localplane_t* lpl) ATTR_DATA_CACHE_ALIGN;
-static void R_DrawPlanes2(void) ATTR_DATA_CACHE_ALIGN;
+static void R_DrawPlanes2(boolean isFOF) ATTR_DATA_CACHE_ALIGN;
 
 static int  R_TryLockPln(void) ATTR_DATA_CACHE_ALIGN;
 static void R_LockPln(void) ATTR_DATA_CACHE_ALIGN;
 static void R_UnlockPln(void) ATTR_DATA_CACHE_ALIGN;
-static visplane_t* R_GetNextPlane(uint16_t *sortedvisplanes) ATTR_DATA_CACHE_ALIGN;
+static visplane_t* R_GetNextPlane(uint16_t *sortedvisplanes, boolean isFOF) ATTR_DATA_CACHE_ALIGN;
 
 void R_DrawPlanes(void) __attribute__((noinline));
 
@@ -300,7 +300,7 @@ static void R_UnlockPln(void)
     pl_lock = 0;
 }
 
-static visplane_t *R_GetNextPlane(uint16_t *sortedvisplanes)
+static visplane_t *R_GetNextPlane(uint16_t *sortedvisplanes, boolean isFOF)
 {
     int p;
 
@@ -312,16 +312,25 @@ static visplane_t *R_GetNextPlane(uint16_t *sortedvisplanes)
     R_UnlockPln();
 
 #ifdef MARS
-    if (p + vd.visplanes + 1 >= vd.lastvisplane)
-        return NULL;
-    return vd.visplanes + sortedvisplanes[p*2+1];
+    if (!isFOF)
+    {
+        if (p + vd.visplanes + 1 >= vd.lastvisplane)
+            return NULL;
+        return vd.visplanes + sortedvisplanes[p*2+1];
+    }
+    else
+    {
+        if (p + vd.fofplanes + 1 >= vd.lastfofplane)
+            return NULL;
+        return vd.fofplanes + sortedvisplanes[p*2+1];
+    }
 #else
     visplane_t *pl = vd.visplanes + p + 1;
     return pl == vd.lastvisplane ? NULL : pl;
 #endif
 }
 
-static void R_DrawPlanes2(void)
+static void R_DrawPlanes2(boolean isFOF)
 {
     angle_t angle;
     localplane_t lpl;
@@ -329,9 +338,17 @@ static void R_DrawPlanes2(void)
     int extralight;
 
 #ifdef MARS
-    Mars_ClearCacheLine(&vd.lastvisplane);
     Mars_ClearCacheLine(&vd.gsortedvisplanes);
-    Mars_ClearCacheLines(vd.gsortedvisplanes, ((vd.lastvisplane - vd.visplanes - 1) * sizeof(*vd.gsortedvisplanes) + 31) / 16);
+    if (!isFOF)
+    {
+        Mars_ClearCacheLine(&vd.lastvisplane);
+        Mars_ClearCacheLines(vd.gsortedvisplanes, ((vd.lastvisplane - vd.visplanes - 1) * sizeof(*vd.gsortedvisplanes) + 31) / 16);
+    }
+    else
+    {
+        Mars_ClearCacheLine(&vd.lastfofplane);
+        Mars_ClearCacheLines(vd.gsortedvisplanes, ((vd.lastfofplane - vd.fofplanes - 1) * sizeof(*vd.gsortedvisplanes) + 31) / 16);
+    }
 #endif
 
     if (vd.gsortedvisplanes == NULL)
@@ -355,7 +372,9 @@ static void R_DrawPlanes2(void)
 #endif
     extralight = vd.extralight;
 
-    while ((pl = R_GetNextPlane((uint16_t *)vd.gsortedvisplanes)) != NULL)
+    visplane_t *nextplane = R_GetNextPlane((uint16_t *)vd.gsortedvisplanes, isFOF);
+
+    while ((pl = nextplane) != NULL)
     {
         int light;
 
@@ -365,7 +384,12 @@ static void R_DrawPlanes2(void)
 
 //        if (pl->isFOF) // Don't draw them now plzkthx
 //            continue;
-        
+
+        nextplane = R_GetNextPlane((uint16_t *)vd.gsortedvisplanes, isFOF);
+
+        if (pl->isFOF)
+            CONS_Printf("isFOF is %x, Nextplane is %x", pl, nextplane);
+
         if (pl->minx > pl->maxx)
             continue;
 
@@ -459,11 +483,11 @@ static void R_DrawPlanes2(void)
 #ifdef MARS
 
 static void Mars_R_SplitPlanes(void) ATTR_DATA_CACHE_ALIGN;
-static void Mars_R_SortPlanes(void) ATTR_DATA_CACHE_ALIGN;
+static void Mars_R_SortPlanes(boolean isFOF) ATTR_DATA_CACHE_ALIGN;
 
 void Mars_Sec_R_DrawPlanes(void)
 {
-    R_DrawPlanes2();
+    R_DrawPlanes2(false);
 }
 
 static void Mars_R_SplitPlanes(void)
@@ -521,25 +545,37 @@ static void Mars_R_SplitPlanes(void)
 // sort visplanes by flatnum so that texture data 
 // has a better chance to stay in the CPU cache
 
-static void Mars_R_SortPlanes(void)
+static void Mars_R_SortPlanes(boolean isFOF)
 {
     int i, numplanes;
     visplane_t* pl;
     uint16_t *sortbuf = (uint16_t *)vd.gsortedvisplanes;
+    visplane_t *vpLocal, *lastvpLocal;
+
+    if (isFOF)
+    {
+        vpLocal = vd.fofplanes;
+        lastvpLocal = vd.lastfofplane;
+    }
+    else
+    {
+        vpLocal = vd.visplanes;
+        lastvpLocal = vd.lastvisplane;
+    }
 
     i = 0;
     numplanes = 0;
-    for (pl = vd.visplanes + 1; pl < vd.lastvisplane; pl++)
+
+    for (pl = vpLocal + 1; pl < lastvpLocal; pl++)
     {
-        // composite sort key: 1b - sign bit, 1b - !isFOF, 6b - negated span length, 8b - flat
-        unsigned key = (unsigned)(pl->maxx - pl->minx - 1) >> 5;
-        if (key > 63) {
-            key = 63;
+        // composite sort key: 1b - sign bit, 3b - negated span length, 12b - flat+light
+        unsigned key = (unsigned)(pl->maxx - pl->minx - 1) >> 6;
+        if (key > 5) {
+            key = 5;
         }
         // to minimize pipeline stalls, the larger planes must be drawn first, hence length negation
-        key = (63 - key) << 8;
-        if (!pl->isFOF) key |= 64;
-        key |= (pl->flatandlight & 0xFF);
+        key = (5 - key) << 12;
+        key |= (pl->flatandlight & 0xFFF);
         sortbuf[i + 0] = key;
         sortbuf[i + 1] = ++numplanes;
         i += 2;
@@ -565,9 +601,33 @@ static void R_PreDrawPlanes(void)
         {
             vd.gsortedvisplanes = (int *)vd.viswallextras;
 
-            Mars_R_SplitPlanes();
+//            Mars_R_SplitPlanes();
 
-            Mars_R_SortPlanes();
+            Mars_R_SortPlanes(false);
+        }
+    }
+}
+
+static void R_PreDrawFOFPlanes(void)
+{
+    int numplanes;
+
+    Mars_ClearCacheLine(&vd.lastfofplane);
+    Mars_ClearCacheLine(&vd.gsortedvisplanes);
+
+    // check to see if we still need to fill the sorted planes list
+    numplanes = vd.lastfofplane - vd.fofplanes; // visplane 0 is a dummy plane
+    if (numplanes > 1) 
+    {
+        Mars_ClearCacheLines(vd.fofplanes, (numplanes * sizeof(visplane_t) + 31) / 16);
+
+        if (vd.gsortedvisplanes == NULL)
+        {
+            vd.gsortedvisplanes = (int *)vd.viswallextras;
+
+//            Mars_R_SplitPlanes();
+
+            Mars_R_SortPlanes(true);
         }
     }
 }
@@ -602,9 +662,13 @@ void R_DrawPlanes(void)
 
     Mars_R_BeginDrawPlanes();
 
-    R_DrawPlanes2();
+    R_DrawPlanes2(false);
 
     Mars_R_EndDrawPlanes();
+
+    R_PreDrawFOFPlanes();
+    R_DrawPlanes2(true);
+
 #else
     R_DrawPlanes2();
 #endif
