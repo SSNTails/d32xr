@@ -392,7 +392,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 				break;
 			}
 #endif
-			if (gamemode &= GAMEMODE_DEMOPLAYBACK) {
+			if (gamemode & GAMEMODE_DEMOPLAYBACK) {
 				exit = ga_exitdemo;
 				break;
 			}
@@ -400,7 +400,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 		buttons |= I_ReadMouse(&mx, &my);
 		
-		if (gamemode &= GAMEMODE_DEMOPLAYBACK)
+		if (gamemode & GAMEMODE_DEMOPLAYBACK)
 		{
 			ticmousex[consoleplayer] = 0;
 			ticmousey[consoleplayer] = 0;
@@ -433,7 +433,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		}
 
 #ifdef PLAY_POS_DEMO
-		if (gamemode &= GAMEMODE_DEMOPLAYBACK) {
+		if (gamemode & GAMEMODE_DEMOPLAYBACK) {
 			players[0].mo->momx = 0;
 			players[0].mo->momy = 0;
 			players[0].mo->momz = 0;

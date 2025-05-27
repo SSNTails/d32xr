@@ -196,7 +196,7 @@ int P_Ticker (void)
 	int		ticstart;
 	player_t	*pl;
 
-	if (!(gamemode &= GAMEMODE_DEMOPLAYBACK)) {
+	if (!(gamemode & GAMEMODE_DEMOPLAYBACK)) {
 		players[0].buttons = Mars_ConvGamepadButtons(ticbuttons[consoleplayer]);
 	}
 
@@ -250,15 +250,15 @@ int P_Ticker (void)
 	ticstart = frtc;
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
-		if (gamemode &= GAMEMODE_DEMOPLAYBACK) {
+		if (gamemode & GAMEMODE_DEMOPLAYBACK) {
 			players[0].buttons = Mars_ConvGamepadButtons(rec_buttons);
 		}
 
 		if (gameaction == ga_nothing) {
-			if (gamemode &= GAMEMODE_DEMORECORDING) {
+			if (gamemode & GAMEMODE_DEMORECORDING) {
 				gameaction = RecordDemo();
 			}
-			else if (gamemode &= GAMEMODE_DEMOPLAYBACK) {
+			else if (gamemode & GAMEMODE_DEMOPLAYBACK) {
 				gameaction = PlayDemo();
 			}
 		}
@@ -780,7 +780,7 @@ void P_Start (void)
 	optionsMenuOn = false;
 	M_ClearRandom ();
 
-	if (gamemode &= GAMEMODE_DEMO) {
+	if (gamemode & GAMEMODE_DEMO) {
 		rec_prev_buttons = 0;
 		rec_buttons = 0;
 		rec_button_count = 0;
