@@ -387,12 +387,12 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 		if (buttons & BT_START) {
 #ifdef SHOW_COMPATIBILITY_PROMPT
-			if (gamemode == GAMEMODE_COMPATIBILITY) {
+			if (GameMode_IsCompatibility()) {
 				exit = ga_closeprompt;
 				break;
 			}
 #endif
-			if (gamemode & GAMEMODE_DEMOPLAYBACK) {
+			if (GameMode_IsDemoModePlayback()) {
 				exit = ga_exitdemo;
 				break;
 			}
@@ -400,7 +400,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 		buttons |= I_ReadMouse(&mx, &my);
 		
-		if (gamemode & GAMEMODE_DEMOPLAYBACK)
+		if (GameMode_IsDemoModePlayback())
 		{
 			ticmousex[consoleplayer] = 0;
 			ticmousey[consoleplayer] = 0;
@@ -415,7 +415,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		ticrealbuttons = buttons;
 
 		
-		if (gamemode == GAMEMODE_TITLESCREEN) {
+		if (GameMode_IsTitleScreen()) {
 			int timeleft = (gameinfo.titleTime >> 1) - leveltime;
 			if (timeleft <= 0) {
 				R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
@@ -433,7 +433,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		}
 
 #ifdef PLAY_POS_DEMO
-		if (gamemode & GAMEMODE_DEMOPLAYBACK) {
+		if (GameMode_IsDemoModePlayback()) {
 			players[0].mo->momx = 0;
 			players[0].mo->momy = 0;
 			players[0].mo->momz = 0;
@@ -549,7 +549,7 @@ void START_Compatibility (void)
 
 	R_InitColormap();
 
-	gamemode = GAMEMODE_COMPATIBILITY;
+	GameMode_SetCompatibility();
 }
 
 void STOP_Compatibility (void)
@@ -558,7 +558,7 @@ void STOP_Compatibility (void)
 	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	I_SetPalette(dc_playpals+10*768);
 
-	gamemode = GAMEMODE_NONE;
+	GameMode_Clear();
 }
 
 void DRAW_Compatibility (void)
@@ -1045,9 +1045,9 @@ D_printf ("DM_Main\n");
 			// Title with menu
 			M_Start();
 			G_InitNew (TITLE_MAP_NUMBER, gt_single, false);
-			gamemode = GAMEMODE_TITLESCREEN;
+			GameMode_SetTitleScreen();
 			exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-			gamemode = GAMEMODE_NONE;
+			GameMode_Clear();
 			M_Stop();
 
 			switch (exit) {
@@ -1066,9 +1066,9 @@ D_printf ("DM_Main\n");
 							demo_name[4] = '1';	// Assume we at least have a DEMO1 lump.
 						}
 						
-						gamemode |= GAMEMODE_DEMOPLAYBACK;
+						GameMode_SetDemoModePlayback();
 						exit = RunInputDemo(demo_name);
-						gamemode &= (~GAMEMODE_DEMOPLAYBACK);
+						GameMode_ClearDemo();
 					}
 					break;
 			}

@@ -547,7 +547,7 @@ void G_InitNew (int map, gametype_t gametype, boolean splitscr)
 	else
 		playeringame[1] = false;
 
-	gamemode &= (~GAMEMODE_DEMO);
+	GameMode_ClearDemo();
 
 	gamepaused = false;
 	gametic = 0;
@@ -730,9 +730,9 @@ int G_PlayInputDemoPtr (unsigned char *demo)
 	demo_p = demo + 8;
 	
 	G_InitNew (map, gt_single, false);
-	gamemode |= GAMEMODE_DEMOPLAYBACK;
+	GameMode_SetDemoModePlayback();
 	exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	gamemode &= (~GAMEMODE_DEMOPLAYBACK);
+	GameMode_ClearDemo();
 	
 	return exit;
 }
@@ -750,9 +750,9 @@ int G_PlayPositionDemoPtr (unsigned char *demo)
 	demo_p = demo + 0xA;
 
 	G_InitNew (map, gt_single, false);
-	gamemode |= GAMEMODE_DEMOPLAYBACK;
+	GameMode_SetDemoModePlayback();
 	exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	gamemode &= (~GAMEMODE_DEMOPLAYBACK);
+	GameMode_ClearDemo();
 
 	return exit;
 }
@@ -782,9 +782,9 @@ void G_RecordInputDemo (void)
 	*demo_p++ = 0;			// ...
 	
 	G_InitNew (startmap, gt_single, false);
-	gamemode |= GAMEMODE_DEMORECORDING;
+	GameMode_SetDemoModeRecording();
 	MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	gamemode &= (~GAMEMODE_DEMORECORDING);
+	GameMode_ClearDemo();
 
 #ifdef MARS
 	I_Error("%d %p", demo_p - demobuffer, demobuffer);
@@ -817,9 +817,9 @@ void G_RecordPositionDemo (void)
 	*demo_p++ = startmap;	// char map
 	
 	G_InitNew (startmap, gt_single, false);
-	gamemode |= GAMEMODE_DEMORECORDING;
+	GameMode_SetDemoModeRecording();
 	MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	gamemode &= (~GAMEMODE_DEMORECORDING);
+	GameMode_ClearDemo();
 
 #ifdef MARS
 	I_Error("%d %p", demo_p - demobuffer, demobuffer);

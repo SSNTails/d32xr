@@ -297,7 +297,7 @@ int IN_Ticker (void)
 			S_StartSound(NULL, sfx_s3k_b0); // cha-ching!
 
 			// Update when done with tally
-			if (!(gamemode & GAMEMODE_DEMOPLAYBACK))
+			if (!GameMode_IsDemoModePlayback())
 			{
 				//M_SilentUpdateUnlockablesAndEmblems(serverGamedata);
 

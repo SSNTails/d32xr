@@ -189,25 +189,50 @@ typedef enum
 #define GAMEMODE_CREDITS			0x04
 
 #define GAMEMODE_LEVEL				0x10
-#define GAMEMODE_NORMALLEVEL		0x10
-#define GAMEMODE_SPECIALSTAGE		0x11
+#define GAMEMODE_LEVEL_TYPE			0x11
 
-#define GAMEMODE_DEMOPLAYBACK		0x40
-#define GAMEMODE_DEMORECORDING		0x80
-#define GAMEMODE_DEMO				0xC0
+#define GAMEMODE_DEMO				0x80
+#define GAMEMODE_DEMO_MODE			0x88
 
 
-/*
-#define compatibility_prompt		(gamemode == GAMEMODE_COMPATIBILITY)
-#define disclaimer					(gamemode == GAMEMODE_DISCLAIMER)
-#define titlescreen					(gamemode == GAMEMODE_TITLESCREEN)
-#define credits						(gamemode == GAMEMODE_CREDITS)
-#define levelrunning				(gamemode &= GAMEMODE_LEVEL)	// encompass LEVEL and SPECIALSTAGE
-#define normallevel					(gamemode == GAMEMODE_LEVEL)
-#define specialstage				(gamemode == GAMEMODE_SPECIALSTAGE)
-#define demoplayback				(gamemode &= GAMEMODE_DEMOPLAY)
-#define demorecording				(gamemode &= GAMEMODE_DEMORECORD)
-*/
+#define LEVELTYPE_NORMAL			0x10
+#define LEVELTYPE_SPECIALSTAGE		0x11
+
+#define DEMOMODE_PLAYBACK			0x80
+#define DEMOMODE_RECORDING			0x88
+
+
+// General
+#define GameMode_IsCompatibility()			(gamemode & GAMEMODE_COMPATIBILITY)
+#define GameMode_IsDisclaimer()				(gamemode & GAMEMODE_DISCLAIMER)
+#define GameMode_IsTitleScreen()			(gamemode & GAMEMODE_TITLESCREEN)
+#define GameMode_IsCredits()				(gamemode & GAMEMODE_CREDITS)
+
+#define GameMode_SetCompatibility()			(gamemode = GAMEMODE_COMPATIBILITY)
+#define GameMode_SetDisclaimer()			(gamemode = GAMEMODE_DISCLAIMER)
+#define GameMode_SetTitleScreen()			(gamemode = GAMEMODE_TITLESCREEN)
+#define GameMode_SetCredits()				(gamemode = GAMEMODE_CREDITS)
+
+#define GameMode_Clear()					(gamemode = GAMEMODE_NONE)
+
+// Level
+#define GameMode_IsLevel()					(gamemode & GAMEMODE_LEVEL)
+#define GameMode_IsNormalLevel()			((gamemode & GAMEMODE_LEVEL_TYPE) == LEVELTYPE_NORMAL)
+#define GameMode_IsSpecialStage()			((gamemode & GAMEMODE_LEVEL_TYPE) == LEVELTYPE_SPECIALSTAGE)
+
+#define GameMode_SetLevelTypeNormal()		(gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | LEVELTYPE_NORMAL)
+#define GameMode_SetLevelTypeSpecialStage()	(gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | LEVELTYPE_SPECIALSTAGE)
+
+// Demo
+#define GameMode_IsDemo()					(gamemode & GAMEMODE_DEMO)
+#define GameMode_IsDemoModePlayback()		((gamemode & GAMEMODE_DEMO_MODE) == DEMOMODE_PLAYBACK)
+#define GameMode_IsDemoModeRecording()		((gamemode & GAMEMODE_DEMO_MODE) == DEMOMODE_RECORDING)
+
+#define GameMode_SetDemoModePlayback()		(gamemode = (gamemode & (~GAMEMODE_DEMO_MODE)) | DEMOMODE_PLAYBACK)
+#define GameMode_SetDemoModeRecording()		(gamemode = (gamemode & (~GAMEMODE_DEMO_MODE)) | DEMOMODE_RECORDING)
+
+#define GameMode_ClearDemo()				(gamemode &= (~GAMEMODE_DEMO_MODE))
+
 
 #define Mars_ClearCacheLines(paddr,nl) \
 	do { \
