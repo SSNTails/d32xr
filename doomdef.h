@@ -197,18 +197,6 @@ typedef enum
 #define GAMEMODE_DEMO				0xC0
 
 
-/*
-#define compatibility_prompt		(gamemode == GAMEMODE_COMPATIBILITY)
-#define disclaimer					(gamemode == GAMEMODE_DISCLAIMER)
-#define titlescreen					(gamemode == GAMEMODE_TITLESCREEN)
-#define credits						(gamemode == GAMEMODE_CREDITS)
-#define levelrunning				(gamemode &= GAMEMODE_LEVEL)	// encompass LEVEL and SPECIALSTAGE
-#define normallevel					(gamemode == GAMEMODE_LEVEL)
-#define specialstage				(gamemode == GAMEMODE_SPECIALSTAGE)
-#define demoplayback				(gamemode &= GAMEMODE_DEMOPLAY)
-#define demorecording				(gamemode &= GAMEMODE_DEMORECORD)
-*/
-
 #define Mars_ClearCacheLines(paddr,nl) \
 	do { \
 		uintptr_t addr = ((uintptr_t)(paddr) & ~15) | 0x40000000; \
