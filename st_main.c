@@ -418,7 +418,7 @@ void CONS_Printf(char *msg, ...)
 
 void ST_Drawer(void)
 {
-	if (titlescreen)
+	if (gamemode == GAMEMODE_TITLESCREEN)
 		return;
 
 	if (debugmode == DEBUGMODE_NODRAW)

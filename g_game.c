@@ -13,6 +13,7 @@ void G_DoLoadLevel (void);
 
 
 gameaction_t    gameaction;
+byte			gamemode;
 VINT			gamemaplump;
 dmapinfo_t		gamemapinfo;
 dgameinfo_t		gameinfo;
@@ -36,12 +37,7 @@ uint16_t        emeralds;
 uint16_t        token;
 uint16_t        tokenbits;
 
-boolean			onscreen_prompt;
 
-boolean			titlescreen;
-
-boolean         demorecording;
-boolean         demoplayback;
 
 unsigned char *demo_p = 0;
 unsigned char *demobuffer = 0;
@@ -551,8 +547,7 @@ void G_InitNew (int map, gametype_t gametype, boolean splitscr)
 	else
 		playeringame[1] = false;
 
-	demorecording = false;
-	demoplayback = false;
+	gamemode &= (~GAMEMODE_DEMO);
 
 	gamepaused = false;
 	gametic = 0;
@@ -735,9 +730,9 @@ int G_PlayInputDemoPtr (unsigned char *demo)
 	demo_p = demo + 8;
 	
 	G_InitNew (map, gt_single, false);
-	demoplayback = true;
+	gamemode |= GAMEMODE_DEMOPLAYBACK;
 	exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	demoplayback = false;
+	gamemode &= (~GAMEMODE_DEMOPLAYBACK);
 	
 	return exit;
 }
@@ -755,9 +750,9 @@ int G_PlayPositionDemoPtr (unsigned char *demo)
 	demo_p = demo + 0xA;
 
 	G_InitNew (map, gt_single, false);
-	demoplayback = true;
+	gamemode |= GAMEMODE_DEMOPLAYBACK;
 	exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	demoplayback = false;
+	gamemode &= (~GAMEMODE_DEMOPLAYBACK);
 
 	return exit;
 }
@@ -787,9 +782,9 @@ void G_RecordInputDemo (void)
 	*demo_p++ = 0;			// ...
 	
 	G_InitNew (startmap, gt_single, false);
-	demorecording = true;
+	gamemode |= GAMEMODE_DEMORECORDING;
 	MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	demorecording = false;
+	gamemode &= (~GAMEMODE_DEMORECORDING);
 
 #ifdef MARS
 	I_Error("%d %p", demo_p - demobuffer, demobuffer);
@@ -822,9 +817,9 @@ void G_RecordPositionDemo (void)
 	*demo_p++ = startmap;	// char map
 	
 	G_InitNew (startmap, gt_single, false);
-	demorecording = true;
+	gamemode |= GAMEMODE_DEMORECORDING;
 	MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	demorecording = false;
+	gamemode &= (~GAMEMODE_DEMORECORDING);
 
 #ifdef MARS
 	I_Error("%d %p", demo_p - demobuffer, demobuffer);

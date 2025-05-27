@@ -181,6 +181,44 @@ typedef enum
 } gameaction_t;
 
 
+#define GAMEMODE_NONE				0x00
+
+#define GAMEMODE_COMPATIBILITY		0x01
+#define GAMEMODE_DISCLAIMER			0x02
+#define GAMEMODE_TITLESCREEN		0x03
+#define GAMEMODE_CREDITS			0x04
+
+#define GAMEMODE_LEVEL				0x10
+#define GAMEMODE_NORMALLEVEL		0x10
+#define GAMEMODE_SPECIALSTAGE		0x11
+
+#define GAMEMODE_DEMOPLAYBACK		0x40
+#define GAMEMODE_DEMORECORDING		0x80
+#define GAMEMODE_DEMO				0xC0
+
+
+/*
+#define compatibility_prompt		(gamemode == GAMEMODE_COMPATIBILITY)
+#define disclaimer					(gamemode == GAMEMODE_DISCLAIMER)
+#define titlescreen					(gamemode == GAMEMODE_TITLESCREEN)
+#define credits						(gamemode == GAMEMODE_CREDITS)
+#define levelrunning				(gamemode &= GAMEMODE_LEVEL)	// encompass LEVEL and SPECIALSTAGE
+#define normallevel					(gamemode == GAMEMODE_LEVEL)
+#define specialstage				(gamemode == GAMEMODE_SPECIALSTAGE)
+#define demoplayback				(gamemode &= GAMEMODE_DEMOPLAY)
+#define demorecording				(gamemode &= GAMEMODE_DEMORECORD)
+*/
+
+#define Mars_ClearCacheLines(paddr,nl) \
+	do { \
+		uintptr_t addr = ((uintptr_t)(paddr) & ~15) | 0x40000000; \
+		uint32_t l; \
+		for (l = 0; l < nl; l++) { \
+			*(volatile uintptr_t *)addr = 0; \
+			addr += 16; \
+		} \
+	} while (0)
+
 /* */
 /* library replacements */
 /* */
@@ -536,6 +574,7 @@ void G_LoadGame(int saveslot);
 #include "d_mapinfo.h"
 
 extern	gameaction_t	gameaction;
+extern	unsigned char	gamemode;
 
 #define	SBARHEIGHT	0			/* status bar height at bottom of screen */
 

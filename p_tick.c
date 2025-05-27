@@ -196,11 +196,11 @@ int P_Ticker (void)
 	int		ticstart;
 	player_t	*pl;
 
-	if (!demoplayback) {
+	if (!(gamemode &= GAMEMODE_DEMOPLAYBACK)) {
 		players[0].buttons = Mars_ConvGamepadButtons(ticbuttons[consoleplayer]);
 	}
 
-	if (titlescreen)
+	if (gamemode == GAMEMODE_TITLESCREEN)
 	{
 		int result = M_Ticker(); // Run menu logic.
 		if (result)
@@ -250,15 +250,15 @@ int P_Ticker (void)
 	ticstart = frtc;
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
-		if (demoplayback) {
+		if (gamemode &= GAMEMODE_DEMOPLAYBACK) {
 			players[0].buttons = Mars_ConvGamepadButtons(rec_buttons);
 		}
 
 		if (gameaction == ga_nothing) {
-			if (demorecording) {
+			if (gamemode &= GAMEMODE_DEMORECORDING) {
 				gameaction = RecordDemo();
 			}
-			else if (demoplayback) {
+			else if (gamemode &= GAMEMODE_DEMOPLAYBACK) {
 				gameaction = PlayDemo();
 			}
 		}
@@ -421,14 +421,14 @@ gameaction_t RecordDemo()
 		}
 		demobuffer[0xFF] = 0x80;
 		*((short *)&demobuffer[6]) = leveltime - rec_start_time;
-		demorecording = false;
+		gamemode &= (~GAMEMODE_DEMORECORDING);
 	}
 	else if (leveltime - rec_start_time >= (30*TICRATE) || buttons & BT_START) {
 		// The demo has been recording for 30 seconds, or START was pressed. End the recording.
 		demo_p += 1;
 		*demo_p++ = 0x80;
 		*((short *)&demobuffer[6]) = leveltime - rec_start_time;
-		demorecording = false;
+		gamemode &= (~GAMEMODE_DEMORECORDING);
 	}
 	else if (rec_start_time == 0x7FFF) {
 		if (!(players[0].pflags & PF_CONTROLDISABLED)) {
@@ -534,7 +534,7 @@ gameaction_t PlayDemo()
 
 	if (rec_current_time >= rec_end_time) {
 		ticbuttons[consoleplayer] = players[0].buttons = 0;
-		demoplayback = false;
+		gamemode &= (~GAMEMODE_DEMOPLAYBACK);
 		exit = ga_completed;
 	}
 	else if (rec_start_time == 0x7FFF) {
@@ -564,7 +564,7 @@ gameaction_t PlayDemo()
 				rec_buttons = *demo_p;
 				if (rec_buttons & BT_START) {
 					ticbuttons[consoleplayer] = players[0].buttons = 0;
-					demoplayback = false;
+					gamemode &= (~GAMEMODE_DEMOPLAYBACK);
 					exit = ga_completed;
 				}
 				ticbuttons[consoleplayer] = players[0].buttons = Mars_ConvGamepadButtons(rec_buttons);
@@ -739,7 +739,7 @@ void P_Drawer (void)
 
 	Mars_R_SecWait();
 
-	if (titlescreen)
+	if (gamemode == GAMEMODE_TITLESCREEN)
 		M_Drawer();	// Show title emblem and menus.
 	if (optionsMenuOn)
 		O_Drawer();	// Show options menu.
@@ -780,13 +780,7 @@ void P_Start (void)
 	optionsMenuOn = false;
 	M_ClearRandom ();
 
-	if (!demoplayback && !demorecording && !titlescreen) {
-		if (!netgame || splitscreen) {
-			P_RandomSeed(I_GetTime());
-		}
-	}
-
-	if (demoplayback || demorecording) {
+	if (gamemode &= GAMEMODE_DEMO) {
 		rec_prev_buttons = 0;
 		rec_buttons = 0;
 		rec_button_count = 0;
@@ -794,6 +788,11 @@ void P_Start (void)
 
 		players[0].pflags |= PF_CONTROLDISABLED;
 		players[0].buttons = 0;
+	}
+	else if (gamemode != GAMEMODE_TITLESCREEN) {
+		if (!netgame || splitscreen) {
+			P_RandomSeed(I_GetTime());
+		}
 	}
 
 	clearscreen = 2;
