@@ -203,10 +203,10 @@ typedef enum
 
 
 // General
-#define GameMode_IsCompatibility()			(gamemode & GAMEMODE_COMPATIBILITY)
-#define GameMode_IsDisclaimer()				(gamemode & GAMEMODE_DISCLAIMER)
-#define GameMode_IsTitleScreen()			(gamemode & GAMEMODE_TITLESCREEN)
-#define GameMode_IsCredits()				(gamemode & GAMEMODE_CREDITS)
+#define GameMode_IsCompatibility()			(gamemode == GAMEMODE_COMPATIBILITY)
+#define GameMode_IsDisclaimer()				(gamemode == GAMEMODE_DISCLAIMER)
+#define GameMode_IsTitleScreen()			(gamemode == GAMEMODE_TITLESCREEN)
+#define GameMode_IsCredits()				(gamemode == GAMEMODE_CREDITS)
 
 #define GameMode_SetCompatibility()			(gamemode = GAMEMODE_COMPATIBILITY)
 #define GameMode_SetDisclaimer()			(gamemode = GAMEMODE_DISCLAIMER)
@@ -233,16 +233,6 @@ typedef enum
 
 #define GameMode_ClearDemo()				(gamemode &= (~GAMEMODE_DEMO_MODE))
 
-
-#define Mars_ClearCacheLines(paddr,nl) \
-	do { \
-		uintptr_t addr = ((uintptr_t)(paddr) & ~15) | 0x40000000; \
-		uint32_t l; \
-		for (l = 0; l < nl; l++) { \
-			*(volatile uintptr_t *)addr = 0; \
-			addr += 16; \
-		} \
-	} while (0)
 
 /* */
 /* library replacements */

@@ -548,8 +548,6 @@ void START_Compatibility (void)
 	I_SetPalette(dc_playpals);
 
 	R_InitColormap();
-
-	GameMode_SetCompatibility();
 }
 
 void STOP_Compatibility (void)
@@ -557,8 +555,6 @@ void STOP_Compatibility (void)
 	// Set to totally black
 	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	I_SetPalette(dc_playpals+10*768);
-
-	GameMode_Clear();
 }
 
 void DRAW_Compatibility (void)
@@ -1022,12 +1018,16 @@ D_printf ("DM_Main\n");
 
 #ifdef SHOW_COMPATIBILITY_PROMPT
 	if (legacy_emulator) {
+		GameMode_SetCompatibility();
 		MiniLoop (START_Compatibility, STOP_Compatibility, TIC_Compatibility, DRAW_Compatibility, UpdateBuffer);
+		GameMode_Clear();
 	}
 #endif
 
 #ifdef SHOW_DISCLAIMER
+	GameMode_SetDisclaimer();
 	MiniLoop (START_Disclaimer, STOP_Disclaimer, TIC_Disclaimer, DRAW_Disclaimer, UpdateBuffer);
+	GameMode_Clear();
 #endif
 
 	startmap = 1;
