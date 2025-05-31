@@ -196,11 +196,11 @@ int P_Ticker (void)
 	int		ticstart;
 	player_t	*pl;
 
-	if (!GameMode_IsDemoModePlayback()) {
+	if (!IsDemoModeType(DemoMode_Playback)) {
 		players[0].buttons = Mars_ConvGamepadButtons(ticbuttons[consoleplayer]);
 	}
 
-	if (GameMode_IsTitleScreen())
+	if (IsTitleScreen())
 	{
 		int result = M_Ticker(); // Run menu logic.
 		if (result)
@@ -250,15 +250,15 @@ int P_Ticker (void)
 	ticstart = frtc;
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
-		if (GameMode_IsDemoModePlayback()) {
+		if (IsDemoModeType(DemoMode_Playback)) {
 			players[0].buttons = Mars_ConvGamepadButtons(rec_buttons);
 		}
 
 		if (gameaction == ga_nothing) {
-			if (GameMode_IsDemoModeRecording()) {
+			if (IsDemoModeType(DemoMode_Recording)) {
 				gameaction = RecordDemo();
 			}
-			else if (GameMode_IsDemoModePlayback()) {
+			else if (IsDemoModeType(DemoMode_Playback)) {
 				gameaction = PlayDemo();
 			}
 		}
@@ -421,14 +421,14 @@ gameaction_t RecordDemo()
 		}
 		demobuffer[0xFF] = 0x80;
 		*((short *)&demobuffer[6]) = leveltime - rec_start_time;
-		GameMode_ClearDemo();
+		SetDemoMode(DemoMode_None);
 	}
 	else if (leveltime - rec_start_time >= (30*TICRATE) || buttons & BT_START) {
 		// The demo has been recording for 30 seconds, or START was pressed. End the recording.
 		demo_p += 1;
 		*demo_p++ = 0x80;
 		*((short *)&demobuffer[6]) = leveltime - rec_start_time;
-		GameMode_ClearDemo();
+		SetDemoMode(DemoMode_None);
 	}
 	else if (rec_start_time == 0x7FFF) {
 		if (!(players[0].pflags & PF_CONTROLDISABLED)) {
@@ -534,7 +534,7 @@ gameaction_t PlayDemo()
 
 	if (rec_current_time >= rec_end_time) {
 		ticbuttons[consoleplayer] = players[0].buttons = 0;
-		GameMode_ClearDemo();
+		SetDemoMode(DemoMode_None);
 		exit = ga_completed;
 	}
 	else if (rec_start_time == 0x7FFF) {
@@ -739,7 +739,7 @@ void P_Drawer (void)
 
 	Mars_R_SecWait();
 
-	if (GameMode_IsTitleScreen())
+	if (IsTitleScreen())
 		M_Drawer();	// Show title emblem and menus.
 	if (optionsMenuOn)
 		O_Drawer();	// Show options menu.
@@ -780,7 +780,7 @@ void P_Start (void)
 	optionsMenuOn = false;
 	M_ClearRandom ();
 
-	if (GameMode_IsDemo()) {
+	if (IsDemo()) {
 		rec_prev_buttons = 0;
 		rec_buttons = 0;
 		rec_button_count = 0;
@@ -789,7 +789,7 @@ void P_Start (void)
 		players[0].pflags |= PF_CONTROLDISABLED;
 		players[0].buttons = 0;
 	}
-	else if (!GameMode_IsTitleScreen()) {
+	else if (!IsTitleScreen()) {
 		if (!netgame || splitscreen) {
 			P_RandomSeed(I_GetTime());
 		}

@@ -673,7 +673,7 @@ void M_Drawer (void)
 	mainitem_t* items = &mainitem[menuscr->firstitem];
 	int y, y_offset = 0;
 
-	if (GameMode_IsTitleScreen() && gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
+	if (IsTitleScreen() && gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
 		// Fill the area above the viewport with the sky color.
 		DrawFillRect(0, 0, 320, 44, gamemapinfo.skyTopColor);
 	}

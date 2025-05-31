@@ -181,57 +181,94 @@ typedef enum
 } gameaction_t;
 
 
+typedef enum
+{
+	LevelType_Normal = 0x10,
+	LevelType_SpecialStage = 0x11,
+	LevelType_NiGHTS = 0x12,
+	LevelType_Final = 0x13,
+} leveltype_t;
+
+typedef enum
+{
+	DemoMode_None = 0x10,
+	DemoMode_Playback = 0x18,
+	DemoMode_Recording = 0x1C,
+} demomodetype_t;
+
+
+// LEVEL has a mode value of '1x', where x is the low nybble that carries attributes
+// Attributes: Ddll
+// D - Demo enable/disable
+// d - When demo is enabled, this determines playback (0) or recording (1).
+// l - This determines if the level type is normal (00), special stage (01), NiGHTS (10), or final (11).
+
 #define GAMEMODE_NONE				0x00
 
 #define GAMEMODE_COMPATIBILITY		0x01
 #define GAMEMODE_DISCLAIMER			0x02
 #define GAMEMODE_TITLESCREEN		0x03
-#define GAMEMODE_CREDITS			0x04
+#define GAMEMODE_LEVELSELECT		0x04
+#define GAMEMODE_CREDITS			0x05
 
-#define GAMEMODE_LEVEL				0x10
-#define GAMEMODE_LEVEL_TYPE			0x11
+#define GAMEMODE_LEVEL				0xF0
+#define GAMEMODE_LEVEL_TYPE			0xF1
 
-#define GAMEMODE_DEMO				0x80
-#define GAMEMODE_DEMO_MODE			0x88
+#define GAMEMODE_DEMO				0xF8
+#define GAMEMODE_DEMO_MODETYPE		0xFC
 
 
 #define LEVELTYPE_NORMAL			0x10
 #define LEVELTYPE_SPECIALSTAGE		0x11
+#define LEVELTYPE_NIGHTS			0x12
+#define LEVELTYPE_FINAL				0x13
 
-#define DEMOMODE_PLAYBACK			0x80
-#define DEMOMODE_RECORDING			0x88
+#define DEMOMODE_PLAYBACK			0x18
+#define DEMOMODE_RECORDING			0x1C
+
+extern byte gamemode;
 
 
 // General
-#define GameMode_IsCompatibility()			(gamemode == GAMEMODE_COMPATIBILITY)
-#define GameMode_IsDisclaimer()				(gamemode == GAMEMODE_DISCLAIMER)
-#define GameMode_IsTitleScreen()			(gamemode == GAMEMODE_TITLESCREEN)
-#define GameMode_IsCredits()				(gamemode == GAMEMODE_CREDITS)
+static inline boolean IsCompatibility()
+	{ gamemode == GAMEMODE_COMPATIBILITY; }
+static inline boolean IsDisclaimer()
+	{ gamemode == GAMEMODE_DISCLAIMER; }
+static inline boolean IsTitleScreen()
+	{ gamemode == GAMEMODE_TITLESCREEN; }
+static inline boolean IsLevelSelect()
+	{ gamemode == GAMEMODE_LEVELSELECT; }
+static inline boolean IsCredits()
+	{ gamemode == GAMEMODE_CREDITS; }
 
-#define GameMode_SetCompatibility()			(gamemode = GAMEMODE_COMPATIBILITY)
-#define GameMode_SetDisclaimer()			(gamemode = GAMEMODE_DISCLAIMER)
-#define GameMode_SetTitleScreen()			(gamemode = GAMEMODE_TITLESCREEN)
-#define GameMode_SetCredits()				(gamemode = GAMEMODE_CREDITS)
-
-#define GameMode_Clear()					(gamemode = GAMEMODE_NONE)
+static inline void SetCompatibility()
+	{ gamemode = GAMEMODE_COMPATIBILITY; }
+static inline void SetDisclaimer()
+	{ gamemode = GAMEMODE_DISCLAIMER; }
+static inline void SetTitleScreen()
+	{ gamemode = GAMEMODE_TITLESCREEN; }
+static inline void SetLevelSelect()
+	{ gamemode = GAMEMODE_LEVELSELECT; }
+static inline void SetCredits()
+	{ gamemode = GAMEMODE_CREDITS; }
 
 // Level
-#define GameMode_IsLevel()					(gamemode & GAMEMODE_LEVEL)
-#define GameMode_IsNormalLevel()			((gamemode & GAMEMODE_LEVEL_TYPE) == LEVELTYPE_NORMAL)
-#define GameMode_IsSpecialStage()			((gamemode & GAMEMODE_LEVEL_TYPE) == LEVELTYPE_SPECIALSTAGE)
+static inline boolean IsLevel()
+	{ gamemode & GAMEMODE_LEVEL; }
+static inline boolean IsLevelType(leveltype_t type)
+	{ (gamemode & GAMEMODE_LEVEL_TYPE) == type; }
 
-#define GameMode_SetLevelTypeNormal()		(gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | LEVELTYPE_NORMAL)
-#define GameMode_SetLevelTypeSpecialStage()	(gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | LEVELTYPE_SPECIALSTAGE)
+static inline void SetLevel(leveltype_t type)
+	{ gamemode = type; }
 
 // Demo
-#define GameMode_IsDemo()					(gamemode & GAMEMODE_DEMO)
-#define GameMode_IsDemoModePlayback()		((gamemode & GAMEMODE_DEMO_MODE) == DEMOMODE_PLAYBACK)
-#define GameMode_IsDemoModeRecording()		((gamemode & GAMEMODE_DEMO_MODE) == DEMOMODE_RECORDING)
+static inline boolean IsDemo()
+	{ gamemode & GAMEMODE_DEMO; }
+static inline boolean IsDemoModeType(demomodetype_t type)
+	{ (gamemode & GAMEMODE_DEMO_MODETYPE) == type; }
 
-#define GameMode_SetDemoModePlayback()		(gamemode = (gamemode & (~GAMEMODE_DEMO_MODE)) | DEMOMODE_PLAYBACK)
-#define GameMode_SetDemoModeRecording()		(gamemode = (gamemode & (~GAMEMODE_DEMO_MODE)) | DEMOMODE_RECORDING)
-
-#define GameMode_ClearDemo()				(gamemode &= (~GAMEMODE_DEMO_MODE))
+static inline void SetDemoMode(demomodetype_t type)
+	{ gamemode |= type; }
 
 
 /* */
