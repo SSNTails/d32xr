@@ -744,6 +744,7 @@ __attribute__((aligned(16)))
 	fixed_t		viewx, viewy, viewz;
 	angle_t		viewangle,aimingangle;
 	sector_t 	*viewsector;
+	sector_t    *heightsec;
 	fixed_t		viewcos, viewsin;
 	player_t	*viewplayer;
 	fixed_t     viewwaterheight;

@@ -1084,9 +1084,11 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.viewsector = &sectors[thiscam->subsector->isector];
 		vd.lightlevel = vd.viewsector->lightlevel;
 		vd.aimingangle = thiscam->aiming;
+		vd.heightsec = NULL;
 
-		if (sectors[thiscam->subsector->isector].heightsec >= 0)
+		if (vd.viewsector->heightsec >= 0)
 		{
+			vd.heightsec = &sectors[vd.viewsector->heightsec];
 			vd.viewwaterheight = GetWatertopSec(vd.viewsector);
 			
 			if (vd.viewwaterheight > vd.viewz)
@@ -1107,6 +1109,11 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.viewangle = player->mo->angle;
 		vd.aimingangle = 0;
 		vd.viewsector = SS_SECTOR(player->mo->isubsector);
+		vd.heightsec = NULL;
+
+		if (vd.viewsector->heightsec >= 0)
+			vd.heightsec = &sectors[vd.viewsector->heightsec];
+			
 		vd.lightlevel = vd.viewsector->lightlevel;
 	}
 
