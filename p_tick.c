@@ -564,7 +564,7 @@ gameaction_t PlayDemo()
 				rec_buttons = *demo_p;
 				if (rec_buttons & BT_START) {
 					ticbuttons[consoleplayer] = players[0].buttons = 0;
-					GameMode_ClearDemo();
+					SetDemoMode(DemoMode_None);
 					exit = ga_completed;
 				}
 				ticbuttons[consoleplayer] = players[0].buttons = Mars_ConvGamepadButtons(rec_buttons);

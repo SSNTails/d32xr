@@ -1051,6 +1051,12 @@ D_printf ("DM_Main\n");
 				case ga_startnew:
 					// Start a new game
 					G_InitNew(startmap, starttype, startsplitscreen);
+					if (startmap >= SSTAGE_START && startmap <= SSTAGE_END) {
+						SetLevel(LevelType_SpecialStage);
+					}
+					else {
+						SetLevel(LevelType_Normal);
+					}
 					G_RunGame();
 					break;
 				case ga_titleexpired:

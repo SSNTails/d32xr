@@ -730,6 +730,12 @@ int G_PlayInputDemoPtr (unsigned char *demo)
 	demo_p = demo + 8;
 	
 	G_InitNew (map, gt_single, false);
+	if (map >= SSTAGE_START && map <= SSTAGE_END) {
+		SetLevel(LevelType_SpecialStage);
+	}
+	else {
+		SetLevel(LevelType_Normal);
+	}
 	SetDemoMode(DemoMode_Playback);
 	exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
 	SetDemoMode(DemoMode_None);
@@ -750,6 +756,12 @@ int G_PlayPositionDemoPtr (unsigned char *demo)
 	demo_p = demo + 0xA;
 
 	G_InitNew (map, gt_single, false);
+	if (map >= SSTAGE_START && map <= SSTAGE_END) {
+		SetLevel(LevelType_SpecialStage);
+	}
+	else {
+		SetLevel(LevelType_Normal);
+	}
 	SetDemoMode(DemoMode_Playback);
 	exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
 	SetDemoMode(DemoMode_None);
@@ -782,6 +794,12 @@ void G_RecordInputDemo (void)
 	*demo_p++ = 0;			// ...
 	
 	G_InitNew (startmap, gt_single, false);
+	if (startmap >= SSTAGE_START && startmap <= SSTAGE_END) {
+		SetLevel(LevelType_SpecialStage);
+	}
+	else {
+		SetLevel(LevelType_Normal);
+	}
 	SetDemoMode(DemoMode_Recording);
 	MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
 	SetDemoMode(DemoMode_None);
@@ -817,6 +835,12 @@ void G_RecordPositionDemo (void)
 	*demo_p++ = startmap;	// char map
 	
 	G_InitNew (startmap, gt_single, false);
+	if (startmap >= SSTAGE_START && startmap <= SSTAGE_END) {
+		SetLevel(LevelType_SpecialStage);
+	}
+	else {
+		SetLevel(LevelType_Normal);
+	}
 	SetDemoMode(DemoMode_Recording);
 	MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
 	SetDemoMode(DemoMode_None);
