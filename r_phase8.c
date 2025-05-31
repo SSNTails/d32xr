@@ -49,7 +49,8 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
 
    I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
 
-   VINT thickness = (sectors[seg->fofSector].ceilingheight- sectors[seg->fofSector].floorheight) >> (FRACBITS+1);
+   const sector_t *fofSector = &sectors[seg->fofSector];
+   VINT thickness = ((fofSector->ceilingheight- fofSector->floorheight) >> FRACBITS) >> 1;
 
    for(; x <= stopx; x++)
    {
@@ -669,7 +670,6 @@ void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
   if (vis->heightsec >= 0)  // only things in specially marked sectors
     {
       fixed_t h,mh;
-      int phs = vd.viewsector->heightsec;
       // Recalculate these lost values from phase3
       const fixed_t gzt = vis->texturemid + vd.viewz;
       const fixed_t gz = gzt - (vis->patchheight << FRACBITS);
@@ -678,7 +678,7 @@ void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
           (h = centerYFrac - FixedMul(mh-=vd.viewz, vis->yscale)) >= 0 &&
           (h >>= FRACBITS) < viewportHeight)
       {
-        if (mh <= 0 || (phs >= 0 && vd.viewz > vd.viewwaterheight))
+        if (mh <= 0 || (vd.viewsector->heightsec >= 0 && vd.viewz > vd.viewwaterheight))
           {                          // clip bottom
             for (x=vis->x1 ; x<=vis->x2 ; x++)
             {

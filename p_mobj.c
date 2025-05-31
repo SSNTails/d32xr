@@ -131,7 +131,7 @@ void P_Attract(mobj_t *source, mobj_t *dest)
 
 fixed_t GetWatertopSec(const sector_t *sec)
 {
-	if (sec->heightsec == -1)
+	if (sec->heightsec < 0)
 		return sec->floorheight - 512*FRACUNIT;
 
 	return sectors[sec->heightsec].ceilingheight;

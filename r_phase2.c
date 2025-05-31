@@ -339,8 +339,9 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
             
             if (actionbits & AC_FOFFLOOR) // Bottom of FOF is visible
             {
-                const VINT fofandlight = ((sectors[segl->fofSector].lightlevel & 0xff) << 8) | segl->fof_picnum;
-                const fixed_t fofplaneHeight = sectors[segl->fofSector].floorheight - vd.viewz;
+                const sector_t *fofSector = &sectors[segl->fofSector];
+                const VINT fofandlight = ((fofSector->lightlevel & 0xff) << 8) | segl->fof_picnum;
+                const fixed_t fofplaneHeight = fofSector->floorheight - vd.viewz;
                 
                 // "ceilopen"
                 top = ceilingclipx;
@@ -392,10 +393,12 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
             }
             else if (actionbits & AC_FOFSIDE)
             {
-                if (sectors[segl->fofSector].floorheight > vd.viewz) // Bottom of FOF is visible
+                const sector_t *fofSector = &sectors[segl->fofSector];
+
+                if (fofSector->floorheight > vd.viewz) // Bottom of FOF is visible
                 {
                     const VINT fofandlight = ((sectors[segl->fofSector].lightlevel & 0xff) << 8) | segl->fof_picnum;
-                    const fixed_t fofplaneHeight = sectors[segl->fofSector].floorheight - vd.viewz;
+                    const fixed_t fofplaneHeight = fofSector->floorheight - vd.viewz;
                     
                     // "ceilopen"
                     top = FixedMul(scale2, fofplaneHeight)>>FRACBITS;
@@ -412,10 +415,10 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
 //                    if (leveltime & 1)
 //                        CONS_Printf("Top is %d, %d, %d", fofplane, fofandlight, fofplaneHeight);
                 }
-                else if (sectors[segl->fofSector].ceilingheight < vd.viewz) // Top of FOF is visible
+                else if (fofSector->ceilingheight < vd.viewz) // Top of FOF is visible
                 {
                     const VINT fofandlight = ((segl->seglightlevel & 0xff) << 8) | segl->fof_picnum;
-                    const fixed_t fofplaneHeight = sectors[segl->fofSector].ceilingheight - vd.viewz;
+                    const fixed_t fofplaneHeight = fofSector->ceilingheight - vd.viewz;
 
                     bottom = FixedMul(scale2, fofplaneHeight) >> FRACBITS;
                     bottom = cy - bottom;

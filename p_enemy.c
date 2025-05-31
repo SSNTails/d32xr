@@ -1163,7 +1163,7 @@ void A_BubbleRise(mobj_t *actor, int16_t var1, int16_t var2)
 		P_InstaThrust(actor, P_Random() & 1 ? actor->angle - ANG90 : actor->angle - ANG180,
 			(P_Random() & 1) ? FRACUNIT/2 : -FRACUNIT/2);
 
-	if (sectors[subsectors[actor->isubsector].isector].heightsec == -1
+	if (sectors[subsectors[actor->isubsector].isector].heightsec < 0
 		|| actor->z + (actor->theight << (FRACBITS-1)) > GetWatertopMo(actor))
 		actor->latecall = P_RemoveMobj;
 }
@@ -1380,15 +1380,14 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 
 	x += point->momx;
 	y += point->momy;
-	floorz = SS_SECTOR(R_PointInSubsector2(x, y))->floorheight;
+	const sector_t *pointSector = SS_SECTOR(R_PointInSubsector2(x, y));
+	floorz = pointSector->floorheight;
 	if (z - floorz < (mobjinfo[MT_EGGMOBILE_FIRE].height>>1) && (dur & 1))
 	{
 		point = P_SpawnMobj(x, y, floorz, MT_EGGMOBILE_FIRE);
 
 		point->angle = actor->angle;
 		point->target = actor;
-
-		const sector_t *pointSector = &sectors[subsectors[point->isubsector].isector];
 
 		if (pointSector->heightsec >= 0 && point->z <= GetWatertopSec(pointSector))
 		{

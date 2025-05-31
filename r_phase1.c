@@ -233,7 +233,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
           SETUPPER8(segl->floorceilpicnum, (uint8_t)-1);
 
       segl->m_texturenum = -1;
-      segl->fof_texturenum = -1;
+      segl->fof_texturenum = (uint8_t)-1;
 
       if (!back_sector)
          back_sector = &emptysector;
@@ -402,7 +402,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                if (fofsec->ceilingheight <= front_sector->floorheight || fofsec->floorheight >= front_sector->ceilingheight)
                {
                   fof_texturemid = 0;
-                  segl->fof_texturenum = (unsigned)-1;
+                  segl->fof_texturenum = (uint8_t)-1;
                }
 
                actionbits |= AC_FOFSIDE; // set bottom and top masks
