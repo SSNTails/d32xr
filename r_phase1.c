@@ -854,26 +854,44 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
       // When both ceilings are skies, consider them always "open" to prevent HOM
       solid = false;
    }
-   else if (backsector->ceilingheight <= frontsector->floorheight ||
-       backsector->floorheight >= frontsector->ceilingheight)
-       solid = true;
    else
    {
-      if (backsector->ceilingheight <= frontsector->floorheight ||
-         backsector->floorheight >= frontsector->ceilingheight)
-      {
-         solid = true;
-      }
-      else if (backsector->ceilingheight == frontsector->ceilingheight &&
-         backsector->floorheight == frontsector->floorheight)
-      {
-         sidetex_t *st = SIDETEX(sidedef);
+      fixed_t frontceiling = frontsector->ceilingheight;
+      fixed_t frontfloor = frontsector->floorheight;
+      fixed_t backceiling = backsector->ceilingheight;
+      fixed_t backfloor = backsector->floorheight;
 
-         // reject empty lines used for triggers and special events
-         if (st->midtexture == 0 &&
-            *(int16_t *)&backsector->floorpic == *(int16_t *)&frontsector->floorpic && // compares both floorpic and ceilingpic
-            *(int8_t *)&backsector->lightlevel == *(int8_t *)&frontsector->lightlevel) // hack to get rid of the extu.w on SH-2
-            return;
+      if (frontsector->heightsec >= 0)
+      {
+         const sector_t *frontheightsec = &sectors[frontsector->heightsec];
+
+         if (vd.viewz < frontheightsec->ceilingheight)
+            frontceiling = frontheightsec->ceilingheight;
+         else
+            frontfloor = frontheightsec->ceilingheight;
+      }
+      if (backsector->heightsec >= 0)
+      {
+         const sector_t *backheightsec = &sectors[backsector->heightsec];
+
+         if (vd.viewz < backheightsec->ceilingheight)
+            backceiling = backheightsec->ceilingheight;
+         else
+            backfloor = backheightsec->ceilingheight;
+      }
+
+      if (backceiling <= frontfloor || backfloor >= frontceiling)
+         solid = true;
+      else if (backsector->ceilingheight == frontsector->ceilingheight &&
+        backsector->floorheight == frontsector->floorheight)
+      {
+        sidetex_t *st = SIDETEX(sidedef);
+  
+        // reject empty lines used for triggers and special events
+        if (st->midtexture == 0 &&
+           *(int16_t *)&backsector->floorpic == *(int16_t *)&frontsector->floorpic && // compares both floorpic and ceilingpic
+           *(int8_t *)&backsector->lightlevel == *(int8_t *)&frontsector->lightlevel) // hack to get rid of the extu.w on SH-2
+           return;
       }
    }
 
