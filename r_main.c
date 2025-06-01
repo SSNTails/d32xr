@@ -1085,14 +1085,17 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.lightlevel = vd.viewsector->lightlevel;
 		vd.aimingangle = thiscam->aiming;
 		vd.heightsec = NULL;
+		vd.underwater = false;
 
 		if (vd.viewsector->heightsec >= 0)
 		{
 			vd.heightsec = &sectors[vd.viewsector->heightsec];
-			vd.viewwaterheight = GetWatertopSec(vd.viewsector);
+			const fixed_t waterheight = GetWatertopSec(vd.viewsector);
 			
-			if (vd.viewwaterheight > vd.viewz)
+			if (waterheight > vd.viewz)
 			{
+				vd.underwater = true;
+				
 				// Future: Have a way to specify the water color
 				if (gamemapinfo.mapNumber == 4 || gamemapinfo.mapNumber == 5)
 					waterpal = 13;

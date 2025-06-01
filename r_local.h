@@ -747,7 +747,7 @@ __attribute__((aligned(16)))
 	sector_t    *heightsec;
 	fixed_t		viewcos, viewsin;
 	player_t	*viewplayer;
-	fixed_t     viewwaterheight;
+	boolean     underwater;
 	VINT		lightlevel;
 	VINT		extralight;
 	VINT		displayplayer;

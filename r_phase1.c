@@ -734,10 +734,9 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
       // Replace sector being drawn, with a copy to be hacked
       *tempsec = *sec;
 
-      const boolean underwater = vd.heightsec && vd.viewz<=vd.viewwaterheight;
       const sector_t *fofsec = &sectors[sec->fofsec];
 
-      if (underwater)
+      if (vd.underwater)
       {
          tempsec->ceilingheight = fofsec->floorheight;
          tempsec->ceilingpic = fofsec->floorpic;      
@@ -753,7 +752,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
    else if (sec->heightsec >= 0)
    {
       const sector_t *watersec = &sectors[sec->heightsec];
-      boolean underwater = vd.heightsec && vd.viewz<=vd.viewwaterheight;
 
       // Replace sector being drawn, with a copy to be hacked
       *tempsec = *sec;
@@ -765,7 +763,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 //      if ((underwater && (tempsec->floorheight = sec->floorheight,
 //                          tempsec->ceilingheight = watersec->ceilingheight-1,
 //                          !back)) || vd.viewz <= watersec->floorheight)
-      if (underwater)
+      if (vd.underwater)
       { // head-below-floor hack
          tempsec->floorheight = sec->floorheight;
          tempsec->ceilingheight = watersec->ceilingheight - 1;
@@ -865,7 +863,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
       {
          const sector_t *frontheightsec = &sectors[frontsector->heightsec];
 
-         if (vd.viewz < frontheightsec->ceilingheight)
+         if (vd.viewz < frontheightsec->ceilingheight && vd.heightsec && vd.viewz < vd.heightsec->ceilingheight)
             frontceiling = frontheightsec->ceilingheight;
          else
             frontfloor = frontheightsec->ceilingheight;
@@ -874,7 +872,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
       {
          const sector_t *backheightsec = &sectors[backsector->heightsec];
 
-         if (vd.viewz < backheightsec->ceilingheight)
+         if (vd.viewz < backheightsec->ceilingheight && vd.heightsec && vd.viewz < vd.heightsec->ceilingheight)
             backceiling = backheightsec->ceilingheight;
          else
             backfloor = backheightsec->ceilingheight;
