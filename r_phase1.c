@@ -863,7 +863,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
       {
          const sector_t *frontheightsec = &sectors[frontsector->heightsec];
 
-         if (vd.viewz < frontheightsec->ceilingheight && vd.heightsec && vd.viewz < vd.heightsec->ceilingheight)
+         if (vd.viewz < frontheightsec->ceilingheight && vd.underwater)
             frontceiling = frontheightsec->ceilingheight;
          else
             frontfloor = frontheightsec->ceilingheight;
@@ -872,7 +872,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
       {
          const sector_t *backheightsec = &sectors[backsector->heightsec];
 
-         if (vd.viewz < backheightsec->ceilingheight && vd.heightsec && vd.viewz < vd.heightsec->ceilingheight)
+         if (vd.viewz < backheightsec->ceilingheight && vd.underwater)
             backceiling = backheightsec->ceilingheight;
          else
             backfloor = backheightsec->ceilingheight;
