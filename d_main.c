@@ -387,12 +387,12 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 		if (buttons & BT_START) {
 #ifdef SHOW_COMPATIBILITY_PROMPT
-			if (onscreen_prompt) {
+			if (IsCompatibility()) {
 				exit = ga_closeprompt;
 				break;
 			}
 #endif
-			if (demoplayback) {
+			if (IsDemoModeType(DemoMode_Playback)) {
 				exit = ga_exitdemo;
 				break;
 			}
@@ -400,7 +400,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 		buttons |= I_ReadMouse(&mx, &my);
 		
-		if (demoplayback)
+		if (IsDemoModeType(DemoMode_Playback))
 		{
 			ticmousex[consoleplayer] = 0;
 			ticmousey[consoleplayer] = 0;
@@ -415,7 +415,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		ticrealbuttons = buttons;
 
 		
-		if (titlescreen) {
+		if (IsTitleScreen()) {
 			int timeleft = (gameinfo.titleTime >> 1) - leveltime;
 			if (timeleft <= 0) {
 				R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
@@ -433,7 +433,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		}
 
 #ifdef PLAY_POS_DEMO
-		if (demoplayback) {
+		if (IsDemoModeType(DemoMode_Playback)) {
 			players[0].mo->momx = 0;
 			players[0].mo->momy = 0;
 			players[0].mo->momz = 0;
@@ -548,8 +548,6 @@ void START_Compatibility (void)
 	I_SetPalette(dc_playpals);
 
 	R_InitColormap();
-
-	onscreen_prompt = true;
 }
 
 void STOP_Compatibility (void)
@@ -557,8 +555,6 @@ void STOP_Compatibility (void)
 	// Set to totally black
 	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	I_SetPalette(dc_playpals+10*768);
-
-	onscreen_prompt = false;
 }
 
 void DRAW_Compatibility (void)
@@ -1022,11 +1018,13 @@ D_printf ("DM_Main\n");
 
 #ifdef SHOW_COMPATIBILITY_PROMPT
 	if (legacy_emulator) {
+		SetCompatibility();
 		MiniLoop (START_Compatibility, STOP_Compatibility, TIC_Compatibility, DRAW_Compatibility, UpdateBuffer);
 	}
 #endif
 
 #ifdef SHOW_DISCLAIMER
+	SetDisclaimer();
 	MiniLoop (START_Disclaimer, STOP_Disclaimer, TIC_Disclaimer, DRAW_Disclaimer, UpdateBuffer);
 #endif
 
@@ -1045,15 +1043,20 @@ D_printf ("DM_Main\n");
 			// Title with menu
 			M_Start();
 			G_InitNew (TITLE_MAP_NUMBER, gt_single, false);
-			titlescreen = true;
+			SetTitleScreen();
 			exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-			titlescreen = false;
 			M_Stop();
 
 			switch (exit) {
 				case ga_startnew:
 					// Start a new game
 					G_InitNew(startmap, starttype, startsplitscreen);
+					if (startmap >= SSTAGE_START && startmap <= SSTAGE_END) {
+						SetLevel(LevelType_SpecialStage);
+					}
+					else {
+						SetLevel(LevelType_Normal);
+					}
 					G_RunGame();
 					break;
 				case ga_titleexpired:
@@ -1066,9 +1069,9 @@ D_printf ("DM_Main\n");
 							demo_name[4] = '1';	// Assume we at least have a DEMO1 lump.
 						}
 						
-						demoplayback = true;
+						SetDemoMode(DemoMode_Playback);
 						exit = RunInputDemo(demo_name);
-						demoplayback = false;
+						SetDemoMode(DemoMode_None);
 					}
 					break;
 			}

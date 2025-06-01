@@ -536,6 +536,98 @@ void G_LoadGame(int saveslot);
 #include "d_mapinfo.h"
 
 extern	gameaction_t	gameaction;
+extern	byte			gamemode;
+
+
+typedef enum
+{
+	LevelType_Normal = 0x10,
+	LevelType_SpecialStage = 0x11,
+	LevelType_NiGHTS = 0x12,
+	LevelType_Final = 0x13,
+} leveltype_t;
+
+typedef enum
+{
+	DemoMode_None = 0x00,
+	DemoMode_Playback = 0x08,
+	DemoMode_Recording = 0x0C,
+} demomodetype_t;
+
+
+// LEVEL has a mode value of '1x', where x is the low nybble that carries attributes
+// Attributes: Ddll
+// D - Demo enable/disable
+// d - When demo is enabled, this determines playback (0) or recording (1).
+// l - This determines if the level type is normal (00), special stage (01), NiGHTS (10), or final (11).
+
+#define GAMEMODE_NONE						0x00
+
+#define GAMEMODE_COMPATIBILITY				0x01
+#define GAMEMODE_DISCLAIMER					0x02
+#define GAMEMODE_TITLESCREEN				0x03
+#define GAMEMODE_LEVELSELECT				0x04
+#define GAMEMODE_CREDITS					0x05
+
+#define GAMEMODE_LEVEL_ACTIVE				0x10
+#define GAMEMODE_LEVEL						0xF0
+#define GAMEMODE_LEVEL_TYPE					0xF3
+
+#define GAMEMODE_DEMO						0x08
+#define GAMEMODE_DEMO_MODETYPE				0x0C
+
+
+#define LEVELTYPE_NORMAL					0x10
+#define LEVELTYPE_SPECIALSTAGE				0x11
+#define LEVELTYPE_NIGHTS					0x12
+#define LEVELTYPE_FINAL						0x13
+
+#define DEMOMODE_PLAYBACK					0x08
+#define DEMOMODE_RECORDING					0x0C
+
+
+// General
+static inline boolean IsCompatibility()
+	{ return gamemode == GAMEMODE_COMPATIBILITY; }
+static inline boolean IsDisclaimer()
+	{ return gamemode == GAMEMODE_DISCLAIMER; }
+static inline boolean IsTitleScreen()
+	{ return gamemode == GAMEMODE_TITLESCREEN; }
+static inline boolean IsLevelSelect()
+	{ return gamemode == GAMEMODE_LEVELSELECT; }
+static inline boolean IsCredits()
+	{ return gamemode == GAMEMODE_CREDITS; }
+
+static inline void SetCompatibility()
+	{ gamemode = GAMEMODE_COMPATIBILITY; }
+static inline void SetDisclaimer()
+	{ gamemode = GAMEMODE_DISCLAIMER; }
+static inline void SetTitleScreen()
+	{ gamemode = GAMEMODE_TITLESCREEN; }
+static inline void SetLevelSelect()
+	{ gamemode = GAMEMODE_LEVELSELECT; }
+static inline void SetCredits()
+	{ gamemode = GAMEMODE_CREDITS; }
+
+// Level
+static inline boolean IsLevel()
+	{ return (gamemode & GAMEMODE_LEVEL) == GAMEMODE_LEVEL_ACTIVE; }
+static inline boolean IsLevelType(leveltype_t type)
+	{ return (gamemode & GAMEMODE_LEVEL_TYPE) == type; }
+
+static inline void SetLevel(leveltype_t type)
+	{ gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | type; }
+
+// Demo
+static inline boolean IsDemo()
+	{ return (gamemode & GAMEMODE_DEMO) == GAMEMODE_DEMO; }
+static inline boolean IsDemoModeType(demomodetype_t type)
+	{ return (gamemode & GAMEMODE_DEMO_MODETYPE) == type; }
+
+static inline void SetDemoMode(demomodetype_t type)
+	{ gamemode = (gamemode & (~GAMEMODE_DEMO_MODETYPE)) | type; }
+
+
 
 #define	SBARHEIGHT	0			/* status bar height at bottom of screen */
 
