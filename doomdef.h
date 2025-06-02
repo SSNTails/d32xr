@@ -1240,6 +1240,7 @@ void DrawJagobjWithColormap(jagobj_t* jo, int x, int y,
 void DrawJagobj2(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h, pixel_t* fb);
 void DrawFillRect(int x, int y, int w, int h, int c);
+void DrawLine(int x, int y, int length, int c, boolean vertical);
 void UpdateBuffer (void);
 
 #ifndef MARS
@@ -1288,8 +1289,8 @@ void PrintHex (int x, int y, unsigned num);
 void DrawPlaque (jagobj_t *pl);
 void DrawTiledLetterbox2(int flat);
 void DrawTiledLetterbox(void);
-void DrawTiledBackground2(int flat);
-void DrawTiledBackground(void);
+void DrawTiledBackground2(int flat, int x, int y);
+void DrawTiledBackground(int x, int y);
 void DrawScrollingBanner(short ltzz_lump, int x, int y_shift);
 void DrawScrollingChevrons(short chev_lump, int x, int y_shift);
 

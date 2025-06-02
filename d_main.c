@@ -520,9 +520,142 @@ int TIC_Abortable (void)
 
 /*============================================================================= */
 
-#if defined(SHOW_COMPATIBILITY_PROMPT) || defined(SHOW_DISCLAIMER)
 unsigned short screenCount = 0;
-#endif
+char selected_map = 0;
+dmapinfo_t selected_map_info;
+
+
+int TIC_LevelSelect (void)
+{
+	screenCount++;
+
+	if (ticrealbuttons & BT_START) {
+		return ga_startnew;
+	}
+
+	int prev_selected_map = selected_map;
+
+	if (ticrealbuttons & BT_LEFT && oldticrealbuttons != BT_LEFT) {
+		selected_map -= 1;
+		if (selected_map < 0) {
+			selected_map = gamemapcount-1;
+		}
+	}
+	else if (ticrealbuttons & BT_RIGHT && oldticrealbuttons != BT_RIGHT) {
+		selected_map += 1;
+		if (selected_map == gamemapcount) {
+			selected_map = 0;
+		}
+	}
+
+	if (selected_map != prev_selected_map) {
+		startmap = gamemapnumbers[selected_map];
+
+		char buf[512];
+		G_FindMapinfo(G_LumpNumForMapNum(startmap), &selected_map_info, buf);
+	}
+
+	return ga_nothing;
+}
+
+void START_LevelSelect (void)
+{
+	for (int i = 0; i < 2; i++)
+	{
+		I_ClearFrameBuffer();
+		UpdateBuffer();
+	}
+
+	screenCount = 0;
+
+	startmap = 1;
+
+	char buf[512];
+	G_FindMapinfo(G_LumpNumForMapNum(startmap), &selected_map_info, buf);
+
+	UpdateBuffer();
+
+	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
+	I_SetPalette(dc_playpals);
+
+	R_InitColormap();
+}
+
+void STOP_LevelSelect (void)
+{
+	// Set to totally black
+	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
+	I_SetPalette(dc_playpals+10*768);
+}
+
+void DRAW_LevelSelect (void)
+{
+	//int srb2tile = W_CheckNumForName("SRB2TILE");
+
+	unsigned char lvlsel_name[9] = { 'L','V','L','S','E','L','0','0','\0' };
+
+	lvlsel_name[6] += (startmap / 10);
+	lvlsel_name[7] += (startmap % 10);
+
+	int lvlsel = W_CheckNumForName(lvlsel_name);
+
+	if (lvlsel == -1) {
+		lvlsel_name[6] = 'S';
+		lvlsel_name[7] = '1' + ((screenCount >> 1) % 3);
+
+		lvlsel = W_CheckNumForName(lvlsel_name);
+	}
+
+	int arrowl = W_CheckNumForName("ARROWL");
+	int arrowr = W_CheckNumForName("ARROWR");
+	int chevblku = W_CheckNumForName("CHEVBLKU");
+	int chevblkd = W_CheckNumForName("CHEVBLKD");
+
+	int arrow_offset = ((screenCount>>1) & 7) * (((screenCount>>1) & 0x8) == 0);
+	if (arrow_offset > 3) {
+		arrow_offset = 7 - arrow_offset;
+	}
+
+	DrawTiledBackground((screenCount >> 1) & 0x1F, (screenCount >> 1) & 0x1F);
+
+	V_DrawStringCenterWithColormap(&menuFont, 160, 32, "SELECT A STAGE", YELLOWTEXTCOLORMAP);
+	DrawJagobjLump(arrowl, ((320-16)>>1)-96 - arrow_offset, 112, NULL, NULL);
+	DrawJagobjLump(arrowr, ((320-16)>>1)+96 + arrow_offset, 112, NULL, NULL);
+	V_DrawStringCenterWithColormap(&menuFont, 160, 160, selected_map_info.name, YELLOWTEXTCOLORMAP);
+
+	if (selected_map_info.act > 0) {
+		char act_string[6] = { 'A','C','T',' ','0','\0' };
+		act_string[4] += selected_map_info.act;
+		V_DrawStringCenterWithColormap(&menuFont, 160, 172, act_string, YELLOWTEXTCOLORMAP);
+	}
+
+	DrawJagobjLump(lvlsel, (320-96)>>1, 72, NULL, NULL);
+
+	// Black lines
+	DrawLine(82, 58, 160, 0x1F, false);
+	DrawLine(82, 193, 160, 0x1F, false);
+	DrawLine(82, 59, 134, 0x1F, true);
+	DrawLine(241, 59, 134, 0x1F, true);
+
+	// Red lines
+	DrawLine(80, 56, 160, 0x23, false);
+	DrawLine(80, 191, 160, 0x23, false);
+	DrawLine(80, 57, 134, 0x23, true);
+	DrawLine(239, 57, 134, 0x23, true);
+
+
+	int chev_offset = (screenCount & 0xF) << 1;
+	for (int i=0; i < 0x140; i += 0x20) {
+		DrawJagobjLump(chevblkd, i + chev_offset, 0, NULL, NULL);
+		DrawJagobjLump(chevblku, i - chev_offset, 224-16, NULL, NULL);
+	}
+	if (chev_offset != 0) {
+		DrawJagobjLump(chevblkd, -0x20 + chev_offset, 0, NULL, NULL);
+		DrawJagobjLump(chevblku, 0x140 - chev_offset, 224-16, NULL, NULL);
+	}
+}
+
+/*============================================================================= */
 
 #ifdef SHOW_COMPATIBILITY_PROMPT
 int TIC_Compatibility(void)
@@ -1049,6 +1182,10 @@ D_printf ("DM_Main\n");
 
 			switch (exit) {
 				case ga_startnew:
+					// Level selection screen
+					SetLevelSelect();
+					exit = MiniLoop (START_LevelSelect, STOP_LevelSelect, TIC_LevelSelect, DRAW_LevelSelect, UpdateBuffer);
+
 					// Start a new game
 					G_InitNew(startmap, starttype, startsplitscreen);
 					if (startmap >= SSTAGE_START && startmap <= SSTAGE_END) {

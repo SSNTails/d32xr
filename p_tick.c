@@ -714,7 +714,7 @@ void P_Drawer (void)
 		if ((viewportWidth == 160 && lowResMode) || viewportWidth == 320)
 			DrawTiledLetterbox();
 		else
-			DrawTiledBackground();
+			DrawTiledBackground(0, 0);
 		
 		if (clearscreen == 2 || optionsMenuOn)
 			ST_ForceDraw();

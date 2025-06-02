@@ -300,6 +300,7 @@ static void ST_Drawer_ (stbar_t* sb)
 		}
 
 		// Special stage HUD
+#ifndef HIDE_HUD
 		DrawJagobjLump(nbracket, 16, 8+16, NULL, NULL);
 		DrawJagobjLump(nbracket, 72, 8+16, NULL, NULL);
 		DrawJagobjLump(nbracket, 272, 8+16, NULL, NULL);
@@ -315,6 +316,7 @@ static void ST_Drawer_ (stbar_t* sb)
 		V_DrawValueCenter(&hudNumberFont, 60, 13+6+16, gamemapinfo.spheresNeeded);
 
 		V_DrawStringCenter(&menuFont, 160, 12+16, "TIME LEFT");
+#endif
 		const int delaytime = 3*TICRATE;
 		int worldTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
 		int timeLeft = (gamemapinfo.timeLimit - worldTime)/TICRATE;
@@ -322,7 +324,9 @@ static void ST_Drawer_ (stbar_t* sb)
 			timeLeft = 0;
 		if (timeLeft > gamemapinfo.timeLimit/TICRATE)
 			timeLeft = gamemapinfo.timeLimit/TICRATE;
+#ifndef HIDE_HUD
 		V_DrawValueCenter(&hudNumberFont, 160, 24+16, timeLeft);
+#endif
 
 		// Not the best thing to do gamelogic inside of the draw routine,
 		// but trying to keep things simple.
@@ -352,32 +356,32 @@ static void ST_Drawer_ (stbar_t* sb)
 //		CONS_Printf("skyOffsetY: %d", -(vd.viewz >> 16) - (((signed int)vd.aimingangle) >> 22));	//DLG: Remove me!
 //		CONS_Printf("legacy_emulator: %d", legacy_emulator);	//DLG: Remove me!
 
+#ifndef HIDE_HUD
 		const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
 		int worldTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
 		if (worldTime < 0)
 			worldTime = 0;
 		DrawJagobjLump(score, 16, 10+22, NULL, NULL);
 		V_DrawValuePaddedRight(&hudNumberFont, 16 + 120, 10+22, sb->score, 0);
-
 		const int minutes = worldTime/(60*TICRATE);
 		const int seconds = (worldTime/(TICRATE))%60;
 		DrawJagobjLump(time, 16, 26+22, NULL, NULL);
 		V_DrawValuePaddedRight(&hudNumberFont, 72, 26+22, minutes, 0);
 		DrawJagobjLump(timecolon, 72, 26+22, NULL, NULL);
 		V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26+22, seconds, 2);
-
 		if (sb->rings <= 0 && (gametic / 4 & 1))
 			DrawJagobjLumpWithColormap(rings, 16, 42+22, NULL, NULL, YELLOWTEXTCOLORMAP);
 		else
 			DrawJagobjLump(rings, 16, 42+22, NULL, NULL);
 		V_DrawValuePaddedRight(&hudNumberFont, 96, 42+22, sb->rings, 0);
-
 		DrawJagobjLump(face, 16, 176, NULL, NULL);
 		V_DrawStringLeftWithColormap(&menuFont, 16 + 20, 176, "SONIC", YELLOWTEXTCOLORMAP);
 		DrawJagobjLump(livex, 16 + 22, 176 + 10, NULL, NULL);
 		V_DrawValuePaddedRight(&menuFont, 16 + 58, 176+8, sb->lives, 0);
+#endif
 	}
 
+#ifndef HIDE_HUD
 	if (sb->lives == 0 && sb->deadTimer > 3*TICRATE)
 	{
 		int gameStartX = -85;
@@ -386,20 +390,19 @@ static void ST_Drawer_ (stbar_t* sb)
 		int overX = 160 + 8;
 		int timelength = 3*TICRATE + TICRATE/2;
 		int timesize = timelength - 3*TICRATE;
-
 		if (sb->deadTimer < timelength)
 		{
 			int timepassed = timesize - (timelength - sb->deadTimer);
 			gameX = gameStartX + (((gameX - gameStartX)/timesize) * timepassed);
 			overX = overStartX + (((overX - overStartX)/timesize) * timepassed);
 		}
-
 		DrawJagobjLump(go_game, gameX, 102, NULL, NULL);
 		DrawJagobjLump(go_over, overX, 102, NULL, NULL);
 	}
 
 	if (sb->intermission)
 		Y_IntermissionDrawer();
+#endif
 }
 
 void CONS_Printf(char *msg, ...) 

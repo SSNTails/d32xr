@@ -1641,6 +1641,10 @@ void P_PlayerThink(player_t *player)
 	else
 		player->mo->flags2 &= ~MF2_DONTDRAW;
 
+#ifdef HIDE_PLAYER
+	player->mo->flags2 |= MF2_DONTDRAW;
+#endif
+
 	if (player->powers[pw_extralife] > 0)
 	{
 		player->powers[pw_extralife]--;
