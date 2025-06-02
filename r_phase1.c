@@ -804,9 +804,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
 {
    angle_t angle1, angle2;
    fixed_t x1, x2;
-   sector_t *frontsector;
-   sector_t *backsector;
-   mapvertex_t *v1 = &vertexes[line->v1], *v2 = &vertexes[line->v2];
+   const mapvertex_t *v1 = &vertexes[line->v1], *v2 = &vertexes[line->v2];
    int side;
    line_t *ldef;
    side_t *sidedef;
@@ -838,12 +836,11 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    if ((ldflags[line->linedef] & ML_CULLING) && P_AproxDistance(vd.viewx - (v1->x << FRACBITS), vd.viewy - (v1->y << FRACBITS)) > 2048*FRACUNIT)
       return;
 
-   frontsector = rbsp->curfsector;//R_FakeFlat(rbsp->curfsector, &ftempsec, false);
-   backsector = (ldef->sidenum[1] >= 0) ? &sectors[sides[ldef->sidenum[side^1]].sector] : NULL;
    sidedef = &sides[ldef->sidenum[side]];
+   const sector_t *frontsector = rbsp->curfsector;
+   sector_t *backsector = (ldef->sidenum[1] >= 0) ? &sectors[sides[ldef->sidenum[side^1]].sector] : NULL;
 
    solid = false;
-   sector_t *oldbsector = backsector;
 
    if (!backsector)
       solid = true;
@@ -896,7 +893,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    rbsp->curline = line;
    rbsp->curside = sidedef;
    rbsp->curldef = ldef;
-   rbsp->curbsector = oldbsector;
+   rbsp->curbsector = backsector;
    rbsp->lineangle1 = angle1;
    R_ClipWallSegment(rbsp, x1, x2, solid);
 }
@@ -909,7 +906,7 @@ visplane_t *floorplane, *ceilingplane;
 static void R_Subsector(rbspWork_t *rbsp, int num)
 {
    const subsector_t *sub = &subsectors[num];
-   seg_t       *line, *stopline;
+   seg_t       *line;
    int          count;
    sector_t    *frontsector = &sectors[sub->isector];
       
@@ -925,12 +922,11 @@ static void R_Subsector(rbspWork_t *rbsp, int num)
       }
    }
 
+   rbsp->curfsector = frontsector;
    line     = &segs[sub->firstline];
    count    = P_GetSubsectorNumlines(sub);
-   stopline = line + count;
 
-   rbsp->curfsector = frontsector;
-   while(line != stopline)
+   while(--count >= 0)
       R_AddLine(rbsp, line++);
 }
 
@@ -1007,8 +1003,9 @@ void R_BSP(void)
    rbsp.splitspans = viewportWidth + viewportWidth/2;
    rbsp.lastv1 = -1;
    rbsp.lastv2 = -1;
-
-   R_RenderBSPNode(&rbsp, numnodes - 1, worldbbox);
+   
+   for (int i = 0; i < 500; i++)
+      R_RenderBSPNode(&rbsp, numnodes - 1, worldbbox);
 }
 
 // EOF
