@@ -376,8 +376,6 @@ extern	uint16_t *distscale/*[SCREENWIDTH]*/;
 #define MARKEDOPEN(x) ((x) == OPENMARK)
 #endif
 
-extern	VINT		extralight;
-
 #define EFFECTS_MASK_DISTORTION		1
 #define EFFECTS_MASK_COPPER			2
 //#define EFFECTS_MASK_DISABLE_ALL	128
@@ -749,7 +747,6 @@ __attribute__((aligned(16)))
 	player_t	*viewplayer;
 	boolean     underwater;
 	VINT		lightlevel;
-	VINT		extralight;
 	VINT		displayplayer;
 	VINT		fixedcolormap;
 	angle_t		clipangle, doubleclipangle;

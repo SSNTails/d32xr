@@ -326,7 +326,6 @@ static void R_DrawPlanes2(int isFOF)
     angle_t angle;
     localplane_t lpl;
     visplane_t* pl;
-    int extralight;
 
 #ifdef MARS
     Mars_ClearCacheLine(&vd.lastvisplane);
@@ -353,7 +352,6 @@ static void R_DrawPlanes2(int isFOF)
 #ifdef MARS
     fixed_t baseyscale = lpl.baseyscale;
 #endif
-    extralight = vd.extralight;
 
     while ((pl = R_GetNextPlane((uint16_t *)vd.gsortedvisplanes)) != NULL)
     {
@@ -417,17 +415,16 @@ static void R_DrawPlanes2(int isFOF)
         {
 #ifdef SIMPLELIGHT
             light = ((unsigned)pl->flatandlight>>8);
-            lpl.lightmax = HWLIGHT((unsigned)((light + extralight) & 0xff));
+            lpl.lightmax = HWLIGHT((unsigned)((light) & 0xff));
 #else
             light = ((unsigned)pl->flatandlight>>16);
-            lpl.lightmax = (light + extralight) & 0xff;
+            lpl.lightmax = (light) & 0xff;
 
 #ifdef MARS
             light = light - ((255 - light - light/2) << 1);
 #else
             light = light - ((255 - light) << 1);
 #endif
-            light += extralight;
             if (light < MINLIGHT)
                 light = MINLIGHT;
             if (light > lpl.lightmax)

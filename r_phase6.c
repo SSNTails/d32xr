@@ -444,7 +444,6 @@ void R_SegCommands(void)
     int i, segcount;
     seglocal_t lseg;
     drawtex_t* toptex, * bottomtex;
-    int extralight;
     uint32_t clipbounds_[SCREENWIDTH / 2 + 1];
     uint16_t *clipbounds = (uint16_t *)clipbounds_;
 #ifdef MARS
@@ -467,8 +466,6 @@ void R_SegCommands(void)
 
     I_GetThreadLocalVar(DOOMTLS_COLUMNCACHE, toptex->columncache);
     bottomtex->columncache = toptex->columncache + COLUMN_CACHE_SIZE;
-
-    extralight = vd.extralight;
 
     segcount = vd.lastwallcmd - vd.viswalls;
     for (i = 0; i < segcount; i++)
@@ -516,7 +513,7 @@ void R_SegCommands(void)
         }
         else
         {
-            seglight = (segl->seglightlevel + extralight) & 0xff;
+            seglight = (segl->seglightlevel) & 0xff;
 #ifndef SIMPLELIGHT
             lseg.lightmin = 
 #endif
@@ -536,7 +533,6 @@ void R_SegCommands(void)
                 seglight = 0;
 #ifdef MARS
             lseg.lightmax = seglight;
-            lseg.lightmax += extralight;
 #endif
             if (lseg.lightmax > 255)
                 lseg.lightmax = 255;
@@ -546,7 +542,6 @@ void R_SegCommands(void)
 #else
             seglight = seglight - (255 - seglight) * 2;
 #endif
-            seglight += extralight;
             if (seglight < MINLIGHT)
                 seglight = MINLIGHT;
             if (seglight > lseg.lightmax)

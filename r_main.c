@@ -105,8 +105,6 @@ player_t	*viewplayer;
 
 VINT			framecount;		/* incremented every frame */
 
-VINT		extralight;			/* bumped light from gun blasts */
-
 /* */
 /* precalculated math */
 /* */
@@ -1243,8 +1241,6 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 #endif
 
 #ifdef MARS
-	vd.extralight = 0;
-
 	viewportbuffer = (pixel_t*)I_ViewportBuffer();
 
 	if (gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
