@@ -1004,8 +1004,7 @@ void R_BSP(void)
    rbsp.lastv1 = -1;
    rbsp.lastv2 = -1;
    
-   for (int i = 0; i < 500; i++)
-      R_RenderBSPNode(&rbsp, numnodes - 1, worldbbox);
+   R_RenderBSPNode(&rbsp, numnodes - 1, worldbbox);
 }
 
 // EOF
