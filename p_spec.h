@@ -219,6 +219,15 @@ typedef struct
 	VINT		tag;			/* ID */
 } ceiling_t;
 
+typedef struct
+{
+	thinker_t thinker;
+	VINT *lines;
+	VINT numlines;
+	VINT xSpeed;
+	VINT ySpeed;
+} scrolltex_t;
+
 #define	CEILSPEED		FRACUNIT*THINKERS_TICS
 #define MAXCEILINGS		16
 

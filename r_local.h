@@ -81,7 +81,7 @@ typedef	struct
 
 	uint8_t		tag;
 	uint8_t     flags;
-	VINT     floor_xoffs; // Upper X, Lower Y.
+	VINT     	floor_xoffs; // Upper X, Lower Y.
 
 	// killough 3/7/98: support flat heights drawn at another sector's heights
   	VINT        heightsec;    // other sector, or -1 if no other sector

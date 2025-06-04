@@ -17,9 +17,9 @@ uint16_t			numlines;
 uint16_t			numsides;
 
 uint16_t 		numlinetags;
-uint16_t 		*linetags; // [HASH_SIZE]{line,tag,line,tag...}
+uint16_t 		*linetags;
 uint16_t        numlinespecials;
-uint16_t        *linespecials; // [HASH_SIZE]{line,special,line,special...}
+uint16_t        *linespecials;
 
 mapvertex_t	*vertexes;
 seg_t		*segs;
@@ -365,56 +365,6 @@ void P_LoadThings (int lump)
 		P_SetStarPosts(players[0].starpostnum + 1);
 }
 
-void P_SetLineTag(int ld, uint8_t tag)
-{
-	VINT j;
-	VINT rowsize = (unsigned)numlinetags / LINETAGS_HASH_SIZE;
-	VINT h = (unsigned)ld % LINETAGS_HASH_SIZE;
-	VINT s = h * rowsize;
-
-	for (j = 0; j < numlinetags; j++)
-	{
-		uint16_t *l;
-		VINT e;
-
-		e = s + j;
-		if (e >= numlinetags)
-			e -= numlinetags;
-
-		l = &linetags[e * 2];
-		if (l[0] == (uint16_t)-1 || l[0] == ld) {
-			l[0] = ld;
-			l[1] = tag;
-			break;
-		}
-	}
-}
-
-void P_AddLineSpecial(int ld, uint8_t special)
-{
-	VINT j;
-	VINT rowsize = (unsigned)numlinespecials / LINESPECIALS_HASH_SIZE;
-	VINT h = (unsigned)ld % LINESPECIALS_HASH_SIZE;
-	VINT s = h * rowsize;
-
-	for (j = 0; j < numlinespecials; j++)
-	{
-		uint16_t *l;
-		VINT e;
-
-		e = s + j;
-		if (e >= numlinespecials)
-			e -= numlinespecials;
-
-		l = &linespecials[e * 2];
-		if (l[0] == (uint16_t)-1 || l[0] == ld) {
-			l[0] = ld;
-			l[1] = special;
-			break;
-		}
-	}
-}
-
 /*
 =================
 =
@@ -502,31 +452,34 @@ void P_LoadLineDefs (int lump)
 
 	if (numlinetags)
 	{
-		// load tags into hash table
-		numlinetags = (numlinetags + LINETAGS_HASH_SIZE - 1) & ~(LINETAGS_HASH_SIZE - 1);
 		linetags = Z_Malloc(sizeof(*linetags)*numlinetags*2, PU_LEVEL);
-		D_memset(linetags, (uint16_t)-1, sizeof(*linetags)*numlinetags*2);
+		uint16_t *linetagPtr = linetags;
 		mapldFlags = (mapldflags_t*)ldData;
 		for (i=0 ; i<numlines ; i++, mapldFlags++)
 		{
 			uint8_t tag = mapldFlags->tag;
 			if (tag)
-				P_SetLineTag(i, tag);
+			{
+				*linetagPtr++ = i;
+				*linetagPtr++ = tag;
+			}
 		}
 	}
 
 	if (numlinespecials)
 	{
 		// load specials into hash table
-		numlinespecials = (numlinespecials + LINESPECIALS_HASH_SIZE - 1) & ~(LINESPECIALS_HASH_SIZE - 1);
 		linespecials = Z_Malloc(sizeof(*linespecials)*numlinespecials*2, PU_LEVEL);
-		D_memset(linespecials, (uint16_t)-1, sizeof(*linespecials)*numlinespecials*2);
+		uint16_t *linespecialPtr = linespecials;
 		mapldFlags = (mapldflags_t*)ldData;
 		for (i=0 ; i<numlines ; i++, mapldFlags++)
 		{
 			uint8_t special = mapldFlags->special;
 			if (special)
-				P_AddLineSpecial(i, special);
+			{
+				*linespecialPtr++ = i;
+				*linespecialPtr++ = special;
+			}
 		}
 	}
 }

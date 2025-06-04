@@ -523,6 +523,83 @@ void P_UpdateSpecials (void)
 ===============================================================================
 */
 
+void T_ScrollTex (scrolltex_t *scrolltex)
+{
+	CONS_Printf("x: %d, y: %d", scrolltex->xSpeed, scrolltex->ySpeed);
+
+	for (int i = 0; i < scrolltex->numlines; i++)
+	{
+		int16_t textureoffset, rowoffset;
+		line_t *line = &lines[scrolltex->lines[i]];
+		side_t *side = &sides[line->sidenum[0]];
+
+		if (scrolltex->xSpeed != 0)
+		{
+			textureoffset = side->textureoffset;
+			rowoffset = textureoffset & 0xf000;
+			textureoffset <<= 4;
+			textureoffset += scrolltex->xSpeed<<4;
+			textureoffset >>= 4;
+			textureoffset |= rowoffset;
+			side->textureoffset = textureoffset;
+		}
+		if (scrolltex->ySpeed != 0)
+		{
+			textureoffset = side->textureoffset;
+			rowoffset = ((textureoffset & 0xf000)>>4) | side->rowoffset;
+			rowoffset += scrolltex->ySpeed;
+			side->rowoffset = rowoffset & 0xff;
+			side->textureoffset = (textureoffset & 0xfff) | (rowoffset & 0xf00);
+		}
+	}
+}
+
+static void P_StartScrollTex(line_t *line, int numScrolltexLines)
+{
+	thinker_t	*currentthinker;
+	uint8_t tag = P_GetLineTag(line);
+
+	if (tag == 0)
+		return;
+	
+	currentthinker = thinkercap.next;
+	while (currentthinker != &thinkercap)
+	{
+		if (currentthinker->function == T_ScrollTex)
+		{
+			scrolltex_t *st = (scrolltex_t*)currentthinker;
+			uint8_t stTag = P_GetLineTag(&lines[st->lines[0]]);
+
+			if (stTag == tag)
+			{
+				st->lines[st->numlines++] = (VINT)(line-lines);
+				return;
+			}
+		}
+		currentthinker = currentthinker->next;
+	}
+
+	if (currentthinker == &thinkercap) // Hit the end of the list, so this is totally new
+	{
+		sector_t *paramSector;
+		int s = P_FindSectorFromLineTagNum(tag, -1);
+
+		if (s < 0)
+			return;
+
+		paramSector = &sectors[s];
+
+		scrolltex_t *scrolltex = Z_Malloc (sizeof(*scrolltex), PU_LEVSPEC);
+		P_AddThinker (&scrolltex->thinker);
+		scrolltex->thinker.function = T_ScrollTex;
+		scrolltex->xSpeed = paramSector->floorheight >> FRACBITS;
+		scrolltex->ySpeed = paramSector->ceilingheight >> FRACBITS;
+		scrolltex->lines = Z_Malloc(sizeof(VINT)*numScrolltexLines, PU_LEVSPEC);
+		scrolltex->lines[0] = (VINT)(line - lines);
+		scrolltex->numlines = 1;
+	}
+}
+
 VINT		numlineanimspecials = 0;
 line_t	**linespeciallist = NULL;
 
@@ -545,17 +622,24 @@ void P_SpawnSpecials (void)
 				break;
 		}
 	}
+
+	int numScrolltexLines = 0;
+	for (i = 0; i < numlines; i++)
+	{
+		switch (P_GetLineSpecial(&lines[i]))
+		{
+			case 249:
+				numScrolltexLines++;
+				break;
+		}
+	}
 		
-	
 	/* */
 	/*	Init line EFFECTs */
 	/* */
 	numlineanimspecials = 0;
 	for (i = 0; i < numlines; i++)
 	{
-		if (!(ldflags[i] & ML_HAS_SPECIAL_OR_TAG))
-			continue;
-			
 		switch (P_GetLineSpecial(&lines[i]))
 		{
 		case 48:	/* EFFECT FIRSTCOL SCROLL+ */
@@ -626,6 +710,11 @@ void P_SpawnSpecials (void)
 				sectors[sec].specline = sec;
 			}
 
+			break;
+		}
+		case 249: // Scroll line texture by tagged sector floor (X) and ceiling (Y)
+		{
+			P_StartScrollTex(&lines[i], numScrolltexLines);
 			break;
 		}
 		}

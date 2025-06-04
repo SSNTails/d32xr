@@ -445,25 +445,13 @@ boolean P_BlockThingsIterator (int x, int y, blockthingsiter_t func, void *userp
 
 uint8_t P_GetLineTag(line_t *line)
 {
-	VINT j;
-	VINT rowsize = (unsigned)numlinetags / LINETAGS_HASH_SIZE;
-	VINT ld = line - lines;
-	VINT h = (unsigned)ld % LINETAGS_HASH_SIZE;
-	VINT s = h * rowsize;
+	if (!(ldflags[line-lines] & ML_HAS_SPECIAL_OR_TAG))
+		return 0;
 
-	for (j = 0; j < numlinetags; j++)
+	for (int i = 0; i < numlinetags*2; i += 2)
 	{
-		uint16_t *l;
-		VINT e;
-
-		e = s + j;
-		if (e >= numlinetags)
-			e -= numlinetags;
-
-		l = &linetags[e * 2];
-		if (l[0] == ld) {
-			return (uint8_t)l[1];
-		}
+		if (linetags[i] == line-lines)
+			return (uint8_t)linetags[i+1];
 	}
 
 	return 0;
@@ -471,25 +459,13 @@ uint8_t P_GetLineTag(line_t *line)
 
 uint8_t P_GetLineSpecial(line_t *line)
 {
-	VINT j;
-	VINT rowsize = (unsigned)numlinespecials / LINESPECIALS_HASH_SIZE;
-	VINT ld = line - lines;
-	VINT h = (unsigned)ld % LINESPECIALS_HASH_SIZE;
-	VINT s = h * rowsize;
+	if (!(ldflags[line-lines] & ML_HAS_SPECIAL_OR_TAG))
+		return 0;
 
-	for (j = 0; j < numlinespecials; j++)
+	for (int i = 0; i < numlinespecials*2; i += 2)
 	{
-		uint16_t *l;
-		VINT e;
-
-		e = s + j;
-		if (e >= numlinespecials)
-			e -= numlinespecials;
-
-		l = &linespecials[e * 2];
-		if (l[0] == ld) {
-			return (uint8_t)l[1];
-		}
+		if (linespecials[i] == line-lines)
+			return (uint8_t)linespecials[i+1];
 	}
 
 	return 0;
