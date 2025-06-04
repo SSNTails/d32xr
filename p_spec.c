@@ -523,9 +523,78 @@ void P_UpdateSpecials (void)
 ===============================================================================
 */
 
+#define CARRYFACTOR (7168)
+
+void T_ScrollFlat (scrollflat_t *scrollflat)
+{
+	const vertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
+	const vertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
+
+	fixed_t ldx = FixedMul(v2->x - v1->x, CARRYFACTOR);
+	fixed_t ldy = FixedMul(v2->y - v1->y, CARRYFACTOR);
+
+	for (int i = 0; i < scrollflat->numsectors; i++)
+	{
+		sector_t *sec = &sectors[scrollflat->sectors[i]];
+
+		uint8_t xoff = sec->floor_xoffs >> 8;
+		uint8_t yoff = sec->floor_xoffs & 0xff;
+
+		xoff += ldx;
+		yoff += ldy;
+
+		sec->floor_xoffs = (xoff << 8) | yoff;
+	}
+}
+
+static void P_StartScrollFlat(line_t *line, sector_t *sector)
+{
+	thinker_t	*currentthinker;
+	uint8_t tag = P_GetLineTag(line);
+
+	if (tag == 0)
+		return;
+	
+	currentthinker = thinkercap.next;
+	while (currentthinker != &thinkercap)
+	{
+		if (currentthinker->function == T_ScrollFlat)
+		{
+			scrollflat_t *sf = (scrollflat_t*)currentthinker;
+			uint8_t stTag = P_GetLineTag(sf->ctrlLine);
+
+			if (stTag == tag)
+			{
+				sf->sectors[sf->numsectors++] = (VINT)(sector-sectors);
+				return;
+			}
+		}
+		currentthinker = currentthinker->next;
+	}
+
+	if (currentthinker == &thinkercap) // Hit the end of the list, so this is totally new
+	{
+		int numScrollflatSectors = 0;
+		for (int i = 0; i < numsectors; i++)
+		{
+			if (sectors[i].tag == tag)
+				numScrollflatSectors++;
+		}
+
+		scrollflat_t *scrollflat = Z_Malloc (sizeof(*scrollflat), PU_LEVSPEC);
+		P_AddThinker (&scrollflat->thinker);
+		scrollflat->thinker.function = T_ScrollFlat;
+		scrollflat->ctrlLine = line;
+		scrollflat->sectors = Z_Malloc(sizeof(VINT)*numScrollflatSectors, PU_LEVSPEC);
+		scrollflat->sectors[0] = (VINT)(sector - sectors);
+		scrollflat->numsectors = 1;
+	}
+}
+
 void T_ScrollTex (scrolltex_t *scrolltex)
 {
-	CONS_Printf("x: %d, y: %d", scrolltex->xSpeed, scrolltex->ySpeed);
+	fixed_t xSpeed = scrolltex->ctrlSector->floorheight >> FRACBITS;
+	fixed_t ySpeed = scrolltex->ctrlSector->ceilingheight >> FRACBITS;
 
 	for (int i = 0; i < scrolltex->numlines; i++)
 	{
@@ -533,28 +602,28 @@ void T_ScrollTex (scrolltex_t *scrolltex)
 		line_t *line = &lines[scrolltex->lines[i]];
 		side_t *side = &sides[line->sidenum[0]];
 
-		if (scrolltex->xSpeed != 0)
+		if (xSpeed != 0)
 		{
 			textureoffset = side->textureoffset;
 			rowoffset = textureoffset & 0xf000;
 			textureoffset <<= 4;
-			textureoffset += scrolltex->xSpeed<<4;
+			textureoffset += xSpeed<<4;
 			textureoffset >>= 4;
 			textureoffset |= rowoffset;
 			side->textureoffset = textureoffset;
 		}
-		if (scrolltex->ySpeed != 0)
+		if (ySpeed != 0)
 		{
 			textureoffset = side->textureoffset;
 			rowoffset = ((textureoffset & 0xf000)>>4) | side->rowoffset;
-			rowoffset += scrolltex->ySpeed;
+			rowoffset += ySpeed;
 			side->rowoffset = rowoffset & 0xff;
 			side->textureoffset = (textureoffset & 0xfff) | (rowoffset & 0xf00);
 		}
 	}
 }
 
-static void P_StartScrollTex(line_t *line, int numScrolltexLines)
+static void P_StartScrollTex(line_t *line)
 {
 	thinker_t	*currentthinker;
 	uint8_t tag = P_GetLineTag(line);
@@ -589,11 +658,18 @@ static void P_StartScrollTex(line_t *line, int numScrolltexLines)
 
 		paramSector = &sectors[s];
 
+		int numScrolltexLines = 0;
+		for (int i = 0; i < numlines; i++)
+		{
+			if (P_GetLineSpecial(&lines[i]) == 249
+				&& P_GetLineTag(&lines[i]) == P_GetLineTag(line))
+				numScrolltexLines++;
+		}
+
 		scrolltex_t *scrolltex = Z_Malloc (sizeof(*scrolltex), PU_LEVSPEC);
 		P_AddThinker (&scrolltex->thinker);
 		scrolltex->thinker.function = T_ScrollTex;
-		scrolltex->xSpeed = paramSector->floorheight >> FRACBITS;
-		scrolltex->ySpeed = paramSector->ceilingheight >> FRACBITS;
+		scrolltex->ctrlSector = paramSector;
 		scrolltex->lines = Z_Malloc(sizeof(VINT)*numScrolltexLines, PU_LEVSPEC);
 		scrolltex->lines[0] = (VINT)(line - lines);
 		scrolltex->numlines = 1;
@@ -619,17 +695,6 @@ void P_SpawnSpecials (void)
 		switch (sector->special)
 		{
 			default:
-				break;
-		}
-	}
-
-	int numScrolltexLines = 0;
-	for (i = 0; i < numlines; i++)
-	{
-		switch (P_GetLineSpecial(&lines[i]))
-		{
-			case 249:
-				numScrolltexLines++;
 				break;
 		}
 	}
@@ -714,7 +779,14 @@ void P_SpawnSpecials (void)
 		}
 		case 249: // Scroll line texture by tagged sector floor (X) and ceiling (Y)
 		{
-			P_StartScrollTex(&lines[i], numScrolltexLines);
+			P_StartScrollTex(&lines[i]);
+			break;
+		}
+		case 250: // Scroll floor
+		{
+			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
+				P_StartScrollFlat(&lines[i], &sectors[s]);
+
 			break;
 		}
 		}

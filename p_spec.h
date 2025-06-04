@@ -224,9 +224,16 @@ typedef struct
 	thinker_t thinker;
 	VINT *lines;
 	VINT numlines;
-	VINT xSpeed;
-	VINT ySpeed;
+	sector_t *ctrlSector;
 } scrolltex_t;
+
+typedef struct {
+	thinker_t thinker;
+	VINT *sectors;
+	VINT numsectors;
+	line_t *ctrlLine;
+} scrollflat_t;
+
 
 #define	CEILSPEED		FRACUNIT*THINKERS_TICS
 #define MAXCEILINGS		16
