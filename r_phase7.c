@@ -20,6 +20,8 @@ typedef struct localplane_s
     fixed_t height;
     angle_t angle;
     fixed_t x, y;
+    uint16_t xoff;
+    uint16_t yoff;
     boolean wavy;
 #ifndef SIMPLELIGHT
     int lightmin;
@@ -109,9 +111,9 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     angle = (lpl->angle + (xtoviewangle[x]<<FRACBITS)) >> ANGLETOFINESHIFT;
 
     xfrac = FixedMul(finecosine(angle), length);
-    xfrac = lpl->x + xfrac;
+    xfrac = lpl->x + xfrac - (lpl->xoff << FRACBITS);
     yfrac = FixedMul(finesine(angle), length);
-    yfrac = lpl->y - yfrac;
+    yfrac = lpl->y - yfrac + (lpl->yoff << FRACBITS);
 #ifdef MARS
     yfrac *= flatpixels[flatnum].size;
 #endif
@@ -371,6 +373,8 @@ static void R_DrawPlanes2(int isFOF)
 
         const int flatnum = pl->flatandlight&0xff;
 
+        lpl.xoff = UPPER8(pl->offs);
+        lpl.yoff = LOWER8(pl->offs);
         lpl.wavy = flatpixels[flatnum].wavy;
 
 #ifdef MARS
@@ -506,6 +510,7 @@ static void Mars_R_SplitPlanes(void)
             newpl->height = pl->height;
             newpl->flatandlight = pl->flatandlight;
             newpl->flags = pl->flags;
+            newpl->offs = pl->offs;
             newpl->minx = start + 1;
             newpl->maxx = newstop;
 

@@ -527,11 +527,11 @@ void P_UpdateSpecials (void)
 
 void T_ScrollFlat (scrollflat_t *scrollflat)
 {
-	const vertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
-	const vertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
+	const mapvertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
+	const mapvertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
 
-	fixed_t ldx = FixedMul(v2->x - v1->x, CARRYFACTOR);
-	fixed_t ldy = FixedMul(v2->y - v1->y, CARRYFACTOR);
+	fixed_t ldx = FixedMul((v2->x - v1->x) << FRACBITS, CARRYFACTOR);
+	fixed_t ldy = FixedMul((v2->y - v1->y) << FRACBITS, CARRYFACTOR);
 
 	for (int i = 0; i < scrollflat->numsectors; i++)
 	{
@@ -540,8 +540,8 @@ void T_ScrollFlat (scrollflat_t *scrollflat)
 		uint8_t xoff = sec->floor_xoffs >> 8;
 		uint8_t yoff = sec->floor_xoffs & 0xff;
 
-		xoff += ldx;
-		yoff += ldy;
+		xoff += ldx >> FRACBITS;
+		yoff += ldy >> FRACBITS;
 
 		sec->floor_xoffs = (xoff << 8) | yoff;
 	}

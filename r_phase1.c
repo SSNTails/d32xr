@@ -217,13 +217,17 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       f_lightlevel    = front_sector->lightlevel;
       f_floorheight   = front_sector->floorheight   - vd.viewz;
       f_ceilingheight = front_sector->ceilingheight - vd.viewz;
+      segl->floor_offs = 0;
 
       if (f_floorpic != 0xff)
       {
           SETLOWER8(segl->floorceilpicnum, flattranslation[f_floorpic]);
+          segl->floor_offs = front_sector->floor_xoffs;
       }
       else
+      {
           SETLOWER8(segl->floorceilpicnum, (uint8_t)-1);
+      }
 
       if (f_ceilingpic != 0xff)
       {
