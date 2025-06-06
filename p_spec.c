@@ -523,15 +523,19 @@ void P_UpdateSpecials (void)
 ===============================================================================
 */
 
-#define CARRYFACTOR (7168)
+#define CARRYFACTOR (10240 + 4096 + 224) // Pretty darn close...
+#define SCROLL_SHIFT 4
 
 void T_ScrollFlat (scrollflat_t *scrollflat)
 {
 	const mapvertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
 	const mapvertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
 
-	fixed_t ldx = FixedMul((v2->x - v1->x) << FRACBITS, CARRYFACTOR);
-	fixed_t ldy = FixedMul((v2->y - v1->y) << FRACBITS, CARRYFACTOR);
+	fixed_t ldx = (v2->x - v1->x);
+	fixed_t ldy = (v2->y - v1->y);
+
+	fixed_t convDx = ldx << FRACBITS;
+	fixed_t convDy = ldy << FRACBITS;
 
 	for (int i = 0; i < scrollflat->numsectors; i++)
 	{
@@ -540,14 +544,45 @@ void T_ScrollFlat (scrollflat_t *scrollflat)
 		uint8_t xoff = sec->floor_xoffs >> 8;
 		uint8_t yoff = sec->floor_xoffs & 0xff;
 
-		xoff += ldx >> FRACBITS;
-		yoff += ldy >> FRACBITS;
+		xoff += ldx;
+		yoff += ldy;
 
 		sec->floor_xoffs = (xoff << 8) | yoff;
+
+		if (false)//scrollflat->carry && sec->thinglist)
+		{
+			mobj_t *thing = SPTR_TO_LPTR(sec->thinglist);
+
+			while(thing) // walk sector thing list
+			{
+				if (thing->type == MT_PLAYER
+					&& thing->z <= sec->floorheight)
+				{
+					player_t *player = &players[thing->player - 1];
+
+					player->mo->momx += convDx;
+					player->mo->momy += convDy;
+
+					if (!(convDx | convDy))
+					{
+						player->cmomx = 0;
+						player->cmomy = 0;
+					}
+					else
+					{
+						player->cmomx = FixedMul(convDx, 58368);
+						player->cmomy = FixedMul(convDy, 58368);
+						player->onconveyor = 4;
+					}
+				}
+
+				thing = SPTR_TO_LPTR(thing->snext);
+			}
+		}
 	}
 }
 
-static void P_StartScrollFlat(line_t *line, sector_t *sector)
+static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 {
 	thinker_t	*currentthinker;
 	uint8_t tag = P_GetLineTag(line);
@@ -588,6 +623,7 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector)
 		scrollflat->sectors = Z_Malloc(sizeof(VINT)*numScrollflatSectors, PU_LEVSPEC);
 		scrollflat->sectors[0] = (VINT)(sector - sectors);
 		scrollflat->numsectors = 1;
+		scrollflat->carry = carry;
 	}
 }
 
@@ -785,7 +821,14 @@ void P_SpawnSpecials (void)
 		case 250: // Scroll floor
 		{
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-				P_StartScrollFlat(&lines[i], &sectors[s]);
+				P_StartScrollFlat(&lines[i], &sectors[s], false);
+
+			break;
+		}
+		case 251: // Scroll floor and carry
+		{
+			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
+				P_StartScrollFlat(&lines[i], &sectors[s], true);
 
 			break;
 		}

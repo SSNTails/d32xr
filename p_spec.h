@@ -232,6 +232,7 @@ typedef struct {
 	VINT *sectors;
 	VINT numsectors;
 	line_t *ctrlLine;
+	boolean carry;
 } scrollflat_t;
 
 
