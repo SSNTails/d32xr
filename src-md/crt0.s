@@ -610,10 +610,10 @@ no_cmd:
         dc.w    set_bank_page - prireqtbl         /* 0x16 */
         dc.w    net_set_link_timeout - prireqtbl  /* 0x17 */
         dc.w    set_music_volume - prireqtbl      /* 0x18 */
-        dc.w    ctl_md_vdp - prireqtbl            /* 0x19 */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1A */ /* DLG: */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1B */ /* DLG: */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1C */ /* DLG: */
+        dc.w    set_gamemode - prireqtbl          /* 0x19 */
+        dc.w    set_scroll_positions - prireqtbl  /* 0x1A */
+        dc.w    no_cmd - prireqtbl                /* 0x1B */ /* FREE TO USE */
+        dc.w    no_cmd - prireqtbl                /* 0x1C */ /* FREE TO USE */
         dc.w    load_sfx - prireqtbl              /* 0x1D */
         dc.w    play_sfx - prireqtbl              /* 0x1E */
         dc.w    get_sfx_status - prireqtbl        /* 0x1F */
@@ -1674,6 +1674,13 @@ set_music_volume:
 
 
 
+set_gamemode:
+        move.b  0xA15122,gamemode
+        move.w  #0,0xA15120         /* done */
+        bra     main_loop
+
+
+
 get_lump_source_and_size:
         /* fetch lump length */
         lea     lump_size,a0
@@ -1877,6 +1884,42 @@ load_md_sky:
         move.w  #0,0xA15120         /* done */
 
         move.w  #0x2000,sr          /* enable ints */
+
+        bra     main_loop
+
+
+set_scroll_positions:
+        move.l  d0,-(sp)
+
+        move.w  0xA15122,current_scroll_b_top_position
+
+        move.w  #0,0xA15120         /* request more data */
+1:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x02,d0
+        bne.b   1b
+
+        move.w  0xA15122,current_scroll_b_bottom_position
+
+        move.w  #0,0xA15120         /* request more data */
+2:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x03,d0
+        bne.b   2b
+
+        move.w  0xA15122,current_scroll_a_top_position
+
+        move.w  #0,0xA15120         /* request more data */
+3:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x04,d0
+        bne.b   3b
+
+        move.w  0xA15122,current_scroll_a_bottom_position
+
+        move.l  (sp)+,d0
+
+        move.w  #0,0xA15120         /* done */
 
         bra     main_loop
 
@@ -2099,365 +2142,6 @@ update_color:
         bra     main_loop
 
 
-
-ctl_md_vdp:
-        andi.w  #255, d0
-        move.w  d0, init_vdp_latch
-
-        move.w  0xA15100,d0
-        eor.w   #0x8000,d0
-        move.w  d0,0xA15100         /* unset FM - disallow SH2 access to FB */
-
-        move.w  0xA15180,d0
-        andi.w  #0xFF7F,d0
-        move.w  d0,0xA15180         /* set MD priority */
-        tst.b   d0
-        bne.b   1f                  /* re-init vdp and vram */
-
-|       move.w  #0x8134,0xC00004    /* display off, vblank enabled, V28 mode */
-        move.w  0xA15180,d0
-        ori.w   #0x0080,d0
-        move.w  d0,0xA15180         /* set 32X priority */
-1:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
-
-cpy_md_vram:
-        move.w  0xA15100,d1
-        eor.w   #0x8000,d1
-        move.w  d1,0xA15100         /* unset FM - disallow SH2 access to FB */
-
-        lea     0xA15120,a1         /* 32x comm0 port */
-
-        moveq   #0,d1
-        move.b  d0,d1               /* column number */
-        add.w   d1,d1
-
-        lea     0x840200,a2         /* frame buffer */
-        lea     0(a2,d1.l),a2
-
-        cmpi.w  #0x1C00,d0
-        bhs.w   10f                 /* swap with vram */
-        cmpi.w  #0x1B00,d0
-        bhs.w   5f                  /* copy from vram */
-
-        /* COPY TO VRAM */
-        cmpi.l  #280,d1             /* vram or wram? */
-        bhs.b   2f                  /* wram */
-
-        lea     0xC00000,a0         /* vdp data port */
-        move.w  #0x8F02,4(a0)       /* set INC to 2 */
-
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lsl.l   #2,d1               /* get top two bits of offset into high word */
-        lsr.w   #2,d1
-        ori.w   #0x4000,d1          /* write VRAM */
-        swap    d1
-        move.l  d1,4(a0)            /* cmd port <- write VRAM at offset */
-        move.w  #27,d0
-1:
-        move.w  (a2),(a0)           /* next word */
-        move.w  320(a2),(a0)        /* next word */
-        move.w  640(a2),(a0)        /* next word */
-        move.w  960(a2),(a0)        /* next word */
-        move.w  1280(a2),(a0)       /* next word */
-        move.w  1600(a2),(a0)       /* next word */
-        move.w  1920(a2),(a0)       /* next word */
-        move.w  2240(a2),(a0)       /* next word */
-        lea     2560(a2),a2
-        dbra    d0,1b
-        bra     4f                  /* done */
-2:
-        subi.l  #280,d1
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lea     col_store,a0
-        lea     0(a0,d1.l),a0
-        move.w  #27,d0
-3:
-        move.w  (a2),(a0)+          /* next word */
-        move.w  320(a2),(a0)+       /* next word */
-        move.w  640(a2),(a0)+       /* next word */
-        move.w  960(a2),(a0)+       /* next word */
-        move.w  1280(a2),(a0)+      /* next word */
-        move.w  1600(a2),(a0)+      /* next word */
-        move.w  1920(a2),(a0)+      /* next word */
-        move.w  2240(a2),(a0)+      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,3b
-4:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
-
-5:
-        moveq   #0,d0
-        move.w  2(a1), d0
-
-        andi.w  #0xFF,d0            /* column offset in words */
-        add.l   d0,d0
-
-        /* COPY FROM VRAM */
-        cmpi.l  #280,d1             /* vram or wram? */
-        bhs.w   7f                  /* wram */
-
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lea     0xC00000,a0         /* vdp data port */
-        move.w  #0x8F02,4(a0)       /* set INC to 2 */
-
-        add.l   d0,d1
-
-        #mulu.w  #160,d0
-        lsl.l   #5,d0
-        move.l  d0,d2
-        add.l   d2,d2
-        add.l   d2,d2
-        add.l   d2,d0
-
-        lea     0(a2,d0.l),a2
-
-        lsl.l   #2,d1               /* get top two bits of offset into high word */
-        lsr.w   #2,d1
-        swap    d1
-        move.l  d1,4(a0)            /* cmd port <- read VRAM from offset */
-
-        move.w  2(a1), d0           /* length in words */
-        lsr.w   #8,d0
-        andi.w  #255,d0
-        subq.w  #1,d0
-        cmpi.w  #223,d0
-        bne.b   6f
-
-        move.w  #27,d0
-60:
-        move.w  (a0),(a2)           /* next word */
-        move.w  (a0),320(a2)        /* next word */
-        move.w  (a0),640(a2)        /* next word */
-        move.w  (a0),960(a2)        /* next word */
-        move.w  (a0),1280(a2)       /* next word */
-        move.w  (a0),1600(a2)       /* next word */
-        move.w  (a0),1920(a2)       /* next word */
-        move.w  (a0),2240(a2)       /* next word */
-        lea     2560(a2),a2
-        dbra    d0,60b
-        bra     9f                  /* done */
-6:
-        move.w  (a0), (a2)
-        lea     320(a2),a2
-        dbra    d0,6b
-        bra     9f                  /* done */
-7:
-        subi.l  #280,d1
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        lsl.w   #1,d2
-        add     d2,d1
-        lsl.w   #1,d2
-        add     d2,d1
-        add.l   d0,d1
-
-        #mulu.w  #160,d0
-        lsl.l   #5,d0
-        move    d0,d2
-        lsl.l   #2,d2
-        add.l   d2,d0
-
-        lea     0(a2,d0.l),a2
-
-        lea     col_store,a0
-        lea     0(a0,d1.l),a0
-
-        move.w  2(a1), d0           /* length in words */
-        lsr.w   #8,d0
-        andi.w  #255,d0
-        subq.w  #1,d0
-        cmpi.w  #223,d0
-        bne.b   8f
-
-        move.w  #27,d0
-80:
-        move.w  (a0)+,(a2)          /* next word */
-        move.w  (a0)+,320(a2)       /* next word */
-        move.w  (a0)+,640(a2)       /* next word */
-        move.w  (a0)+,960(a2)       /* next word */
-        move.w  (a0)+,1280(a2)      /* next word */
-        move.w  (a0)+,1600(a2)      /* next word */
-        move.w  (a0)+,1920(a2)      /* next word */
-        move.w  (a0)+,2240(a2)      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,80b
-        bra     9f                  /* done */
-8:
-        move.w  (a0)+, (a2)
-        lea     320(a2),a2
-        dbra    d0,8b
-9:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
-
-10:
-        /* SWAP WITH VRAM */
-        cmpi.l  #280,d1             /* vram or wram? */
-        bhs     12f                 /* wram */
-
-        lea     0xC00000,a0         /* vdp data port */
-        move.w  #0x8F02,4(a0)       /* set INC to 2 */
-
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lsl.l   #2,d1               /* get top two bits of offset into high word */
-        lsr.w   #2,d1
-        move.l  d1,d2
-        ori.w   #0x4000,d2          /* write VRAM */
-        swap    d1
-        swap    d2
-        move.l  d1,4(a0)            /* cmd port <- read VRAM at offset */
-        move.w  #27,d0
-        lea     col_store+20*224*2,a1
-11:
-        /* vram to swap buffer */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        dbra    d0,11b
-
-        move.l  d2,4(a0)            /* cmd port <- write VRAM at offset */
-        move.w  #27,d0
-111:
-        /* screen to vram */
-        move.w  (a2),(a0)           /* next word */
-        move.w  320(a2),(a0)        /* next word */
-        move.w  640(a2),(a0)        /* next word */
-        move.w  960(a2),(a0)        /* next word */
-        move.w  1280(a2),(a0)       /* next word */
-        move.w  1600(a2),(a0)       /* next word */
-        move.w  1920(a2),(a0)       /* next word */
-        move.w  2240(a2),(a0)       /* next word */
-        lea     2560(a2),a2
-        dbra    d0,111b
-
-        move.w  #27,d0
-        lea     -224*2(a1),a1
-        adda.l  #-320*224,a2
-112:
-        /* swap buffer to screen */
-        move.w  (a1)+,(a2)          /* next word */
-        move.w  (a1)+,320(a2)       /* next word */
-        move.w  (a1)+,640(a2)       /* next word */
-        move.w  (a1)+,960(a2)       /* next word */
-        move.w  (a1)+,1280(a2)      /* next word */
-        move.w  (a1)+,1600(a2)      /* next word */
-        move.w  (a1)+,1920(a2)      /* next word */
-        move.w  (a1)+,2240(a2)      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,112b
-        bra     14f                 /* done */
-12:
-        subi.l  #280,d1
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lea     col_store,a0
-        lea     0(a0,d1.l),a0
-        move.w  #27,d0
-        lea     col_store+20*224*2,a1
-13:
-        /* wram to swap buffer */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        dbra    d0,13b
-
-        lea     -224*2(a0),a0
-        move.w  #27,d0
-131:
-        /* screen to wram */
-        move.w  (a2),(a0)+          /* next word */
-        move.w  320(a2),(a0)+       /* next word */
-        move.w  640(a2),(a0)+       /* next word */
-        move.w  960(a2),(a0)+       /* next word */
-        move.w  1280(a2),(a0)+      /* next word */
-        move.w  1600(a2),(a0)+      /* next word */
-        move.w  1920(a2),(a0)+      /* next word */
-        move.w  2240(a2),(a0)+      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,131b
-
-        move.w  #27,d0
-        lea     -224*2(a1),a1
-        adda.l  #-320*224,a2
-132:
-        /* swap buffer to screen */
-        move.w  (a1)+,(a2)          /* next word */
-        move.w  (a1)+,320(a2)       /* next word */
-        move.w  (a1)+,640(a2)       /* next word */
-        move.w  (a1)+,960(a2)       /* next word */
-        move.w  (a1)+,1280(a2)      /* next word */
-        move.w  (a1)+,1600(a2)      /* next word */
-        move.w  (a1)+,1920(a2)      /* next word */
-        move.w  (a1)+,2240(a2)      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,132b
-14:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
 
 load_sfx:
         /* fetch sample length */
@@ -3540,6 +3224,9 @@ hotplug_cnt:
 need_bump_fm:
         dc.b    1
 need_ctrl_int:
+        dc.b    0
+
+gamemode:
         dc.b    0
 
 legacy_emulator:

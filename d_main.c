@@ -385,17 +385,9 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 		buttons = I_ReadControls();
 
-		if (buttons & BT_START) {
-#ifdef SHOW_COMPATIBILITY_PROMPT
-			if (IsCompatibility()) {
-				exit = ga_closeprompt;
-				break;
-			}
-#endif
-			if (IsDemoModeType(DemoMode_Playback)) {
-				exit = ga_exitdemo;
-				break;
-			}
+		if (IsDemoModeType(DemoMode_Playback) && buttons & BT_START) {
+			exit = ga_exitdemo;
+			break;
 		}
 
 		buttons |= I_ReadMouse(&mx, &my);
@@ -523,13 +515,17 @@ int TIC_Abortable (void)
 unsigned short screenCount = 0;
 char selected_map = 0;
 dmapinfo_t selected_map_info;
+short background_x = 0;
+short background_y = 0;
 
 
 int TIC_LevelSelect (void)
 {
 	screenCount++;
 
-	if (ticrealbuttons & BT_START) {
+	if ((ticrealbuttons & BT_START && oldticrealbuttons != BT_START))
+	//		|| (ticrealbuttons & BT_B && oldticrealbuttons != BT_B))
+	{
 		return ga_startnew;
 	}
 
@@ -579,6 +575,8 @@ void START_LevelSelect (void)
 	I_SetPalette(dc_playpals);
 
 	R_InitColormap();
+
+	R_SetupBackground("MENU");
 }
 
 void STOP_LevelSelect (void)
@@ -590,6 +588,10 @@ void STOP_LevelSelect (void)
 
 void DRAW_LevelSelect (void)
 {
+	Mars_FadeMDPaletteFromBlack(0xEEE);
+
+	Mars_SetScrollPositions(0, 0, 0, screenCount, 0, 0, 0, 0);
+
 	//int srb2tile = W_CheckNumForName("SRB2TILE");
 
 	unsigned char lvlsel_name[9] = { 'L','V','L','S','E','L','0','0','\0' };
@@ -616,7 +618,16 @@ void DRAW_LevelSelect (void)
 		arrow_offset = 7 - arrow_offset;
 	}
 
-	DrawTiledBackground((screenCount >> 1) & 0x1F, (screenCount >> 1) & 0x1F);
+	//DrawTiledBackground(screenCount & 0x1F, screenCount & 0x1F);
+
+	pixel_t* background = I_FrameBuffer();
+
+	for (int i=0; i < ((320*224)>>3); i++) {
+		*background++ = 0xFCFC;	// Thru color
+		*background++ = 0xFCFC;	// Thru color
+		*background++ = 0xFCFC;	// Thru color
+		*background++ = 0xFCFC;	// Thru color
+	}
 
 	V_DrawStringCenterWithColormap(&menuFont, 160, 32, "SELECT A STAGE", YELLOWTEXTCOLORMAP);
 	DrawJagobjLump(arrowl, ((320-16)>>1)-96 - arrow_offset, 112, NULL, NULL);
@@ -662,7 +673,11 @@ int TIC_Compatibility(void)
 {
 	screenCount++;
 
-	return 0;
+	if ((ticrealbuttons & BT_START && oldticrealbuttons != BT_START)) {
+		return ga_closeprompt;
+	}
+
+	return ga_nothing;
 }
 
 void START_Compatibility (void)

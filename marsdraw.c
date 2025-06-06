@@ -916,7 +916,7 @@ void DrawTiledBackground2(int flat, int offset_x, int offset_y)
 	for (yt = 0; yt < ytiles; yt++)
 	{
 		int y1;
-		const pixel_t* source = bsrc;
+		const pixel_t* source = bsrc + ((length >> 1) * ((offset_y + y) & (length - 1)));
 
 		for (y1 = 0; y1 < length; y1++)
 		{
@@ -925,10 +925,11 @@ void DrawTiledBackground2(int flat, int offset_x, int offset_y)
 			for (xt = 0; xt < xtiles; xt++) {
 				int x;
 				for (x = 0; x < hw; x++)
-					*bdest++ = source[x];
+					*bdest++ = source[(offset_x + x) & ((length >> 1) - 1)];
 			}
 			y++;
-			source += hw;
+			//source += hw;
+			source = bsrc + ((length >> 1) * ((offset_y + y) & (length - 1)));
 			if (y == mars_framebuffer_height)
 				return;
 		}

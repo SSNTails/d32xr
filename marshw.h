@@ -144,19 +144,15 @@ int Mars_ROMSize(void);
 #ifdef MDSKY
 void Mars_FadeMDPaletteFromBlack(int fade_degree);
 void Mars_ScrollMDSky(short scroll_x, short scroll_y_base, short scroll_y_offset, short scroll_y_pan);
+void Mars_SetScrollPositions(
+		short scroll_b_top_x, short scroll_b_top_y, short scroll_b_bottom_x, short scroll_b_bottom_y,
+		short scroll_a_top_x, short scroll_a_top_y, short scroll_a_bottom_x, short scroll_a_bottom_y);
 void Mars_LoadMDSky(void *sky_metadata_ptr,
 		void *sky_names_a_ptr, int sky_names_a_size,
 		void *sky_names_b_ptr, int sky_names_b_size,
 		void *sky_palettes_ptr, int sky_palettes_size,
 		void *sky_tiles_ptr, int sky_tiles_size);
 #endif
-
-void Mars_CtlMDVDP(int sel);
-
-void Mars_StoreWordColumnInMDVRAM(int c);
-// both offset and length are in words, not in bytes
-void Mars_LoadWordColumnFromMDVRAM(int c, int offset, int len);
-void Mars_SwapWordColumnWithMDVRAM(int c);
 
 void Mars_Finish(void) MARS_ATTR_DATA_CACHE_ALIGN;
 

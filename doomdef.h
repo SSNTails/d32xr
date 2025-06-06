@@ -599,15 +599,15 @@ static inline boolean IsCredits()
 	{ return gamemode == GAMEMODE_CREDITS; }
 
 static inline void SetCompatibility()
-	{ gamemode = GAMEMODE_COMPATIBILITY; }
+	{ gamemode = GAMEMODE_COMPATIBILITY; MD_SetGamemode(gamemode); }
 static inline void SetDisclaimer()
-	{ gamemode = GAMEMODE_DISCLAIMER; }
+	{ gamemode = GAMEMODE_DISCLAIMER; MD_SetGamemode(gamemode); }
 static inline void SetTitleScreen()
-	{ gamemode = GAMEMODE_TITLESCREEN; }
+	{ gamemode = GAMEMODE_TITLESCREEN; MD_SetGamemode(gamemode); }
 static inline void SetLevelSelect()
-	{ gamemode = GAMEMODE_LEVELSELECT; }
+	{ gamemode = GAMEMODE_LEVELSELECT; MD_SetGamemode(gamemode); }
 static inline void SetCredits()
-	{ gamemode = GAMEMODE_CREDITS; }
+	{ gamemode = GAMEMODE_CREDITS; MD_SetGamemode(gamemode); }
 
 // Level
 static inline boolean IsLevel()
@@ -616,7 +616,7 @@ static inline boolean IsLevelType(leveltype_t type)
 	{ return (gamemode & GAMEMODE_LEVEL_TYPE) == type; }
 
 static inline void SetLevel(leveltype_t type)
-	{ gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | type; }
+	{ gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | type;  MD_SetGamemode(gamemode); }
 
 // Demo
 static inline boolean IsDemo()
@@ -625,7 +625,7 @@ static inline boolean IsDemoModeType(demomodetype_t type)
 	{ return (gamemode & GAMEMODE_DEMO_MODETYPE) == type; }
 
 static inline void SetDemoMode(demomodetype_t type)
-	{ gamemode = (gamemode & (~GAMEMODE_DEMO_MODETYPE)) | type; }
+	{ gamemode = (gamemode & (~GAMEMODE_DEMO_MODETYPE)) | type;  MD_SetGamemode(gamemode); }
 
 
 
