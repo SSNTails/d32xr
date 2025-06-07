@@ -534,8 +534,8 @@ void T_ScrollFlat (scrollflat_t *scrollflat)
 	fixed_t ldx = (v2->x - v1->x);
 	fixed_t ldy = (v2->y - v1->y);
 
-	fixed_t convDx = ldx << FRACBITS;
-	fixed_t convDy = ldy << FRACBITS;
+	fixed_t convDx = ldx << FRACBITS << 1;
+	fixed_t convDy = ldy << FRACBITS << 1;
 
 	for (int i = 0; i < scrollflat->numsectors; i++)
 	{
@@ -549,7 +549,7 @@ void T_ScrollFlat (scrollflat_t *scrollflat)
 
 		sec->floor_xoffs = (xoff << 8) | yoff;
 
-		if (false)//scrollflat->carry && sec->thinglist)
+		if (scrollflat->carry && sec->thinglist)
 		{
 			mobj_t *thing = SPTR_TO_LPTR(sec->thinglist);
 
@@ -560,20 +560,11 @@ void T_ScrollFlat (scrollflat_t *scrollflat)
 				{
 					player_t *player = &players[thing->player - 1];
 
-					player->mo->momx += convDx;
-					player->mo->momy += convDy;
-
-					if (!(convDx | convDy))
-					{
-						player->cmomx = 0;
-						player->cmomy = 0;
-					}
-					else
-					{
-						player->cmomx = FixedMul(convDx, 58368);
-						player->cmomy = FixedMul(convDy, 58368);
-						player->onconveyor = 4;
-					}
+					player->mo->momx = REALMOMX(player) + convDx;
+					player->mo->momy = REALMOMY(player) + convDy;
+					player->cmomx = convDx;//FixedMul(convDx, 58368);
+					player->cmomy = convDy;//FixedMul(convDy, 58368);
+					player->onconveyor = 4;
 				}
 
 				thing = SPTR_TO_LPTR(thing->snext);

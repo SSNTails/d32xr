@@ -291,7 +291,6 @@ int P_Ticker (void)
 //			start = frtc;
 			P_RunMobjLate();
 //			latetics = frtc - start;
-
 			P_UpdateSpecials();
 
 			leveltime++;

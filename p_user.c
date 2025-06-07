@@ -217,13 +217,13 @@ void P_PlayerXYMovement(mobj_t *mo)
 		const fixed_t diff = speed - top;
 		const angle_t opposite = speedDir - ANG180;
 
-		player->mo->momx = REALMOMX(player);
-		player->mo->momy = REALMOMY(player);
+		mo->momx = REALMOMX(player);
+		mo->momy = REALMOMY(player);
 		P_Thrust(player->mo, opposite, diff);
-		player->mo->momx += player->cmomx;
-		player->mo->momy += player->cmomy;
+		mo->momx += player->cmomx;
+		mo->momy += player->cmomy;
 	}
-	else if (player->powers[pw_flashing] != FLASHINGTICS && player->mo->z <= player->mo->floorz) // Friction
+	else if (player->powers[pw_flashing] != FLASHINGTICS && mo->z <= mo->floorz) // Friction
 	{
 		const fixed_t frc = (player->pflags & PF_SPINNING) ? FRACUNIT >> 2 : FRACUNIT * 1;
 		
@@ -231,9 +231,6 @@ void P_PlayerXYMovement(mobj_t *mo)
 		{
 			if (!(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL)))
 			{
-				player->mo->momx = REALMOMX(player);
-				player->mo->momy = REALMOMY(player);
-
 				if (speed >= frc)
 				{
 					fixed_t newSpeedX = 0;
@@ -244,26 +241,20 @@ void P_PlayerXYMovement(mobj_t *mo)
 					else
 						P_ThrustValues(speedDir, -frc, &newSpeedX, &newSpeedY);
 
-					player->mo->momx += newSpeedX;
-					player->mo->momy += newSpeedY;
+					mo->momx += newSpeedX;
+					mo->momy += newSpeedY;
 				}
 				else
 				{
-					player->mo->momx = FixedMul(player->mo->momx, FRACUNIT - (STOPSPEED*2));
-					player->mo->momy = FixedMul(player->mo->momy, FRACUNIT - (STOPSPEED*2));
+					mo->momx = player->cmomx + FixedMul(REALMOMX(player), FRACUNIT - (STOPSPEED*2));
+					mo->momy = player->cmomy + FixedMul(REALMOMY(player), FRACUNIT - (STOPSPEED*2));
 				}
-
-				player->mo->momx += player->cmomx;
-				player->mo->momy += player->cmomy;
 			}
 		}
 		else if (!(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL)))
 		{
-			if (speed < STOPSPEED)
-			{
-				mo->momx = player->cmomx;
-				mo->momy = player->cmomy;
-			}
+			mo->momx = player->cmomx;
+			mo->momy = player->cmomy;
 		}
 	}
 }
@@ -364,7 +355,7 @@ void P_PlayerMobjThink(mobj_t *mobj)
 	/* */
 	/* momentum movement */
 	/* */
-	if (REALMOMX(player) || REALMOMY(player))
+	if (player->mo->momx || player->mo->momy)
 	{
 		player->num_touching_sectors = 0;
 		P_PlayerXYMovement(mobj);
