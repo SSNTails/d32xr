@@ -1643,6 +1643,10 @@ void P_PlayerThink(player_t *player)
 
 	P_CheckUnderwaterAndSpaceTimer(player);
 	P_CheckInvincibilityTimer(player);
+
+	player->mo->momx = REALMOMX(player);
+	player->mo->momy = REALMOMY(player);
+	player->cmomx = player->cmomy = 0;
 }
 
 void R_ResetResp(player_t *p)

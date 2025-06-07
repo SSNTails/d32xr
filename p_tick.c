@@ -273,6 +273,7 @@ int P_Ticker (void)
 				P_PlayerThink(pl);
 			}
 		}
+
 		P_RunThinkers();
 
 		{
