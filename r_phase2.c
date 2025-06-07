@@ -13,7 +13,7 @@ static fixed_t R_ScaleFromGlobalAngle(fixed_t rw_distance, angle_t visangle, ang
 static void R_SetupCalc(viswall_t* wc, fixed_t hyp, angle_t normalangle, int angle1) ATTR_DATA_CACHE_ALIGN;
 void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts) ATTR_DATA_CACHE_ALIGN;
 static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds, fixed_t floorheight, 
-    fixed_t floornewheight, fixed_t ceilingheight, fixed_t ceilingnewheight, fixed_t fofnewheight) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
+    fixed_t floornewheight, fixed_t ceilingheight, fixed_t ceilingnewheight, fixed_t segexdata) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 void R_WallPrep(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 
 //
@@ -175,7 +175,7 @@ void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts)
 // Main seg clipping loop
 //
 static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds, 
-    fixed_t floorheight, fixed_t floornewheight, fixed_t ceilingheight, fixed_t ceilingnewheight, fixed_t fofnewheight)
+    fixed_t floorheight, fixed_t floornewheight, fixed_t ceilingheight, fixed_t ceilingnewheight, fixed_t segexdata)
 {
     const volatile int actionbits = segl->actionbits;
 
@@ -265,7 +265,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
             {
                 if (!MARKEDOPEN(flooropen[x]))
                 {
-                    visplane_t *floor = R_FindPlane(floorheight, floorandlight, x, stop);
+                    visplane_t *floor = R_FindPlane(floorheight, floorandlight, x, stop, segl->floor_offs);
                     flooropen = floor->open;
                 }
                 flooropen[x] = (top << 8) + (bottom-1);
@@ -287,7 +287,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
             {
                 if (!MARKEDOPEN(ceilopen[x]))
                 {
-                    visplane_t *ceiling = R_FindPlane(ceilingheight, ceilandlight, x, stop);
+                    visplane_t *ceiling = R_FindPlane(ceilingheight, ceilandlight, x, stop, 0);
                     ceilopen = ceiling->open;
                 }
                 ceilopen[x] = (top << 8) + (bottom-1);
@@ -352,7 +352,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
 
                 if (top < bottom)
                 {
-                    visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop);
+                    visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, 0);
 
 //                    if (!(leveltime & 1))
 //                        CONS_Printf("fofplane_f is %d, %d, %d", fofplane, fofandlight, fofplaneHeight);
@@ -366,6 +366,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
             }
             else if (actionbits & AC_FOFCEILING) // Top of FOF is visible
             {
+                const sector_t *fofSector = &sectors[segl->fofSector];
                 const VINT fofandlight = ((segl->seglightlevel & 0xff) << 8) | segl->fof_picnum;
                 const fixed_t fofplaneHeight = sectors[segl->fofSector].ceilingheight - vd.viewz;
 
@@ -378,7 +379,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
 
                 if (top < bottom)
                 {
-                    visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop);
+                    visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, fofSector->floor_xoffs);
 //                    if (!(leveltime & 1))
 //                        CONS_Printf("fofplane_c is %d, %d, %d", fofplane, fofandlight, fofplaneHeight);
                     SETUPPER8(fofplane->open[x], top);
@@ -405,7 +406,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                     top = cy - top;
                     if (top >= 0)
                     {
-                        visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop);
+                        visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, 0);
                         fofplane->flags |= VPFLAGS_DIDSEG;
                         fofplane->open[x] = (top << 8);
                     }
@@ -425,7 +426,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                     if (bottom > 180)
                         bottom = 180;
 
-                    visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop);
+                    visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, fofSector->floor_xoffs);
                     fofplane->flags |= VPFLAGS_DIDSEG;
                     fofplane->open[x] = (fofplane->open[x] & 0xff00) + (bottom-1);
 

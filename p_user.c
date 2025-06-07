@@ -10,7 +10,6 @@
 #define SLOWTURNTICS 10
 #define STOPSPEED FRACUNIT / 16
 #define FRICTION 0xd240
-#define MAXBOB 16 * FRACUNIT /* 16 pixels of bob */
 
 void P_KillMobj(mobj_t *source, mobj_t *target);
 
@@ -72,6 +71,8 @@ void P_ResetPlayer(player_t *player)
 	player->pflags &= ~PF_THOKKED;
 	player->pflags &= ~PF_ELEMENTALBOUNCE;
 	player->homingTimer = 0;
+	player->onconveyor = 0;
+	player->cmomx = player->cmomy = 0;
 }
 
 void P_PlayerRingBurst(player_t *player, int damage)
@@ -205,11 +206,10 @@ void P_PlayerXYMovement(mobj_t *mo)
 {
 	player_t *player = &players[mo->player - 1];
 
-	player->num_touching_sectors = 0;
 	P_PlayerMove(mo);
 
-	fixed_t speed = P_AproxDistance(mo->momx, mo->momy);
-	const angle_t speedDir = R_PointToAngle2(0, 0, mo->momx, mo->momy);
+	fixed_t speed = P_AproxDistance(REALMOMX(player), REALMOMY(player));
+	const angle_t speedDir = R_PointToAngle2(0, 0, REALMOMX(player), REALMOMY(player));
 	const fixed_t top = (player->pflags & PF_SPINNING) ? 80 * FRACUNIT : 30 *FRACUNIT;
 
 	if (speed > top) // Speed cap
@@ -217,9 +217,13 @@ void P_PlayerXYMovement(mobj_t *mo)
 		const fixed_t diff = speed - top;
 		const angle_t opposite = speedDir - ANG180;
 
+		mo->momx = REALMOMX(player);
+		mo->momy = REALMOMY(player);
 		P_Thrust(player->mo, opposite, diff);
+		mo->momx += player->cmomx;
+		mo->momy += player->cmomy;
 	}
-	else if (player->powers[pw_flashing] != FLASHINGTICS && player->mo->z <= player->mo->floorz) // Friction
+	else if (player->powers[pw_flashing] != FLASHINGTICS && mo->z <= mo->floorz) // Friction
 	{
 		const fixed_t frc = (player->pflags & PF_SPINNING) ? FRACUNIT >> 2 : FRACUNIT * 1;
 		
@@ -237,23 +241,20 @@ void P_PlayerXYMovement(mobj_t *mo)
 					else
 						P_ThrustValues(speedDir, -frc, &newSpeedX, &newSpeedY);
 
-					player->mo->momx += newSpeedX;
-					player->mo->momy += newSpeedY;
+					mo->momx += newSpeedX;
+					mo->momy += newSpeedY;
 				}
 				else
 				{
-					player->mo->momx = FixedMul(player->mo->momx, FRACUNIT - (STOPSPEED*2));
-					player->mo->momy = FixedMul(player->mo->momy, FRACUNIT - (STOPSPEED*2));
+					mo->momx = player->cmomx + FixedMul(REALMOMX(player), FRACUNIT - (STOPSPEED*2));
+					mo->momy = player->cmomy + FixedMul(REALMOMY(player), FRACUNIT - (STOPSPEED*2));
 				}
 			}
 		}
 		else if (!(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL)))
 		{
-			if (speed < STOPSPEED)
-			{
-				mo->momx = 0;
-				mo->momy = 0;
-			}
+			mo->momx = player->cmomx;
+			mo->momy = player->cmomy;
 		}
 	}
 }
@@ -270,15 +271,6 @@ void P_PlayerZMovement(mobj_t *mo)
 {
 	player_t *player = &players[mo->player - 1];
 	const fixed_t gravity = (player->pflags & PF_VERTICALFLIP) ? -GRAVITY : GRAVITY;
-
-	/* */
-	/* check for smooth step up */
-	/* */
-	if (mo->z < mo->floorz)
-	{
-		player->viewheight -= mo->floorz - mo->z;
-		player->deltaviewheight = (VIEWHEIGHT - player->viewheight) >> 2;
-	}
 
 	/* */
 	/* adjust height */
@@ -301,9 +293,6 @@ void P_PlayerZMovement(mobj_t *mo)
 	{ /* hit the floor */
 		if (mo->momz < 0)
 		{
-			if (mo->momz < -gravity * 2) /* squat down */
-				player->deltaviewheight = mo->momz >> 3;
-
 			mo->momz = 0;
 
 			if (!(player->pflags & PF_VERTICALFLIP))
@@ -366,8 +355,11 @@ void P_PlayerMobjThink(mobj_t *mobj)
 	/* */
 	/* momentum movement */
 	/* */
-	if (mobj->momx || mobj->momy)
+	if (player->mo->momx || player->mo->momy)
+	{
+		player->num_touching_sectors = 0;
 		P_PlayerXYMovement(mobj);
+	}
 	else if (!(mobj->flags & MF_NOCLIP))
  		P_PlayerCheckForStillPickups(mobj);
 
@@ -479,7 +471,7 @@ void P_BuildMove(player_t *player)
 	/* */
 	mo = player->mo;
 
-	if (!mo->momx && !mo->momy && player->forwardmove == 0 && player->sidemove == 0 && !(player->pflags & PF_GASPEDAL) && !(player->pflags & PF_SPINNING))
+	if (D_abs(REALMOMX(player)) < STOPSPEED && D_abs(REALMOMY(player)) < STOPSPEED && player->forwardmove == 0 && player->sidemove == 0 && !(player->pflags & PF_GASPEDAL) && !(player->pflags & PF_SPINNING))
 	{ /* if in a walking frame, stop moving */
 		if (mo->state >= S_PLAY_RUN1 && mo->state <= S_PLAY_RUN8)
 			P_SetMobjState(mo, S_PLAY_STND);
@@ -490,7 +482,7 @@ void P_BuildMove(player_t *player)
 	{
 		if (!(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL) || player->buttons & BT_CAMLEFT || player->buttons & BT_CAMRIGHT))
 		{
-			if (!(player->mo->momx > STOPSPEED || player->mo->momx < -STOPSPEED || player->mo->momy > STOPSPEED || player->mo->momy < -STOPSPEED || player->mo->momz > STOPSPEED || player->mo->momz < -STOPSPEED))
+			if (!(REALMOMX(player) > STOPSPEED || REALMOMX(player) < -STOPSPEED || REALMOMY(player) > STOPSPEED || REALMOMY(player) < -STOPSPEED || player->mo->momz > STOPSPEED || player->mo->momz < -STOPSPEED))
 				player->stillTimer++;
 			else
 				player->stillTimer = 0;
@@ -538,69 +530,7 @@ void P_BuildMove(player_t *player)
 
 void P_CalcHeight(player_t *player)
 {
-	int angle;
-	fixed_t bob;
-
-	// Regular movement bobbing
-	// (needs to be calculated for gun swing
-	// even if not on ground)
-	// OPTIMIZE: tablify angle
-	// Note: a LUT allows for effects
-	//  like a ramp with low health.
-
-	player->bob = FixedMul(player->mo->momx, player->mo->momx) + FixedMul(player->mo->momy, player->mo->momy);
-	player->bob >>= 2;
-
-	if (player->bob > MAXBOB) //   |
-		player->bob = MAXBOB; // phares 2/26/98
-
-	const boolean onground = (player->mo->z <= player->mo->floorz);
-	if (!onground)
-	{
-		player->viewz = player->mo->z + VIEWHEIGHT;
-
-		if (player->viewz > player->mo->ceilingz - 4 * FRACUNIT)
-			player->viewz = player->mo->ceilingz - 4 * FRACUNIT;
-
-		// The following line was in the Id source and appears      // phares 2/25/98
-		// to be a bug. player->viewz is checked in a similar
-		// manner at a different exit below.
-
-		//  player->viewz = player->mo->z + player->viewheight;
-		return;
-	}
-
-	angle = (FINEANGLES / 20 * gametic) & FINEMASK;
-	bob = FixedMul(player->bob / 2, finesine(angle));
-
-	// move viewheight
-
-	if (player->playerstate == PST_LIVE)
-	{
-		player->viewheight += player->deltaviewheight;
-
-		if (player->viewheight > VIEWHEIGHT)
-		{
-			player->viewheight = VIEWHEIGHT;
-			player->deltaviewheight = 0;
-		}
-
-		if (player->viewheight < VIEWHEIGHT / 2)
-		{
-			player->viewheight = VIEWHEIGHT / 2;
-			if (player->deltaviewheight <= 0)
-				player->deltaviewheight = 1;
-		}
-
-		if (player->deltaviewheight)
-		{
-			player->deltaviewheight += FRACUNIT / 4;
-			if (!player->deltaviewheight)
-				player->deltaviewheight = 1;
-		}
-	}
-
-	player->viewz = player->mo->z + player->viewheight + bob;
+	player->viewz = player->mo->z + VIEWHEIGHT;
 
 	if (player->viewz > player->mo->ceilingz - 4 * FRACUNIT)
 		player->viewz = player->mo->ceilingz - 4 * FRACUNIT;
@@ -692,8 +622,8 @@ static void P_DoSpinDash(player_t *player)
 		if ((buttons & BT_SPIN) && player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
 		{
 			P_ResetScore(player);
-			player->mo->momx = 0; // TODO: cmomx/cmomy
-			player->mo->momy = 0;
+			player->mo->momx = player->cmomx;
+			player->mo->momy = player->cmomy;
 			player->pflags |= PF_STARTDASH;
 			player->pflags |= PF_SPINNING;
 			player->dashSpeed = 1;
@@ -748,8 +678,8 @@ static void P_DoSpinDash(player_t *player)
 			{
 				player->pflags &= ~PF_SPINNING;
 				P_SetMobjState(player->mo, S_PLAY_STND);
-//				player->mo->momx = 0; // TODO: cmomx/cmomy
-//				player->mo->momy = 0;
+				player->mo->momx = player->cmomx;
+				player->mo->momy = player->cmomy;
 				P_ResetScore(player);
 				if (player->pflags & PF_VERTICALFLIP)
 					player->mo->z = player->mo->ceilingz - P_GetPlayerHeight();
@@ -819,8 +749,12 @@ void P_PlayerHitFloor(player_t *player)
 
 	if (!(player->pflags & PF_SPINNING) && !(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL)))
 	{
+		player->mo->momx = REALMOMX(player);
+		player->mo->momy = REALMOMY(player);
 		player->mo->momx >>= 1;
 		player->mo->momy >>= 1;
+		player->mo->momx += player->cmomx;
+		player->mo->momy += player->cmomy;
 	}
 
 	player->homingTimer = 0;
@@ -1097,11 +1031,11 @@ VINT ControlDirection(player_t *player)
 	if (!(player->forwardmove || player->sidemove))
 		return 0;
 
-	if (!(player->mo->momx || player->mo->momy))
+	if (!(REALMOMX(player) || REALMOMY(player)))
 		return 0;
 
 	camera_t *thiscam = &camera;
-	controlplayerdirection = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+	controlplayerdirection = R_PointToAngle2(0, 0, REALMOMX(player), REALMOMY(player));
 
 	// Calculate the angle at which the controls are pointing
 	// to figure out the proper mforward and mbackward.
@@ -1143,8 +1077,11 @@ void P_SpawnSkidDust(player_t *player)
 
 void P_MovePlayer(player_t *player)
 {
+	if (player->onconveyor == 4 && !P_IsObjectOnGround(player->mo)) // Actual conveyor belt
+		player->cmomx = player->cmomy = 0;
+
 	//	player->mo->angle += player->angleturn;
-	fixed_t speed = P_AproxDistance(player->mo->momx, player->mo->momy);
+	fixed_t speed = P_AproxDistance(REALMOMX(player), REALMOMY(player));
 
 	if (player->homingTimer || (player->powers[pw_sneakers] && speed > 20*FRACUNIT))
 	{
@@ -1186,15 +1123,23 @@ void P_MovePlayer(player_t *player)
 
 				controlAngle = R_PointToAngle2(0, 0, controlX, controlY);
 
+				player->mo->momx = REALMOMX(player);
+				player->mo->momy = REALMOMY(player);
 				P_ThrustValues(controlAngle, acc, &player->mo->momx, &player->mo->momy);
-				angle_t moveAngle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+				player->mo->momx += player->cmomx;
+				player->mo->momy += player->cmomy;
+				angle_t moveAngle = R_PointToAngle2(0, 0, REALMOMX(player), REALMOMY(player));
 				
 				// Clip to current speed
-				if (P_AproxDistance(player->mo->momx, player->mo->momy) > speed)
+				if (P_AproxDistance(REALMOMX(player), REALMOMY(player)) > speed)
 				{
-					const fixed_t diff = P_AproxDistance(player->mo->momx, player->mo->momy) - speed;
+					const fixed_t diff = P_AproxDistance(REALMOMX(player), REALMOMY(player)) - speed;
 
+					player->mo->momx = REALMOMX(player);
+					player->mo->momy = REALMOMY(player);
 					P_ThrustValues(moveAngle - ANG180, diff, &player->mo->momx, &player->mo->momy);
+					player->mo->momx += player->cmomx;
+					player->mo->momy += player->cmomy;
 				}
 			}
 		}
@@ -1252,14 +1197,18 @@ void P_MovePlayer(player_t *player)
 				fixed_t moveVecY = 0;
 				P_ThrustValues(controlAngle, speed, &moveVecX, &moveVecY);
 
+				player->mo->momx = REALMOMX(player);
+				player->mo->momy = REALMOMY(player);
 				player->mo->momx = FixedMul(player->mo->momx, 28*FRACUNIT);
 				player->mo->momy = FixedMul(player->mo->momy, 28*FRACUNIT);
 				player->mo->momx += moveVecX;
 				player->mo->momy += moveVecY;
 				player->mo->momx = FixedDiv(player->mo->momx, 29*FRACUNIT);
 				player->mo->momy = FixedDiv(player->mo->momy, 29*FRACUNIT);
+				player->mo->momx += player->cmomx;
+				player->mo->momy += player->cmomy;
 
-				player->mo->angle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+				player->mo->angle = R_PointToAngle2(0, 0, REALMOMX(player), REALMOMY(player));
 			}
 
 			if (speed < 10*FRACUNIT)
@@ -1272,8 +1221,11 @@ void P_MovePlayer(player_t *player)
 			fixed_t moveVecX = 0;
 			fixed_t moveVecY = 0;
 			P_ThrustValues(controlAngle, acc, &moveVecX, &moveVecY);
-			player->mo->momx += moveVecX;
-			player->mo->momy += moveVecY;
+
+			player->mo->momx = REALMOMX(player) + moveVecX;
+			player->mo->momy = REALMOMY(player) + moveVecY;
+			player->mo->momx += player->cmomx;
+			player->mo->momy += player->cmomy;
 
 	//		CONS_Printf("Acc: %d, MomX: %d, MomY: %d", acc, player->mo->momx >> FRACBITS, player->mo->momy >> FRACBITS);
 		}
@@ -1283,11 +1235,11 @@ void P_MovePlayer(player_t *player)
 		P_SetMobjState(player->mo, S_PLAY_RUN1);
 
 	// Make sure you're not teetering when you shouldn't be.
-	if ((player->mo->state == S_PLAY_TEETER1 || player->mo->state == S_PLAY_TEETER2) && (player->mo->momx || player->mo->momy || player->mo->momz))
+	if ((player->mo->state == S_PLAY_TEETER1 || player->mo->state == S_PLAY_TEETER2) && (REALMOMX(player) || REALMOMY(player) || player->mo->momz))
 		P_SetMobjState(player->mo, S_PLAY_STND);
 
 	if (!player->mo->momz &&
-		((!(player->mo->momx || player->mo->momy) && (player->mo->state == S_PLAY_STND || player->mo->state == S_PLAY_TAP1 || player->mo->state == S_PLAY_TAP2 || player->mo->state == S_PLAY_TEETER1 || player->mo->state == S_PLAY_TEETER2))))
+		((!(REALMOMX(player) || REALMOMY(player)) && (player->mo->state == S_PLAY_STND || player->mo->state == S_PLAY_TAP1 || player->mo->state == S_PLAY_TAP2 || player->mo->state == S_PLAY_TEETER1 || player->mo->state == S_PLAY_TEETER2))))
 		P_DoTeeter(player);
 
 	////////////////////////////
@@ -1353,7 +1305,7 @@ void P_MovePlayer(player_t *player)
 			player->pflags &= ~PF_THOKKED;
 	}
 
-	player->speed = P_AproxDistance(player->mo->momx, player->mo->momy);
+	player->speed = P_AproxDistance(REALMOMX(player), REALMOMY(player));
 
 	// If you're running fast enough, you can create splashes as you run in shallow water.
 	if (sectors[subsectors[player->mo->isubsector].isector].heightsec >= 0)
@@ -1433,7 +1385,7 @@ void P_MovePlayer(player_t *player)
 				P_SpawnSkidDust(player);
 			}
 		}
-		else if (player->skidTime <= 0 && P_AproxDistance(player->mo->momx, player->mo->momy) >= 25 << (FRACBITS-1)
+		else if (player->skidTime <= 0 && P_AproxDistance(REALMOMX(player), REALMOMY(player)) >= 25 << (FRACBITS-1)
 			&& ControlDirection(player) == 2)
 		{
 			// start a skid
@@ -1465,10 +1417,6 @@ void P_MovePlayer(player_t *player)
 
 void P_DeathThink(player_t *player)
 {
-	/* fall to the ground */
-	if (player->viewheight > 8 * FRACUNIT)
-		player->viewheight -= FRACUNIT;
-
 	P_CalcHeight(player);
 
 	if (player->deadTimer == 2*TICRATE)
@@ -1625,6 +1573,8 @@ void P_PlayerThink(player_t *player)
 	if (player == &players[consoleplayer] && gameaction != ga_demoending)
 		P_MoveChaseCamera(player, &camera);
 
+	player->onconveyor = 0;
+
 	if (SS_SECTOR(player->mo->isubsector)->special)
 		P_PlayerInSpecialSector(player);
 
@@ -1693,6 +1643,10 @@ void P_PlayerThink(player_t *player)
 
 	P_CheckUnderwaterAndSpaceTimer(player);
 	P_CheckInvincibilityTimer(player);
+
+	player->mo->momx = REALMOMX(player);
+	player->mo->momy = REALMOMY(player);
+	player->cmomx = player->cmomy = 0;
 }
 
 void R_ResetResp(player_t *p)

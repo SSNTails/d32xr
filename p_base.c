@@ -380,8 +380,8 @@ static void P_BounceMove(mobj_t *mo)
    mo->momy = -mo->momy;
 }
 
-#define STOPSPEED 0x1000
-#define FRICTION  0xd240
+#define STOPSPEED FRACUNIT/TICRATE
+#define FRICTION  0xd240//69290
 
 //
 // Do horizontal movement.
@@ -397,15 +397,15 @@ void P_ApplyFriction(mobj_t *mo)
    else
    {
 #if 0
-		mo->momx = (mo->momx>>8)*(FRICTION>>8);
-		mo->momy = (mo->momy>>8)*(FRICTION>>8);
+      mo->momx = (mo->momx>>8)*(FRICTION>>8);
+      mo->momy = (mo->momy>>8)*(FRICTION>>8);
 #else
-		// the original code doesn't produce identical
-		// results in most cases, but is much slower on
-		// the SH-2 as it involves calling gcc's builtin
-		// functions for the >> 8's
-		mo->momx = FixedMul(mo->momx, FRICTION);
-		mo->momy = FixedMul(mo->momy, FRICTION);
+      // the original code doesn't produce identical
+      // results in most cases, but is much slower on
+      // the SH-2 as it involves calling gcc's builtin
+      // functions for the >> 8's
+      mo->momx = FixedMul(mo->momx, FRICTION);
+      mo->momy = FixedMul(mo->momy, FRICTION);
 #endif      
    }
 }

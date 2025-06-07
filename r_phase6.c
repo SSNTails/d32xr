@@ -513,7 +513,7 @@ void R_SegCommands(void)
         }
         else
         {
-            seglight = (segl->seglightlevel) & 0xff;
+            seglight = segl->seglightlevel;
 #ifndef SIMPLELIGHT
             lseg.lightmin = 
 #endif

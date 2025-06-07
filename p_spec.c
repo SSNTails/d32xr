@@ -523,15 +523,19 @@ void P_UpdateSpecials (void)
 ===============================================================================
 */
 
-#define CARRYFACTOR (7168)
+#define CARRYFACTOR (10240 + 4096 + 224) // Pretty darn close...
+#define SCROLL_SHIFT 4
 
 void T_ScrollFlat (scrollflat_t *scrollflat)
 {
-	const vertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
-	const vertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
+	const mapvertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
+	const mapvertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
 
-	fixed_t ldx = FixedMul(v2->x - v1->x, CARRYFACTOR);
-	fixed_t ldy = FixedMul(v2->y - v1->y, CARRYFACTOR);
+	fixed_t ldx = (v2->x - v1->x);
+	fixed_t ldy = (v2->y - v1->y);
+
+	fixed_t convDx = ldx << FRACBITS << 1;
+	fixed_t convDy = ldy << FRACBITS << 1;
 
 	for (int i = 0; i < scrollflat->numsectors; i++)
 	{
@@ -544,10 +548,32 @@ void T_ScrollFlat (scrollflat_t *scrollflat)
 		yoff += ldy;
 
 		sec->floor_xoffs = (xoff << 8) | yoff;
+
+		if (scrollflat->carry && sec->thinglist)
+		{
+			mobj_t *thing = SPTR_TO_LPTR(sec->thinglist);
+
+			while(thing) // walk sector thing list
+			{
+				if (thing->type == MT_PLAYER
+					&& thing->z <= sec->floorheight)
+				{
+					player_t *player = &players[thing->player - 1];
+
+					player->mo->momx = REALMOMX(player) + convDx;
+					player->mo->momy = REALMOMY(player) + convDy;
+					player->cmomx = convDx;//FixedMul(convDx, 58368);
+					player->cmomy = convDy;//FixedMul(convDy, 58368);
+					player->onconveyor = 4;
+				}
+
+				thing = SPTR_TO_LPTR(thing->snext);
+			}
+		}
 	}
 }
 
-static void P_StartScrollFlat(line_t *line, sector_t *sector)
+static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 {
 	thinker_t	*currentthinker;
 	uint8_t tag = P_GetLineTag(line);
@@ -588,6 +614,7 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector)
 		scrollflat->sectors = Z_Malloc(sizeof(VINT)*numScrollflatSectors, PU_LEVSPEC);
 		scrollflat->sectors[0] = (VINT)(sector - sectors);
 		scrollflat->numsectors = 1;
+		scrollflat->carry = carry;
 	}
 }
 
@@ -785,7 +812,14 @@ void P_SpawnSpecials (void)
 		case 250: // Scroll floor
 		{
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-				P_StartScrollFlat(&lines[i], &sectors[s]);
+				P_StartScrollFlat(&lines[i], &sectors[s], false);
+
+			break;
+		}
+		case 251: // Scroll floor and carry
+		{
+			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
+				P_StartScrollFlat(&lines[i], &sectors[s], true);
 
 			break;
 		}

@@ -1440,7 +1440,7 @@ void R_InitClipBounds(uint32_t *clipbounds)
 }
 
 visplane_t* R_FindPlane(fixed_t height, 
-	VINT flatandlight, int start, int stop)
+	VINT flatandlight, int start, int stop, uint16_t offs)
 {
 	visplane_t *check, *tail, *next;
 	int hash = R_PlaneHash(height, flatandlight);
@@ -1450,8 +1450,9 @@ visplane_t* R_FindPlane(fixed_t height,
 	{
 		next = check->next;
 
-		if (height == check->height && // same plane as before?
-			flatandlight == check->flatandlight)
+		if (height == check->height // same plane as before?
+			&& flatandlight == check->flatandlight
+			&& check->offs == offs)
 		{
 			if (MARKEDOPEN(check->open[start]))
 			{
@@ -1477,6 +1478,7 @@ visplane_t* R_FindPlane(fixed_t height,
 	check->minx = start;
 	check->maxx = stop;
 	check->flags = 0;
+	check->offs = offs;
 
 	R_MarkOpenPlane(check);
 
@@ -1487,7 +1489,7 @@ visplane_t* R_FindPlane(fixed_t height,
 }
 
 visplane_t* R_FindPlaneFOF(fixed_t height, 
-	VINT flatandlight, int start, int stop)
+	VINT flatandlight, int start, int stop, uint16_t offs)
 {
 	visplane_t *check, *tail, *next;
 	int hash = R_PlaneHash(height, flatandlight);
@@ -1497,9 +1499,10 @@ visplane_t* R_FindPlaneFOF(fixed_t height,
 	{
 		next = check->next;
 
-		if (height == check->height && // same plane as before?
-			flatandlight == check->flatandlight
-			&& (check->flags & VPFLAGS_ISFOF))
+		if ((check->flags & VPFLAGS_ISFOF)
+			&& height == check->height // same plane as before?
+			&& flatandlight == check->flatandlight
+			&& check->offs == offs)
 		{
 			if (/*(check->flags & VPFLAGS_DIDSEG) || */MARKEDOPEN(check->open[start]))
 			{
@@ -1525,6 +1528,7 @@ visplane_t* R_FindPlaneFOF(fixed_t height,
 	check->minx = start;
 	check->maxx = stop;
 	check->flags = VPFLAGS_ISFOF;
+	check->offs = offs;
 
 	R_MarkOpenPlane(check);
 

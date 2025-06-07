@@ -432,6 +432,8 @@ typedef enum
 	SH_WHIRLWIND,
 } shieldpower_t;
 
+#define REALMOMX(player) (player->mo->momx - player->cmomx)
+#define REALMOMY(player) (player->mo->momy - player->cmomy)
 #define MAX_TOUCHING_SECTORS 8
 typedef struct player_s
 {
@@ -445,11 +447,11 @@ typedef struct player_s
 	int         buttons;
 	
 	fixed_t		viewz;					/* focal origin above r.z */
-	fixed_t		viewheight;				/* base height above floor for viewz */
-	fixed_t		deltaviewheight;		/* squat speed */
-	fixed_t		bob;					/* bounded/scaled total momentum */
+
+	fixed_t     cmomx, cmomy;
 
 	int			score;
+	VINT        onconveyor;
 	VINT		health;					/* only used between levels, mo->health */
 										/* is used during levels	 */
 	VINT		shield;

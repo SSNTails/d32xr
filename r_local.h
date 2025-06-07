@@ -611,12 +611,14 @@ typedef struct
 	uint16_t	newmiplevels; // 0 is lower, 1 is upper
 #endif
 
+	short     seglightlevel;
+
 	fixed_t			scalestep;		/* polar angle to start at phase1, then scalestep after phase2 */
 	fixed_t	scalefrac;
 	fixed_t	scale2;
 
 	short	actionbits;
-	short	seglightlevel;
+	uint16_t	floor_offs;
 
 /* */
 /* filled in by bsp */
@@ -703,6 +705,7 @@ typedef struct visplane_s
 	VINT		minx, maxx;
 	VINT 		flatandlight;
 	VINT        flags;
+	uint16_t    offs;
 	struct visplane_s	*next;
 	unsigned short		*open/*[SCREENWIDTH+2]*/;		/* top<<8 | bottom */ /* leave pads for [minx-1]/[maxx+1] */
 } visplane_t;
@@ -716,10 +719,10 @@ ATTR_DATA_CACHE_ALIGN
 ;
 
 visplane_t *R_FindPlaneFOF(fixed_t height, VINT flatandlight,
-	int start, int stop)
+	int start, int stop, uint16_t offs)
 ;
 visplane_t *R_FindPlane(fixed_t height, VINT flatandlight,
-	int start, int stop)
+	int start, int stop, uint16_t offs)
 ATTR_DATA_CACHE_ALIGN
 ;
 

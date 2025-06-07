@@ -273,6 +273,7 @@ int P_Ticker (void)
 				P_PlayerThink(pl);
 			}
 		}
+
 		P_RunThinkers();
 
 		{
@@ -291,7 +292,6 @@ int P_Ticker (void)
 //			start = frtc;
 			P_RunMobjLate();
 //			latetics = frtc - start;
-
 			P_UpdateSpecials();
 
 			leveltime++;
