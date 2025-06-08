@@ -20,7 +20,7 @@
 /* */
 /*================================================================== */
 result_e	T_MovePlane(sector_t *sector,fixed_t speed,
-			fixed_t dest,boolean crush,int floorOrCeiling,int direction)
+			fixed_t dest,boolean changeSector,int floorOrCeiling,int direction)
 {
 	boolean	flag;
 	fixed_t	lastpos;
@@ -35,12 +35,16 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->floorheight;
 						sector->floorheight = dest;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+
+						if (changeSector)
 						{
-							sector->floorheight =lastpos;
-							P_ChangeSector(sector,crush);
-							/*return crushed; */
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->floorheight =lastpos;
+								P_ChangeSector(sector,false);
+								/*return crushed; */
+							}
 						}
 						return pastdest;
 					}
@@ -48,12 +52,16 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->floorheight;
 						sector->floorheight -= speed;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+
+						if (changeSector)
 						{
-							sector->floorheight = lastpos;
-							P_ChangeSector(sector,crush);
-							return crushed;
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->floorheight = lastpos;
+								P_ChangeSector(sector,false);
+								return crushed;
+							}
 						}
 					}
 					break;
@@ -63,12 +71,15 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->floorheight;
 						sector->floorheight = dest;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+						if (changeSector)
 						{
-							sector->floorheight = lastpos;
-							P_ChangeSector(sector,crush);
-							/*return crushed; */
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->floorheight = lastpos;
+								P_ChangeSector(sector,false);
+								/*return crushed; */
+							}
 						}
 						return pastdest;
 					}
@@ -76,14 +87,15 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->floorheight;
 						sector->floorheight += speed;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+						if (changeSector)
 						{
-							if (crush == true)
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->floorheight = lastpos;
+								P_ChangeSector(sector,false);
 								return crushed;
-							sector->floorheight = lastpos;
-							P_ChangeSector(sector,crush);
-							return crushed;
+							}
 						}
 					}
 					break;
@@ -98,12 +110,15 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->ceilingheight;
 						sector->ceilingheight = dest;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+						if (changeSector)
 						{
-							sector->ceilingheight = lastpos;
-							P_ChangeSector(sector,crush);
-							/*return crushed; */
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->ceilingheight = lastpos;
+								P_ChangeSector(sector,false);
+								/*return crushed; */
+							}
 						}
 						return pastdest;
 					}
@@ -111,14 +126,16 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->ceilingheight;
 						sector->ceilingheight -= speed;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+
+						if (changeSector)
 						{
-							if (crush == true)
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->ceilingheight = lastpos;
+								P_ChangeSector(sector,false);
 								return crushed;
-							sector->ceilingheight = lastpos;
-							P_ChangeSector(sector,crush);
-							return crushed;
+							}
 						}
 					}
 					break;
@@ -128,12 +145,15 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->ceilingheight;
 						sector->ceilingheight = dest;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+						if (changeSector)
 						{
-							sector->ceilingheight = lastpos;
-							P_ChangeSector(sector,crush);
-							/*return crushed; */
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->ceilingheight = lastpos;
+								P_ChangeSector(sector,false);
+								/*return crushed; */
+							}
 						}
 						return pastdest;
 					}
@@ -141,15 +161,18 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->ceilingheight;
 						sector->ceilingheight += speed;
-						flag = P_ChangeSector(sector,crush);
-						#if 0
-						if (flag == true)
+						if (changeSector)
 						{
-							sector->ceilingheight = lastpos;
-							P_ChangeSector(sector,crush);
-							return crushed;
+							flag = P_ChangeSector(sector,false);
+							#if 0
+							if (flag == true)
+							{
+								sector->ceilingheight = lastpos;
+								P_ChangeSector(sector,crush);
+								return crushed;
+							}
+							#endif
 						}
-						#endif
 					}
 					break;
 			}
@@ -203,7 +226,7 @@ void T_MoveFloor(floormove_t *floor)
 		}
 
 		res = T_MovePlane(floor->sector,floor->speed,
-				floor->floordestheight << FRACBITS,0,0,floor->direction);
+				floor->floordestheight << FRACBITS,!floor->dontChangeSector,0,floor->direction);
 	}
 	else if (floor->type == eggCapsuleInner || floor->type == eggCapsuleOuter
 		|| floor->type == eggCapsuleOuterPop || floor->type == eggCapsuleInnerPop)
@@ -293,6 +316,7 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 		floor->thinker.function = T_MoveFloor;
 		floor->type = floortype;
 		floor->crush = false;
+		floor->dontChangeSector = false;
 		switch(floortype)
 		{
 			case floorContinuous:
@@ -301,6 +325,8 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 				floor->origSpeed = P_AproxDistance((vertexes[line->v1].x - vertexes[line->v2].x) << FRACBITS,
 												(vertexes[line->v1].y - vertexes[line->v2].y) << FRACBITS) / 4;
 				floor->speed = floor->origSpeed;
+				if (ldflags[line-lines] & ML_BLOCKMONSTERS)
+					floor->dontChangeSector = true;
 
 				if (ldflags[line-lines] & ML_NOCLIMB)
 				{

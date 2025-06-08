@@ -513,9 +513,8 @@ int TIC_Abortable (void)
 /*============================================================================= */
 
 unsigned short screenCount = 0;
-char selected_map = 0;
+int8_t selected_map = 0;
 dmapinfo_t selected_map_info;
-
 
 int TIC_LevelSelect (void)
 {

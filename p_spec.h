@@ -285,6 +285,7 @@ typedef struct
 	VINT		crush;
 	sector_t	*sector;
 	sector_t    *controlSector;
+	boolean     dontChangeSector;
 	int			newspecial;
 	VINT		direction;
 	VINT		texture;
