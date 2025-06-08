@@ -310,7 +310,6 @@ int P_Ticker (void)
 
 gameaction_t RecordDemo()
 {
-	int buttons = players[0].buttons;
 #ifdef REC_POS_DEMO
 	if (((short *)demobuffer)[3] == -1) {
 		// This is the first frame, so record the initial values in full.
@@ -464,7 +463,6 @@ gameaction_t RecordDemo()
 gameaction_t PlayDemo()
 {
 	gameaction_t exit = ga_nothing;
-	int buttons = players[0].buttons;
 #ifdef PLAY_POS_DEMO
 	if (demo_p == demobuffer + 0xA) {
 		// This is the first frame, so grab the initial values.
@@ -714,7 +712,7 @@ void P_Drawer (void)
 		if ((viewportWidth == 160 && lowResMode) || viewportWidth == 320)
 			DrawTiledLetterbox();
 		else
-			DrawTiledBackground(0, 0);
+			DrawTiledBackground();
 		
 		if (clearscreen == 2 || optionsMenuOn)
 			ST_ForceDraw();

@@ -350,7 +350,7 @@ void IN_Drawer (void)
 		I_SetPalette(dc_playpals); // Normal
 	}
 
-	DrawTiledBackground2(W_GetNumForName("SPECTILE"), 0, 0);
+	DrawTiledBackground2(W_GetNumForName("SPECTILE"));
 
 	if (intertype == int_spec)
 	{

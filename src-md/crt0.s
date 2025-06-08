@@ -193,8 +193,8 @@ init_hardware:
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
         move.w  #0x8900,(a0) /* reg 9 = always 0 */
         move.w  #0x8A00,(a0) /* reg 10 = HINT = 0 */
-        |move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
         move.w  #0x8D2B,(a0) /* reg 13 = HScroll Tbl = 0xAC00 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
@@ -1258,8 +1258,8 @@ ext_link:
         /* timeout during handshake - shut down link net */
         clr.b   net_type
         clr.l   extint
-        |move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.b  #0x40,0xA1000B      /* port 2 to neutral setting */
         nop
         nop
@@ -1278,8 +1278,8 @@ init_serial:
         clr.w   net_rbix
         clr.w   net_wbix
         move.l  #ext_serial,extint  /* serial read data ready handler */
-        |move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
-        move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
+        move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
+        |move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 
@@ -1295,8 +1295,8 @@ init_link:
         clr.w   net_rbix
         clr.w   net_wbix
         move.l  #ext_link,extint    /* TH INT handler */
-        |move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
-        move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
+        move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
+        |move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 
@@ -1469,8 +1469,8 @@ net_setup:
 net_cleanup:
         clr.b   net_type
         clr.l   extint
-        |move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.b  #0x00,0xA10019      /* no serial */
         nop
         nop
@@ -1891,7 +1891,7 @@ load_md_sky:
 set_scroll_positions:
         move.l  d0,-(sp)
 
-        move.w  0xA15122,current_scroll_b_top_position
+        move.w  0xA15122,current_scroll_b_top_y
 
         move.w  #0,0xA15120         /* request more data */
 1:
@@ -1899,7 +1899,7 @@ set_scroll_positions:
         cmpi.b  #0x02,d0
         bne.b   1b
 
-        move.w  0xA15122,current_scroll_b_bottom_position
+        move.w  0xA15122,current_scroll_b_bottom_y
 
         move.w  #0,0xA15120         /* request more data */
 2:
@@ -1907,7 +1907,7 @@ set_scroll_positions:
         cmpi.b  #0x03,d0
         bne.b   2b
 
-        move.w  0xA15122,current_scroll_a_top_position
+        move.w  0xA15122,current_scroll_a_top_y
 
         move.w  #0,0xA15120         /* request more data */
 3:
@@ -1915,7 +1915,7 @@ set_scroll_positions:
         cmpi.b  #0x04,d0
         bne.b   3b
 
-        move.w  0xA15122,current_scroll_a_bottom_position
+        move.w  0xA15122,current_scroll_a_bottom_y
 
         move.l  (sp)+,d0
 
@@ -1975,7 +1975,7 @@ scroll_md_sky:
         sub.w   d2,d1               /* scroll_y_pan */
         sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
         |andi.w  #0x3FF,d1
-        move.w  d1,current_scroll_b_top_position
+        move.w  d1,current_scroll_b_top_y
 
         moveq   #0,d1
         move.b  scroll_b_vert_rate_bottom,d1
@@ -1986,7 +1986,7 @@ scroll_md_sky:
         sub.w   d2,d1               /* scroll_y_pan */
         sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
         |andi.w  #0x3FF,d1
-        move.w  d1,current_scroll_b_bottom_position
+        move.w  d1,current_scroll_b_bottom_y
 
         moveq   #0,d1
         move.b  scroll_a_vert_rate_top,d1
@@ -1997,7 +1997,7 @@ scroll_md_sky:
         sub.w   d2,d1               /* scroll_y_pan */
         sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
         |andi.w  #0x3FF,d1
-        move.w  d1,current_scroll_a_top_position
+        move.w  d1,current_scroll_a_top_y
 
         moveq   #0,d1
         move.b  scroll_a_vert_rate_bottom,d1
@@ -2008,7 +2008,7 @@ scroll_md_sky:
         sub.w   d2,d1               /* scroll_y_pan */
         sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
         |andi.w  #0x3FF,d1
-        move.w  d1,current_scroll_a_bottom_position
+        move.w  d1,current_scroll_a_bottom_y
 
         move.w  #0,0xA15120         /* done with vertical scroll */
 4:
@@ -2020,6 +2020,10 @@ scroll_md_sky:
         move.l  #0x6C000002,d3
         moveq   #0,d0
         move.w  0xA15122,d0         /* scroll_x */
+        move.w  d0,current_scroll_b_top_x
+        move.w  d0,current_scroll_b_bottom_x
+        move.w  d0,current_scroll_a_top_x
+        move.w  d0,current_scroll_a_bottom_x
         |move.w  d0,d1
         |swap    d0
         |or.w    d1,d0
@@ -2323,8 +2327,8 @@ init_vdp:
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
         move.w  #0x8900,(a0) /* reg 9 = always 0 */
         move.w  #0x8A00,(a0) /* reg 10 = HINT = 0 */
-        |move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
         move.w  #0x8D2B,(a0) /* reg 13 = HScroll Tbl = 0xAC00 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
@@ -2666,11 +2670,11 @@ horizontal_blank:
         bra.s   5f
 2:
         move.b  #0xFF,d1
-        move.l  hint_1_scroll_positions,d0
+        move.l  hint_1_scroll_y_positions,d0
         bra.s   4f
 3:
         |move.b  #0,d1
-        move.l  hint_2_scroll_positions,d0
+        move.l  hint_2_scroll_y_positions,d0
         |bra.s   4f
 4:
         move.l  d0,(a1)             /* update scroll A and B vertical positions */
@@ -2706,11 +2710,11 @@ vert_blank:
         blt.s   11f
 
 10:      /* Top section has priority */
-        move.w  current_scroll_a_top_position,d0
+        move.w  current_scroll_a_top_y,d0
         bra.s   12f
 
 11:      /* Bottom section has priority */
-        move.w  current_scroll_a_bottom_position,d0
+        move.w  current_scroll_a_bottom_y,d0
 
 12:
         cmpi.w  #0x200,d2
@@ -2728,11 +2732,11 @@ vert_blank:
         blt.s   21f
 
 20:      /* Top section has priority */
-        move.w  current_scroll_b_top_position,d0
+        move.w  current_scroll_b_top_y,d0
         bra.s   22f
 
 21:      /* Bottom section has priority */
-        move.w   current_scroll_b_bottom_position,d0
+        move.w   current_scroll_b_bottom_y,d0
 
 22:
         move.w  scroll_b_vert_break,d3
@@ -2751,20 +2755,20 @@ vert_blank:
 30:
         cmpi.w  #0,d2
         ble.w   31f
-        move.w  current_scroll_a_top_position,d1
+        move.w  current_scroll_a_top_y,d1
         bra.s   32f
 31:
-        move.w  current_scroll_a_bottom_position,d1
+        move.w  current_scroll_a_bottom_y,d1
 32:
         swap    d1
 
 40:
         cmpi.w  #0,d3
         ble.w   41f
-        move.w  current_scroll_b_top_position,d1
+        move.w  current_scroll_b_top_y,d1
         bra.s   50f
 41:
-        move.w  current_scroll_b_bottom_position,d1
+        move.w  current_scroll_b_bottom_y,d1
 
 50:
         move.l  #0x40000010,(a0)
@@ -2777,7 +2781,7 @@ vert_blank:
         move.b  #0xFF,hint_1_interval
         move.b  #0xFF,hint_2_interval
 
-        move.l  d1,hint_1_scroll_positions
+        move.l  d1,hint_1_scroll_y_positions
 
         cmpi.w  #0xE0,d2
         blt.s   0f
@@ -2795,59 +2799,59 @@ vert_blank:
         cmpi.w  #0,d2
         ble.w   9f
         move.b  d2,hint_1_interval  /* Scroll B and A will share one HINT. */
-        move.b  current_scroll_a_bottom_position,d1
-        move.w  d1,hint_1_scroll_a_position
-        move.w  d1,hint_1_scroll_b_position
+        move.b  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_1_scroll_a_y
+        move.w  d1,hint_1_scroll_b_y
         bra.w   9f
 3:
         cmpi.w  #0,d3
         ble.s   5f
         |subi.b  #2,d3
         move.b  d3,hint_1_interval  /* Scroll B will have the first HINT. */
-        move.w  current_scroll_b_bottom_position,d1
-        move.w  d1,hint_1_scroll_b_position
+        move.w  current_scroll_b_bottom_y,d1
+        move.w  d1,hint_1_scroll_b_y
 4:
         cmpi.w  #0,d2
         ble.w   9f
         sub.b   d3,d2
         |add.b   #1,d2
         move.b  d2,hint_2_interval  /* Scroll A will have the second HINT. */
-        move.w  d1,hint_2_scroll_b_position
-        move.w  current_scroll_a_bottom_position,d1
-        move.w  d1,hint_2_scroll_a_position
+        move.w  d1,hint_2_scroll_b_y
+        move.w  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_2_scroll_a_y
         bra.s   9f
 5:
         cmpi.w  #0,d2
         ble.s   9f
         |subi.b  #2,d2
         move.b  d2,hint_1_interval  /* Scroll A will have the only HINT. */
-        move.w  current_scroll_a_bottom_position,d1
-        move.w  d1,hint_1_scroll_a_position
+        move.w  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_1_scroll_a_y
         bra.s   9f
 6:
         cmpi.w  #0,d2
         ble.s   8f
         |subi.b  #2,d2
         move.b  d2,hint_1_interval  /* Scroll A will have the first HINT. */
-        move.w  current_scroll_a_bottom_position,d1
-        move.w  d1,hint_1_scroll_a_position
+        move.w  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_1_scroll_a_y
 7:
         cmpi.w  #0,d3
         ble.s   9f
         sub.b   d2,d3
         |add.b   #1,d3
         move.b  d3,hint_2_interval  /* Scroll B will have the second HINT. */
-        move.w  d1,hint_2_scroll_a_position
-        move.w  current_scroll_b_bottom_position,d1
-        move.w  d1,hint_2_scroll_b_position
+        move.w  d1,hint_2_scroll_a_y
+        move.w  current_scroll_b_bottom_y,d1
+        move.w  d1,hint_2_scroll_b_y
         bra.s   9f
 8:
         cmpi.w  #0,d3
         ble.s   9f
         |subi.b  #2,d3
         move.b  d3,hint_1_interval  /* Scroll B will have the only HINT. */
-        move.w  current_scroll_b_bottom_position,d1
-        move.w  d1,hint_1_scroll_b_position
+        move.w  current_scroll_b_bottom_y,d1
+        move.w  d1,hint_1_scroll_b_y
         |bra.s   9f
 9:
 
@@ -3303,28 +3307,52 @@ scroll_a_vert_rate_top:
 scroll_a_vert_rate_bottom:
         dc.b    0
 
-current_sky_top_positions:
-current_scroll_a_top_position:
+current_sky_top_y_positions:
+current_scroll_a_top_y:
         dc.w    0
-current_scroll_b_top_position:
-        dc.w    0
-
-current_sky_bottom_positions:
-current_scroll_a_bottom_position:
-        dc.w    0
-current_scroll_b_bottom_position:
+current_scroll_b_top_y:
         dc.w    0
 
-hint_1_scroll_positions:
-hint_1_scroll_a_position:
+current_sky_bottom_y_positions:
+current_scroll_a_bottom_y:
         dc.w    0
-hint_1_scroll_b_position:
+current_scroll_b_bottom_y:
         dc.w    0
 
-hint_2_scroll_positions:
-hint_2_scroll_a_position:
+current_sky_top_x_positions:
+current_scroll_a_top_x:
         dc.w    0
-hint_2_scroll_b_position:
+current_scroll_b_top_x:
+        dc.w    0
+
+current_sky_bottom_x_positions:
+current_scroll_a_bottom_x:
+        dc.w    0
+current_scroll_b_bottom_x:
+        dc.w    0
+
+hint_1_scroll_y_positions:
+hint_1_scroll_a_y:
+        dc.w    0
+hint_1_scroll_b_y:
+        dc.w    0
+
+hint_2_scroll_y_positions:
+hint_2_scroll_a_y:
+        dc.w    0
+hint_2_scroll_b_y:
+        dc.w    0
+
+hint_1_scroll_x_positions:
+hint_1_scroll_a_x:
+        dc.w    0
+hint_1_scroll_b_x:
+        dc.w    0
+
+hint_2_scroll_x_positions:
+hint_2_scroll_a_x:
+        dc.w    0
+hint_2_scroll_b_x:
         dc.w    0
 
 hint_count:

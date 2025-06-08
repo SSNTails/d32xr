@@ -893,21 +893,21 @@ void DrawTiledLetterbox(void)
 =
 =============
 */
-void DrawTiledBackground2(int flat, int offset_x, int offset_y)
+void DrawTiledBackground2(int flat)
 {
+	int			y, yt;
+	const int	w = CalcFlatSize(flat);
+	const int 	h = CalcFlatSize(flat);
+	const int	hw = w / 2;
+	const int xtiles = (320 + w - 1) / w;
+	const int ytiles = (224 + h - 1) / h;
+	pixel_t* bdest;
+	const pixel_t* bsrc;
+
 	if (debugmode == DEBUGMODE_NODRAW)
 		return;
 	if (flat <= 0)
 		return;
-
-	int			y, yt;
-	const int	lumpsize = W_LumpLength(flat);
-	const int	length = CalcFlatSize(lumpsize);
-	const int	hw = length / 2;
-	const int xtiles = (320 + length - 1) / length;
-	const int ytiles = (224 + length - 1) / length;
-	pixel_t* bdest;
-	const pixel_t* bsrc;
 
 	bsrc = (const pixel_t*)W_POINTLUMPNUM(flat);
 	bdest = I_FrameBuffer();
@@ -916,34 +916,34 @@ void DrawTiledBackground2(int flat, int offset_x, int offset_y)
 	for (yt = 0; yt < ytiles; yt++)
 	{
 		int y1;
-		const pixel_t* source = bsrc + ((length >> 1) * ((offset_y + y) & (length - 1)));
+		const pixel_t* source = bsrc;
 
-		for (y1 = 0; y1 < length; y1++)
+		for (y1 = 0; y1 < w; y1++)
 		{
 			int xt;
 
 			for (xt = 0; xt < xtiles; xt++) {
 				int x;
 				for (x = 0; x < hw; x++)
-					*bdest++ = source[(offset_x + x) & ((length >> 1) - 1)];
+					*bdest++ = source[x];
 			}
+
 			y++;
-			//source += hw;
-			source = bsrc + ((length >> 1) * ((offset_y + y) & (length - 1)));
+			source += hw;
 			if (y == mars_framebuffer_height)
 				return;
 		}
 	}
 }
 
-void DrawTiledBackground(int x, int y)
+void DrawTiledBackground(void)
 {
 	if (gameinfo.borderFlat <= 0)
 	{
 		I_ClearFrameBuffer();
 		return;
 	}
-	DrawTiledBackground2(gameinfo.borderFlat, x, y);
+	DrawTiledBackground2(gameinfo.borderFlat);
 }
 
 void EraseBlock(int x, int y, int width, int height)

@@ -586,6 +586,9 @@ typedef enum
 #define DEMOMODE_RECORDING					0x0C
 
 
+extern void MD_SetGamemode(int gamemode);
+
+
 // General
 static inline boolean IsCompatibility()
 	{ return gamemode == GAMEMODE_COMPATIBILITY; }
@@ -866,6 +869,7 @@ int I_ViewportYPos(void);
 int I_FrameBufferHeight(void);
 int I_IsPAL(void);
 
+void I_FillFrameBuffer (unsigned char palette_index);
 void I_ClearFrameBuffer (void);
 void I_ClearWorkBuffer(void);
 void I_ResetLineTable(void);
@@ -1289,8 +1293,8 @@ void PrintHex (int x, int y, unsigned num);
 void DrawPlaque (jagobj_t *pl);
 void DrawTiledLetterbox2(int flat);
 void DrawTiledLetterbox(void);
-void DrawTiledBackground2(int flat, int x, int y);
-void DrawTiledBackground(int x, int y);
+void DrawTiledBackground2(int flat);
+void DrawTiledBackground(void);
 void DrawScrollingBanner(short ltzz_lump, int x, int y_shift);
 void DrawScrollingChevrons(short chev_lump, int x, int y_shift);
 
