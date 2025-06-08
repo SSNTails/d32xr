@@ -24,6 +24,7 @@
   SOFTWARE.
 */
 
+#include "doomdef.h"
 #include "marshw.h"
 
 static volatile uint16_t mars_activescreen = 0;
@@ -170,7 +171,7 @@ static char Mars_UploadPalette(const uint8_t* palette)
 
 	#ifdef MDSKY
 	// Allow MD VDP to show through for this palette index.
-	cram[MARS_MD_PIXEL_THRU_INDEX] = cram[mars_thru_rgb_reference] & 0x7FFF;
+	cram[COLOR_THRU] = cram[mars_thru_rgb_reference] & 0x7FFF;
 	#endif
 
 	return 1;

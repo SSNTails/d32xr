@@ -147,6 +147,9 @@ typedef unsigned angle_t;
 #define SSTAGE_START        60
 #define SSTAGE_END          66
 
+#define COLOR_THRU			0xFF
+#define COLOR_THRU_2		0xFFFF
+
 #ifdef MARS
 
 fixed_t finesine(angle_t angle) ATTR_DATA_CACHE_ALIGN;

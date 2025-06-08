@@ -2,6 +2,7 @@
 /* in_main.c -- intermission */
 // This is now only used for special stage intermission
 #include "doomdef.h"
+#include "r_local.h"
 #include "st_main.h"
 #include "st_inter.h"
 #include "v_font.h"
@@ -170,7 +171,7 @@ void IN_Start (void)
 #endif
 
 	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-	I_SetPalette(dc_playpals+5*768); // Completely white
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4), dc_cshift_playpals); // Completely white
 
 	// Remove water distortion filter from both frame buffers.
 	RemoveDistortionFilters();
@@ -325,16 +326,16 @@ void IN_Drawer (void)
 {
 	if (intertic < TICRATE/2)
 	{
-		VINT palette = 5 - (intertic / 3);
+		VINT palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4 - (intertic / 3);
 		if (palette < 0)
 			palette = 0;
 
 		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-		I_SetPalette(dc_playpals+palette*768); // Fade from white to normal
+		R_FadePalette(dc_playpals, palette, dc_cshift_playpals); // Fade from white to normal
 	}
 	else if (endtic != -1 && endtic - intertic < TICRATE / 2)
 	{
-		VINT palette = 10 - (endtic - intertic) / 2;
+		VINT palette = (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4) - (endtic - intertic) / 2;
 			if (palette < 6)
 				palette = 0;
 
@@ -342,7 +343,7 @@ void IN_Drawer (void)
 			palette = 10;
 
 		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-		I_SetPalette(dc_playpals+palette*768); // Fade from normal to black
+		R_FadePalette(dc_playpals, palette, dc_cshift_playpals); // Fade from normal to black
 	}
 	else
 	{

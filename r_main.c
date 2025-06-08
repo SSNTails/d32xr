@@ -1306,7 +1306,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	if (gametic <= 1 && !IsTitleScreen())
 	{
 		curpalette = palette = 10;
-		I_SetPalette(dc_playpals+10*768);
+		I_SetPalette(dc_playpals);
 	}
 	
 	if (palette != curpalette) {

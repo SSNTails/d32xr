@@ -910,7 +910,7 @@ _I_DrawSkyColumnA:
         shlr2   r5
         add     r5,r8           /* fb += (dc_yl*256 + dc_yl*64) */
         mov.l   draw_width2,r1
-        mov.w   thru_pal_index_double,r7     /* dpix = dc_colormap[pix] */
+        mov     #-1,r7          /* dpix = dc_colormap[pix] */
 
         /* test if count & 1 */
         shlr    r6
@@ -960,7 +960,7 @@ _I_DrawSkyColumnLowA:
         shlr2   r5
         add     r5,r8           /* fb += (dc_yl*256 + dc_yl*64) */
         mov.l   draw_width2,r1
-        mov.w   thru_pal_index_double,r7     /* dpix = dc_colormap[pix] */
+        mov     #-1,r7          /* dpix = dc_colormap[pix] */
 
         /* test if count & 1 */
         shlr    r6
@@ -988,5 +988,3 @@ draw_fb2:
         .long   _viewportbuffer
 draw_width2:
         .long   320
-thru_pal_index_double:
-        .short  0xFCFC

@@ -52,7 +52,7 @@ typedef struct {
 	void *colormaps;
 } mars_tls_t __attribute__((aligned(16))); // thread local storage
 
-VINT COLOR_WHITE = 0x00;
+VINT COLOR_WHITE = 0xFC;
 VINT COLOR_BLACK = 0x1F;
 
 int8_t	*dc_colormaps;
@@ -327,7 +327,7 @@ void I_Init (void)
 	Mars_SetBrightness(1);
 
 	doompalette = W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-	I_SetPalette(doompalette+(10*768));
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4), dc_cshift_playpals);
 
 	// look up palette indices for black and white colors
 	// if the black color isn't present, use the darkest one

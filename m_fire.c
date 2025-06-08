@@ -26,6 +26,7 @@
 
 #include "doomdef.h"
 #include "mars.h"
+#include "r_local.h"
 
 // based on work by Samuel Villarreal and Fabien Sanglard
 
@@ -52,7 +53,7 @@ void Mars_Sec_M_AnimateFire(void)
 				palIndex = 5;
 
 			const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-			I_SetPalette(dc_playpals+palIndex*768);
+			R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
 		}
 		else if (duration < 20 && start >= 0)
 		{
@@ -60,7 +61,7 @@ void Mars_Sec_M_AnimateFire(void)
 			int palIndex = 10 - (duration / 4);
 
 			const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-			I_SetPalette(dc_playpals+palIndex*768);
+			R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
 		}
 		else if (duration < 22 && start >= 0)
 		{
@@ -84,7 +85,7 @@ void I_InitMenuFire(jagobj_t *titlepic)
 	int i;
 
 	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-	I_SetPalette(dc_playpals+10*768);
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4), dc_cshift_playpals);
 
 	intro_titlepic = titlepic;
 

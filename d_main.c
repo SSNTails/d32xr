@@ -521,21 +521,21 @@ int TIC_LevelSelect (void)
 {
 	screenCount++;
 
-	if ((ticrealbuttons & BT_START && oldticrealbuttons != BT_START))
-	//		|| (ticrealbuttons & BT_B && oldticrealbuttons != BT_B))
+	if ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
+			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B)))
 	{
 		return ga_startnew;
 	}
 
 	int prev_selected_map = selected_map;
 
-	if (ticrealbuttons & BT_LEFT && oldticrealbuttons != BT_LEFT) {
+	if (ticrealbuttons & BT_LEFT && !(oldticrealbuttons & BT_LEFT)) {
 		selected_map -= 1;
 		if (selected_map < 0) {
 			selected_map = gamemapcount-1;
 		}
 	}
-	else if (ticrealbuttons & BT_RIGHT && oldticrealbuttons != BT_RIGHT) {
+	else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
 		selected_map += 1;
 		if (selected_map == gamemapcount) {
 			selected_map = 0;
@@ -556,7 +556,7 @@ void START_LevelSelect (void)
 {
 	for (int i = 0; i < 2; i++)
 	{
-		I_FillFrameBuffer(0xFC); // Thru color
+		I_FillFrameBuffer(COLOR_THRU);
 		UpdateBuffer();
 	}
 
@@ -581,7 +581,7 @@ void STOP_LevelSelect (void)
 {
 	// Set to totally black
 	const byte *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-	I_SetPalette(dc_playpals+10*768);
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
 }
 
 void DRAW_LevelSelect (void)
@@ -622,10 +622,10 @@ void DRAW_LevelSelect (void)
 	for (int y=112; y < 112+29; y++) {
 		for (int x=0; x < (32>>3); x++) {
 			// Write 8 thru pixels
-			*background++ = 0xFCFC;
-			*background++ = 0xFCFC;
-			*background++ = 0xFCFC;
-			*background++ = 0xFCFC;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
 		}
 
 		background += (288>>1);
@@ -637,10 +637,10 @@ void DRAW_LevelSelect (void)
 	for (int y=112; y < 112+29; y++) {
 		for (int x=0; x < (32>>3); x++) {
 			// Write 8 thru pixels
-			*background++ = 0xFCFC;
-			*background++ = 0xFCFC;
-			*background++ = 0xFCFC;
-			*background++ = 0xFCFC;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
 		}
 
 		background += (288>>1);
@@ -652,10 +652,10 @@ void DRAW_LevelSelect (void)
 	for (int y=160; y < 160+20; y++) {
 		for (int x=0; x < (128>>3); x++) {
 			// Write 8 thru pixels
-			*background++ = 0xFCFC;
-			*background++ = 0xFCFC;
-			*background++ = 0xFCFC;
-			*background++ = 0xFCFC;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
 		}
 
 		background += (192>>1);
@@ -709,7 +709,7 @@ int TIC_Compatibility(void)
 {
 	screenCount++;
 
-	if ((ticrealbuttons & BT_START && oldticrealbuttons != BT_START)) {
+	if ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))) {
 		return ga_closeprompt;
 	}
 
@@ -738,7 +738,7 @@ void STOP_Compatibility (void)
 {
 	// Set to totally black
 	const byte *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-	I_SetPalette(dc_playpals+10*768);
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
 }
 
 void DRAW_Compatibility (void)
@@ -839,7 +839,7 @@ int TIC_Disclaimer(void)
 	{
 		// Set to totally black
 		const byte *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-		I_SetPalette(dc_playpals+10*768);
+		R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
 	}
 
 	return 0;

@@ -690,7 +690,7 @@ phi_copper_color_table_ptr:
 phi_line:
         .long   _mars_hblank_count
 phi_mars_thru_color:
-        .long   0x200043F8
+        .long   0x200043FE
 
 phi_distortion_line_bit_shift:
         .long   _distortion_line_bit_shift

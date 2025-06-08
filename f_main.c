@@ -75,7 +75,7 @@ void F_Start (void)
 
 	// Set this to black, prep for fade-in.
 	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-	I_SetPalette(dc_playpals+5*768);
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4), dc_cshift_playpals);
 
 	R_InitColormap();
 
@@ -121,12 +121,12 @@ int F_Ticker (void)
 			palIndex = 4;
 
 		palIndex += 6;
-		I_SetPalette(dc_playpals+palIndex*768);
+		R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
 	}
 	else if (cardTimer < 12)
 	{
 		int palIndex = 10 - (cardTimer / 3);
-		I_SetPalette(dc_playpals+palIndex*768);
+		R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
 	}
 	else
 		I_SetPalette(dc_playpals);
