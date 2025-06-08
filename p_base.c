@@ -516,13 +516,13 @@ static void P_FloatChange(mobj_t *mo)
 void P_ZMovement(mobj_t *mo)
 {
    mo->z += mo->momz;
-
+/*
    if((mo->flags2 & MF2_FLOAT) && (mo->flags2 & MF2_ENEMY) && mo->target)
    {
       // float toward target if too close
       P_FloatChange(mo);
    }
-
+*/
    // clip movement
    if(mo->z <= mo->floorz)
    {
