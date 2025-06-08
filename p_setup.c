@@ -731,7 +731,7 @@ extern byte *debugscreen;
 	gamepaused = false;
 
 	gamezonemargin = DEFAULT_GAME_ZONE_MARGIN;
-	R_SetupLevel(gamezonemargin);
+	R_SetupLevel(gamezonemargin, gamemapinfo.sky);
 
 	I_SetThreadLocalVar(DOOMTLS_VALIDCOUNT, &validcount[0]);
 

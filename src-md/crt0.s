@@ -193,8 +193,8 @@ init_hardware:
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
         move.w  #0x8900,(a0) /* reg 9 = always 0 */
         move.w  #0x8A00,(a0) /* reg 10 = HINT = 0 */
-        |move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
         move.w  #0x8D2B,(a0) /* reg 13 = HScroll Tbl = 0xAC00 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
@@ -610,10 +610,10 @@ no_cmd:
         dc.w    set_bank_page - prireqtbl         /* 0x16 */
         dc.w    net_set_link_timeout - prireqtbl  /* 0x17 */
         dc.w    set_music_volume - prireqtbl      /* 0x18 */
-        dc.w    ctl_md_vdp - prireqtbl            /* 0x19 */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1A */ /* DLG: */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1B */ /* DLG: */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1C */ /* DLG: */
+        dc.w    set_gamemode - prireqtbl          /* 0x19 */
+        dc.w    set_scroll_positions - prireqtbl  /* 0x1A */
+        dc.w    no_cmd - prireqtbl                /* 0x1B */ /* FREE TO USE */
+        dc.w    no_cmd - prireqtbl                /* 0x1C */ /* FREE TO USE */
         dc.w    load_sfx - prireqtbl              /* 0x1D */
         dc.w    play_sfx - prireqtbl              /* 0x1E */
         dc.w    get_sfx_status - prireqtbl        /* 0x1F */
@@ -1258,8 +1258,8 @@ ext_link:
         /* timeout during handshake - shut down link net */
         clr.b   net_type
         clr.l   extint
-        |move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.b  #0x40,0xA1000B      /* port 2 to neutral setting */
         nop
         nop
@@ -1278,8 +1278,8 @@ init_serial:
         clr.w   net_rbix
         clr.w   net_wbix
         move.l  #ext_serial,extint  /* serial read data ready handler */
-        |move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
-        move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
+        move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
+        |move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 
@@ -1295,8 +1295,8 @@ init_link:
         clr.w   net_rbix
         clr.w   net_wbix
         move.l  #ext_link,extint    /* TH INT handler */
-        |move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
-        move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
+        move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
+        |move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 
@@ -1469,8 +1469,8 @@ net_setup:
 net_cleanup:
         clr.b   net_type
         clr.l   extint
-        |move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.b  #0x00,0xA10019      /* no serial */
         nop
         nop
@@ -1669,6 +1669,13 @@ set_music_volume:
         beq.b   3b                  /* wait for acknowledge byte in sub comm port */
         move.b  #0x00,0xA1200E      /* acknowledge receipt of command result */
 4:
+        move.w  #0,0xA15120         /* done */
+        bra     main_loop
+
+
+
+set_gamemode:
+        move.b  0xA15122,gamemode
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 
@@ -1881,6 +1888,42 @@ load_md_sky:
         bra     main_loop
 
 
+set_scroll_positions:
+        move.l  d0,-(sp)
+
+        move.w  0xA15122,current_scroll_b_top_y
+
+        move.w  #0,0xA15120         /* request more data */
+1:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x02,d0
+        bne.b   1b
+
+        move.w  0xA15122,current_scroll_b_bottom_y
+
+        move.w  #0,0xA15120         /* request more data */
+2:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x03,d0
+        bne.b   2b
+
+        move.w  0xA15122,current_scroll_a_top_y
+
+        move.w  #0,0xA15120         /* request more data */
+3:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x04,d0
+        bne.b   3b
+
+        move.w  0xA15122,current_scroll_a_bottom_y
+
+        move.l  (sp)+,d0
+
+        move.w  #0,0xA15120         /* done */
+
+        bra     main_loop
+
+
 scroll_md_sky:
         move.l  a0,-(sp)
         move.l  a1,-(sp)
@@ -1932,7 +1975,7 @@ scroll_md_sky:
         sub.w   d2,d1               /* scroll_y_pan */
         sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
         |andi.w  #0x3FF,d1
-        move.w  d1,current_scroll_b_top_position
+        move.w  d1,current_scroll_b_top_y
 
         moveq   #0,d1
         move.b  scroll_b_vert_rate_bottom,d1
@@ -1943,7 +1986,7 @@ scroll_md_sky:
         sub.w   d2,d1               /* scroll_y_pan */
         sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
         |andi.w  #0x3FF,d1
-        move.w  d1,current_scroll_b_bottom_position
+        move.w  d1,current_scroll_b_bottom_y
 
         moveq   #0,d1
         move.b  scroll_a_vert_rate_top,d1
@@ -1954,7 +1997,7 @@ scroll_md_sky:
         sub.w   d2,d1               /* scroll_y_pan */
         sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
         |andi.w  #0x3FF,d1
-        move.w  d1,current_scroll_a_top_position
+        move.w  d1,current_scroll_a_top_y
 
         moveq   #0,d1
         move.b  scroll_a_vert_rate_bottom,d1
@@ -1965,7 +2008,7 @@ scroll_md_sky:
         sub.w   d2,d1               /* scroll_y_pan */
         sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
         |andi.w  #0x3FF,d1
-        move.w  d1,current_scroll_a_bottom_position
+        move.w  d1,current_scroll_a_bottom_y
 
         move.w  #0,0xA15120         /* done with vertical scroll */
 4:
@@ -1977,6 +2020,10 @@ scroll_md_sky:
         move.l  #0x6C000002,d3
         moveq   #0,d0
         move.w  0xA15122,d0         /* scroll_x */
+        move.w  d0,current_scroll_b_top_x
+        move.w  d0,current_scroll_b_bottom_x
+        move.w  d0,current_scroll_a_top_x
+        move.w  d0,current_scroll_a_bottom_x
         |move.w  d0,d1
         |swap    d0
         |or.w    d1,d0
@@ -2099,365 +2146,6 @@ update_color:
         bra     main_loop
 
 
-
-ctl_md_vdp:
-        andi.w  #255, d0
-        move.w  d0, init_vdp_latch
-
-        move.w  0xA15100,d0
-        eor.w   #0x8000,d0
-        move.w  d0,0xA15100         /* unset FM - disallow SH2 access to FB */
-
-        move.w  0xA15180,d0
-        andi.w  #0xFF7F,d0
-        move.w  d0,0xA15180         /* set MD priority */
-        tst.b   d0
-        bne.b   1f                  /* re-init vdp and vram */
-
-|       move.w  #0x8134,0xC00004    /* display off, vblank enabled, V28 mode */
-        move.w  0xA15180,d0
-        ori.w   #0x0080,d0
-        move.w  d0,0xA15180         /* set 32X priority */
-1:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
-
-cpy_md_vram:
-        move.w  0xA15100,d1
-        eor.w   #0x8000,d1
-        move.w  d1,0xA15100         /* unset FM - disallow SH2 access to FB */
-
-        lea     0xA15120,a1         /* 32x comm0 port */
-
-        moveq   #0,d1
-        move.b  d0,d1               /* column number */
-        add.w   d1,d1
-
-        lea     0x840200,a2         /* frame buffer */
-        lea     0(a2,d1.l),a2
-
-        cmpi.w  #0x1C00,d0
-        bhs.w   10f                 /* swap with vram */
-        cmpi.w  #0x1B00,d0
-        bhs.w   5f                  /* copy from vram */
-
-        /* COPY TO VRAM */
-        cmpi.l  #280,d1             /* vram or wram? */
-        bhs.b   2f                  /* wram */
-
-        lea     0xC00000,a0         /* vdp data port */
-        move.w  #0x8F02,4(a0)       /* set INC to 2 */
-
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lsl.l   #2,d1               /* get top two bits of offset into high word */
-        lsr.w   #2,d1
-        ori.w   #0x4000,d1          /* write VRAM */
-        swap    d1
-        move.l  d1,4(a0)            /* cmd port <- write VRAM at offset */
-        move.w  #27,d0
-1:
-        move.w  (a2),(a0)           /* next word */
-        move.w  320(a2),(a0)        /* next word */
-        move.w  640(a2),(a0)        /* next word */
-        move.w  960(a2),(a0)        /* next word */
-        move.w  1280(a2),(a0)       /* next word */
-        move.w  1600(a2),(a0)       /* next word */
-        move.w  1920(a2),(a0)       /* next word */
-        move.w  2240(a2),(a0)       /* next word */
-        lea     2560(a2),a2
-        dbra    d0,1b
-        bra     4f                  /* done */
-2:
-        subi.l  #280,d1
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lea     col_store,a0
-        lea     0(a0,d1.l),a0
-        move.w  #27,d0
-3:
-        move.w  (a2),(a0)+          /* next word */
-        move.w  320(a2),(a0)+       /* next word */
-        move.w  640(a2),(a0)+       /* next word */
-        move.w  960(a2),(a0)+       /* next word */
-        move.w  1280(a2),(a0)+      /* next word */
-        move.w  1600(a2),(a0)+      /* next word */
-        move.w  1920(a2),(a0)+      /* next word */
-        move.w  2240(a2),(a0)+      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,3b
-4:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
-
-5:
-        moveq   #0,d0
-        move.w  2(a1), d0
-
-        andi.w  #0xFF,d0            /* column offset in words */
-        add.l   d0,d0
-
-        /* COPY FROM VRAM */
-        cmpi.l  #280,d1             /* vram or wram? */
-        bhs.w   7f                  /* wram */
-
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lea     0xC00000,a0         /* vdp data port */
-        move.w  #0x8F02,4(a0)       /* set INC to 2 */
-
-        add.l   d0,d1
-
-        #mulu.w  #160,d0
-        lsl.l   #5,d0
-        move.l  d0,d2
-        add.l   d2,d2
-        add.l   d2,d2
-        add.l   d2,d0
-
-        lea     0(a2,d0.l),a2
-
-        lsl.l   #2,d1               /* get top two bits of offset into high word */
-        lsr.w   #2,d1
-        swap    d1
-        move.l  d1,4(a0)            /* cmd port <- read VRAM from offset */
-
-        move.w  2(a1), d0           /* length in words */
-        lsr.w   #8,d0
-        andi.w  #255,d0
-        subq.w  #1,d0
-        cmpi.w  #223,d0
-        bne.b   6f
-
-        move.w  #27,d0
-60:
-        move.w  (a0),(a2)           /* next word */
-        move.w  (a0),320(a2)        /* next word */
-        move.w  (a0),640(a2)        /* next word */
-        move.w  (a0),960(a2)        /* next word */
-        move.w  (a0),1280(a2)       /* next word */
-        move.w  (a0),1600(a2)       /* next word */
-        move.w  (a0),1920(a2)       /* next word */
-        move.w  (a0),2240(a2)       /* next word */
-        lea     2560(a2),a2
-        dbra    d0,60b
-        bra     9f                  /* done */
-6:
-        move.w  (a0), (a2)
-        lea     320(a2),a2
-        dbra    d0,6b
-        bra     9f                  /* done */
-7:
-        subi.l  #280,d1
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        lsl.w   #1,d2
-        add     d2,d1
-        lsl.w   #1,d2
-        add     d2,d1
-        add.l   d0,d1
-
-        #mulu.w  #160,d0
-        lsl.l   #5,d0
-        move    d0,d2
-        lsl.l   #2,d2
-        add.l   d2,d0
-
-        lea     0(a2,d0.l),a2
-
-        lea     col_store,a0
-        lea     0(a0,d1.l),a0
-
-        move.w  2(a1), d0           /* length in words */
-        lsr.w   #8,d0
-        andi.w  #255,d0
-        subq.w  #1,d0
-        cmpi.w  #223,d0
-        bne.b   8f
-
-        move.w  #27,d0
-80:
-        move.w  (a0)+,(a2)          /* next word */
-        move.w  (a0)+,320(a2)       /* next word */
-        move.w  (a0)+,640(a2)       /* next word */
-        move.w  (a0)+,960(a2)       /* next word */
-        move.w  (a0)+,1280(a2)      /* next word */
-        move.w  (a0)+,1600(a2)      /* next word */
-        move.w  (a0)+,1920(a2)      /* next word */
-        move.w  (a0)+,2240(a2)      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,80b
-        bra     9f                  /* done */
-8:
-        move.w  (a0)+, (a2)
-        lea     320(a2),a2
-        dbra    d0,8b
-9:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
-
-10:
-        /* SWAP WITH VRAM */
-        cmpi.l  #280,d1             /* vram or wram? */
-        bhs     12f                 /* wram */
-
-        lea     0xC00000,a0         /* vdp data port */
-        move.w  #0x8F02,4(a0)       /* set INC to 2 */
-
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lsl.l   #2,d1               /* get top two bits of offset into high word */
-        lsr.w   #2,d1
-        move.l  d1,d2
-        ori.w   #0x4000,d2          /* write VRAM */
-        swap    d1
-        swap    d2
-        move.l  d1,4(a0)            /* cmd port <- read VRAM at offset */
-        move.w  #27,d0
-        lea     col_store+20*224*2,a1
-11:
-        /* vram to swap buffer */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        dbra    d0,11b
-
-        move.l  d2,4(a0)            /* cmd port <- write VRAM at offset */
-        move.w  #27,d0
-111:
-        /* screen to vram */
-        move.w  (a2),(a0)           /* next word */
-        move.w  320(a2),(a0)        /* next word */
-        move.w  640(a2),(a0)        /* next word */
-        move.w  960(a2),(a0)        /* next word */
-        move.w  1280(a2),(a0)       /* next word */
-        move.w  1600(a2),(a0)       /* next word */
-        move.w  1920(a2),(a0)       /* next word */
-        move.w  2240(a2),(a0)       /* next word */
-        lea     2560(a2),a2
-        dbra    d0,111b
-
-        move.w  #27,d0
-        lea     -224*2(a1),a1
-        adda.l  #-320*224,a2
-112:
-        /* swap buffer to screen */
-        move.w  (a1)+,(a2)          /* next word */
-        move.w  (a1)+,320(a2)       /* next word */
-        move.w  (a1)+,640(a2)       /* next word */
-        move.w  (a1)+,960(a2)       /* next word */
-        move.w  (a1)+,1280(a2)      /* next word */
-        move.w  (a1)+,1600(a2)      /* next word */
-        move.w  (a1)+,1920(a2)      /* next word */
-        move.w  (a1)+,2240(a2)      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,112b
-        bra     14f                 /* done */
-12:
-        subi.l  #280,d1
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lea     col_store,a0
-        lea     0(a0,d1.l),a0
-        move.w  #27,d0
-        lea     col_store+20*224*2,a1
-13:
-        /* wram to swap buffer */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        dbra    d0,13b
-
-        lea     -224*2(a0),a0
-        move.w  #27,d0
-131:
-        /* screen to wram */
-        move.w  (a2),(a0)+          /* next word */
-        move.w  320(a2),(a0)+       /* next word */
-        move.w  640(a2),(a0)+       /* next word */
-        move.w  960(a2),(a0)+       /* next word */
-        move.w  1280(a2),(a0)+      /* next word */
-        move.w  1600(a2),(a0)+      /* next word */
-        move.w  1920(a2),(a0)+      /* next word */
-        move.w  2240(a2),(a0)+      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,131b
-
-        move.w  #27,d0
-        lea     -224*2(a1),a1
-        adda.l  #-320*224,a2
-132:
-        /* swap buffer to screen */
-        move.w  (a1)+,(a2)          /* next word */
-        move.w  (a1)+,320(a2)       /* next word */
-        move.w  (a1)+,640(a2)       /* next word */
-        move.w  (a1)+,960(a2)       /* next word */
-        move.w  (a1)+,1280(a2)      /* next word */
-        move.w  (a1)+,1600(a2)      /* next word */
-        move.w  (a1)+,1920(a2)      /* next word */
-        move.w  (a1)+,2240(a2)      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,132b
-14:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
 
 load_sfx:
         /* fetch sample length */
@@ -2639,8 +2327,8 @@ init_vdp:
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
         move.w  #0x8900,(a0) /* reg 9 = always 0 */
         move.w  #0x8A00,(a0) /* reg 10 = HINT = 0 */
-        |move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
         move.w  #0x8D2B,(a0) /* reg 13 = HScroll Tbl = 0xAC00 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
@@ -2982,11 +2670,11 @@ horizontal_blank:
         bra.s   5f
 2:
         move.b  #0xFF,d1
-        move.l  hint_1_scroll_positions,d0
+        move.l  hint_1_scroll_y_positions,d0
         bra.s   4f
 3:
         |move.b  #0,d1
-        move.l  hint_2_scroll_positions,d0
+        move.l  hint_2_scroll_y_positions,d0
         |bra.s   4f
 4:
         move.l  d0,(a1)             /* update scroll A and B vertical positions */
@@ -3022,11 +2710,11 @@ vert_blank:
         blt.s   11f
 
 10:      /* Top section has priority */
-        move.w  current_scroll_a_top_position,d0
+        move.w  current_scroll_a_top_y,d0
         bra.s   12f
 
 11:      /* Bottom section has priority */
-        move.w  current_scroll_a_bottom_position,d0
+        move.w  current_scroll_a_bottom_y,d0
 
 12:
         cmpi.w  #0x200,d2
@@ -3044,11 +2732,11 @@ vert_blank:
         blt.s   21f
 
 20:      /* Top section has priority */
-        move.w  current_scroll_b_top_position,d0
+        move.w  current_scroll_b_top_y,d0
         bra.s   22f
 
 21:      /* Bottom section has priority */
-        move.w   current_scroll_b_bottom_position,d0
+        move.w   current_scroll_b_bottom_y,d0
 
 22:
         move.w  scroll_b_vert_break,d3
@@ -3067,20 +2755,20 @@ vert_blank:
 30:
         cmpi.w  #0,d2
         ble.w   31f
-        move.w  current_scroll_a_top_position,d1
+        move.w  current_scroll_a_top_y,d1
         bra.s   32f
 31:
-        move.w  current_scroll_a_bottom_position,d1
+        move.w  current_scroll_a_bottom_y,d1
 32:
         swap    d1
 
 40:
         cmpi.w  #0,d3
         ble.w   41f
-        move.w  current_scroll_b_top_position,d1
+        move.w  current_scroll_b_top_y,d1
         bra.s   50f
 41:
-        move.w  current_scroll_b_bottom_position,d1
+        move.w  current_scroll_b_bottom_y,d1
 
 50:
         move.l  #0x40000010,(a0)
@@ -3093,7 +2781,7 @@ vert_blank:
         move.b  #0xFF,hint_1_interval
         move.b  #0xFF,hint_2_interval
 
-        move.l  d1,hint_1_scroll_positions
+        move.l  d1,hint_1_scroll_y_positions
 
         cmpi.w  #0xE0,d2
         blt.s   0f
@@ -3111,59 +2799,59 @@ vert_blank:
         cmpi.w  #0,d2
         ble.w   9f
         move.b  d2,hint_1_interval  /* Scroll B and A will share one HINT. */
-        move.b  current_scroll_a_bottom_position,d1
-        move.w  d1,hint_1_scroll_a_position
-        move.w  d1,hint_1_scroll_b_position
+        move.b  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_1_scroll_a_y
+        move.w  d1,hint_1_scroll_b_y
         bra.w   9f
 3:
         cmpi.w  #0,d3
         ble.s   5f
         |subi.b  #2,d3
         move.b  d3,hint_1_interval  /* Scroll B will have the first HINT. */
-        move.w  current_scroll_b_bottom_position,d1
-        move.w  d1,hint_1_scroll_b_position
+        move.w  current_scroll_b_bottom_y,d1
+        move.w  d1,hint_1_scroll_b_y
 4:
         cmpi.w  #0,d2
         ble.w   9f
         sub.b   d3,d2
         |add.b   #1,d2
         move.b  d2,hint_2_interval  /* Scroll A will have the second HINT. */
-        move.w  d1,hint_2_scroll_b_position
-        move.w  current_scroll_a_bottom_position,d1
-        move.w  d1,hint_2_scroll_a_position
+        move.w  d1,hint_2_scroll_b_y
+        move.w  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_2_scroll_a_y
         bra.s   9f
 5:
         cmpi.w  #0,d2
         ble.s   9f
         |subi.b  #2,d2
         move.b  d2,hint_1_interval  /* Scroll A will have the only HINT. */
-        move.w  current_scroll_a_bottom_position,d1
-        move.w  d1,hint_1_scroll_a_position
+        move.w  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_1_scroll_a_y
         bra.s   9f
 6:
         cmpi.w  #0,d2
         ble.s   8f
         |subi.b  #2,d2
         move.b  d2,hint_1_interval  /* Scroll A will have the first HINT. */
-        move.w  current_scroll_a_bottom_position,d1
-        move.w  d1,hint_1_scroll_a_position
+        move.w  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_1_scroll_a_y
 7:
         cmpi.w  #0,d3
         ble.s   9f
         sub.b   d2,d3
         |add.b   #1,d3
         move.b  d3,hint_2_interval  /* Scroll B will have the second HINT. */
-        move.w  d1,hint_2_scroll_a_position
-        move.w  current_scroll_b_bottom_position,d1
-        move.w  d1,hint_2_scroll_b_position
+        move.w  d1,hint_2_scroll_a_y
+        move.w  current_scroll_b_bottom_y,d1
+        move.w  d1,hint_2_scroll_b_y
         bra.s   9f
 8:
         cmpi.w  #0,d3
         ble.s   9f
         |subi.b  #2,d3
         move.b  d3,hint_1_interval  /* Scroll B will have the only HINT. */
-        move.w  current_scroll_b_bottom_position,d1
-        move.w  d1,hint_1_scroll_b_position
+        move.w  current_scroll_b_bottom_y,d1
+        move.w  d1,hint_1_scroll_b_y
         |bra.s   9f
 9:
 
@@ -3542,6 +3230,9 @@ need_bump_fm:
 need_ctrl_int:
         dc.b    0
 
+gamemode:
+        dc.b    0
+
 legacy_emulator:
         dc.b    0
 
@@ -3616,28 +3307,52 @@ scroll_a_vert_rate_top:
 scroll_a_vert_rate_bottom:
         dc.b    0
 
-current_sky_top_positions:
-current_scroll_a_top_position:
+current_sky_top_y_positions:
+current_scroll_a_top_y:
         dc.w    0
-current_scroll_b_top_position:
-        dc.w    0
-
-current_sky_bottom_positions:
-current_scroll_a_bottom_position:
-        dc.w    0
-current_scroll_b_bottom_position:
+current_scroll_b_top_y:
         dc.w    0
 
-hint_1_scroll_positions:
-hint_1_scroll_a_position:
+current_sky_bottom_y_positions:
+current_scroll_a_bottom_y:
         dc.w    0
-hint_1_scroll_b_position:
+current_scroll_b_bottom_y:
         dc.w    0
 
-hint_2_scroll_positions:
-hint_2_scroll_a_position:
+current_sky_top_x_positions:
+current_scroll_a_top_x:
         dc.w    0
-hint_2_scroll_b_position:
+current_scroll_b_top_x:
+        dc.w    0
+
+current_sky_bottom_x_positions:
+current_scroll_a_bottom_x:
+        dc.w    0
+current_scroll_b_bottom_x:
+        dc.w    0
+
+hint_1_scroll_y_positions:
+hint_1_scroll_a_y:
+        dc.w    0
+hint_1_scroll_b_y:
+        dc.w    0
+
+hint_2_scroll_y_positions:
+hint_2_scroll_a_y:
+        dc.w    0
+hint_2_scroll_b_y:
+        dc.w    0
+
+hint_1_scroll_x_positions:
+hint_1_scroll_a_x:
+        dc.w    0
+hint_1_scroll_b_x:
+        dc.w    0
+
+hint_2_scroll_x_positions:
+hint_2_scroll_a_x:
+        dc.w    0
+hint_2_scroll_b_x:
         dc.w    0
 
 hint_count:

@@ -486,7 +486,7 @@ VINT CalcFlatSize(int lumplength)
 
 
 __attribute((noinline))
-static void R_SetupSkyGradient(void)
+static void R_SetupSkyGradient(char *name)
 {
 	// Retrieve lump for drawing the sky gradient.
 	uint8_t *sky_gradient_ptr;
@@ -500,7 +500,7 @@ static void R_SetupSkyGradient(void)
 
 	char lumpname[9];
 
-	D_snprintf(lumpname, 8, "%sGRA", gamemapinfo.sky);
+	D_snprintf(lumpname, 8, "%sGRA", name);
 	lump = W_CheckNumForName(lumpname);
 	if (lump == -1) {
 		return;
@@ -593,7 +593,7 @@ static void R_SetupSkyGradient(void)
 
 #ifdef MDSKY
 __attribute((noinline))
-static void R_SetupMDSky(void)
+static void R_SetupMDSky(char *name)
 {
 	// Retrieve lumps for drawing the sky on the MD.
 	uint8_t *sky_metadata_ptr;
@@ -612,7 +612,7 @@ static void R_SetupMDSky(void)
 
 	char lumpname[9];
 
-	D_snprintf(lumpname, 8, "%sMD", gamemapinfo.sky);
+	D_snprintf(lumpname, 8, "%sMD", name);
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		// This map uses an MD sky.
@@ -626,7 +626,7 @@ static void R_SetupMDSky(void)
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sA", gamemapinfo.sky);
+	D_snprintf(lumpname, 8, "%sA", name);
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_names_a_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -636,7 +636,7 @@ static void R_SetupMDSky(void)
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sB", gamemapinfo.sky);
+	D_snprintf(lumpname, 8, "%sB", name);
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_names_b_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -646,7 +646,7 @@ static void R_SetupMDSky(void)
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sPAL", gamemapinfo.sky);
+	D_snprintf(lumpname, 8, "%sPAL", name);
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_palettes_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -656,7 +656,7 @@ static void R_SetupMDSky(void)
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sTIL", gamemapinfo.sky);
+	D_snprintf(lumpname, 8, "%sTIL", name);
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_tiles_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -858,13 +858,18 @@ nocache:
 	R_InitTexCacheZone(&r_texcache, 0);
 }
 
-void R_SetupLevel(int gamezonemargin)
+void R_SetupBackground(char *background)
 {
 	#ifdef MDSKY
-	R_SetupSkyGradient();
+	R_SetupSkyGradient(background);
 
-	R_SetupMDSky();
+	R_SetupMDSky(background);
 	#endif
+}
+
+void R_SetupLevel(int gamezonemargin, char *background)
+{
+	R_SetupBackground(background);
 
 	R_SetupTextureCaches(gamezonemargin);
 

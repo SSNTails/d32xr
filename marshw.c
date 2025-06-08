@@ -726,6 +726,27 @@ void Mars_ScrollMDSky(short scroll_x, short scroll_y_base, short scroll_y_offset
 	MARS_SYS_COMM0 = 0x1104;
 }
 
+void Mars_SetScrollPositions(
+		short scroll_b_top_x, short scroll_b_top_y, short scroll_b_bottom_x, short scroll_b_bottom_y,
+		short scroll_a_top_x, short scroll_a_top_y, short scroll_a_bottom_x, short scroll_a_bottom_y)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_b_top_y;
+	MARS_SYS_COMM0 = 0x1A01;
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_b_bottom_y;
+	MARS_SYS_COMM0 = 0x1A02;
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_a_top_y;
+	MARS_SYS_COMM0 = 0x1A03;
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_a_bottom_y;
+	MARS_SYS_COMM0 = 0x1A04;
+}
+
 /*
 Load the MD sky tiles, palettes, and pattern name table into the MD VDP.
 */
@@ -803,30 +824,12 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 }
 #endif
 
-void Mars_CtlMDVDP(int sel)
+
+void MD_SetGamemode(int gamemode)
 {
 	while (MARS_SYS_COMM0);
-	MARS_SYS_COMM0 = 0x1900 | (sel & 0x00FF);
+	MARS_SYS_COMM0 = 0x1900;
 	while (MARS_SYS_COMM0);
-}
-
-void Mars_StoreWordColumnInMDVRAM(int c)
-{
-	while (MARS_SYS_COMM0);
-	MARS_SYS_COMM0 = 0x1A00|c;		/* sel = to VRAM, column in LB of comm0, start move */
-}
-
-void Mars_LoadWordColumnFromMDVRAM(int c, int offset, int len)
-{
-	while (MARS_SYS_COMM0 != 0);
-	MARS_SYS_COMM2 = (((uint16_t)len)<<8) | offset;  /* (length<<8)|offset */
-	MARS_SYS_COMM0 = 0x1B00|c;		/* sel = to VRAM, column in LB of comm0, start move */
-}
-
-void Mars_SwapWordColumnWithMDVRAM(int c)
-{
-    while (MARS_SYS_COMM0);
-    MARS_SYS_COMM0 = 0x1C00|c;        /* sel = swap with VRAM, column in LB of comm0, start move */
 }
 
 void Mars_Finish(void)

@@ -1105,6 +1105,8 @@ void DrawJagobj(jagobj_t* jo, int x, int y)
 
 void DrawFillRect(int x, int y, int w, int h, int c)
 {
+	// Note: This function does not correctly handle odd widths.
+
 	int i;
 
 	if (x + w > 320)
@@ -1131,6 +1133,50 @@ void DrawFillRect(int x, int y, int w, int h, int c)
 		}
 
 		dest += 160;
+	}
+}
+
+void DrawLine(int x, int y, int length, int c, boolean vertical)
+{
+	// Note: If drawing horizontal lines, this function does not correctly handle odd widths.
+
+	if (vertical) {
+		if (y + length > mars_framebuffer_height) {
+			length = mars_framebuffer_height - y;
+		}
+
+		if (!(x & 1)) {
+			// Offset is even.
+			c <<= 8;
+		}
+
+		pixel_t* dest = I_OverwriteBuffer() + y * 160 + (x>>1);
+		for (int i = 0; i < length; i++) {
+			*dest = c;
+			dest += 160;
+		}
+	}
+	else { // horizontal
+		if (x + length > 320) {
+			length = 320 - x;
+		}
+
+		int hw = length >> 1;
+
+		c = (c << 8) | c;
+
+		pixel_t* dest = I_FrameBuffer() + y * 160 + (x>>1);
+
+		int n = (hw + 3) >> 2;
+
+		switch (hw & 3)
+		{
+			case 0: do { *dest++ = c;
+			case 3:      *dest++ = c;
+			case 2:      *dest++ = c;
+			case 1:      *dest++ = c;
+			} while (--n > 0);
+		}
 	}
 }
 

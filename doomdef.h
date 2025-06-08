@@ -588,6 +588,9 @@ typedef enum
 #define DEMOMODE_RECORDING					0x0C
 
 
+extern void MD_SetGamemode(int gamemode);
+
+
 // General
 static inline boolean IsCompatibility()
 	{ return gamemode == GAMEMODE_COMPATIBILITY; }
@@ -601,15 +604,15 @@ static inline boolean IsCredits()
 	{ return gamemode == GAMEMODE_CREDITS; }
 
 static inline void SetCompatibility()
-	{ gamemode = GAMEMODE_COMPATIBILITY; }
+	{ gamemode = GAMEMODE_COMPATIBILITY; MD_SetGamemode(gamemode); }
 static inline void SetDisclaimer()
-	{ gamemode = GAMEMODE_DISCLAIMER; }
+	{ gamemode = GAMEMODE_DISCLAIMER; MD_SetGamemode(gamemode); }
 static inline void SetTitleScreen()
-	{ gamemode = GAMEMODE_TITLESCREEN; }
+	{ gamemode = GAMEMODE_TITLESCREEN; MD_SetGamemode(gamemode); }
 static inline void SetLevelSelect()
-	{ gamemode = GAMEMODE_LEVELSELECT; }
+	{ gamemode = GAMEMODE_LEVELSELECT; MD_SetGamemode(gamemode); }
 static inline void SetCredits()
-	{ gamemode = GAMEMODE_CREDITS; }
+	{ gamemode = GAMEMODE_CREDITS; MD_SetGamemode(gamemode); }
 
 // Level
 static inline boolean IsLevel()
@@ -618,7 +621,7 @@ static inline boolean IsLevelType(leveltype_t type)
 	{ return (gamemode & GAMEMODE_LEVEL_TYPE) == type; }
 
 static inline void SetLevel(leveltype_t type)
-	{ gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | type; }
+	{ gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | type;  MD_SetGamemode(gamemode); }
 
 // Demo
 static inline boolean IsDemo()
@@ -627,7 +630,7 @@ static inline boolean IsDemoModeType(demomodetype_t type)
 	{ return (gamemode & GAMEMODE_DEMO_MODETYPE) == type; }
 
 static inline void SetDemoMode(demomodetype_t type)
-	{ gamemode = (gamemode & (~GAMEMODE_DEMO_MODETYPE)) | type; }
+	{ gamemode = (gamemode & (~GAMEMODE_DEMO_MODETYPE)) | type;  MD_SetGamemode(gamemode); }
 
 
 
@@ -868,6 +871,7 @@ int I_ViewportYPos(void);
 int I_FrameBufferHeight(void);
 int I_IsPAL(void);
 
+void I_FillFrameBuffer (unsigned char palette_index);
 void I_ClearFrameBuffer (void);
 void I_ClearWorkBuffer(void);
 void I_ResetLineTable(void);
@@ -1242,6 +1246,7 @@ void DrawJagobjWithColormap(jagobj_t* jo, int x, int y,
 void DrawJagobj2(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h, pixel_t* fb);
 void DrawFillRect(int x, int y, int w, int h, int c);
+void DrawLine(int x, int y, int length, int c, boolean vertical);
 void UpdateBuffer (void);
 
 #ifndef MARS

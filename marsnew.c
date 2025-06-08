@@ -612,12 +612,19 @@ pixel_t	*I_ViewportBuffer (void)
 	return (pixel_t *)vb;
 }
 
-void I_ClearFrameBuffer (void)
+void I_FillFrameBuffer (unsigned char palette_index)
 {
+	const int long_fill = (palette_index << 24) | (palette_index << 16) | (palette_index << 8) | palette_index;
+
 	int* p = (int*)framebuffer;
 	int* p_end = (int*)(framebuffer + 320 / 2 * (I_FrameBufferHeight()+1));
 	while (p < p_end)
-		*p++ = 0x1F1F1F1F; // Four bytes of black palette index
+		*p++ = long_fill; // Four bytes of black palette index
+}
+
+inline void I_ClearFrameBuffer (void)
+{
+	I_FillFrameBuffer(0x1F); // Black
 }
 
 #ifdef BENCHMARK
