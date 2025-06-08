@@ -379,6 +379,11 @@ static void M_UpdateSaveInfo(void)
 
 int M_Ticker (void)
 {
+	if (IsTitleScreen() && screenpos == ms_gametype) {
+		// Skip sub-menus on the title screen.
+		return ga_startnew;
+	}
+
 	int		buttons, oldbuttons;
 	mainscreen_t* menuscr;
 	boolean newcursor = false;
@@ -676,6 +681,11 @@ void M_Drawer (void)
 	if (IsTitleScreen() && gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
 		// Fill the area above the viewport with the sky color.
 		DrawFillRect(0, 0, 320, 44, gamemapinfo.skyTopColor);
+		
+		if (scrpos == ms_gametype) {
+			// Don't display sub-menus on the title screen.
+			return;
+		}
 	}
 
 /* Draw main menu */
