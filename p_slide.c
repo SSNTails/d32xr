@@ -199,7 +199,10 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
    if ((ldflags[ld-lines] & ML_HAS_SPECIAL_OR_TAG) && P_GetLineSpecial(ld) == 254 && P_GetLineTag(ld) > 0 && sw->slidething->player
       && (players[sw->slidething->player-1].pflags & PF_SPINNING)) // Bustable block
    {
-      back->floorheight = P_FindNextLowestFloor(back, back->floorheight);
+      if (ldflags[ld-lines] & ML_NOCLIMB)
+         back->ceilingheight = P_FindNextHighestCeiling(back, back->ceilingheight);
+      else
+         back->floorheight = P_FindNextLowestFloor(back, back->floorheight);
       ldflags[ld-lines] &= ~ML_HAS_SPECIAL_OR_TAG;
       S_StartSound(sw->slidething, sfx_s3k_59);
       P_SpawnBustables(back, sw->slidething);

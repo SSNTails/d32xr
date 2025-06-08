@@ -240,7 +240,7 @@ typedef struct
    fixed_t  shootx, shooty, shootz; // location for puff/blood
 } lineattack_t;
 
-void P_RadiusAttack (mobj_t *spot, mobj_t *source, int damage) ATTR_DATA_CACHE_ALIGN;
+void P_RadiusAttack (mobj_t *spot, mobj_t *source, int damage);
 void P_XYMovement(mobj_t* mo) ATTR_DATA_CACHE_ALIGN;
 void P_ZMovement(mobj_t* mo) ATTR_DATA_CACHE_ALIGN;
 

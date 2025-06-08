@@ -173,6 +173,48 @@ fixed_t	P_FindHighestFloorSurrounding(sector_t *sec)
 
 /*================================================================== */
 /* */
+/*	FIND NEXT HIGHEST CEILING IN SURROUNDING SECTORS */
+/* */
+/*================================================================== */
+fixed_t	P_FindNextHighestCeiling(sector_t *sec,int currentheight)
+{
+	VINT		i = -1;
+	int			h = 0;
+	int			min;
+	line_t		*check;
+	sector_t	*other;
+	fixed_t		height = currentheight;
+	fixed_t		heightlist[20];		/* 20 adjoining sectors max! */
+	
+	heightlist[0] = 0;
+	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
+	{
+		check = &lines[i];
+		other = getNextSector(check,sec);
+		if (!other)
+			continue;
+		if (other->ceilingheight > height)
+			heightlist[h++] = other->floorheight;
+		if (h == sizeof(heightlist) / sizeof(heightlist[0]))
+			break;
+	}
+	
+	if (h == 0)
+		return currentheight;
+
+	/* */
+	/* Find lowest height in list */
+	/* */
+	min = heightlist[0];
+	for (i = 1;i < h;i++)
+		if (heightlist[i] < min)
+			min = heightlist[i];
+			
+	return min;
+}
+
+/*================================================================== */
+/* */
 /*	FIND NEXT HIGHEST FLOOR IN SURROUNDING SECTORS */
 /* */
 /*================================================================== */
