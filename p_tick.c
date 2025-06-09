@@ -284,22 +284,21 @@ int P_Ticker (void)
 
 		P_RunThinkers();
 
-		{
-//			start = frtc;
-			P_RunMobjBase();
-//			basetics = frtc - start;
+//		start = frtc;
+		P_RunMobjBase();
+//		basetics = frtc - start;
 
-//			start = frtc;
-			P_RunMobjLate();
-//			latetics = frtc - start;
-			P_UpdateSpecials();
+		P_UpdateSpecials();
 
-			leveltime++;
-		}
+		leveltime++;
 
 		if (skipCount == 0)
 			tictics = frtc - ticstart;
 	}
+
+//	start = frtc;
+	P_RunMobjLate(); // I think we can get away with freeing dead mobjs once per vblank
+//	latetics = frtc - start;
 
 	ST_Ticker();			/* update status bar */
 

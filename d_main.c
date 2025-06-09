@@ -523,8 +523,8 @@ int TIC_LevelSelect (void)
 	screenCount++;
 
 	if (gameaction == ga_nothing
-			&& (ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
-			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B)))
+			&& ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
+			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B))))
 	{
 		fadetime = 0;
 		SetTransition(TransitionType_Leaving);
