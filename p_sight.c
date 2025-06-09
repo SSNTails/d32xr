@@ -370,10 +370,6 @@ static boolean P_MobjCanSightCheck(mobj_t *mobj)
    if (!(mobj->flags2 & MF2_ENEMY))
       return false;
 
-   // must be about to change states
-   if (mobj->tics != 1)
-      return false;
-
    mobj->flags2 &= ~MF2_SEETARGET;
 
    // must have a target

@@ -248,6 +248,12 @@ int P_Ticker (void)
 	playertics = 0;
 	thinkertics = 0;
 	ticstart = frtc;
+
+	// If we don't do this every tic, it seems sight checking is broken.
+	// Is there a way we can do this infrequently? Even every half second would be fine.
+	if (!(gametic & 31))
+		P_CheckSights();
+
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
 		if (IsDemoModeType(DemoMode_Playback)) {
@@ -277,14 +283,6 @@ int P_Ticker (void)
 		P_RunThinkers();
 
 		{
-	//		if (gametic != prevgametic)
-			{
-				// If we don't do this every tic, it seems sight checking is broken.
-				// Is there a way we can do this infrequently? Even every half second would be fine.
-				P_CheckSights();
-//				sighttics = frtc - start;
-			}
-
 //			start = frtc;
 			P_RunMobjBase();
 //			basetics = frtc - start;
