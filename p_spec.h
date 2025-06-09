@@ -54,7 +54,7 @@ void	P_InitPicAnims (void);
 void	P_SpawnSpecials (void);
 
 /* every tic */
-void 	P_UpdateSpecials (void);
+void 	P_UpdateSpecials (int8_t numframes);
 
 void 	P_PlayerInSpecialSector (player_t *player);
 

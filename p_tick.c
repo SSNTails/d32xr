@@ -255,6 +255,7 @@ int P_Ticker (void)
 		P_CheckSights();
 
 	P_AnimateScenery((int8_t)accum_time);
+	P_UpdateSpecials((int8_t)accum_time);
 
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
@@ -287,8 +288,6 @@ int P_Ticker (void)
 //		start = frtc;
 		P_RunMobjBase();
 //		basetics = frtc - start;
-
-		P_UpdateSpecials();
 
 		leveltime++;
 

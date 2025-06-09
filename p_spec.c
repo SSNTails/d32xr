@@ -478,7 +478,7 @@ void P_PlayerInSpecialSector (player_t *player)
 ===============================================================================
 */
 
-void P_UpdateSpecials (void)
+void P_UpdateSpecials (int8_t numframes)
 {
 	anim_t	*anim;
 	int		i;
@@ -487,7 +487,7 @@ void P_UpdateSpecials (void)
 	/* */
 	/*	ANIMATE FLATS AND TEXTURES GLOBALY */
 	/* */
-	if (! (gametic&3) )
+	if (! (ticon&3) )
 	{
 		for (anim = anims ; anim < lastanim ; anim++)
 		{
@@ -530,7 +530,7 @@ void P_UpdateSpecials (void)
 				textureoffset = side->textureoffset;
 				rowoffset = textureoffset & 0xf000;
 				textureoffset <<= 4;
-				textureoffset += 1<<4;
+				textureoffset += numframes<<4;
 				textureoffset >>= 4;
 				textureoffset |= rowoffset;
 				side->textureoffset = textureoffset;
@@ -540,7 +540,7 @@ void P_UpdateSpecials (void)
 				// 12-bit texture offset + 4-bit rowoffset
 				textureoffset = side->textureoffset;
 				rowoffset = ((textureoffset & 0xf000)>>4) | side->rowoffset;
-				rowoffset -= 3;
+				rowoffset -= numframes * 3;
 				side->rowoffset = rowoffset & 0xff;
 				side->textureoffset = (textureoffset & 0xfff) | (rowoffset & 0xf00);
 				break;
