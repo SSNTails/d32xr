@@ -559,6 +559,13 @@ typedef enum
 	DemoMode_Recording = 0x0C,
 } demomodetype_t;
 
+typedef enum
+{
+	TransitionType_None = 0x00,
+	TransitionType_Entering = 0x80,
+	TransitionType_Leaving = 0xC0,
+} transitiontype_t;
+
 
 // LEVEL has a mode value of '1x', where x is the low nybble that carries attributes
 // Attributes: Ddll
@@ -575,11 +582,14 @@ typedef enum
 #define GAMEMODE_CREDITS					0x05
 
 #define GAMEMODE_LEVEL_ACTIVE				0x10
-#define GAMEMODE_LEVEL						0xF0
-#define GAMEMODE_LEVEL_TYPE					0xF3
+#define GAMEMODE_LEVEL						0x30
+#define GAMEMODE_LEVEL_TYPE					0x33
 
 #define GAMEMODE_DEMO						0x08
 #define GAMEMODE_DEMO_MODETYPE				0x0C
+
+#define GAMEMODE_TRANSITION					0x80
+#define GAMEMODE_TRANSITION_TYPE			0xC0
 
 
 #define LEVELTYPE_NORMAL					0x10
@@ -590,21 +600,24 @@ typedef enum
 #define DEMOMODE_PLAYBACK					0x08
 #define DEMOMODE_RECORDING					0x0C
 
+#define TRANSITIONTYPE_ENTERING				0x80
+#define TRANSITIONTYPE_LEAVING				0xC0
+
 
 extern void MD_SetGamemode(int gamemode);
 
 
 // General
 static inline boolean IsCompatibility()
-	{ return gamemode == GAMEMODE_COMPATIBILITY; }
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_COMPATIBILITY; }
 static inline boolean IsDisclaimer()
-	{ return gamemode == GAMEMODE_DISCLAIMER; }
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_DISCLAIMER; }
 static inline boolean IsTitleScreen()
-	{ return gamemode == GAMEMODE_TITLESCREEN; }
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_TITLESCREEN; }
 static inline boolean IsLevelSelect()
-	{ return gamemode == GAMEMODE_LEVELSELECT; }
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_LEVELSELECT; }
 static inline boolean IsCredits()
-	{ return gamemode == GAMEMODE_CREDITS; }
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_CREDITS; }
 
 static inline void SetCompatibility()
 	{ gamemode = GAMEMODE_COMPATIBILITY; MD_SetGamemode(gamemode); }
@@ -624,7 +637,7 @@ static inline boolean IsLevelType(leveltype_t type)
 	{ return (gamemode & GAMEMODE_LEVEL_TYPE) == type; }
 
 static inline void SetLevel(leveltype_t type)
-	{ gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | type;  MD_SetGamemode(gamemode); }
+	{ gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | type; MD_SetGamemode(gamemode); }
 
 // Demo
 static inline boolean IsDemo()
@@ -633,7 +646,16 @@ static inline boolean IsDemoModeType(demomodetype_t type)
 	{ return (gamemode & GAMEMODE_DEMO_MODETYPE) == type; }
 
 static inline void SetDemoMode(demomodetype_t type)
-	{ gamemode = (gamemode & (~GAMEMODE_DEMO_MODETYPE)) | type;  MD_SetGamemode(gamemode); }
+	{ gamemode = (gamemode & (~GAMEMODE_DEMO_MODETYPE)) | type; MD_SetGamemode(gamemode); }
+
+// Transition
+static inline boolean IsTransition()
+	{ return (gamemode & GAMEMODE_TRANSITION) == GAMEMODE_TRANSITION; }
+static inline boolean IsTransitionType(transitiontype_t type)
+	{ return (gamemode & GAMEMODE_TRANSITION_TYPE) == type; }
+
+static inline void SetTransition(transitiontype_t type)
+	{ gamemode = (gamemode & (~GAMEMODE_TRANSITION_TYPE)) | type; MD_SetGamemode(gamemode); }
 
 
 

@@ -518,37 +518,65 @@ dmapinfo_t selected_map_info;
 
 int TIC_LevelSelect (void)
 {
+	int exit = ga_nothing;
+
 	screenCount++;
 
-	if ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
+	if (gameaction == ga_nothing
+			&& (ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
 			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B)))
 	{
-		return ga_startnew;
+		fadetime = 0;
+		SetTransition(TransitionType_Leaving);
 	}
 
-	int prev_selected_map = selected_map;
-
-	if (ticrealbuttons & BT_LEFT && !(oldticrealbuttons & BT_LEFT)) {
-		selected_map -= 1;
-		if (selected_map < 0) {
-			selected_map = gamemapcount-1;
+	if (IsTransitionType(TransitionType_Entering)) {
+		if (fadetime < 21) {
+			int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20 - fadetime;
+			R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
+			fadetime++;
+		}
+		else {
+			I_SetPalette(dc_playpals);
+			SetTransition(TransitionType_None);
 		}
 	}
-	else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
-		selected_map += 1;
-		if (selected_map == gamemapcount) {
-			selected_map = 0;
+	else if (IsTransitionType(TransitionType_Leaving)) {
+		if (fadetime < 21) {
+			int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + fadetime;
+			R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
+			fadetime++;
+		}
+		else {
+			R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+			exit = ga_startnew;
+		}
+	}
+	else {
+		int prev_selected_map = selected_map;
+
+		if (ticrealbuttons & BT_LEFT && !(oldticrealbuttons & BT_LEFT)) {
+			selected_map -= 1;
+			if (selected_map < 0) {
+				selected_map = gamemapcount-1;
+			}
+		}
+		else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
+			selected_map += 1;
+			if (selected_map == gamemapcount) {
+				selected_map = 0;
+			}
+		}
+
+		if (selected_map != prev_selected_map) {
+			startmap = gamemapnumbers[selected_map];
+
+			char buf[512];
+			G_FindMapinfo(G_LumpNumForMapNum(startmap), &selected_map_info, buf);
 		}
 	}
 
-	if (selected_map != prev_selected_map) {
-		startmap = gamemapnumbers[selected_map];
-
-		char buf[512];
-		G_FindMapinfo(G_LumpNumForMapNum(startmap), &selected_map_info, buf);
-	}
-
-	return ga_nothing;
+	return exit;
 }
 
 void START_LevelSelect (void)
@@ -560,6 +588,8 @@ void START_LevelSelect (void)
 	}
 
 	screenCount = 0;
+
+	fadetime = 0;
 
 	startmap = 1;
 
@@ -574,6 +604,8 @@ void START_LevelSelect (void)
 	R_InitColormap();
 
 	R_SetupBackground("MENU");
+
+	SetTransition(TransitionType_Entering);
 }
 
 void STOP_LevelSelect (void)
