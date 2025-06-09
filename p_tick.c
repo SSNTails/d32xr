@@ -254,6 +254,8 @@ int P_Ticker (void)
 	if (!(gametic & 31))
 		P_CheckSights();
 
+	P_AnimateScenery((int8_t)accum_time);
+
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
 		if (IsDemoModeType(DemoMode_Playback)) {

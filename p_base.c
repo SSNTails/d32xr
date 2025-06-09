@@ -1078,6 +1078,34 @@ void P_MobjThinker(mobj_t *mobj)
    }
 }
 
+void P_AnimateScenery(int8_t numframes)
+{
+   // First, handle the ringmobj animations
+    for (int i = 0; i < NUMMOBJTYPES; i++)
+    {
+      if (ringmobjtics[i] != -1)
+      {
+         // cycle through states
+         ringmobjtics[i] -= numframes;
+
+         // you can cycle through multiple states in a tic
+         if (ringmobjtics[i] <= 0)
+         {
+            do
+            {
+               const statenum_t nextstate = states[ringmobjstates[i]].nextstate;
+               const state_t *st = &states[nextstate];
+
+               ringmobjstates[i] = nextstate;
+               ringmobjtics[i] += st->tics;
+
+               // Sprite and frame can be derived
+            } while (ringmobjtics[i] <= 0);
+         }
+      }
+    }
+}
+
 //
 // Do the main thinking logic for mobjs during a gametic.
 //
@@ -1085,31 +1113,6 @@ void P_RunMobjBase2(void)
 {
     mobj_t* mo;
     mobj_t* next;
-
-    // First, handle the ringmobj animations
-    for (int i = 0; i < NUMMOBJTYPES; i++)
-    {
-      if (ringmobjtics[i] == -1)
-         continue; // Early out
-
-      // cycle through states
-      ringmobjtics[i]--;
-
-      // you can cycle through multiple states in a tic
-      if (!ringmobjtics[i])
-      {
-         do
-         {
-            const statenum_t nextstate = states[ringmobjstates[i]].nextstate;
-            const state_t *st = &states[nextstate];
-
-            ringmobjstates[i] = nextstate;
-            ringmobjtics[i] = st->tics;
-
-            // Sprite and frame can be derived
-         } while (!ringmobjtics[i]);
-      }
-    }
 
     for (mo = mobjhead.next; mo != (void*)&mobjhead; mo = next)
     {
