@@ -1891,7 +1891,7 @@ load_md_sky:
 set_scroll_positions:
         move.l  d0,-(sp)
 
-        move.w  0xA15122,current_scroll_b_top_y
+        move.w  0xA15122,current_scroll_b_top_x
 
         move.w  #0,0xA15120         /* request more data */
 1:
@@ -1899,7 +1899,7 @@ set_scroll_positions:
         cmpi.b  #0x02,d0
         bne.b   1b
 
-        move.w  0xA15122,current_scroll_b_bottom_y
+        move.w  0xA15122,current_scroll_b_top_y
 
         move.w  #0,0xA15120         /* request more data */
 2:
@@ -1907,13 +1907,45 @@ set_scroll_positions:
         cmpi.b  #0x03,d0
         bne.b   2b
 
-        move.w  0xA15122,current_scroll_a_top_y
+        move.w  0xA15122,current_scroll_b_bottom_x
 
         move.w  #0,0xA15120         /* request more data */
 3:
         move.b  0xA15121,d0         /* wait on handshake in COMM0 */
         cmpi.b  #0x04,d0
         bne.b   3b
+
+        move.w  0xA15122,current_scroll_b_bottom_y
+
+        move.w  #0,0xA15120         /* request more data */
+4:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x05,d0
+        bne.b   4b
+
+        move.w  0xA15122,current_scroll_a_top_x
+
+        move.w  #0,0xA15120         /* request more data */
+5:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x06,d0
+        bne.b   5b
+
+        move.w  0xA15122,current_scroll_a_top_y
+
+        move.w  #0,0xA15120         /* request more data */
+6:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x07,d0
+        bne.b   6b
+
+        move.w  0xA15122,current_scroll_a_bottom_x
+
+        move.w  #0,0xA15120         /* request more data */
+7:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x08,d0
+        bne.b   7b
 
         move.w  0xA15122,current_scroll_a_bottom_y
 
@@ -2647,15 +2679,14 @@ rst_ym2612:
 horizontal_blank:
         move.l  d0,-(sp)
         move.l  d1,-(sp)
+        move.l  d2,-(sp)
         move.l  a0,-(sp)
         move.l  a1,-(sp)
 
         lea     0xC00004,a0
         lea     0xC00000,a1
 
-        move.l  #0x40000010,(a0)
-
-        move.w  #0x8A00,d1
+        move.w  #0x8A00,d2
         cmpi.b  #1,hint_count
         beq.s   1f
         cmpi.b  #2,hint_count
@@ -2663,27 +2694,34 @@ horizontal_blank:
         cmpi.b  #3,hint_count
         beq.s   3f
 0:
-        move.b  hint_1_interval,d1
+        move.b  hint_1_interval,d2
         bra.s   5f
 1:
-        move.b  hint_2_interval,d1
+        move.b  hint_2_interval,d2
         bra.s   5f
 2:
-        move.b  #0xFF,d1
+        move.b  #0xFF,d2
         move.l  hint_1_scroll_y_positions,d0
+        move.l  hint_1_scroll_x_positions,d1
         bra.s   4f
 3:
-        |move.b  #0,d1
+        |move.b  #0,d2
         move.l  hint_2_scroll_y_positions,d0
+        move.l  hint_2_scroll_x_positions,d1
         |bra.s   4f
 4:
+        move.l  #0x40000010,(a0)
         move.l  d0,(a1)             /* update scroll A and B vertical positions */
+
+        move.l  #0x6C000002,(a0)
+        move.l  d1,(a1)             /* update scroll A and B horizontal positions */
 5:
-        move.w  d1,(a0) /* reg 10 = HINT = 0 */
+        move.w  d2,(a0) /* reg 10 = HINT = 0 */
         addi.b  #1,hint_count
 
         move.l  (sp)+,a1
         move.l  (sp)+,a0
+        move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
         rte
@@ -2695,6 +2733,7 @@ vert_blank:
         move.l  d1,-(sp)
         move.l  d2,-(sp)
         move.l  d3,-(sp)
+        move.l  d4,-(sp)
         move.l  a1,-(sp)
         move.l  a2,-(sp)
 
@@ -2756,23 +2795,31 @@ vert_blank:
         cmpi.w  #0,d2
         ble.w   31f
         move.w  current_scroll_a_top_y,d1
+        move.w  current_scroll_a_top_x,d4
         bra.s   32f
 31:
         move.w  current_scroll_a_bottom_y,d1
+        move.w  current_scroll_a_bottom_x,d4
 32:
         swap    d1
+        swap    d4
 
 40:
         cmpi.w  #0,d3
         ble.w   41f
         move.w  current_scroll_b_top_y,d1
+        move.w  current_scroll_b_top_x,d4
         bra.s   50f
 41:
         move.w  current_scroll_b_bottom_y,d1
+        move.w  current_scroll_b_bottom_x,d4
 
 50:
         move.l  #0x40000010,(a0)
         move.l  d1,(a1)             /* Update scroll A and B vertical positions. */
+
+        move.l  #0x6C000002,(a0)
+        move.l  d4,(a1)             /* Update scroll A and B horizontal positions. */
 
 
 
@@ -2782,6 +2829,7 @@ vert_blank:
         move.b  #0xFF,hint_2_interval
 
         move.l  d1,hint_1_scroll_y_positions
+        move.l  d4,hint_1_scroll_x_positions
 
         cmpi.w  #0xE0,d2
         blt.s   0f
@@ -2793,15 +2841,18 @@ vert_blank:
 1:
 
         cmp.w   d2,d3
-        bgt.s   6f
+        bgt.w   6f
         blt.s   3f
 2:
         cmpi.w  #0,d2
         ble.w   9f
         move.b  d2,hint_1_interval  /* Scroll B and A will share one HINT. */
         move.b  current_scroll_a_bottom_y,d1
+        move.b  current_scroll_a_bottom_x,d4
         move.w  d1,hint_1_scroll_a_y
+        move.w  d4,hint_1_scroll_a_x
         move.w  d1,hint_1_scroll_b_y
+        move.w  d4,hint_1_scroll_b_x
         bra.w   9f
 3:
         cmpi.w  #0,d3
@@ -2809,7 +2860,9 @@ vert_blank:
         |subi.b  #2,d3
         move.b  d3,hint_1_interval  /* Scroll B will have the first HINT. */
         move.w  current_scroll_b_bottom_y,d1
+        move.w  current_scroll_b_bottom_x,d4
         move.w  d1,hint_1_scroll_b_y
+        move.w  d4,hint_1_scroll_b_x
 4:
         cmpi.w  #0,d2
         ble.w   9f
@@ -2817,16 +2870,21 @@ vert_blank:
         |add.b   #1,d2
         move.b  d2,hint_2_interval  /* Scroll A will have the second HINT. */
         move.w  d1,hint_2_scroll_b_y
+        move.w  d4,hint_2_scroll_b_x
         move.w  current_scroll_a_bottom_y,d1
+        move.w  current_scroll_a_bottom_x,d4
         move.w  d1,hint_2_scroll_a_y
-        bra.s   9f
+        move.w  d4,hint_2_scroll_a_x
+        bra.w   9f
 5:
         cmpi.w  #0,d2
-        ble.s   9f
+        ble.w   9f
         |subi.b  #2,d2
         move.b  d2,hint_1_interval  /* Scroll A will have the only HINT. */
         move.w  current_scroll_a_bottom_y,d1
+        move.w  current_scroll_a_bottom_x,d4
         move.w  d1,hint_1_scroll_a_y
+        move.w  d4,hint_1_scroll_a_x
         bra.s   9f
 6:
         cmpi.w  #0,d2
@@ -2834,7 +2892,9 @@ vert_blank:
         |subi.b  #2,d2
         move.b  d2,hint_1_interval  /* Scroll A will have the first HINT. */
         move.w  current_scroll_a_bottom_y,d1
+        move.w  current_scroll_a_bottom_x,d4
         move.w  d1,hint_1_scroll_a_y
+        move.w  d4,hint_1_scroll_a_x
 7:
         cmpi.w  #0,d3
         ble.s   9f
@@ -2842,8 +2902,11 @@ vert_blank:
         |add.b   #1,d3
         move.b  d3,hint_2_interval  /* Scroll B will have the second HINT. */
         move.w  d1,hint_2_scroll_a_y
+        move.w  d4,hint_2_scroll_a_x
         move.w  current_scroll_b_bottom_y,d1
+        move.w  current_scroll_b_bottom_x,d4
         move.w  d1,hint_2_scroll_b_y
+        move.w  d4,hint_2_scroll_b_x
         bra.s   9f
 8:
         cmpi.w  #0,d3
@@ -2851,7 +2914,9 @@ vert_blank:
         |subi.b  #2,d3
         move.b  d3,hint_1_interval  /* Scroll B will have the only HINT. */
         move.w  current_scroll_b_bottom_y,d1
+        move.w  current_scroll_b_bottom_x,d4
         move.w  d1,hint_1_scroll_b_y
+        move.w  d4,hint_1_scroll_b_x
         |bra.s   9f
 9:
 
@@ -2912,6 +2977,7 @@ vert_blank:
 4:
         move.l  (sp)+,a2
         move.l  (sp)+,a1
+        move.l  (sp)+,d4
         move.l  (sp)+,d3
         move.l  (sp)+,d2
         move.l  (sp)+,d1

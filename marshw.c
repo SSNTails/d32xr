@@ -732,20 +732,36 @@ void Mars_SetScrollPositions(
 		short scroll_a_top_x, short scroll_a_top_y, short scroll_a_bottom_x, short scroll_a_bottom_y)
 {
 	while (MARS_SYS_COMM0);
-	MARS_SYS_COMM2 = scroll_b_top_y;
+	MARS_SYS_COMM2 = scroll_b_top_x;
 	MARS_SYS_COMM0 = 0x1A01;
 
 	while (MARS_SYS_COMM0);
-	MARS_SYS_COMM2 = scroll_b_bottom_y;
+	MARS_SYS_COMM2 = scroll_b_top_y;
 	MARS_SYS_COMM0 = 0x1A02;
 
 	while (MARS_SYS_COMM0);
-	MARS_SYS_COMM2 = scroll_a_top_y;
+	MARS_SYS_COMM2 = scroll_b_bottom_x;
 	MARS_SYS_COMM0 = 0x1A03;
 
 	while (MARS_SYS_COMM0);
-	MARS_SYS_COMM2 = scroll_a_bottom_y;
+	MARS_SYS_COMM2 = scroll_b_bottom_y;
 	MARS_SYS_COMM0 = 0x1A04;
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_a_top_x;
+	MARS_SYS_COMM0 = 0x1A05;
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_a_top_y;
+	MARS_SYS_COMM0 = 0x1A06;
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_a_bottom_x;
+	MARS_SYS_COMM0 = 0x1A07;
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_a_bottom_y;
+	MARS_SYS_COMM0 = 0x1A08;
 }
 
 /*

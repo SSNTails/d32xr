@@ -534,10 +534,12 @@ int TIC_LevelSelect (void)
 		if (fadetime < 21) {
 			int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20 - fadetime;
 			R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
+			Mars_FadeMDPaletteFromBlack(md_palette_fade_table[fadetime+1]);
 			fadetime++;
 		}
 		else {
 			I_SetPalette(dc_playpals);
+			Mars_FadeMDPaletteFromBlack(0xEEE);
 			SetTransition(TransitionType_None);
 		}
 	}
@@ -545,10 +547,12 @@ int TIC_LevelSelect (void)
 		if (fadetime < 21) {
 			int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + fadetime;
 			R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
+			Mars_FadeMDPaletteFromBlack(md_palette_fade_table[21-fadetime]);
 			fadetime++;
 		}
 		else {
 			R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+			Mars_FadeMDPaletteFromBlack(0x000);
 			exit = ga_startnew;
 		}
 	}
@@ -617,11 +621,23 @@ void STOP_LevelSelect (void)
 
 void DRAW_LevelSelect (void)
 {
-	Mars_FadeMDPaletteFromBlack(0xEEE);
+	Mars_SetScrollPositions(
+		//============ B top ============//
+			(screenCount >> 1),		// Scroll right
+			(screenCount >> 1),		// Scroll up
 
-	Mars_SetScrollPositions(0, 0, 0, screenCount >> 1, 0, 0, 0, 0);
+		//=========== B bottom ==========//
+			(screenCount >> 1),		// Scroll right
+			(screenCount >> 1),		// Scroll up
 
-	//int srb2tile = W_CheckNumForName("SRB2TILE");
+		//============ A top ============//
+			screenCount,			// Scroll right
+			0,
+
+		//=========== A bottom ==========//
+			-screenCount,			// Scroll left
+			0
+		);
 
 	char lvlsel_name[9] = { 'L','V','L','S','E','L','0','0','\0' };
 
@@ -639,8 +655,8 @@ void DRAW_LevelSelect (void)
 
 	int arrowl = W_CheckNumForName("ARROWL");
 	int arrowr = W_CheckNumForName("ARROWR");
-	int chevblku = W_CheckNumForName("CHEVBLKU");
-	int chevblkd = W_CheckNumForName("CHEVBLKD");
+	//int chevblku = W_CheckNumForName("CHEVBLKU");
+	//int chevblkd = W_CheckNumForName("CHEVBLKD");
 
 	int arrow_offset = ((screenCount>>2) & 7) * (((screenCount>>2) & 0x8) == 0);
 	if (arrow_offset > 3) {
@@ -722,7 +738,7 @@ void DRAW_LevelSelect (void)
 	DrawLine(239, 57, 134, 0x23, true);
 
 	// Draw chevrons
-	int chev_offset = (screenCount & 0x1F);
+	/*int chev_offset = (screenCount & 0x1F);
 	for (int i=0; i < 0x140; i += 0x20) {
 		DrawJagobjLump(chevblkd, i + chev_offset, 0, NULL, NULL);
 		DrawJagobjLump(chevblku, i - chev_offset, 224-16, NULL, NULL);
@@ -730,7 +746,7 @@ void DRAW_LevelSelect (void)
 	if (chev_offset != 0) {
 		DrawJagobjLump(chevblkd, -0x20 + chev_offset, 0, NULL, NULL);
 		DrawJagobjLump(chevblku, 0x140 - chev_offset, 224-16, NULL, NULL);
-	}
+	}*/
 }
 
 /*============================================================================= */

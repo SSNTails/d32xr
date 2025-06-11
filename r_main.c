@@ -34,7 +34,20 @@ drawcol_t drawspritecol;
 #endif
 
 // Classic Sonic fade
-const short md_palette_fade_table[32] =
+const short md_palette_fade_table[22] =
+{
+	0x000,
+	0x200, 0x220, 0x222,
+	0x422, 0x442, 0x444,
+	0x644, 0x664, 0x666,
+	0x866, 0x886, 0x888,
+	0xA88, 0xAA8, 0xAAA,
+	0xCAA, 0xCCA, 0xCCC,
+	0xECC, 0xEEC, 0xEEE
+};
+
+// Classic Sonic fade ???
+const short md_palette_fade_table_2[32] =
 {
 	// Black
 	0x000,
@@ -1169,7 +1182,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 				vd.fixedcolormap = HWLIGHT((leveltime-30)*8);	// 32X VDP
 				#ifdef MDSKY
 				if (sky_md_layer) {
-					Mars_FadeMDPaletteFromBlack(md_palette_fade_table[leveltime-30]);	// MD VDP
+					Mars_FadeMDPaletteFromBlack(md_palette_fade_table_2[leveltime-30]);	// MD VDP
 				}
 				#endif
 			}
@@ -1180,7 +1193,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 //			vd.fixedcolormap = HWLIGHT((TICRATE-fadetime)*8);	// 32X VDP
 			#ifdef MDSKY
 			if (sky_md_layer) {
-				Mars_FadeMDPaletteFromBlack(md_palette_fade_table[TICRATE-(fadetime*3)]);	// MD VDP
+				Mars_FadeMDPaletteFromBlack(md_palette_fade_table_2[TICRATE-(fadetime*3)]);	// MD VDP
 			}
 			#endif
 		}
