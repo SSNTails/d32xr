@@ -2683,6 +2683,10 @@ horizontal_blank:
         move.l  a0,-(sp)
         move.l  a1,-(sp)
 
+        lea     0xC00008,a0     | TESTING!!!
+        move.w  (a0),d0         | TESTING!!!
+
+
         lea     0xC00004,a0
         lea     0xC00000,a1
 
@@ -2695,17 +2699,21 @@ horizontal_blank:
         beq.s   3f
 0:
         move.b  hint_1_interval,d2
+        move.w  d0,record_hv1   | TESTING!!!
         bra.s   5f
 1:
         move.b  hint_2_interval,d2
+        move.w  d0,record_hv2   | TESTING!!!
         bra.s   5f
 2:
         move.b  #0xFF,d2
+        move.w  d0,record_hv3   | TESTING!!!
         move.l  hint_1_scroll_y_positions,d0
         move.l  hint_1_scroll_x_positions,d1
         bra.s   4f
 3:
         |move.b  #0,d2
+        move.w  d0,record_hv4   | TESTING!!!
         move.l  hint_2_scroll_y_positions,d0
         move.l  hint_2_scroll_x_positions,d1
         |bra.s   4f
@@ -3350,7 +3358,20 @@ crsr_y:
         dc.w    0
 dbug_color:
         dc.w    0
-        
+
+test_start:
+        dc.l    0x12345678
+record_hv1:
+        dc.w    0
+record_hv2:
+        dc.w    0
+record_hv3:
+        dc.w    0
+record_hv4:
+        dc.w    0
+test_end:
+        dc.l    0x87654321
+
 scroll_b_vert_offset_top:
         dc.w    0
 scroll_b_vert_offset_bottom:
