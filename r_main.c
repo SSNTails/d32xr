@@ -78,6 +78,9 @@ __attribute__((aligned(4)))
 unsigned int distortion_line_bit_shift[8];	// Last index unused; only for making the compiler happy.
 
 __attribute__((aligned(2)))
+volatile byte copper_table_selection;
+
+__attribute__((aligned(2)))
 short copper_color_index;
 
 __attribute__((aligned(2)))
@@ -87,13 +90,13 @@ __attribute__((aligned(2)))
 short copper_vertical_rate;
 
 __attribute__((aligned(2)))
-unsigned short copper_neutral_color;
+unsigned short copper_neutral_color[2];
 
 __attribute__((aligned(2)))
 unsigned short copper_table_height;
 
 __attribute__((aligned(4)))
-volatile unsigned short *copper_color_table = NULL;
+volatile unsigned short *copper_color_table[2] = { NULL, NULL };
 
 __attribute__((aligned(16)))
 pixel_t* viewportbuffer;
@@ -486,13 +489,13 @@ VINT CalcFlatSize(int lumplength)
 
 
 __attribute((noinline))
-static void R_SetupSkyGradient(char *name)
+static void R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
 {
 	// Retrieve lump for drawing the sky gradient.
 	uint8_t *sky_gradient_ptr;
 
 	effects_enabled &= (0xFF ^ EFFECTS_MASK_COPPER);
-	copper_color_table = NULL;
+	copper_color_table[table_bank] = NULL;
 
 	//uint32_t sky_gradient_size;
 	
@@ -500,7 +503,10 @@ static void R_SetupSkyGradient(char *name)
 
 	char lumpname[9];
 
-	D_snprintf(lumpname, 8, "%sGRA", name);
+	D_snprintf(lumpname, 8, "%sC", name);
+	int digit_index = mystrlen(lumpname);
+	lumpname[digit_index] = '0' + copper_lump;
+	lumpname[digit_index+1] = '\0';
 	lump = W_CheckNumForName(lumpname);
 	if (lump == -1) {
 		return;
@@ -511,7 +517,7 @@ static void R_SetupSkyGradient(char *name)
 	sky_gradient_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
 	//sky_gradient_size = W_LumpLength(lump);
 
-	copper_neutral_color = (sky_gradient_ptr[0] << 8) | (sky_gradient_ptr[1] & 0xFF);
+	copper_neutral_color[table_bank] = (sky_gradient_ptr[0] << 8) | (sky_gradient_ptr[1] & 0xFF);
 	copper_table_height = (sky_gradient_ptr[2] + 1) << 2;
 	//copper_table_count = sky_gradient_ptr[3];
 	copper_vertical_offset = (sky_gradient_ptr[4] << 8) | (sky_gradient_ptr[5] & 0xFF);
@@ -525,7 +531,7 @@ static void R_SetupSkyGradient(char *name)
 
 	int table_index = 0;
 
-	copper_color_table = Z_Malloc(sizeof(unsigned short) * copper_table_height, PU_LEVEL); // Put it on the heap
+	copper_color_table[table_bank] = Z_Malloc(sizeof(unsigned short) * copper_table_height, PU_LEVEL); // Put it on the heap
 
 	switch (section_format)
 	{
@@ -537,7 +543,7 @@ static void R_SetupSkyGradient(char *name)
 				unsigned short height = data[2] + 1;
 
 				for (int line=0; line < height; line++) {
-					copper_color_table[table_index + line] = color;
+					copper_color_table[table_bank][table_index + line] = color;
 				}
 
 				table_index += height;
@@ -560,7 +566,7 @@ static void R_SetupSkyGradient(char *name)
 
 				for (int interval = 0; interval < interval_iterations; interval++) {
 					for (int line=0; line < interval_height; line++) {
-						copper_color_table[table_index + line] =
+						copper_color_table[table_bank][table_index + line] =
 								(((*(unsigned char *)&blue) & 0xF8) << 7)
 								| (((*(unsigned char *)&green) & 0xF8) << 2)
 								| ((*(unsigned char *)&red) >> 3);
@@ -585,7 +591,7 @@ static void R_SetupSkyGradient(char *name)
 	unsigned short color = (data[0] << 8) | data[1];
 
 	while (table_index < copper_table_height) {
-		copper_color_table[table_index] = color;
+		copper_color_table[table_bank][table_index] = color;
 		table_index++;
 	}
 }
@@ -858,10 +864,10 @@ nocache:
 	R_InitTexCacheZone(&r_texcache, 0);
 }
 
-void R_SetupBackground(char *background)
+void R_SetupBackground(char *background, int copper_lump)
 {
 	#ifdef MDSKY
-	R_SetupSkyGradient(background);
+	R_SetupSkyGradient(background, copper_lump, 0);
 
 	R_SetupMDSky(background);
 	#endif
@@ -869,7 +875,7 @@ void R_SetupBackground(char *background)
 
 void R_SetupLevel(int gamezonemargin, char *background)
 {
-	R_SetupBackground(background);
+	R_SetupBackground(background, 1);
 
 	R_SetupTextureCaches(gamezonemargin);
 

@@ -651,8 +651,14 @@ pri_h_irq:
         nop
 
 1:
+        mov.l   phi_copper_table_selection,r2
+        mov.b   @r2,r2                  /* Dereference the pointer */
+        shll2   r2
+
         mov.l   phi_copper_color_table_ptr,r1
+        add     r2,r1
         mov.l   @r1,r1                  /* Dereference the pointer */
+
         mov.w   @(r0,r1),r0
         mov.w   phi_color_mask,r1
         and     r1,r0
@@ -681,6 +687,8 @@ phi_sh2_frtctl:
 
 phi_last_hint:
         .long   0xE0
+phi_copper_table_selection:
+        .long   _copper_table_selection
 phi_copper_neutral_color:
         .long   _copper_neutral_color
 phi_copper_color_index:

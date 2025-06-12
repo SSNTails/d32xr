@@ -603,7 +603,8 @@ void START_LevelSelect (void)
 
 	R_InitColormap();
 
-	R_SetupBackground("MENU");
+	R_SetupBackground("MENU", 1);
+	copper_table_selection = 0;
 
 	SetTransition(TransitionType_Entering);
 }

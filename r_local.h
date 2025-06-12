@@ -324,7 +324,7 @@ int		R_DefaultViewportSize(void); // returns the viewport id for fullscreen, low
 void	R_SetDrawMode(void);
 void    R_SetFlatData(int f, uint8_t *start, int size);
 void    R_ResetTextures(void);
-void	R_SetupBackground(char *background);
+void	R_SetupBackground(char *background, int copper_lump);
 void	R_SetupLevel(int gamezonemargin, char *background);
 void	R_SetupTextureCaches(int gamezonemargin);
 // killough 4/13/98: fake floors/ceilings for deep water / fake ceilings:
@@ -400,6 +400,11 @@ extern unsigned int distortion_line_bit_shift[8];	// Last index unused; only for
 #ifdef MARS
 __attribute__((aligned(2)))
 #endif
+extern volatile byte copper_table_selection;
+
+#ifdef MARS
+__attribute__((aligned(2)))
+#endif
 extern short copper_color_index;
 
 #ifdef MARS
@@ -415,7 +420,7 @@ extern short copper_vertical_rate;
 #ifdef MARS
 __attribute__((aligned(2)))
 #endif
-extern unsigned short copper_neutral_color;
+extern unsigned short copper_neutral_color[2];
 
 #ifdef MARS
 __attribute__((aligned(2)))
@@ -425,7 +430,7 @@ extern unsigned short copper_table_height;
 #ifdef MARS
 __attribute__((aligned(4)))
 #endif
-extern volatile unsigned short *copper_color_table;
+extern volatile unsigned short *copper_color_table[2];
 
 #ifdef MARS
 __attribute__((aligned(16)))
