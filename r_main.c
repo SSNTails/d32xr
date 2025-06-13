@@ -873,6 +873,11 @@ void R_SetupBackground(char *background, int copper_lump)
 	#endif
 }
 
+void R_SetupCopperTable(char *background, int copper_lump, int table_bank)
+{
+	R_SetupSkyGradient(background, copper_lump, table_bank);
+}
+
 void R_SetupLevel(int gamezonemargin, char *background)
 {
 	R_SetupBackground(background, 1);

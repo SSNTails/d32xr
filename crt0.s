@@ -628,6 +628,9 @@ pri_h_irq:
 
 0:
         /* Copper */
+        mov.l   r3,@-r15
+        mov.l   r4,@-r15
+
         mov.l   phi_copper_color_index,r1
         mov.w   @r1,r0
 
@@ -645,20 +648,27 @@ pri_h_irq:
         nop
 
         mov.l   phi_copper_neutral_color,r1
-        mov.w   @r1,r0
+        mov.w   @r1,r2
         
         bra     2f
         nop
 
 1:
-        mov.l   phi_copper_table_selection,r2
-        mov.b   @r2,r2                  /* Dereference the pointer */
-        shll2   r2
+        mov.l   phi_copper_table_selection,r0
+        mov.b   @r0,r0                  /* Dereference the pointer */
+        mov     r0,r3
+        and     #0x10,r0
+        shlr2   r0
 
         mov.l   phi_copper_color_table_ptr,r1
-        add     r2,r1
+        mov     r1,r4
+        add     r0,r1                   /* Current table */
+        xor     #4,r0
+        add     r0,r4                   /* Next table */
         mov.l   @r1,r1                  /* Dereference the pointer */
+        mov.l   @r4,r4                  /* Dereference the pointer */
 
+        mov     r2,r0
         mov.w   @(r0,r1),r0
         mov.w   phi_color_mask,r1
         and     r1,r0
@@ -666,6 +676,9 @@ pri_h_irq:
 2:
         mov.l   phi_mars_thru_color,r1
         mov.w   r0,@r1
+
+        mov.l   @r15+,r4
+        mov.l   @r15+,r3
 
 
         nop

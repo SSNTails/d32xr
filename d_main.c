@@ -522,6 +522,14 @@ int TIC_LevelSelect (void)
 
 	screenCount++;
 
+	if (copper_table_selection & 0xF) {
+		copper_table_selection++;
+
+		if (!(copper_table_selection & 0xF)) {
+			copper_table_selection &= 0x10;
+		}
+	}
+
 	if (gameaction == ga_nothing
 			&& ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
 			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B))))
@@ -573,6 +581,10 @@ int TIC_LevelSelect (void)
 
 			char buf[512];
 			G_FindMapinfo(G_LumpNumForMapNum(startmap), &selected_map_info, buf);
+
+			int next_bank = (copper_table_selection >> 4) ^ 1;
+			R_SetupCopperTable("MENU", next_bank, next_bank);
+			copper_table_selection = (copper_table_selection & 0x10) + 1;
 		}
 	}
 
