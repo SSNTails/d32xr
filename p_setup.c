@@ -336,8 +336,8 @@ void P_LoadThings (int lump)
 	if (gamemapinfo.act == 3)
 	{
 		// Bosses spawn lots of stuff, so preallocate more.
-		numthingsreal += 96;
-		numstaticthings += 64;
+		numthingsreal += 512;
+		numstaticthings += 256;
 	}
 
 	P_PreSpawnMobjs(numthingsreal, numstaticthings, numringthings, numscenerymobjs);

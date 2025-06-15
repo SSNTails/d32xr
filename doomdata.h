@@ -64,6 +64,7 @@ typedef struct
 #define	ML_DONTPEGBOTTOM	16
 #define ML_CULLING			32	/* Cull this line by distance */
 #define ML_NOCLIMB			64
+#define ML_UNDERWATERONLY  128 /* Cull line if view is out of water */
 #define	ML_MIDTEXTUREBLOCK  512	/* Collide with midtexture (fences, etc.) */
 
 /* to aid move clipping */

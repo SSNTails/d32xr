@@ -828,6 +828,12 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    rbsp->lastangle1 = angle1;
    rbsp->lastangle2 = angle2;
 
+   if (ldflags[line->linedef] & ML_UNDERWATERONLY && !vd.underwater)
+      return;
+
+   if ((ldflags[line->linedef] & ML_CULLING) && (D_abs(vd.viewx - (v1->x << FRACBITS)) > 2048*FRACUNIT || D_abs(vd.viewy - (v1->y << FRACBITS)) > 2048*FRACUNIT))
+      return;
+
    x1 = R_ClipToViewEdges(angle1, angle2);
    if (x1 <= 0)
       return;
@@ -837,8 +843,6 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    // decide which clip routine to use
    side = line->sideoffset & 1;
    ldef = &lines[line->linedef];
-   if ((ldflags[line->linedef] & ML_CULLING) && P_AproxDistance(vd.viewx - (v1->x << FRACBITS), vd.viewy - (v1->y << FRACBITS)) > 2048*FRACUNIT)
-      return;
 
    sidedef = &sides[ldef->sidenum[side]];
    const sector_t *frontsector = rbsp->curfsector;
