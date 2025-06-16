@@ -630,20 +630,24 @@ pri_h_irq:
         /* Copper */
         mov.l   r3,@-r15
         mov.l   r4,@-r15
+        mov.l   r5,@-r15
+        mov.l   r6,@-r15
+        mov.l   r7,@-r15
+        sts.l   macl,@-r15
 
         mov.l   phi_copper_color_index,r1
-        mov.w   @r1,r0
+        mov.w   @r1,r2
 
         mov.l   phi_line,r1
-        mov.l   @r1,r2
-        add     r2,r0
-        add     r0,r0
+        mov.l   @r1,r0
+        add     r0,r2
+        add     r2,r2
 
-        add     #1,r2
-        mov.l   r2,@r1
+        add     #1,r0
+        mov.l   r0,@r1
 
         mov.l   phi_last_hint,r1
-        cmp/ge  r1,r2
+        cmp/ge  r1,r0
         bf      1f
         nop
 
@@ -656,27 +660,123 @@ pri_h_irq:
 1:
         mov.l   phi_copper_table_selection,r0
         mov.b   @r0,r0                  /* Dereference the pointer */
-        mov     r0,r3
-        and     #0x10,r0
+        mov     r0,r6
+        mov     #0x0F,r1
+        and     r1,r6                   /* R6 has the transition number */
+        and     #0x10,r0                /* R0 has the table bank number (times 16) */
         shlr2   r0
 
         mov.l   phi_copper_color_table_ptr,r1
         mov     r1,r4
-        add     r0,r1                   /* Current table */
+        add     r0,r1                   /* R1 = Current table */
         xor     #4,r0
-        add     r0,r4                   /* Next table */
+        add     r0,r4                   /* R4 = Next table */
         mov.l   @r1,r1                  /* Dereference the pointer */
         mov.l   @r4,r4                  /* Dereference the pointer */
 
         mov     r2,r0
-        mov.w   @(r0,r1),r0
+        mov.w   @(r0,r1),r2             /* Get color from current table */
+        mov.w   @(r0,r4),r3             /* Get color from next table */
         mov.w   phi_color_mask,r1
-        and     r1,r0
+        and     r1,r2                   /* Remove priority bit from current table color */
+        and     r1,r3                   /* Remove priority bit from next table color */
+
+        /* Calculate the transition color */
+        mov     #0x1F,r1
+
+        mov     r2,r4                   /* R4 = Current color */
+        and     r1,r4                   /* R4 = Current red color */
+        mov     r3,r5                   /* R5 = Next color */
+        and     r1,r5                   /* R5 = Next red color */
+
+        mov.w   r4,@-r15                /* Push current red to stack */
+        mov.w   r5,@-r15                /* Push next red to stack */
+        shlr2   r2                      /* Shift current color down 5 bits */
+        shlr2   r2
+        shlr    r2
+        shlr2   r3                      /* Shift next color down 5 bits */
+        shlr2   r3
+        shlr    r3
+        
+        mov     r2,r4                   /* R4 = Current color (shifted down 5 bits) */
+        and     r1,r4                   /* R4 = Current green color */
+        mov     r3,r5                   /* R5 = Next color (shifted down 5 bits) */
+        and     r1,r5                   /* R5 = Next green color */
+
+        mov.w   r4,@-r15                /* Push current green to stack */
+        mov.w   r5,@-r15                /* Push next green to stack */
+        shlr2   r2                      /* Shift current color down 5 bits */
+        shlr2   r2
+        shlr    r2
+        shlr2   r3                      /* Shift next color down 5 bits */
+        shlr2   r3
+        shlr    r3
+        
+        mov     r2,r4                   /* R4 = Current color (shifted down 10 bits) */
+        and     r1,r4                   /* R4 = Current blue color */
+        mov     r3,r5                   /* R5 = Next color (shifted down 10 bits) */
+        and     r1,r5                   /* R5 = Next blue color */
+
+        mov     #0,r3                   /* Clear R3 so we can use it for the transitioned color */
+        mov     #3,r7                   /* Run transition loop three times, once per color channel */
+
+transition_color_loop:
+        mov     #0,r0
+        mov     r4,r1   /* Copy of current color */
+
+        cmp/hi  r5,r4   /* Is current color higher than next color? */
+        bt      222f    /* If true, branch */
+
+111:
+        sub     r4,r5   /* R4 - R5 */
+        mulu.w  r5,r6   /* R5 * R6 */
+        sts     macl,r0 /* Put multiplcation product in R0 */
+        shlr2   r0
+        shlr2   r0      /* R0 / 16 */
+        !mov     #0x1F,r2
+        !and     r2,r0
+
+        add     r0,r1   /* Transitioned color */
+        bra     333f
+        nop
+
+222:
+        sub     r5,r4   /* R4 - R5 */
+        mulu.w  r4,r6   /* R4 * R6 */
+        sts     macl,r0 /* Put multiplcation product in R0 */
+        shlr2   r0
+        shlr2   r0      /* R0 / 16 */
+        !mov     #0x1F,r2
+        !and     r2,r0
+
+        sub     r0,r1   /* Transitioned color */
+
+333:
+        shll2   r3
+        shll2   r3
+        shll    r3
+        or      r1,r3
+
+        dt      r7
+        bt      444f
+
+        mov.w   @r15+,r5
+        mov.w   @r15+,r4
+        bra     transition_color_loop
+        nop
+
+444:
+        mov     r3,r2
 
 2:
+        /* Update the palette with the new color */
         mov.l   phi_mars_thru_color,r1
-        mov.w   r0,@r1
+        mov.w   r2,@r1
 
+        lds.l   @r15+,macl
+        mov.l   @r15+,r7
+        mov.l   @r15+,r6
+        mov.l   @r15+,r5
         mov.l   @r15+,r4
         mov.l   @r15+,r3
 
