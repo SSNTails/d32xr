@@ -30,6 +30,7 @@ typedef struct
 {
 	char *name;
 	char *sky;
+	VINT zone;
 	VINT act;
 	VINT next;
 	VINT skyOffsetY;

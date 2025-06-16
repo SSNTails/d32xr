@@ -582,9 +582,20 @@ int TIC_LevelSelect (void)
 			char buf[512];
 			G_FindMapinfo(G_LumpNumForMapNum(startmap), &selected_map_info, buf);
 
+			boolean mid_transition = (copper_table_selection & 0xF);
+
+			copper_table_selection &= 0x10;
+
 			int next_bank = (copper_table_selection >> 4) ^ 1;
-			R_SetupCopperTable("MENU", next_bank, next_bank);
-			copper_table_selection = (copper_table_selection & 0x10) + 1;
+			if (R_SetupCopperTable("MENU", selected_map_info.zone, next_bank) == -1)
+			{
+				R_SetupCopperTable("MENU", 0, next_bank);
+			}
+
+			if (mid_transition) {
+				copper_table_selection = (copper_table_selection ^ 0x10);
+			}
+			copper_table_selection++;
 		}
 	}
 

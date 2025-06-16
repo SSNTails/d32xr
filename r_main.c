@@ -489,7 +489,7 @@ VINT CalcFlatSize(int lumplength)
 
 
 __attribute((noinline))
-static void R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
+static int R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
 {
 	// Retrieve lump for drawing the sky gradient.
 	uint8_t *sky_gradient_ptr;
@@ -509,7 +509,7 @@ static void R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
 	lumpname[digit_index+1] = '\0';
 	lump = W_CheckNumForName(lumpname);
 	if (lump == -1) {
-		return;
+		return -1;
 	}
 
 	// This map uses a gradient.
@@ -594,6 +594,8 @@ static void R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
 		copper_color_table[table_bank][table_index] = color;
 		table_index++;
 	}
+
+	return 0;
 }
 
 
@@ -873,9 +875,9 @@ void R_SetupBackground(char *background, int copper_lump)
 	#endif
 }
 
-void R_SetupCopperTable(char *background, int copper_lump, int table_bank)
+int R_SetupCopperTable(char *background, int copper_lump, int table_bank)
 {
-	R_SetupSkyGradient(background, copper_lump, table_bank);
+	return R_SetupSkyGradient(background, copper_lump, table_bank);
 }
 
 void R_SetupLevel(int gamezonemargin, char *background)
