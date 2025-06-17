@@ -922,10 +922,9 @@ static void R_ColorShiftPalette(const uint8_t *in, int idx, uint8_t *out)
 		{ 0x00, 0x00, 0x00, -5,  5 }, // 10
 
 		// Misc.
-		{ 215, 186, 69, 3, 8 }, // 11	//TODO: Update this!
-		{ 215, 186, 69, 4, 8 }, // 12	//TODO: Update this!
-		{ 0, 255, 0, 1, 8 }, // 13		//TODO: Update this!
-		{ 0, 0, 255, 1, 8 }, // 14		//TODO: Update this!
+		{ 0x40, 0xA0, 0xFF,  1,  2 }, // 11 - GFZ water
+		{ 0x80, 0x80, 0x80,  1,  2 }, // 12 - Pause
+		{ 0xB7, 0xB7, 0xB7,  1,  2 }, // 13 - THZ water
 	};
 
 	static const uint8_t classic_palette_shifts[][4] = {
