@@ -240,6 +240,8 @@ static void G_AddMapinfoKey(char* key, char* value, dmapinfo_t* mi)
 
 	if (!D_strcasecmp(key, "next"))
 		mi->next = W_GetNumForName(value);
+	else if (!D_strcasecmp(key, "zone"))
+		mi->zone = D_atoi(value);
 	else if (!D_strcasecmp(key, "act"))
 		mi->act = D_atoi(value);
 	else if (!D_strcasecmp(key, "borderFlat"))
