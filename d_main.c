@@ -522,14 +522,6 @@ int TIC_LevelSelect (void)
 
 	screenCount++;
 
-	if (copper_table_selection & 0xF) {
-		copper_table_selection++;
-
-		if (!(copper_table_selection & 0xF)) {
-			copper_table_selection &= 0x10;
-		}
-	}
-
 	if (gameaction == ga_nothing
 			&& ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
 			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B))))
@@ -596,6 +588,13 @@ int TIC_LevelSelect (void)
 				copper_table_selection = (copper_table_selection ^ 0x10);
 			}
 			copper_table_selection++;
+		}
+		else if (copper_table_selection & 0xF) {
+			copper_table_selection++;
+
+			if (!(copper_table_selection & 0xF)) {
+				copper_table_selection &= 0x10;
+			}
 		}
 	}
 

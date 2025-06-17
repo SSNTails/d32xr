@@ -640,6 +640,7 @@ pri_h_irq:
 
         mov.l   phi_line,r1
         mov.l   @r1,r0
+        mov     r0,r7           /* Copy line number to R7 for later use */
         add     r0,r2
         add     r2,r2
 
@@ -665,6 +666,46 @@ pri_h_irq:
         and     r1,r6                   /* R6 has the transition number */
         and     #0x10,r0                /* R0 has the table bank number (times 16) */
         shlr2   r0
+
+        !!! Delay transitions based on the raster number !!!
+        shlr2   r7
+        shlr    r7
+        mov     r7,r3
+        mov     #1,r4
+        and     r4,r3                   /* R3 = Raster number (divided by 8, and 8) */
+        shlr    r7                      /* R7 = Raster number (divided by 16) */
+        mov     #6,r5
+        cmp/hi  r5,r7
+        bt      200f
+100:
+        ! Top half of the screen
+        sub     r7,r5
+        sub     r5,r6
+        shll    r6
+        add     r3,r6
+        bra     300f
+        nop
+200:
+        ! Lower half of the screen
+        mov     #7,r5
+        sub     r5,r7
+        sub     r7,r6
+        shll    r6
+        sub     r3,r6
+300:
+        mov     #0,r4
+        cmp/ge  r4,r6
+        bt      500f
+400:
+        mov     r4,r6
+        bra     600f
+        nop
+500:
+        mov     #16,r4
+        cmp/gt  r4,r6
+        bf      600f
+        mov     r4,r6
+600:
 
         mov.l   phi_copper_color_table_ptr,r1
         mov     r1,r4
