@@ -271,8 +271,8 @@ void Mars_Secondary(void)
 		case MARS_SECCMD_R_DRAW_SPRITES:
 			Mars_Sec_R_DrawSprites(MARS_SYS_COMM6);
 			break;
-		case MARS_SECCMD_M_ANIMATE_FIRE:
-			Mars_Sec_M_AnimateFire();
+		case MARS_SECCMD_UNUSED:
+//			Mars_Sec_M_AnimateFire();
 			break;
 		case MARS_SECCMD_S_INIT_DMA:
 			Mars_Sec_InitSoundDMA(MARS_SYS_COMM6);
@@ -436,7 +436,7 @@ void* I_RemapLumpPtr(void *ptr)
 ==================== 
 */ 
  
-static char zone[0x33000] __attribute__((aligned(16)));
+static char zone[0x31000] __attribute__((aligned(16)));
 byte *I_ZoneBase (int *size)
 {
 	*size = sizeof(zone);

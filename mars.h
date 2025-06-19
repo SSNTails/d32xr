@@ -44,13 +44,13 @@ enum
 	MARS_SECCMD_R_DRAW_FOFPLANES,
 	MARS_SECCMD_R_DRAW_SPRITES,
 
-	MARS_SECCMD_M_ANIMATE_FIRE,
+	MARS_SECCMD_UNUSED,
 
 	MARS_SECCMD_S_INIT_DMA,
 
 	MARS_SECCMD_P_SIGHT_CHECKS,
 
-	MARS_SECCMD_MELT_DO_WIPE,
+	MARS_SECCMD_UNUSED2,
 
 	MARS_SECCMD_NUMCMDS
 };
@@ -129,18 +129,6 @@ static inline void Mars_R_EndDrawSprites(void)
 {
 }
 
-static inline void Mars_M_BeginDrawFire(void)
-{
-	Mars_R_SecWait();
-	MARS_SYS_COMM4 = MARS_SECCMD_M_ANIMATE_FIRE;
-}
-
-static inline void Mars_M_EndDrawFire(void)
-{
-	MARS_SYS_COMM4 = MARS_SECCMD_BREAK;
-	Mars_R_SecWait();
-}
-
 static inline void Mars_InitSoundDMA(int initfull)
 {
 	Mars_R_SecWait();
@@ -157,18 +145,6 @@ static inline void Mars_P_BeginCheckSights(void)
 }
 
 static inline void Mars_P_EndCheckSights(void)
-{
-	while (MARS_SYS_COMM4 != 0);
-}
-
-static inline void Mars_melt_BeginWipe(void)
-{
-	while (MARS_SYS_COMM4 != 0) {};
-	MARS_SYS_COMM6 = 0;
-	MARS_SYS_COMM4 = MARS_SECCMD_MELT_DO_WIPE;
-}
-
-static inline void Mars_melt_EndWipe(void)
 {
 	while (MARS_SYS_COMM4 != 0);
 }

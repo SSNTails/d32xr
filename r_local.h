@@ -727,6 +727,7 @@ ATTR_DATA_CACHE_ALIGN
 
 visplane_t *R_FindPlaneFOF(fixed_t height, VINT flatandlight,
 	int start, int stop, uint16_t offs)
+ATTR_DATA_CACHE_ALIGN
 ;
 visplane_t *R_FindPlane(fixed_t height, VINT flatandlight,
 	int start, int stop, uint16_t offs)

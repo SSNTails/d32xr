@@ -34,45 +34,6 @@
 
 static jagobj_t *intro_titlepic;
 
-void Mars_Sec_M_AnimateFire(void)
-{
-	int start;
-
-	Mars_ClearCache();
-
-	start = I_GetTime();
-	while (MARS_SYS_COMM4 == MARS_SECCMD_M_ANIMATE_FIRE)
-	{
-		int duration = I_GetTime() - start;
-		if (duration > FIRE_STOP_TICON - 20)
-		{
-			// Fade to white
-			int palIndex = duration - (FIRE_STOP_TICON - 20);
-			palIndex /= 4;
-			if (palIndex > 5)
-				palIndex = 5;
-
-			const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-			R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
-		}
-		else if (duration < 20 && start >= 0)
-		{
-			// Fade in from black
-			int palIndex = 10 - (duration / 4);
-
-			const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-			R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
-		}
-		else if (duration < 22 && start >= 0)
-		{
-			const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-			I_SetPalette(dc_playpals);
-		}
-	}
-
-	Mars_ClearCache();
-}
-
 /* 
 ================ 
 = 
@@ -99,7 +60,6 @@ void I_InitMenuFire(jagobj_t *titlepic)
 		}
 	}
 
-	Mars_M_BeginDrawFire();
 	S_StartSong(gameinfo.titleMus, 0, cdtrack_title);
 }
 
@@ -112,8 +72,6 @@ void I_InitMenuFire(jagobj_t *titlepic)
 */
 void I_StopMenuFire(void)
 {
-	Mars_M_EndDrawFire();
-
 	Mars_ClearCache();
 }
 
