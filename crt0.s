@@ -606,9 +606,10 @@ pri_h_irq:
         mov.l   phi_effects_enabled,r1
         mov.b   @r1,r0
         tst     #1,r0   ! T=1 if distortion bit is zero
-        movt    r0
+        movt    r2
         bt/s    0f
 
+do_distortion:
         mov.l   phi_line,r1
         mov.l   @r1,r0
         shlr2   r0
@@ -626,8 +627,25 @@ pri_h_irq:
         
 
 
-0:
         /* Copper */
+        mov.l   phi_effects_enabled,r1
+        mov.b   @r1,r0
+0:
+        tst     #2,r0   ! T=1 if distortion bit is zero
+        movt    r2
+        bf/s    do_copper
+
+        nop
+        nop
+        nop
+        nop
+
+        ! handle H IRQ (remove nops if more than 8 cycles)
+
+        rts
+        nop
+
+do_copper:
         mov.l   r3,@-r15
         mov.l   r4,@-r15
         mov.l   r5,@-r15
@@ -663,9 +681,9 @@ pri_h_irq:
         mov.b   @r0,r0                  /* Dereference the pointer */
         mov     r0,r6
         mov     #0x0F,r1
-        and     r1,r6                   /* R6 has the transition number */
-        and     #0x10,r0                /* R0 has the table bank number (times 16) */
-        shlr2   r0
+        and     r1,r6                   /* R6 = Transition number */
+        and     #0x10,r0
+        shlr2   r0                      /* R0 = Table bank number (times 4) */
 
         !!! Delay transitions based on the raster number !!!
         shlr2   r7
@@ -821,7 +839,7 @@ transition_color_loop:
         mov.l   @r15+,r4
         mov.l   @r15+,r3
 
-
+3:
         nop
         nop
         nop

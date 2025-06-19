@@ -401,7 +401,7 @@ extern unsigned int distortion_line_bit_shift[8];	// Last index unused; only for
 #ifdef MARS
 __attribute__((aligned(2)))
 #endif
-extern volatile byte copper_table_selection;
+extern byte copper_table_selection;
 
 #ifdef MARS
 __attribute__((aligned(2)))

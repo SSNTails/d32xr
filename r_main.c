@@ -78,7 +78,7 @@ __attribute__((aligned(4)))
 unsigned int distortion_line_bit_shift[8];	// Last index unused; only for making the compiler happy.
 
 __attribute__((aligned(2)))
-volatile byte copper_table_selection;
+byte copper_table_selection;
 
 __attribute__((aligned(2)))
 short copper_color_index;
@@ -494,8 +494,12 @@ static int R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
 	// Retrieve lump for drawing the sky gradient.
 	uint8_t *sky_gradient_ptr;
 
-	effects_enabled &= (0xFF ^ EFFECTS_MASK_COPPER);
-	copper_color_table[table_bank] = NULL;
+	effects_enabled &= (~EFFECTS_MASK_COPPER);
+
+	if (copper_color_table[table_bank]) {
+		Z_Free(copper_color_table[table_bank]);
+		copper_color_table[table_bank] = NULL;
+	}
 
 	//uint32_t sky_gradient_size;
 	
@@ -513,7 +517,6 @@ static int R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
 	}
 
 	// This map uses a gradient.
-	effects_enabled |= EFFECTS_MASK_COPPER;
 	sky_gradient_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
 	//sky_gradient_size = W_LumpLength(lump);
 
@@ -531,7 +534,7 @@ static int R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
 
 	int table_index = 0;
 
-	copper_color_table[table_bank] = Z_Malloc(sizeof(unsigned short) * copper_table_height, PU_LEVEL); // Put it on the heap
+	copper_color_table[table_bank] = Z_Malloc(sizeof(unsigned short) * copper_table_height, PU_STATIC); // Put it on the heap
 
 	switch (section_format)
 	{
@@ -594,6 +597,9 @@ static int R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
 		copper_color_table[table_bank][table_index] = color;
 		table_index++;
 	}
+
+	// Enable copper effects now that we have finished constructing the table.
+	effects_enabled |= EFFECTS_MASK_COPPER;
 
 	return 0;
 }
@@ -870,6 +876,8 @@ void R_SetupBackground(char *background, int copper_lump)
 {
 	#ifdef MDSKY
 	R_SetupSkyGradient(background, copper_lump, 0);
+
+	copper_table_selection = 0;
 
 	R_SetupMDSky(background);
 	#endif
