@@ -49,7 +49,6 @@ static boolean PB_CheckLine(line_t* ld, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_CrossCheck(line_t* ld, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_CheckPosition(pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_TryMove(pmovetest_t *mt, mobj_t* mo, fixed_t tryx, fixed_t tryy) ATTR_DATA_CACHE_ALIGN;
-static void P_FloatChange(mobj_t* mo);
 void P_MobjThinker(mobj_t* mobj) ATTR_DATA_CACHE_ALIGN;
 
 // P_FloorzAtPos
@@ -481,33 +480,6 @@ void P_XYMovement(mobj_t *mo)
       return; // no friction when airborne
 
    P_ApplyFriction(mo);
-}
-
-//
-// Float a flying monster up or down.
-//
-__attribute((noinline))
-static void P_FloatChange(mobj_t *mo)
-{
-   mobj_t *target;
-   fixed_t dist, delta;
-
-   if (mo->type == MT_SKIM || mo->type == MT_EGGMOBILE2)
-      return;
-
-   target = mo->target;                              // get the target object
-   delta  = (target->z + (mo->theight >> (FRACBITS-1))) - mo->z; // get the height difference
-   
-   dist   = P_AproxDistance(target->x - mo->x, target->y - mo->y);
-   delta *= 3;
-
-   if(delta < 0)
-   {
-      if(dist < -delta)
-         mo->z -= FLOATSPEED; // adjust height downward
-   }
-   else if(dist < delta)
-      mo->z += FLOATSPEED;    // adjust height upward
 }
 
 //

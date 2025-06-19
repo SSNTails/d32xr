@@ -324,8 +324,8 @@ int		R_DefaultViewportSize(void); // returns the viewport id for fullscreen, low
 void	R_SetDrawMode(void);
 void    R_SetFlatData(int f, uint8_t *start, int size);
 void    R_ResetTextures(void);
-void	R_SetupBackground(char *background, int copper_lump);
-int		R_SetupCopperTable(char *background, int copper_lump, int table_bank);
+void	R_SetupBackground(const char *background, int copper_lump);
+int		R_SetupCopperTable(const char *background, int copper_lump, int table_bank);
 void	R_SetupLevel(int gamezonemargin, char *background);
 void	R_SetupTextureCaches(int gamezonemargin);
 // killough 4/13/98: fake floors/ceilings for deep water / fake ceilings:

@@ -489,7 +489,7 @@ VINT CalcFlatSize(int lumplength)
 
 
 __attribute((noinline))
-static int R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
+static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 {
 	// Retrieve lump for drawing the sky gradient.
 	uint8_t *sky_gradient_ptr;
@@ -507,10 +507,7 @@ static int R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
 
 	char lumpname[9];
 
-	D_snprintf(lumpname, 8, "%sC", name);
-	int digit_index = mystrlen(lumpname);
-	lumpname[digit_index] = '0' + copper_lump;
-	lumpname[digit_index+1] = '\0';
+	D_snprintf(lumpname, 8, "%sC%02d", name, copper_lump);
 	lump = W_CheckNumForName(lumpname);
 	if (lump == -1) {
 		return -1;
@@ -607,7 +604,7 @@ static int R_SetupSkyGradient(char *name, int copper_lump, int table_bank)
 
 #ifdef MDSKY
 __attribute((noinline))
-static void R_SetupMDSky(char *name)
+static void R_SetupMDSky(const char *name)
 {
 	// Retrieve lumps for drawing the sky on the MD.
 	uint8_t *sky_metadata_ptr;
@@ -872,7 +869,7 @@ nocache:
 	R_InitTexCacheZone(&r_texcache, 0);
 }
 
-void R_SetupBackground(char *background, int copper_lump)
+void R_SetupBackground(const char *background, int copper_lump)
 {
 	#ifdef MDSKY
 	R_SetupSkyGradient(background, copper_lump, 0);
@@ -883,7 +880,7 @@ void R_SetupBackground(char *background, int copper_lump)
 	#endif
 }
 
-int R_SetupCopperTable(char *background, int copper_lump, int table_bank)
+int R_SetupCopperTable(const char *background, int copper_lump, int table_bank)
 {
 	return R_SetupSkyGradient(background, copper_lump, table_bank);
 }

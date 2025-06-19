@@ -1129,8 +1129,10 @@ void START_Title(void)
 void STOP_Title (void)
 {
 	if (titlepic != NULL)
+	{
 		Z_Free (titlepic);
 		titlepic = NULL;
+	}
 
 	I_StopMenuFire();
 }
