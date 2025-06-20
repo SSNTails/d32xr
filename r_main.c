@@ -507,7 +507,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 
 	char lumpname[9];
 
-	D_snprintf(lumpname, 8, "%sC%02d", name, copper_lump);
+	D_snprintf(lumpname, 8, "%sC%d", name, copper_lump);
 	lump = W_CheckNumForName(lumpname);
 	if (lump == -1) {
 		return -1;
