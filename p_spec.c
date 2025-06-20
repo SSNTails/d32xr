@@ -26,6 +26,8 @@ static const animdef_t	animdefs[] =
 	{true,  "TFALL4",   "TFALL1"},
 	{true,  "UP3D",     "UP3A"},
 	{true,  "UP5C",     "UP5A"},
+	{true, "REDEGG2", "STATIC2"},
+	{true, "REDEGG3", "REDEGG2"},
 
 	{-1}
 };
