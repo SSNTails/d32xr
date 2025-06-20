@@ -43,8 +43,6 @@ typedef struct localplane_s
 #endif
 } localplane_t;
 
-static void (*mapplane)(localplane_t*, int, int, int);
-
 static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2) ATTR_DATA_CACHE_ALIGN;
 static void R_MapColorPlane(localplane_t* lpl, int y, int x, int x2) ATTR_DATA_CACHE_ALIGN;
 static void R_PlaneLoop(localplane_t* lpl) ATTR_DATA_CACHE_ALIGN;
@@ -202,6 +200,7 @@ static void R_PlaneLoop(localplane_t *lpl)
     unsigned t1, t2, b1, b2, pl_oldtop, pl_oldbottom;
     int16_t spanstart[SCREENHEIGHT];
     visplane_t* pl = lpl->pl;
+    void (*mapplane)(localplane_t*, int, int, int);
 
     pl_x       = pl->minx;
     pl_stopx   = pl->maxx;
