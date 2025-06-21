@@ -516,6 +516,13 @@ unsigned short screenCount = 0;
 int8_t selected_map = 0;
 dmapinfo_t selected_map_info;
 
+static short lvlsel;
+static short lvlselstatic[3];
+static short arrowl;
+static short arrowr;
+static short chevblku;
+static short chevblkd;
+
 int TIC_LevelSelect (void)
 {
 	int exit = ga_nothing;
@@ -560,16 +567,25 @@ int TIC_LevelSelect (void)
 			if (selected_map < 0) {
 				selected_map = gamemapcount-1;
 			}
+			oldticrealbuttons != BT_LEFT;
 		}
 		else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
 			selected_map += 1;
 			if (selected_map == gamemapcount) {
 				selected_map = 0;
 			}
+			oldticrealbuttons != BT_RIGHT;
 		}
 
 		if (selected_map != prev_selected_map) {
 			startmap = gamemapnumbers[selected_map];
+
+			char lvlsel_name[9] = { 'L','V','L','S','E','L','0','0','\0' };
+
+			lvlsel_name[6] += (startmap / 10);
+			lvlsel_name[7] += (startmap % 10);
+
+			lvlsel = W_CheckNumForName(lvlsel_name);
 
 			char buf[512];
 			G_FindMapinfo(G_LumpNumForMapNum(startmap), &selected_map_info, buf);
@@ -628,6 +644,16 @@ void START_LevelSelect (void)
 	R_SetupCopperTable("MENU", 1, 1);
 
 	SetTransition(TransitionType_Entering);
+
+	lvlsel = W_CheckNumForName("LVLSEL01");
+	lvlselstatic[0] = W_CheckNumForName("LVLSELS1");
+	lvlselstatic[1] = W_CheckNumForName("LVLSELS2");
+	lvlselstatic[2] = W_CheckNumForName("LVLSELS3");
+
+	arrowl = W_CheckNumForName("ARROWL");
+	arrowr = W_CheckNumForName("ARROWR");
+	chevblku = W_CheckNumForName("CHEVBLKU");
+	chevblkd = W_CheckNumForName("CHEVBLKD");
 }
 
 void STOP_LevelSelect (void)
@@ -642,27 +668,6 @@ void DRAW_LevelSelect (void)
 	Mars_FadeMDPaletteFromBlack(0xEEE);
 
 	Mars_SetScrollPositions(0, 0, 0, screenCount >> 1, 0, 0, 0, 0);
-
-	//int srb2tile = W_CheckNumForName("SRB2TILE");
-
-	char lvlsel_name[9] = { 'L','V','L','S','E','L','0','0','\0' };
-
-	lvlsel_name[6] += (startmap / 10);
-	lvlsel_name[7] += (startmap % 10);
-
-	int lvlsel = W_CheckNumForName(lvlsel_name);
-
-	if (lvlsel == -1) {
-		lvlsel_name[6] = 'S';
-		lvlsel_name[7] = '1' + ((screenCount >> 2) % 3);
-
-		lvlsel = W_CheckNumForName(lvlsel_name);
-	}
-
-	int arrowl = W_CheckNumForName("ARROWL");
-	int arrowr = W_CheckNumForName("ARROWR");
-	int chevblku = W_CheckNumForName("CHEVBLKU");
-	int chevblkd = W_CheckNumForName("CHEVBLKD");
 
 	int arrow_offset = ((screenCount>>2) & 7) * (((screenCount>>2) & 0x8) == 0);
 	if (arrow_offset > 3) {
@@ -729,7 +734,12 @@ void DRAW_LevelSelect (void)
 	DrawJagobjLump(arrowr, ((320-16)>>1)+96 + arrow_offset, 112, NULL, NULL);
 
 	// Draw level picture
-	DrawJagobjLump(lvlsel, (320-96)>>1, 72, NULL, NULL);
+	if (lvlsel == -1) {
+		DrawJagobjLump(lvlselstatic[((screenCount >> 2) % 3)], (320-96)>>1, 72, NULL, NULL);
+	}
+	else {
+		DrawJagobjLump(lvlsel, (320-96)>>1, 72, NULL, NULL);
+	}
 
 	// Draw black lines
 	DrawLine(82, 58, 160, 0x1F, false);
