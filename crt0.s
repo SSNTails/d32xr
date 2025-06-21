@@ -727,11 +727,9 @@ do_copper:
 
         mov.l   phi_copper_color_table_ptr,r1
         mov     r1,r4
-        add     r0,r1                   /* R1 = Current table */
+        mov.l   @(r0,r1),r1             /* R1 = Current table */
         xor     #4,r0
-        add     r0,r4                   /* R4 = Next table */
-        mov.l   @r1,r1                  /* Dereference the pointer */
-        mov.l   @r4,r4                  /* Dereference the pointer */
+        mov.l   @(r0,r4),r4             /* R4 = Next table */
 
         mov     r2,r0
         mov.w   @(r0,r1),r2             /* Get color from current table */
