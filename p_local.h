@@ -122,17 +122,17 @@ extern int8_t *ringmobjtics;
 #define ONFLOORZ	D_MININT
 #define	ONCEILINGZ	D_MAXINT
 
-fixed_t FloorZAtPos(const sector_t *sec, fixed_t z, fixed_t height);
-fixed_t CeilingZAtPos(const sector_t *sec, fixed_t z, fixed_t height);
+fixed_t FloorZAtPos(const sector_t *sec, fixed_t z, fixed_t height) ATTR_DATA_CACHE_ALIGN;
+fixed_t CeilingZAtPos(const sector_t *sec, fixed_t z, fixed_t height) ATTR_DATA_CACHE_ALIGN;
 
 mobj_t *P_FindFirstMobjOfType(uint16_t type);
 void P_BlackOw(player_t *player);
 void P_Attract(mobj_t *source, mobj_t *dest);
-fixed_t GetWatertopSec(const sector_t *sector);
-fixed_t GetWatertopMo(const mobj_t *mo);
+fixed_t GetWatertopSec(const sector_t *sector) ATTR_DATA_CACHE_ALIGN;
+fixed_t GetWatertopMo(const mobj_t *mo) ATTR_DATA_CACHE_ALIGN;
 
 boolean Mobj_HasFlags2(mobj_t *mo, VINT value) ATTR_DATA_CACHE_ALIGN;
-void P_SetObjectMomZ(mobj_t *mo, fixed_t value, boolean relative);
+void P_SetObjectMomZ(mobj_t *mo, fixed_t value, boolean relative) ATTR_DATA_CACHE_ALIGN;
 mobj_t *P_SpawnMobjNoSector (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
 mobj_t *P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
 
@@ -158,8 +158,8 @@ void P_ExplodeMissile (mobj_t *mo);
 int 	P_MapThingSpawnsMobj(mapthing_t* mthing); /* 0 -- skip, 1 -- real thing, 2 -- static */
 void	P_SpawnMapThing(mapthing_t* mthing, int thingid);
 
-fixed_t Mobj_GetHeight(mobj_t *mo);
-fixed_t Mobj_GetHalfHeight(mobj_t *mo);
+fixed_t Mobj_GetHeight(mobj_t *mo) ATTR_DATA_CACHE_ALIGN;
+fixed_t Mobj_GetHalfHeight(mobj_t *mo) ATTR_DATA_CACHE_ALIGN;
 
 /*
 ===============================================================================
@@ -219,6 +219,7 @@ uint8_t P_GetLineSpecial(line_t *line);
 
 ===============================================================================
 */
+void GetSectorAABB(sector_t *sector, fixed_t bbox[4]) ATTR_DATA_CACHE_ALIGN;
 
 boolean P_CheckSight (mobj_t *t1, mobj_t *t2);
 void 	P_UseLines (player_t *player);

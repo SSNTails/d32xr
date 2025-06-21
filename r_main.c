@@ -96,7 +96,7 @@ __attribute__((aligned(2)))
 unsigned short copper_table_height;
 
 __attribute__((aligned(4)))
-volatile unsigned short *copper_color_table[2] = { NULL, NULL };
+unsigned short *copper_color_table[2] = { NULL, NULL };
 
 __attribute__((aligned(16)))
 pixel_t* viewportbuffer;
