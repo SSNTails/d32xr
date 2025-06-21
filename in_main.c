@@ -118,10 +118,12 @@ static void Y_AwardSpecialStageBonus(void)
 static VINT intertic = 0;
 static VINT endtic = 0;
 static VINT tallydonetic = -1;
+static VINT tileLump = -1;
 
 void IN_Start (void)
 {
 	intertype = int_spec;
+	tileLump = W_GetNumForName("SPECTILE");
 
 	Y_AwardSpecialStageBonus();
 
@@ -347,7 +349,7 @@ void IN_Drawer (void)
 		I_SetPalette(dc_playpals); // Normal
 	}
 
-	DrawTiledBackground2(W_GetNumForName("SPECTILE"));
+	DrawTiledBackground2(tileLump);
 
 	if (intertype == int_spec)
 	{
