@@ -96,7 +96,7 @@ __attribute__((aligned(2)))
 unsigned short copper_table_height;
 
 __attribute__((aligned(4)))
-volatile unsigned short *copper_color_table[2] = { NULL, NULL };
+unsigned short *copper_color_table[2] = { NULL, NULL };
 
 __attribute__((aligned(16)))
 pixel_t* viewportbuffer;
@@ -875,6 +875,7 @@ void R_SetupBackground(const char *background, int copper_lump)
 	R_SetupSkyGradient(background, copper_lump, 0);
 
 	copper_table_selection = 0;
+	copper_color_index = 0;
 
 	R_SetupMDSky(background);
 	#endif

@@ -574,7 +574,6 @@ int TIC_LevelSelect (void)
 			char buf[512];
 			G_FindMapinfo(G_LumpNumForMapNum(startmap), &selected_map_info, buf);
 
-			//DLG: This seems to cause problems...
 			if (copper_table_selection & 0xF) {
 				copper_table_selection ^= 0x10;
 			}
@@ -626,11 +625,7 @@ void START_LevelSelect (void)
 	R_InitColormap();
 
 	R_SetupBackground("MENU", 1);
-
-	if (copper_color_table[1]) {
-		Z_Free(copper_color_table[1]);
-		copper_color_table[1] = NULL;
-	}
+	R_SetupCopperTable("MENU", 1, 1);
 
 	SetTransition(TransitionType_Entering);
 }
