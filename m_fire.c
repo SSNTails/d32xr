@@ -48,7 +48,6 @@ void I_InitMenuFire(jagobj_t *titlepic)
 
 	titlepic_start = I_GetTime();
 
-	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4), dc_cshift_playpals);
 
 	intro_titlepic = titlepic;
@@ -104,7 +103,6 @@ void I_DrawMenuFire(void)
 		if (palIndex > 5)
 			palIndex = 5;
 
-		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 		R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
 	}
 	else if (duration < 20 && titlepic_start >= 0)
@@ -112,12 +110,10 @@ void I_DrawMenuFire(void)
 		// Fade in from black
 		int palIndex = 10 - (duration / 4);
 
-		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 		R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
 	}
 	else if (duration < 22 && titlepic_start >= 0)
 	{
-		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 		I_SetPalette(dc_playpals);
 	}
 }

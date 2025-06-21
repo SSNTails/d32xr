@@ -823,6 +823,19 @@ void P_SpawnSpecials (void)
 			}
 			break;
 		}
+		case 160: // Water bobbing FOF
+		{
+			VINT sec = sides[*lines[i].sidenum].sector;
+			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
+			{
+				sectors[s].fofsec = sec;
+				sectors[sec].specline = i;
+
+				// These are always SF_FOF_SWAPHEIGHTS
+				sectors[s].flags |= SF_FOF_SWAPHEIGHTS;
+			}
+			break;
+		}
 		case 178: // Crumbling, respawn, floating
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;

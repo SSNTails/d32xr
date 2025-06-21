@@ -74,7 +74,6 @@ void F_Start (void)
 	S_StartSong(gameinfo.victoryMus, 1, cdtrack_end);
 
 	// Set this to black, prep for fade-in.
-	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4), dc_cshift_playpals);
 
 	R_InitColormap();
@@ -85,7 +84,6 @@ void F_Start (void)
 
 void F_Stop (void)
 {
-	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	I_SetPalette(dc_playpals);
 
 	R_InitColormap();
@@ -110,8 +108,6 @@ int F_Ticker (void)
 		if (!F_NextCard())
 			return 1;
 	}
-
-	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 
 	if (cardTimer >= CARDTIME - 12)
 	{

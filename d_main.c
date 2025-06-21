@@ -635,7 +635,6 @@ void START_LevelSelect (void)
 
 	UpdateBuffer();
 
-	const byte *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	I_SetPalette(dc_playpals);
 
 	R_InitColormap();
@@ -659,7 +658,6 @@ void START_LevelSelect (void)
 void STOP_LevelSelect (void)
 {
 	// Set to totally black
-	const byte *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
 }
 
@@ -791,7 +789,6 @@ void START_Compatibility (void)
 
 	UpdateBuffer();
 
-	const byte *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	I_SetPalette(dc_playpals);
 
 	R_InitColormap();
@@ -800,7 +797,6 @@ void START_Compatibility (void)
 void STOP_Compatibility (void)
 {
 	// Set to totally black
-	const byte *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
 }
 
@@ -901,7 +897,6 @@ int TIC_Disclaimer(void)
 	if (screenCount == 270)
 	{
 		// Set to totally black
-		const byte *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 		R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
 	}
 

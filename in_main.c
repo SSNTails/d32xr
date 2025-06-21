@@ -170,7 +170,6 @@ void IN_Start (void)
 	DoubleBufferSetup ();
 #endif
 
-	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4), dc_cshift_playpals); // Completely white
 
 	// Remove water distortion filter from both frame buffers.
@@ -330,7 +329,6 @@ void IN_Drawer (void)
 		if (palette < 0)
 			palette = 0;
 
-		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 		R_FadePalette(dc_playpals, palette, dc_cshift_playpals); // Fade from white to normal
 	}
 	else if (endtic != -1 && endtic - intertic < TICRATE / 2)
@@ -342,12 +340,10 @@ void IN_Drawer (void)
 		if (endtic <= intertic)
 			palette = 10;
 
-		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 		R_FadePalette(dc_playpals, palette, dc_cshift_playpals); // Fade from normal to black
 	}
 	else
 	{
-		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 		I_SetPalette(dc_playpals); // Normal
 	}
 
