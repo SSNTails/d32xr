@@ -675,6 +675,11 @@ return;	/*DEBUG */
 		mobj_t *eggmech = P_SpawnMobj(x, y, z, MT_EGGMOBILE_MECH);
 		eggmech->target = mobj;
 	}
+	else if (mobj->type == MT_EGGMOBILE2)
+	{
+		mobj_t *eggmech = P_SpawnMobj(x, y, z, MT_EGGMOBILE2_MECH);
+		eggmech->target = mobj;
+	}
 
 	if (mobj->flags & MF_RINGMOBJ)
 		return;

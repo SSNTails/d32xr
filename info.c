@@ -22,6 +22,7 @@ const char * const sprnames[NUMSPRITES] = {
 "DUST",
 "EGG1",
 "EGGM",
+"EGG2",
 "EGGN",
 "EGLZ",
 "ELEM",
@@ -625,6 +626,9 @@ STATE2(SPR_LASF,FF_FULLBRIGHT|1,1,A_ChangeHeight,156,3,S_LASERFLAME3), // S_LASE
 STATE2(SPR_LASF,FF_FULLBRIGHT|2,0,A_ChangeHeight,32,3,S_LASERFLAME4), // S_LASERFLAME3
 STATE(SPR_LASF,FF_FULLBRIGHT|2,4,NULL,S_LASERFLAME4A), // S_LASERFLAME4
 STATE(SPR_LASF,FF_FULLBRIGHT|3,2,NULL,S_NULL), // S_LASERFLAME4A
+
+// Boss 2
+STATE(SPR_EGG2,0,-1,NULL,S_EGGMOBILE2_MECH),   // S_EGGMOBILE2_MECH
 
 STATE(SPR_EGGN,0,-1,NULL,S_NULL), // S_EGGMOBILE2_STND
 STATE(SPR_EGGN,1,4,NULL,S_EGGMOBILE2_POGO2), // S_EGGMOBILE2_POGO1
@@ -1242,6 +1246,31 @@ MF2_SHOOTABLE, // flags2
 		sfx_telept,        // activesound
 		MF_SPECIAL|MF_NOGRAVITY, // flags
 		MF2_SHOOTABLE|MF2_FLOAT|MF2_ENEMY|MF2_FORWARDOFFSET, // flags2
+	},
+	{           // MT_EGGMOBILE_MECH
+		-1,               // doomednum
+		S_EGGMOBILE2_MECH,  // spawnstate
+		8,                 // spawnhealth
+		S_NULL,  // seestate
+		sfx_None,          // seesound
+		45,                // reactiontime
+		sfx_None,          // attacksound
+		S_NULL,  // painstate
+		0,                 // painchance
+		sfx_s3k_6e,        // painsound
+		S_NULL, // meleestate
+		S_NULL, // missilestate
+		S_NULL,  // deathstate
+		S_NULL, // xdeathstate
+		sfx_s3k_b4,         // deathsound
+		4,                 // speed
+		36*FRACUNIT,       // radius
+		84*FRACUNIT,       // height
+		S_NULL,// mass
+		3,                 // damage
+		sfx_telept,        // activesound
+		MF_NOBLOCKMAP|MF_NOGRAVITY|MF_NOCLIP, // flags
+		0, // flags2
 	},
 	{           // MT_EGGMOBILE2
 		201,               // doomednum

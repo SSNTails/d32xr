@@ -923,6 +923,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
             P_Boss1Thinker(mobj);
             break;
          case MT_EGGMOBILE_MECH:
+         case MT_EGGMOBILE2_MECH:
             mobj->angle = mobj->target->angle;
             P_UnsetThingPosition(mobj);
             mobj->x = mobj->target->x;
