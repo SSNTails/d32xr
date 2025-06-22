@@ -10,13 +10,16 @@
 #endif
 
 static boolean R_SegBehindPoint(viswall_t *viswall, int dx, int dy) ATTR_DATA_CACHE_ALIGN;
+#ifdef FLOOR_OVER_FLOOR
 void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx) ATTR_DATA_CACHE_ALIGN;
+#endif
 void R_DrawMaskedSegRange(viswall_t *seg, int x, int stopx) ATTR_DATA_CACHE_ALIGN;
 void R_DrawVisSprite(vissprite_t* vis, unsigned short* spropening, int sprscreenhalf) ATTR_DATA_CACHE_ALIGN;
 void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreenhalf, int16_t *walls) ATTR_DATA_CACHE_ALIGN;
 static void R_DrawSortedSprites(int* sortedsprites, int sprscreenhalf) ATTR_DATA_CACHE_ALIGN;
 void R_Sprites(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 
+#ifdef FLOOR_OVER_FLOOR
 void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
 {
    uint8_t *patch;
@@ -153,6 +156,7 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
       }
    }
 }
+#endif
 
 void R_DrawMaskedSegRange(viswall_t *seg, int x, int stopx)
 {
@@ -593,10 +597,10 @@ void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
 
       if((ds->scalefrac < scalefrac && ds->scale2 < scalefrac) ||
          ((ds->scalefrac <= scalefrac || ds->scale2 <= scalefrac) && R_SegBehindPoint(ds, vis->gx, vis->gy))) {
-
+#ifdef FLOOR_OVER_FLOOR
          if ((ds->actionbits & AC_FOFSIDE) && ds->fof_texturenum != 0xff)
             R_DrawFOFSegRange(ds, r1, r2);
-
+#endif
          if (ds->actionbits & AC_MIDTEXTURE)
             R_DrawMaskedSegRange(ds, r1, r2);
 
@@ -784,10 +788,10 @@ static void R_DrawSortedSprites(int* sortedsprites, int sprscreenhalf)
       ds = vd.viswalls + *pwalls++;
       r1 = ds->start < x1 ? x1 : ds->start;
       r2 = ds->stop  > x2 ? x2 : ds->stop;
-
+#ifdef FLOOR_OVER_FLOOR
       if ((ds->actionbits & AC_FOFSIDE) && ds->fof_texturenum != 0xff)
          R_DrawFOFSegRange(ds, r1, r2);
-
+#endif
       if (ds->actionbits & AC_MIDTEXTURE)
          R_DrawMaskedSegRange(ds, r1, r2);
 

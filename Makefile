@@ -31,7 +31,7 @@ CCFLAGS += -DFLOOR_OVER_FLOOR
 #CCFLAGS += -DHIDE_PLAYER
 CCFLAGS += -DSHOW_COMPATIBILITY_PROMPT
 #CCFLAGS += -DSHOW_DISCLAIMER
-CCFLAGS += -DBENCHMARK
+#CCFLAGS += -DBENCHMARK
 LDFLAGS = -T mars-ssf.ld -Wl,-Map=output.map -nostdlib -Wl,--gc-sections,--sort-section=alignment --specs=nosys.specs
 ASFLAGS = --big
 

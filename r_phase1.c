@@ -201,7 +201,9 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    const short liflags = ldflags[li-lines];
    static sector_t ftempsec;
    static sector_t btempsec;
+   #ifdef FLOOR_OVER_FLOOR
    segl->fofSector = -1;
+   #endif
 
    front_sector = R_FakeFlat(front_sector, &ftempsec, false);
 
@@ -329,6 +331,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             actionbits |= (AC_SOLIDSIL|AC_TOPTEXTURE);                   // solid line; draw middle texture only
          }
 
+#ifdef FLOOR_OVER_FLOOR
          if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
          {
             const sector_t *fofsec = &sectors[front_sector->fofsec];
@@ -352,6 +355,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                *fofInfo = fofsec->floorheight;
             }
          }
+#endif
       }
       else
       {
@@ -389,6 +393,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             actionbits |= AC_MIDTEXTURE; // set bottom and top masks
          }
 
+#ifdef FLOOR_OVER_FLOOR
          if (back_sector->fofsec >= 0 && !(back_sector->flags & SF_FOF_SWAPHEIGHTS))
          {
             const sector_t *fofsec = &sectors[back_sector->fofsec];
@@ -464,6 +469,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             if (b_ceilingheight < fofsec->floorheight - vd.viewz)
                *fofInfo = b_ceilingheight;*/
          }
+#endif
 
          // is bottom texture visible?
          if(b_floorheight > f_floorheight && !floorskyhack)

@@ -294,6 +294,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
             }
         }
 
+#ifdef FLOOR_OVER_FLOOR
         if (segl->fofSector >= 0 && (actionbits & (AC_FOFFLOOR|AC_FOFCEILING|AC_FOFSIDE)) && segl->fof_picnum != 0xff)
         {
             //
@@ -438,6 +439,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                 }
             }
         }
+#endif
     }
 }
 
