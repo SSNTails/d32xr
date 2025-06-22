@@ -204,7 +204,7 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
 
          if (light == OPENMARK)
             continue;
-   //      maskedcol[x] = OPENMARK;
+         maskedcol[x] = OPENMARK;
 
    #ifdef MARS
          volatile int32_t t;
