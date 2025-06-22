@@ -305,7 +305,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 
       const sidetex_t *st = SIDETEX(si);
 
-      if (!(li->sidenum[1] >= 0))
+      if (li->sidenum[1] < 0)
       {
          // single-sided line
 //         if (si->midtexture > 0)
@@ -360,7 +360,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       else
       {
          // two-sided line
-//         if (si->midtexture > 0)
+//         if (st->midtexture > 0)
          {
             segl->m_texturenum = texturetranslation[st->midtexture];
             if(liflags & ML_DONTPEGBOTTOM)

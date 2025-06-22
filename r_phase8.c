@@ -13,7 +13,7 @@ static boolean R_SegBehindPoint(viswall_t *viswall, int dx, int dy) ATTR_DATA_CA
 #ifdef FLOOR_OVER_FLOOR
 void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx) ATTR_DATA_CACHE_ALIGN;
 #endif
-void R_DrawMaskedSegRange(viswall_t *seg, int x, int stopx) ATTR_DATA_CACHE_ALIGN;
+void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx) ATTR_DATA_CACHE_ALIGN;
 void R_DrawVisSprite(vissprite_t* vis, unsigned short* spropening, int sprscreenhalf) ATTR_DATA_CACHE_ALIGN;
 void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreenhalf, int16_t *walls) ATTR_DATA_CACHE_ALIGN;
 static void R_DrawSortedSprites(int* sortedsprites, int sprscreenhalf) ATTR_DATA_CACHE_ALIGN;
@@ -158,24 +158,17 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
 }
 #endif
 
-void R_DrawMaskedSegRange(viswall_t *seg, int x, int stopx)
+void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
 {
-   patch_t *patch;
    fixed_t  spryscale, scalefrac, fracstep;
    uint16_t *spropening, *maskedcol;
-#ifdef MARS
-	inpixel_t 	*pixels;
-#else
-	pixel_t		*pixels;		/* data patch header references */
-#endif
    texture_t  *texture;
    int widthmask;
 
    if (x > stopx)
       return;
 
-   texture   = &textures[seg->m_texturenum];
-   if (texture->lumpnum < firstsprite || texture->lumpnum >= firstsprite + numsprites)
+   if (texturenum == 0)
       return;
 
    if (x <= seg->start && seg->start <= stopx)
@@ -183,120 +176,235 @@ void R_DrawMaskedSegRange(viswall_t *seg, int x, int stopx)
    if (stopx >= seg->stop && seg->stop <= x)
       seg->stop = x - 1;
 
-   patch     = W_POINTLUMPNUM(texture->lumpnum);
-   pixels    = /*W_POINTLUMPNUM(texture->lumpnum+1)*/texture->data[0];
-
    spropening = seg->clipbounds;
    maskedcol  = seg->clipbounds + (seg->realstop - seg->realstart + 1);
 
+   texture   = &textures[texturenum];
    widthmask = texture->width - 1;
    fracstep  = seg->scalestep;
    scalefrac = seg->scalefrac + (x - seg->realstart) * fracstep;
 
    I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
 
-   for(; x <= stopx; x++)
+   if (texture->lumpnum < firstsprite || texture->lumpnum >= firstsprite + numsprites)
    {
-      int light          = maskedcol[x] & OPENMARK;
-      int colnum         = maskedcol[x] & widthmask;
+      uint8_t *patch = texture->data[0];
 
-#ifdef WALLDRAW2X
-      spryscale = scalefrac << 1;
-#else
-      spryscale = scalefrac;
-#endif
-      scalefrac += fracstep;  
-
-      if (light == OPENMARK)
-         continue;
-      maskedcol[x] = OPENMARK;
-
-#ifdef MARS
-        volatile int32_t t;
-        __asm volatile (
-           "mov #-128, r0\n\t"
-           "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
-           "mov #0, %0\n\t"
-           "mov.l %0, @(16, r0) /* set high bits of the 64-bit dividend */ \n\t"
-           "mov.l %1, @(0, r0) /* set 32-bit divisor */ \n\t"
-           "mov #-1, %0\n\t"
-           "mov.l %0, @(20, r0) /* set low  bits of the 64-bit dividend, start divide */\n\t"
-           : "=&r" (t) : "r" (scalefrac) : "r0");
-#else
-      fixed_t scale = scalefrac;
-#endif
-
-      int topclip     = (spropening[x] >> 8);
-      int bottomclip  = (spropening[x] & 0xff) - 1;
-      byte *columnptr = ((byte *)patch + BIGSHORT(patch->columnofs[colnum]));
-      fixed_t sprtop, iscale;
-
-      sprtop = FixedMul(seg->m_texturemid, spryscale);
-      sprtop = centerYFrac - sprtop;
-
-#ifdef MARS
-#ifdef WALLDRAW2X
-      __asm volatile (
-         "mov #-128, r0\n\t"
-         "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
-         "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
-         "shar %0\n\t"
-         : "=r" (iscale) : : "r0");
-#else
-      __asm volatile (
-         "mov #-128, r0\n\t"
-         "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
-         "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
-         : "=r" (iscale) : : "r0");
-#endif
-#else
-      iscale = 0xffffffffu / scalefrac;
-#endif
-
-      // column loop
-      // a post record has four bytes: topdelta length pixelofs*2
-      for(; *columnptr != 0xff; columnptr += sizeof(column_t))
+      for(; x <= stopx; x++)
       {
-         column_t *column = (column_t *)columnptr;
-         int top    = column->topdelta * spryscale + sprtop;
-         int bottom = column->length   * spryscale + top;
-         byte *dataofsofs = columnptr + offsetof(column_t, dataofs);
-         int dataofs = (dataofsofs[0] << 8) | dataofsofs[1];
-         int count;
-         fixed_t frac;
-         int temp = FRACUNIT-1;
+         int light          = maskedcol[x] & OPENMARK;
+         int colnum         = maskedcol[x] & widthmask;
 
-#ifdef MARS
-         __asm volatile (
-            "mov #-1, %0\n\t"
-            "extu.w %0, %0\n\t"
-            : "=&r" (temp));
-#endif
-         top += temp;
-         top >>= FRACBITS;
+   #ifdef WALLDRAW2X
+         spryscale = scalefrac << 1;
+   #else
+         spryscale = scalefrac;
+   #endif
+         scalefrac += fracstep;  
 
-         bottom -= 1;
-         bottom >>= FRACBITS;
-
-         // clip to bottom
-         if(bottom > bottomclip)
-            bottom = bottomclip;
-
-         frac = 0;
-
-         // clip to top
-         if(topclip > top)
-         {
-            frac += (topclip - top) * iscale;
-            top = topclip;
-         }
-
-         // calc count
-         count = bottom - top + 1;
-         if(count <= 0)
+         if (light == OPENMARK)
             continue;
+   //      maskedcol[x] = OPENMARK;
 
-         drawcol(x, top, bottom, light, frac, iscale, pixels + BIGSHORT(dataofs), 128);
+   #ifdef MARS
+         volatile int32_t t;
+         __asm volatile (
+            "mov #-128, r0\n\t"
+            "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+            "mov #0, %0\n\t"
+            "mov.l %0, @(16, r0) /* set high bits of the 64-bit dividend */ \n\t"
+            "mov.l %1, @(0, r0) /* set 32-bit divisor */ \n\t"
+            "mov #-1, %0\n\t"
+            "mov.l %0, @(20, r0) /* set low  bits of the 64-bit dividend, start divide */\n\t"
+            : "=&r" (t) : "r" (scalefrac) : "r0");
+   #else
+         fixed_t scale = scalefrac;
+   #endif
+
+         int topclip     = (spropening[x] >> 8);
+         int bottomclip  = (spropening[x] & 0xff) - 1;
+         fixed_t sprtop, iscale;
+
+         sprtop = FixedMul(seg->m_texturemid, spryscale);
+         sprtop = centerYFrac - sprtop;
+
+   #ifdef MARS
+   #ifdef WALLDRAW2X
+         __asm volatile (
+            "mov #-128, r0\n\t"
+            "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+            "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
+            "shar %0\n\t"
+            : "=r" (iscale) : : "r0");
+   #else
+         __asm volatile (
+            "mov #-128, r0\n\t"
+            "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+            "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
+            : "=r" (iscale) : : "r0");
+   #endif
+   #else
+         iscale = 0xffffffffu / scalefrac;
+   #endif
+
+         // column loop
+         // a post record has four bytes: topdelta length pixelofs*2
+         {
+            int top    = sprtop;
+            int bottom = texture->height * spryscale + top;
+            int dataofs = colnum * texture->height;
+            int count;
+            fixed_t frac;
+            int temp = FRACUNIT-1;
+
+   #ifdef MARS
+            __asm volatile (
+               "mov #-1, %0\n\t"
+               "extu.w %0, %0\n\t"
+               : "=&r" (temp));
+   #endif
+            top += temp;
+            top >>= FRACBITS;
+
+            bottom -= 1;
+            bottom >>= FRACBITS;
+
+            // clip to bottom
+            if(bottom > bottomclip)
+               bottom = bottomclip;
+
+            frac = 0;
+
+            // clip to top
+            if(topclip > top)
+            {
+               frac += (topclip - top) * iscale;
+               top = topclip;
+            }
+
+            // calc count
+            count = bottom - top + 1;
+            if(count <= 0)
+               continue;
+
+            drawcol(x, top, bottom, light, frac, iscale, patch + dataofs, texture->height);
+         }
+      }
+   }
+   else
+   {
+      patch_t *patch;
+#ifdef MARS
+	   inpixel_t 	*pixels;
+#else
+	   pixel_t		*pixels;		/* data patch header references */
+#endif
+      patch     = W_POINTLUMPNUM(texture->lumpnum);
+      pixels    = /*W_POINTLUMPNUM(texture->lumpnum+1)*/texture->data[0];
+
+      for(; x <= stopx; x++)
+      {
+         int light          = maskedcol[x] & OPENMARK;
+         int colnum         = maskedcol[x] & widthmask;
+
+   #ifdef WALLDRAW2X
+         spryscale = scalefrac << 1;
+   #else
+         spryscale = scalefrac;
+   #endif
+         scalefrac += fracstep;  
+
+         if (light == OPENMARK)
+            continue;
+         maskedcol[x] = OPENMARK;
+
+   #ifdef MARS
+         volatile int32_t t;
+         __asm volatile (
+            "mov #-128, r0\n\t"
+            "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+            "mov #0, %0\n\t"
+            "mov.l %0, @(16, r0) /* set high bits of the 64-bit dividend */ \n\t"
+            "mov.l %1, @(0, r0) /* set 32-bit divisor */ \n\t"
+            "mov #-1, %0\n\t"
+            "mov.l %0, @(20, r0) /* set low  bits of the 64-bit dividend, start divide */\n\t"
+            : "=&r" (t) : "r" (scalefrac) : "r0");
+   #else
+         fixed_t scale = scalefrac;
+   #endif
+
+         int topclip     = (spropening[x] >> 8);
+         int bottomclip  = (spropening[x] & 0xff) - 1;
+         byte *columnptr = ((byte *)patch + BIGSHORT(patch->columnofs[colnum]));
+         fixed_t sprtop, iscale;
+
+         sprtop = FixedMul(seg->m_texturemid, spryscale);
+         sprtop = centerYFrac - sprtop;
+
+   #ifdef MARS
+   #ifdef WALLDRAW2X
+         __asm volatile (
+            "mov #-128, r0\n\t"
+            "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+            "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
+            "shar %0\n\t"
+            : "=r" (iscale) : : "r0");
+   #else
+         __asm volatile (
+            "mov #-128, r0\n\t"
+            "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+            "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
+            : "=r" (iscale) : : "r0");
+   #endif
+   #else
+         iscale = 0xffffffffu / scalefrac;
+   #endif
+
+         // column loop
+         // a post record has four bytes: topdelta length pixelofs*2
+         for(; *columnptr != 0xff; columnptr += sizeof(column_t))
+         {
+            column_t *column = (column_t *)columnptr;
+            int top    = column->topdelta * spryscale + sprtop;
+            int bottom = column->length   * spryscale + top;
+            byte *dataofsofs = columnptr + offsetof(column_t, dataofs);
+            int dataofs = (dataofsofs[0] << 8) | dataofsofs[1];
+            int count;
+            fixed_t frac;
+            int temp = FRACUNIT-1;
+
+   #ifdef MARS
+            __asm volatile (
+               "mov #-1, %0\n\t"
+               "extu.w %0, %0\n\t"
+               : "=&r" (temp));
+   #endif
+            top += temp;
+            top >>= FRACBITS;
+
+            bottom -= 1;
+            bottom >>= FRACBITS;
+
+            // clip to bottom
+            if(bottom > bottomclip)
+               bottom = bottomclip;
+
+            frac = 0;
+
+            // clip to top
+            if(topclip > top)
+            {
+               frac += (topclip - top) * iscale;
+               top = topclip;
+            }
+
+            // calc count
+            count = bottom - top + 1;
+            if(count <= 0)
+               continue;
+
+            drawcol(x, top, bottom, light, frac, iscale, pixels + BIGSHORT(dataofs), 128);
+         }
       }
    }
 }
@@ -602,7 +710,7 @@ void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
             R_DrawFOFSegRange(ds, r1, r2);
 #endif
          if (ds->actionbits & AC_MIDTEXTURE)
-            R_DrawMaskedSegRange(ds, r1, r2);
+            R_DrawMaskedSegRange(ds, ds->m_texturenum, r1, r2);
 
          continue;
       }
@@ -793,7 +901,7 @@ static void R_DrawSortedSprites(int* sortedsprites, int sprscreenhalf)
          R_DrawFOFSegRange(ds, r1, r2);
 #endif
       if (ds->actionbits & AC_MIDTEXTURE)
-         R_DrawMaskedSegRange(ds, r1, r2);
+         R_DrawMaskedSegRange(ds, ds->m_texturenum, r1, r2);
 
    } while (*pwalls != -1);
 }
