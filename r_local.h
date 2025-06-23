@@ -431,7 +431,12 @@ extern unsigned short copper_table_height;
 #ifdef MARS
 __attribute__((aligned(4)))
 #endif
-extern unsigned short *copper_color_table[2];
+extern unsigned short *copper_source_table[2];
+
+#ifdef MARS
+__attribute__((aligned(4)))
+#endif
+extern unsigned short *copper_buffer;
 
 #ifdef MARS
 __attribute__((aligned(16)))

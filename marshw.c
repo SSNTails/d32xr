@@ -26,6 +26,7 @@
 
 #include "doomdef.h"
 #include "marshw.h"
+#include "r_local.h"
 
 static volatile uint16_t mars_activescreen = 0;
 
@@ -847,6 +848,83 @@ void pri_vbi_handler(void)
 	{
 		if (Mars_UploadPalette(mars_newpalette))
 			mars_newpalette = NULL;
+	}
+
+	// Update copper buffer
+	if (effects_enabled &= EFFECTS_MASK_COPPER)
+	{
+		short *buffer = copper_buffer;
+
+		if (copper_table_selection & 0xF) {
+			// Transitioning between source tables
+			int transition_frame = copper_table_selection & 0xF;
+			short *next_table = &copper_source_table[(copper_table_selection>>4)^1][copper_color_index];
+			short *prev_table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+
+			for (int y=0; y < 224; y++) {
+				int prev_rgb = *prev_table++;
+				int next_rgb = *next_table++;
+				int buffer_rgb;
+				int prev_color;
+				int next_color;
+				int degree;
+
+				if (y >= 112) {
+					degree = (transition_frame - ((y >> 4) - 7)) << 1;
+				}
+				else {
+					degree = (transition_frame - (6 - (y >> 4))) << 1;
+				}
+
+				if (degree < 0) {
+					degree = 0;
+				}
+				else if (degree > 16) {
+					degree = 16;
+				}
+
+				prev_color = prev_rgb & 0x1F;
+				next_color = next_rgb & 0x1F;
+				if (next_color >= prev_color) {
+					buffer_rgb = (prev_color + (((next_color - prev_color) * degree) >> 4));
+				} else {
+					buffer_rgb = (prev_color - (((prev_color - next_color) * degree) >> 4));
+				}
+
+				prev_rgb >>= 5;
+				next_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				next_color = next_rgb & 0x1F;
+				if (next_color >= prev_color) {
+					buffer_rgb |= ((prev_color + (((next_color - prev_color) * degree) >> 4)) << 5);
+				} else {
+					buffer_rgb |= ((prev_color - (((prev_color - next_color) * degree) >> 4)) << 5);
+				}
+
+				prev_rgb >>= 5;
+				next_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				next_color = next_rgb & 0x1F;
+				if (next_color >= prev_color) {
+					buffer_rgb |= ((prev_color + (((next_color - prev_color) * degree) >> 4)) << 10);
+				} else {
+					buffer_rgb |= ((prev_color - (((prev_color - next_color) * degree) >> 4)) << 10);
+				}
+
+				*buffer++ = buffer_rgb;
+			}
+		}
+		else {
+			// Straight copy from the selected source table to the copper buffer
+			short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+
+			for (int y=0; y < (224>>2); y++) {
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+			}
+		}
 	}
 }
 

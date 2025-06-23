@@ -96,7 +96,10 @@ __attribute__((aligned(2)))
 unsigned short copper_table_height;
 
 __attribute__((aligned(4)))
-unsigned short *copper_color_table[2] = { NULL, NULL };
+unsigned short *copper_source_table[2] = { NULL, NULL };
+
+__attribute__((aligned(4)))
+unsigned short *copper_buffer = NULL;
 
 __attribute__((aligned(16)))
 pixel_t* viewportbuffer;
@@ -496,9 +499,9 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 
 	effects_enabled &= (~EFFECTS_MASK_COPPER);
 
-	if (copper_color_table[table_bank]) {
-		Z_Free(copper_color_table[table_bank]);
-		copper_color_table[table_bank] = NULL;
+	if (copper_source_table[table_bank]) {
+		Z_Free(copper_source_table[table_bank]);
+		copper_source_table[table_bank] = NULL;
 	}
 
 	//uint32_t sky_gradient_size;
@@ -531,7 +534,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 
 	int table_index = 0;
 
-	copper_color_table[table_bank] = Z_Malloc(sizeof(unsigned short) * copper_table_height, PU_STATIC); // Put it on the heap
+	copper_source_table[table_bank] = Z_Malloc(sizeof(unsigned short) * copper_table_height, PU_STATIC); // Put it on the heap
 
 	switch (section_format)
 	{
@@ -543,7 +546,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 				unsigned short height = data[2] + 1;
 
 				for (int line=0; line < height; line++) {
-					copper_color_table[table_bank][table_index + line] = color;
+					copper_source_table[table_bank][table_index + line] = color;
 				}
 
 				table_index += height;
@@ -566,7 +569,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 
 				for (int interval = 0; interval < interval_iterations; interval++) {
 					for (int line=0; line < interval_height; line++) {
-						copper_color_table[table_bank][table_index + line] =
+						copper_source_table[table_bank][table_index + line] =
 								(((*(unsigned char *)&blue) & 0xF8) << 7)
 								| (((*(unsigned char *)&green) & 0xF8) << 2)
 								| ((*(unsigned char *)&red) >> 3);
@@ -591,7 +594,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 	unsigned short color = (data[0] << 8) | data[1];
 
 	while (table_index < copper_table_height) {
-		copper_color_table[table_bank][table_index] = color;
+		copper_source_table[table_bank][table_index] = color;
 		table_index++;
 	}
 
@@ -876,6 +879,17 @@ void R_SetupBackground(const char *background, int copper_lump)
 
 	copper_table_selection = 0;
 	copper_color_index = 0;
+
+	if (copper_source_table[0]) {
+		// Copper is used, so we need to ensure we have a copper buffer.
+		if (copper_buffer == NULL) {
+			copper_buffer = Z_Malloc(sizeof(unsigned short) * 224, PU_STATIC); // Put it on the heap
+		}
+	}
+	else if (copper_buffer) {
+		// Since copper isn't used, we don't need the copper buffer.
+		Z_Free(copper_buffer);
+	}
 
 	R_SetupMDSky(background);
 	#endif
