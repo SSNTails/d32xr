@@ -889,6 +889,7 @@ void R_SetupBackground(const char *background, int copper_lump)
 	else if (copper_buffer) {
 		// Since copper isn't used, we don't need the copper buffer.
 		Z_Free(copper_buffer);
+		copper_buffer = NULL;
 	}
 
 	R_SetupMDSky(background);
