@@ -853,13 +853,13 @@ void pri_vbi_handler(void)
 	// Update copper buffer
 	if (effects_enabled & EFFECTS_MASK_COPPER)
 	{
-		short *buffer = copper_buffer;
+		unsigned short *buffer = copper_buffer;
 
 		if (copper_table_selection & 0xF) {
 			// Transitioning between source tables
 			int transition_frame = copper_table_selection & 0xF;
-			short *next_table = &copper_source_table[(copper_table_selection>>4)^1][copper_color_index];
-			short *prev_table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+			unsigned short *next_table = &copper_source_table[(copper_table_selection>>4)^1][copper_color_index];
+			unsigned short *prev_table = &copper_source_table[copper_table_selection>>4][copper_color_index];
 
 			for (int y=0; y < 224; y++) {
 				int prev_rgb = *prev_table++;
@@ -916,7 +916,7 @@ void pri_vbi_handler(void)
 		}
 		else {
 			// Straight copy from the selected source table to the copper buffer
-			short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+			unsigned short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
 
 			for (int y=0; y < (224>>2); y++) {
 				*buffer++ = *table++;

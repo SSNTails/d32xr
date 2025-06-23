@@ -8,7 +8,7 @@
 #include "p_local.h"
 
 static void R_PrepMobj(mobj_t* thing) ATTR_DATA_CACHE_ALIGN;
-static void R_PrepRing(ringmobj_t* thing, uint8_t scenery) ATTR_DATA_CACHE_ALIGN;
+static void R_PrepRing(ringmobj_t* thing, int scenery) ATTR_DATA_CACHE_ALIGN;
 void R_SpritePrep(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 
 //
