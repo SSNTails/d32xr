@@ -851,7 +851,7 @@ void pri_vbi_handler(void)
 	}
 
 	// Update copper buffer
-	if (effects_enabled &= EFFECTS_MASK_COPPER)
+	if (effects_enabled & EFFECTS_MASK_COPPER)
 	{
 		short *buffer = copper_buffer;
 
