@@ -1146,7 +1146,7 @@ void A_FlickyFly(mobj_t *actor, int16_t var1, int16_t var2)
 
 	actor->reactiontime--;
 	if (actor->reactiontime == 0)
-		actor->latecall = P_RemoveMobj;
+		actor->latecall = LC_REMOVE_MOBJ;
 }
 
 void A_BubbleRise(mobj_t *actor, int16_t var1, int16_t var2)
@@ -1165,7 +1165,7 @@ void A_BubbleRise(mobj_t *actor, int16_t var1, int16_t var2)
 
 	if (sectors[subsectors[actor->isubsector].isector].heightsec < 0
 		|| actor->z + (actor->theight << (FRACBITS-1)) > GetWatertopMo(actor))
-		actor->latecall = P_RemoveMobj;
+		actor->latecall = LC_REMOVE_MOBJ;
 }
 
 // Boss 1 Stuff
@@ -1294,10 +1294,10 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 		dur = actor->tics;
 	else
 	{
-		if ((upperend & 1) && ((int32_t)actor->extradata > 1))
-			actor->extradata = ((int32_t)actor->extradata) - 1;
+		if ((upperend & 1) && (actor->extradata > 1))
+			actor->extradata--;
 
-		dur = (int32_t)actor->extradata;
+		dur = actor->extradata;
 	}
 
 	switch (var2)
@@ -1561,10 +1561,10 @@ void A_PrepareRepeat(mobj_t *actor, int16_t var1, int16_t var2)
 
 void A_Repeat(mobj_t *actor, int16_t var1, int16_t var2)
 {
-	if (var1 && (!actor->extradata || (int32_t)actor->extradata > var1))
+	if (var1 && (!actor->extradata || actor->extradata > var1))
 		actor->extradata = var1;
 
-	actor->extradata = (int)actor->extradata - 1;
+	actor->extradata--;
 	if (actor->extradata > 0)
 		P_SetMobjState(actor, var2);
 }
@@ -1593,7 +1593,7 @@ void A_UnidusBall(mobj_t *actor)
 
 	if (!actor->target || !actor->target->health)
 	{
-		actor->latecall = P_RemoveMobj;
+		actor->latecall = LC_REMOVE_MOBJ;
 		return;
 	}
 
@@ -1718,7 +1718,7 @@ void L_MissileHit (mobj_t *mo)
 	mobj_t	*missilething;
 	const mobjinfo_t* moinfo = &mobjinfo[mo->type];
 
-	missilething = (mobj_t *)mo->extradata;
+	missilething = (mobj_t *)SPTR_TO_LPTR(mo->extradata);
 	if (missilething)
 	{
 		mo->extradata = 0;

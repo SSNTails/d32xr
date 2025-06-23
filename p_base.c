@@ -435,15 +435,6 @@ void P_XYMovement(mobj_t *mo)
       if(!PB_TryMove(&mt, mo, mo->x + xuse, mo->y + yuse))
       {
          // blocked move
-
-         // flying skull?
-/*         if(mo->flags & MF_SKULLFLY)
-         {
-            mo->extradata = (intptr_t)mt.hitthing;
-            mo->latecall = L_SkullBash;
-            return;
-         }*/
-
         if (mo->type == MT_FLINGRING)
         {
             P_BounceMove(mo);
@@ -455,11 +446,11 @@ void P_XYMovement(mobj_t *mo)
          {
             if(mt.ceilingline && mt.ceilingline->sidenum[1] >= 0 && LD_BACKSECTOR(mt.ceilingline)->ceilingpic == (uint8_t)-1)
             {
-               mo->latecall = P_RemoveMobj;
+               mo->latecall = LC_REMOVE_MOBJ;
                return;
             }
-            mo->extradata = (intptr_t)mt.hitthing;
-            mo->latecall = L_MissileHit;
+            mo->extradata = LPTR_TO_SPTR(mt.hitthing);
+            mo->latecall = LC_MISSILE_HIT;
             return;
          }
 
@@ -507,7 +498,7 @@ void P_ZMovement(mobj_t *mo)
       }
       else if (mo->type == MT_GFZDEBRIS)
       {
-         mo->latecall = P_RemoveMobj;
+         mo->latecall = LC_REMOVE_MOBJ;
       }
       else if (mo->type == MT_MEDIUMBUBBLE)
       {
@@ -526,12 +517,12 @@ void P_ZMovement(mobj_t *mo)
          explodemo->momx -= (P_Random() % 96) * FRACUNIT/8;
          explodemo->momy -= (P_Random() % 96) * FRACUNIT/8;
 
-         mo->latecall = P_RemoveMobj;
+         mo->latecall = LC_REMOVE_MOBJ;
       }
       else if (mo->type == MT_SMALLBUBBLE)
       {
          // Hit the floor, so POP!
-         mo->latecall = P_RemoveMobj;
+         mo->latecall = LC_REMOVE_MOBJ;
       }
       else if (mo->type == MT_SIGN)
       {
@@ -545,7 +536,7 @@ void P_ZMovement(mobj_t *mo)
             mo->momz = 0;
          if(mo->flags2 & MF2_MISSILE)
          {
-            mo->latecall = P_ExplodeMissile;
+            mo->latecall = LC_EXPLODE_MISSILE;
             return;
          }
       }
@@ -571,7 +562,7 @@ void P_ZMovement(mobj_t *mo)
       else if (mo->type == MT_SMALLBUBBLE || mo->type == MT_MEDIUMBUBBLE
          || mo->type == MT_EXTRALARGEBUBBLE)
       {
-         mo->latecall = P_RemoveMobj;
+         mo->latecall = LC_REMOVE_MOBJ;
       }
       else
       {
@@ -579,7 +570,7 @@ void P_ZMovement(mobj_t *mo)
             mo->momz = 0;
 
          if(mo->flags2 & MF2_MISSILE)
-            mo->latecall = P_ExplodeMissile;
+            mo->latecall = LC_EXPLODE_MISSILE;
       }
    }
 }
@@ -595,7 +586,7 @@ static void P_Boss1Thinker(mobj_t *mobj)
    {
       if (mobj->extradata)
       {
-         mobj->extradata = (int)mobj->extradata - 1;
+         mobj->extradata--;
          if (!mobj->extradata)
          {
             if (mobj->target)
@@ -685,7 +676,7 @@ static void P_Boss2Thinker(mobj_t *mobj)
    {
       if (mobj->extradata)
       {
-         mobj->extradata = (int)mobj->extradata - 1;
+         mobj->extradata--;
          if (!mobj->extradata)
          {
             if (mobj->target)
@@ -753,7 +744,7 @@ static boolean P_JetFume1Think(mobj_t *mobj)
 
 	if (!mobj->target) // if you have no target
 	{
-		mobj->latecall = P_RemoveMobj; // then remove yourself as well!
+		mobj->latecall = LC_REMOVE_MOBJ; // then remove yourself as well!
 		return false;
 	}
 
@@ -796,7 +787,7 @@ static boolean P_DrownNumbersThink(mobj_t *mobj)
    player_t *player = &players[mobj->target->player - 1];
    if (!(player->powers[pw_underwater]) || player->powers[pw_spacetime])
    {
-      mobj->latecall = P_RemoveMobj;
+      mobj->latecall = LC_REMOVE_MOBJ;
       return false;
    }
 
@@ -834,7 +825,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
 
             if (mobj->threshold == 0)
             {
-               mobj->latecall = P_RemoveMobj;
+               mobj->latecall = LC_REMOVE_MOBJ;
                return false;
             }
             break;
@@ -871,7 +862,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                      P_SetMobjState(mobj, S_FORCB1);
                   else if (!(player->shield == SH_FORCE1 || player->shield == SH_FORCE2))
                   {
-                     mobj->latecall = P_RemoveMobj;
+                     mobj->latecall = LC_REMOVE_MOBJ;
                      return false;
                   }
                }
@@ -885,7 +876,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                   
                    if (player->shield != mobjinfo[mobj->type].painchance)
                    {
-                       mobj->latecall = P_RemoveMobj;
+                       mobj->latecall = LC_REMOVE_MOBJ;
                        return false;
                    }
                }
@@ -914,7 +905,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                      }
                   }
 
-                  mobj->latecall = P_RemoveMobj;
+                  mobj->latecall = LC_REMOVE_MOBJ;
                   return false;
                }
             }
@@ -950,7 +941,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                flingring->momy = mobj->momy;
                flingring->momz = mobj->momz;
                flingring->threshold = 8*TICRATE;
-               mobj->latecall = P_RemoveMobj;
+               mobj->latecall = LC_REMOVE_MOBJ;
                return false;
             }
             else
@@ -1089,27 +1080,39 @@ void P_RunMobjBase2(void)
 
     for (mo = mobjhead.next; mo != (void*)&mobjhead; mo = next)
     {
-        next = mo->next;	// in case mo is removed this time
+      next = mo->next;	// in case mo is removed this time
 /*
          if (mo->flags & MF_RINGMOBJ) // rings or scenery (they don't think, they don't uniquely animate)
             continue;
 */
-        if (!mo->player)
-        {
-#ifdef MARS
-        // clear cache for mobj flags following the sight check as 
-        // the other CPU might have modified the MF_SEETARGET state
-        if (mo->tics == 1)
-            Mars_ClearCacheLine(&mo->flags);
-#endif
-            P_MobjThinker(mo);
+      if (mo->player)
+         continue;
 
-            if (!(mo->flags & MF_STATIC) && mo->latecall && mo->latecall != (latecall_t)-1)
-            {
-                  mo->latecall(mo);
-                  mo->latecall = NULL;
-            }
-        }
+#ifdef MARS
+      // clear cache for mobj flags following the sight check as 
+      // the other CPU might have modified the MF_SEETARGET state
+      if (mo->tics == 1)
+         Mars_ClearCacheLine(&mo->flags);
+#endif
+      P_MobjThinker(mo);
+
+      if (!(mo->flags & MF_STATIC) && mo->latecall != LC_NONE)
+      {
+         switch(mo->latecall)
+         {
+            case LC_MISSILE_HIT:
+               L_MissileHit(mo);
+               break;
+            case LC_EXPLODE_MISSILE:
+               P_ExplodeMissile(mo);
+               break;
+            case LC_REMOVE_MOBJ:
+               P_RemoveMobj(mo);
+               break;
+         }
+
+         mo->latecall = LC_NONE;
+      }
     }
 }
 
