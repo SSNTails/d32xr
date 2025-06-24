@@ -742,11 +742,7 @@ void R_SetTextureData(texture_t *tex, uint8_t *start, int size, boolean skiphead
 
 static boolean IsWavyFlat(byte flatnum)
 {
-    return (flatnum >= 9 && flatnum <= 16) // BWATER
-        || (flatnum >= 24 && flatnum <= 27) // CHEMG
-        || (flatnum >= 43 && flatnum <= 50) // DWATER
-        || (flatnum == 74) // RLAVA1
-        ;
+    return (flatnum >= 9 && flatnum <= 29); // BWATER/CHEMG/DWATER/RLAVA1
 }
 
 /*
@@ -888,6 +884,7 @@ void R_SetupBackground(const char *background, int copper_lump)
 	else if (copper_buffer) {
 		// Since copper isn't used, we don't need the copper buffer.
 		Z_Free(copper_buffer);
+		copper_buffer = NULL;
 	}
 
 	R_SetupMDSky(background);

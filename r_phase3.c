@@ -8,7 +8,7 @@
 #include "p_local.h"
 
 static void R_PrepMobj(mobj_t* thing) ATTR_DATA_CACHE_ALIGN;
-static void R_PrepRing(ringmobj_t* thing, uint8_t scenery) ATTR_DATA_CACHE_ALIGN;
+static void R_PrepRing(ringmobj_t* thing, int scenery) ATTR_DATA_CACHE_ALIGN;
 void R_SpritePrep(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 
 //
@@ -26,8 +26,8 @@ static void R_PrepMobj(mobj_t *thing)
    vissprite_t  *vis;
    VINT         *sprlump;
    VINT          lump;
-   int8_t        flip;
-   const int8_t doubleWide = (thing->flags2 & MF2_NARROWGFX) ? 2 : 1; // Sprites have half the horizontal resolution (like scenery)
+   int        flip;
+   const int doubleWide = (thing->flags2 & MF2_NARROWGFX) ? 2 : 1; // Sprites have half the horizontal resolution (like scenery)
 
    // transform origin relative to viewpoint
    tr_x = thing->x - vd.viewx;
@@ -78,7 +78,7 @@ static void R_PrepMobj(mobj_t *thing)
    xscale = FixedDiv(PROJECTION, tz);
 
    // calculate edges of the shape
-   const fixed_t offset = (BIGSHORT(patch->leftoffset)*doubleWide) << FRACBITS; // yeet
+   const fixed_t offset = (BIGSHORT(patch->leftoffset)*doubleWide) << FRACBITS;
    if (flip < 0)
       tx -= ((BIGSHORT(patch->width)*doubleWide) << FRACBITS) - offset;
    else
@@ -185,7 +185,7 @@ static void R_PrepMobj(mobj_t *thing)
 //   vis->colormaps = dc_colormaps;
 }
 
-static void R_PrepRing(ringmobj_t *thing, uint8_t scenery)
+static void R_PrepRing(ringmobj_t *thing, int scenery)
 {
    fixed_t tr_x, tr_y;
    fixed_t tx, tz, x1, x2;
@@ -197,29 +197,27 @@ static void R_PrepRing(ringmobj_t *thing, uint8_t scenery)
    vissprite_t  *vis;
    const scenerymobj_t *scenerymobj = NULL;
    VINT          lump;
-   int8_t      flip;
-   int8_t     doubleWide = scenery ? 2 : 1;
+   int      flip;
+   int    doubleWide = scenery ? 2 : 1;
    int16_t x, y;
 
-   if (scenery)
+   if (!scenery)
+   {
+      // transform origin relative to viewpoint
+      x = thing->x;
+      y = thing->y;
+   }
+   else
    {
       scenerymobj = (const scenerymobj_t*)thing;
 
       // transform origin relative to viewpoint
       x = scenerymobj->x;
       y = scenerymobj->y;
-      tr_x = (x<<FRACBITS) - vd.viewx;
-      tr_y = (y<<FRACBITS) - vd.viewy;
-   }
-   else
-   {
-      // transform origin relative to viewpoint
-      x = thing->x;
-      y = thing->y;
-      tr_x = (thing->x<<FRACBITS) - vd.viewx;
-      tr_y = (thing->y<<FRACBITS) - vd.viewy;
    }
 
+   tr_x = (x<<FRACBITS) - vd.viewx;
+   tr_y = (y<<FRACBITS) - vd.viewy;
    tz = FixedMul(tr_x, vd.viewcos) + FixedMul(tr_y, vd.viewsin);
 
    // thing is behind view plane?
@@ -238,8 +236,6 @@ static void R_PrepRing(ringmobj_t *thing, uint8_t scenery)
    // We can assume a lot of things here!
    sprdef = &sprites[state->sprite];
 
-   flip = (thingframe & FF_FLIPPED) ? -1 : 1;
-
    sprframe = &spriteframes[sprdef->firstframe + (thingframe & FF_FRAMEMASK)];
    sprlump = &spritelumps[sprframe->lump];
 
@@ -249,6 +245,8 @@ static void R_PrepRing(ringmobj_t *thing, uint8_t scenery)
 
    patch = W_POINTLUMPNUM(lump);
    xscale = FixedDiv(PROJECTION, tz);
+
+   flip = (thingframe & FF_FLIPPED) ? -1 : 1;
 
    // calculate edges of the shape
 #ifdef NARROW_SCENERY

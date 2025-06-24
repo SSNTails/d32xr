@@ -212,7 +212,15 @@ struct mobj_s;
 typedef void (*think_t) ();
 
 /* a latecall is a function that needs to be called after p_base is done */
-typedef void (*latecall_t) (struct mobj_s *mo);
+enum
+{
+	LC_INVALID = -1,
+	LC_NONE,
+	LC_SKULL_BASH,
+	LC_MISSILE_HIT,
+	LC_EXPLODE_MISSILE,
+	LC_REMOVE_MOBJ
+};
 
 typedef struct thinker_s
 {
@@ -269,8 +277,9 @@ typedef struct mobj_s
 
 	struct mobj_s	*target;		/* thing being chased/attacked (or NULL) */
 									/* also the originator for missiles */
-	latecall_t		latecall;		/* set in p_base if more work needed */
-	intptr_t		extradata;		/* for latecall functions */
+
+	VINT		latecall;		/* set in p_base if more work needed */
+	SPTR		extradata;		/* for latecall functions */
 } mobj_t;
 
 typedef struct scenerymobj_s
