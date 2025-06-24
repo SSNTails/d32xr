@@ -385,13 +385,12 @@ extern	uint16_t *distscale/*[SCREENWIDTH]*/;
 #define EFFECTS_COPPER_INDEX_CHANGE		0x40
 #define EFFECTS_COPPER_SKY_IN_VIEW		0x80
 
-extern byte sky_in_view;
-
 #ifdef MARS
 __attribute__((aligned(2)))
 #endif
-extern byte effects_flags;
-extern byte copper_table_selection;
+extern uint8_t sky_in_view;
+extern uint8_t effects_flags;
+extern uint8_t copper_table_selection;
 
 #ifdef MARS
 __attribute__((aligned(2)))

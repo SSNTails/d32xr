@@ -108,6 +108,11 @@
 #define MARS_VDP_FEN        0x0002
 #define MARS_VDP_FS         0x0001
 
+#define MARS_SYS_VINT       0x0008
+#define MARS_SYS_HINT       0x0004
+#define MARS_SYS_CMD        0x0002
+#define MARS_SYS_PWM        0x0001
+
 #define SH2_CCTL_CP         0x10
 #define SH2_CCTL_TW         0x08
 #define SH2_CCTL_CE         0x01

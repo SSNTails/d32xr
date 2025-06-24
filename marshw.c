@@ -848,6 +848,18 @@ void pri_vbi_handler(void)
 			mars_newpalette = NULL;
 	}
 
+	if (effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_ENABLED)) {
+		if (IsLevel() && !(effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_SKY_IN_VIEW))) {
+			MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
+		}
+		else {
+			MARS_SYS_INTMSK |= MARS_SYS_HINT;
+		}
+	}
+	else {
+		MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
+	}
+
 	// Update copper buffer
 	if (effects_flags & EFFECTS_COPPER_ENABLED && effects_flags & EFFECTS_COPPER_REFRESH)
 	{

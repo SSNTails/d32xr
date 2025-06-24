@@ -8,8 +8,6 @@
 #include "marshw.h"
 #endif
 
-byte sky_in_view = 0;
-
 int16_t viewportWidth, viewportHeight;
 int16_t centerX, centerY;
 fixed_t centerXFrac, centerYFrac;
@@ -70,8 +68,9 @@ pixel_t		*workingscreen;
 static int16_t	curpalette = -1;
 
 __attribute__((aligned(2)))
-byte effects_flags;
-byte copper_table_selection;
+uint8_t sky_in_view = 0;
+uint8_t effects_flags;
+uint8_t copper_table_selection;
 
 __attribute__((aligned(2)))
 short distortion_filter_index;
