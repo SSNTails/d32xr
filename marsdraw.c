@@ -1222,12 +1222,12 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 		pixel_offset += (320/2);
 	}
 
-	effects_enabled |= EFFECTS_MASK_DISTORTION;
+	effects_flags |= EFFECTS_DISTORTION_ENABLED;
 }
 
 void RemoveDistortionFilters()
 {
-	effects_enabled &= (0xFF ^ EFFECTS_MASK_DISTORTION);
+	effects_flags &= (0xFF ^ EFFECTS_DISTORTION_ENABLED);
 
 	uint16_t *lines = Mars_FrameBufferLines();
 	short pixel_offset = (512/2);

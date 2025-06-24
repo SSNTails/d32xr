@@ -36,8 +36,6 @@ static volatile uint16_t mars_controlval[2];
 
 volatile uint8_t legacy_emulator = 0;
 
-volatile uint8_t enable_hints = 0;
-
 volatile unsigned int mars_thru_rgb = 0;
 volatile unsigned int mars_hblank_count = 0;
 
@@ -851,15 +849,15 @@ void pri_vbi_handler(void)
 	}
 
 	// Update copper buffer
-	if (effects_enabled &= EFFECTS_MASK_COPPER)
+	if (effects_flags & EFFECTS_COPPER_ENABLED && effects_flags & EFFECTS_COPPER_REFRESH)
 	{
-		short *buffer = copper_buffer;
+		unsigned short *buffer = copper_buffer;
 
 		if (copper_table_selection & 0xF) {
 			// Transitioning between source tables
 			int transition_frame = copper_table_selection & 0xF;
-			short *next_table = &copper_source_table[(copper_table_selection>>4)^1][copper_color_index];
-			short *prev_table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+			unsigned short *next_table = &copper_source_table[(copper_table_selection>>4)^1][copper_color_index];
+			unsigned short *prev_table = &copper_source_table[copper_table_selection>>4][copper_color_index];
 
 			for (int y=0; y < 224; y++) {
 				int prev_rgb = *prev_table++;
@@ -870,9 +868,11 @@ void pri_vbi_handler(void)
 				int degree;
 
 				if (y >= 112) {
+					// Delay fading of the top half of the screen.
 					degree = (transition_frame - ((y >> 4) - 7)) << 1;
 				}
 				else {
+					// Delay fading of the bottom half of the screen.
 					degree = (transition_frame - (6 - (y >> 4))) << 1;
 				}
 
@@ -883,6 +883,7 @@ void pri_vbi_handler(void)
 					degree = 16;
 				}
 
+				// Red cross-fade
 				prev_color = prev_rgb & 0x1F;
 				next_color = next_rgb & 0x1F;
 				if (next_color >= prev_color) {
@@ -891,6 +892,7 @@ void pri_vbi_handler(void)
 					buffer_rgb = (prev_color - (((prev_color - next_color) * degree) >> 4));
 				}
 
+				// Green cross-fade
 				prev_rgb >>= 5;
 				next_rgb >>= 5;
 				prev_color = prev_rgb & 0x1F;
@@ -901,6 +903,7 @@ void pri_vbi_handler(void)
 					buffer_rgb |= ((prev_color - (((prev_color - next_color) * degree) >> 4)) << 5);
 				}
 
+				// Blue cross-fade
 				prev_rgb >>= 5;
 				next_rgb >>= 5;
 				prev_color = prev_rgb & 0x1F;
@@ -911,12 +914,13 @@ void pri_vbi_handler(void)
 					buffer_rgb |= ((prev_color - (((prev_color - next_color) * degree) >> 4)) << 10);
 				}
 
+				// Copy the new color to the copper buffer.
 				*buffer++ = buffer_rgb;
 			}
 		}
 		else {
 			// Straight copy from the selected source table to the copper buffer
-			short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+			unsigned short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
 
 			for (int y=0; y < (224>>2); y++) {
 				*buffer++ = *table++;
@@ -925,6 +929,8 @@ void pri_vbi_handler(void)
 				*buffer++ = *table++;
 			}
 		}
+
+		effects_flags &= (~EFFECTS_COPPER_REFRESH);
 	}
 }
 

@@ -8,6 +8,8 @@
 #include "marshw.h"
 #endif
 
+byte sky_in_view = 0;
+
 int16_t viewportWidth, viewportHeight;
 int16_t centerX, centerY;
 fixed_t centerXFrac, centerYFrac;
@@ -67,18 +69,15 @@ pixel_t		*workingscreen;
 #ifdef MARS
 static int16_t	curpalette = -1;
 
-__attribute__((aligned(4)))
-int8_t effects_used;
-int8_t effects_enabled;
+__attribute__((aligned(2)))
+byte effects_flags;
+byte copper_table_selection;
 
 __attribute__((aligned(2)))
 short distortion_filter_index;
 
 __attribute__((aligned(4)))
 unsigned int distortion_line_bit_shift[8];	// Last index unused; only for making the compiler happy.
-
-__attribute__((aligned(2)))
-byte copper_table_selection;
 
 __attribute__((aligned(2)))
 short copper_color_index;
@@ -497,7 +496,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 	// Retrieve lump for drawing the sky gradient.
 	uint8_t *sky_gradient_ptr;
 
-	effects_enabled &= (~EFFECTS_MASK_COPPER);
+	effects_flags &= (~EFFECTS_COPPER_ENABLED);
 
 	if (copper_source_table[table_bank]) {
 		Z_Free(copper_source_table[table_bank]);
@@ -599,7 +598,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 	}
 
 	// Enable copper effects now that we have finished constructing the table.
-	effects_enabled |= EFFECTS_MASK_COPPER;
+	effects_flags |= (EFFECTS_COPPER_ENABLED | EFFECTS_COPPER_REFRESH);
 
 	return 0;
 }
@@ -1674,6 +1673,11 @@ void R_RenderPlayerView(int displayplayer)
 		visplane_t *visplanes_hash_[NUM_VISPLANES_BUCKETS];
 	sector_t *vissectors_[(MAXVISSSEC > MAXVISSPRITES ? MAXVISSSEC : MAXVISSPRITES) + 1];
 	viswallextra_t viswallex_[MAXWALLCMDS + 1] __attribute__((aligned(16)));
+
+	if (sky_in_view == 0) {
+		effects_flags &= (~EFFECTS_COPPER_SKY_IN_VIEW);
+	}
+	sky_in_view = 0;
 
 	t_total = I_GetFRTCounter();
 

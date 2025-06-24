@@ -378,15 +378,20 @@ extern	uint16_t *distscale/*[SCREENWIDTH]*/;
 #define MARKEDOPEN(x) ((x) == OPENMARK)
 #endif
 
-#define EFFECTS_MASK_DISTORTION		1
-#define EFFECTS_MASK_COPPER			2
-//#define EFFECTS_MASK_DISABLE_ALL	128
+#define EFFECTS_DISTORTION_ENABLED		0x01
+#define EFFECTS_COPPER_ENABLED			0x02
+#define EFFECTS_DISTORTION_REFRESH		0x04
+#define EFFECTS_COPPER_REFRESH			0x08
+#define EFFECTS_COPPER_INDEX_CHANGE		0x40
+#define EFFECTS_COPPER_SKY_IN_VIEW		0x80
+
+extern byte sky_in_view;
 
 #ifdef MARS
-__attribute__((aligned(4)))
+__attribute__((aligned(2)))
 #endif
-extern int8_t effects_used;
-extern int8_t effects_enabled;
+extern byte effects_flags;
+extern byte copper_table_selection;
 
 #ifdef MARS
 __attribute__((aligned(2)))
@@ -397,11 +402,6 @@ extern short distortion_filter_index;
 __attribute__((aligned(4)))
 #endif
 extern unsigned int distortion_line_bit_shift[8];	// Last index unused; only for making the compiler happy.
-
-#ifdef MARS
-__attribute__((aligned(2)))
-#endif
-extern byte copper_table_selection;
 
 #ifdef MARS
 __attribute__((aligned(2)))
