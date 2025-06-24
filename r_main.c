@@ -489,6 +489,31 @@ VINT CalcFlatSize(int lumplength)
 }
 
 
+int R_SetupMDPalettes(const char *name, int palettes_lump)
+{
+	uint8_t *palettes_ptr;
+	uint32_t palettes_size;
+
+	int lump;
+
+	char lumpname[9];
+
+	D_snprintf(lumpname, 8, "%sP%d", name, palettes_lump);
+	lump = W_CheckNumForName(lumpname);
+	if (lump != -1) {
+		palettes_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
+		palettes_size = W_LumpLength(lump);
+	}
+	else {
+		return -1;
+	}
+
+	Mars_LoadMDPalettes(palettes_ptr, palettes_size);
+
+	return 0;
+}
+
+
 __attribute((noinline))
 static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 {
@@ -605,7 +630,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 
 #ifdef MDSKY
 __attribute((noinline))
-static void R_SetupMDSky(const char *name)
+static void R_SetupMDSky(const char *name, int palettes_lump)
 {
 	// Retrieve lumps for drawing the sky on the MD.
 	uint8_t *sky_metadata_ptr;
@@ -658,7 +683,7 @@ static void R_SetupMDSky(const char *name)
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sPAL", name);
+	D_snprintf(lumpname, 8, "%sP%d", name, palettes_lump);
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_palettes_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -866,7 +891,7 @@ nocache:
 	R_InitTexCacheZone(&r_texcache, 0);
 }
 
-void R_SetupBackground(const char *background, int copper_lump)
+void R_SetupBackground(const char *background, int palettes_lump, int copper_lump)
 {
 	#ifdef MDSKY
 	R_SetupSkyGradient(background, copper_lump, 0);
@@ -886,7 +911,7 @@ void R_SetupBackground(const char *background, int copper_lump)
 		copper_buffer = NULL;
 	}
 
-	R_SetupMDSky(background);
+	R_SetupMDSky(background, palettes_lump);
 	#endif
 }
 
@@ -897,7 +922,7 @@ int R_SetupCopperTable(const char *background, int copper_lump, int table_bank)
 
 void R_SetupLevel(int gamezonemargin, char *background)
 {
-	R_SetupBackground(background, 1);
+	R_SetupBackground(background, 1, 1);
 
 	R_SetupTextureCaches(gamezonemargin);
 

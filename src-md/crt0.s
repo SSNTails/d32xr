@@ -612,7 +612,7 @@ no_cmd:
         dc.w    set_music_volume - prireqtbl      /* 0x18 */
         dc.w    set_gamemode - prireqtbl          /* 0x19 */
         dc.w    set_scroll_positions - prireqtbl  /* 0x1A */
-        dc.w    no_cmd - prireqtbl                /* 0x1B */ /* FREE TO USE */
+        dc.w    load_md_palettes - prireqtbl      /* 0x1B */
         dc.w    no_cmd - prireqtbl                /* 0x1C */ /* FREE TO USE */
         dc.w    load_sfx - prireqtbl              /* 0x1D */
         dc.w    play_sfx - prireqtbl              /* 0x1E */
@@ -1724,6 +1724,46 @@ decompress_lump:
         lea     decomp_buffer,a1
         jmp     Kos_Decomp_Main
         |rts    /* Kos_Decomp_Main will do an 'rts' for us. */
+
+
+
+load_md_palettes:
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a2,-(sp)
+        move.l  a3,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+
+        bsr     get_lump_source_and_size
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.w  #0x8F02,(a0)
+        move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
+        move.l  lump_ptr,d0
+        andi.l  #0x7FFFF,d0
+        addi.l  #0x880000,d0
+        move.l  d0,a2
+        lea     base_palette_1,a3
+        move.l  lump_size,d1
+        lsr.l   #1,d1
+        sub.l   #1,d1
+2:
+        move.w  (a2)+,(a3)+             /* Save color to DRAM */
+        move.w  #0,(a1)                 /* Set color to black in CRAM */
+        |add.l   #0x40000,a1            /* Advance the destination cursor */
+        dbra    d1,2b
+
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a3
+        move.l  (sp)+,a2
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        move.w  #0,0xA15120         /* done */
+
+        bra     main_loop
 
 
 

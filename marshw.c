@@ -697,6 +697,24 @@ int Mars_ReadController(int ctrl)
 	return val;
 }
 
+void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size)
+{
+	int i;
+
+	uint16_t s[4];
+	
+	// Load palettes
+
+	s[0] = (uintptr_t)palettes_size>>16, s[1] = (uintptr_t)palettes_size&0xffff;
+	s[2] = ((uintptr_t)palettes_ptr >>16), s[3] = (uintptr_t)palettes_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM0);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x1B01+i;
+	}
+}
+
 #ifdef MDSKY
 /*
 Fade the MD palette

@@ -597,6 +597,10 @@ int TIC_LevelSelect (void)
 			{
 				R_SetupCopperTable("MENU", 0, next_bank);
 			}
+			if (R_SetupMDPalettes("MENU", selected_map_info.zone) == -1)
+			{
+				R_SetupMDPalettes("MENU", 0);
+			}
 
 			copper_table_selection &= 0x10;
 
@@ -641,7 +645,7 @@ void START_LevelSelect (void)
 
 	R_InitColormap();
 
-	R_SetupBackground("MENU", 1);
+	R_SetupBackground("MENU", 1, 1);
 	R_SetupCopperTable("MENU", 1, 1);
 
 	SetTransition(TransitionType_Entering);

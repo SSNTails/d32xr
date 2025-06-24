@@ -136,6 +136,8 @@ int Mars_ConvGamepadButtons(int ctrl);
 
 int Mars_ROMSize(void);
 
+void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size);
+
 #ifdef MDSKY
 void Mars_FadeMDPaletteFromBlack(int fade_degree);
 void Mars_ScrollMDSky(short scroll_x, short scroll_y_base, short scroll_y_offset, short scroll_y_pan);
