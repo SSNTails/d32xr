@@ -6,7 +6,9 @@ int8_t *ringmobjtics; // NUMMOBJTYPES
 
 const char * const sprnames[NUMSPRITES] = {
 "PLAY",
+"ARCH",
 "ARMA",
+"AROW",
 "BANR",
 "BBLS",
 "BMNB",
@@ -129,6 +131,9 @@ void A_UnidusBall();
 void A_BubbleSpawn();
 void A_SignSpin();
 void A_SteamBurst();
+void A_HoodFire();
+void A_HoodThink();
+void A_HoodFall();
 
 #define STATE(sprite,frame,tics,action,nextstate) {sprite,frame,tics,0,0,nextstate,action}
 #define STATE2(sprite,frame,tics,action,var1,var2,nextstate) {sprite,frame,tics,var1,var2,nextstate,action}
@@ -212,6 +217,13 @@ STATE(SPR_BMNB,FF_FULLBRIGHT,2,NULL,S_BIGMINE_BLAST2), // S_BIGMINE_BLAST1
 STATE(SPR_BMNB,FF_FULLBRIGHT|1,2,NULL,S_BIGMINE_BLAST3), // S_BIGMINE_BLAST2
 STATE(SPR_BMNB,FF_FULLBRIGHT|2,1,NULL,S_BIGMINE_BLAST4), // S_BIGMINE_BLAST3
 STATE(SPR_BMNB,FF_FULLBRIGHT|3,1,NULL,S_NULL), // S_BIGMINE_BLAST4
+
+STATE(SPR_ARCH,0,TICRATE,A_Look,S_ROBOHOOD_LOOK), // S_ROBOHOOD_LOOK
+STATE(SPR_ARCH,0,1,A_HoodThink,S_ROBOHOOD_STAND), // S_ROBOHOOD_STAND
+STATE(SPR_ARCH,2,TICRATE,NULL,S_ROBOHOOD_FIRE2), // S_ROBOHOOD_FIRE1
+STATE2(SPR_ARCH,2,20,A_HoodFire,MT_ARROW,0,S_ROBOHOOD_STAND), // S_ROBOHOOD_FIRE2
+STATE(SPR_ARCH,1,2,NULL,S_ROBOHOOD_JUMP2), // S_ROBOHOOD_JUMP1
+STATE(SPR_ARCH,1,1,A_HoodFall,S_ROBOHOOD_JUMP2), // S_ROBOHOOD_JUMP2
 
 STATE(SPR_TOKE,0,2,NULL,S_TOKEN2), // S_TOKEN1
 STATE(SPR_TOKE,1,2,NULL,S_TOKEN3), // S_TOKEN2
@@ -670,6 +682,8 @@ STATE(SPR_DUST,2,3,NULL,S_DUST4), // S_DUST3
 STATE(SPR_DUST,3,2,NULL,S_NULL),  // S_DUST4
 
 STATE(SPR_MINE,0,-1,NULL,S_NULL), // S_MINE
+
+STATE(SPR_AROW,0,-1,NULL,S_NULL), // S_ARROW
 
 // Starpost
 STATE(SPR_STPT,0,-1,NULL,S_STARPOST_IDLE), // S_STARPOST_IDLE
@@ -1686,6 +1700,31 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		sfx_s3k_9e,      // activesound
 		MF_SPECIAL|MF_NOGRAVITY, // flags
 		MF2_SHOOTABLE|MF2_ENEMY          // flags2
+	},
+	{           // MT_ROBOHOOD
+		117,              // doomednum
+		S_ROBOHOOD_LOOK,  // spawnstate
+		1,                // spawnhealth
+		S_ROBOHOOD_STAND, // seestate
+		sfx_None,         // seesound
+		TICRATE,          // reactiontime
+		sfx_None,         // attacksound
+		S_NULL,           // painstate
+		0,                // painchance
+		sfx_None,         // painsound
+		S_ROBOHOOD_JUMP1, // meleestate
+		S_ROBOHOOD_FIRE1, // missilestate
+		S_XPLD_FLICKY,    // deathstate
+		S_NULL,           // xdeathstate
+		sfx_s3k_3d,       // deathsound
+		3,                // speed
+		24*FRACUNIT,      // radius
+		32*FRACUNIT,      // height
+		100,              // mass
+		0,                // damage
+		sfx_s3k_4a,        // activesound
+		0, // flags
+		MF2_ENEMY|MF2_SHOOTABLE|MF2_FLOAT  // flags2
 	},
 
 	{           // MT_TOKEN
@@ -3559,6 +3598,31 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		sfx_None,       // activesound
 		MF_NOBLOCKMAP,  // flags
 		MF2_MISSILE     // flags2
+	},
+	{           // MT_ARROW
+		-1,             // doomednum
+		S_ARROW,        // spawnstate
+		1,              // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,      // seesound
+		32,             // reactiontime
+		sfx_None,       // attacksound
+		S_NULL,         // painstate
+		200,            // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		sfx_None,     // deathsound
+		16*FRACUNIT,    // speed
+		4*FRACUNIT,     // radius
+		8*FRACUNIT,     // height
+		0,              // mass
+		1,              // damage
+		sfx_s3k_51,     // activesound
+		MF_NOBLOCKMAP,  // flags
+		MF2_MISSILE,    // flags2
 	},
 
 };

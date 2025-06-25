@@ -65,6 +65,7 @@ typedef enum
   sfx_s3k_3c,
   sfx_s3k_3d,
   sfx_s3k_43,
+  sfx_s3k_4a,
   sfx_s3k_4e,
   sfx_s3k_51,
   sfx_s3k_59,

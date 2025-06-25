@@ -50,6 +50,7 @@ const char * const S_sfxnames[NUMSFX] =
   "s3k_3c",
   "s3k_3d",
   "s3k_43",
+  "s3k_4a",
   "s3k_4e",
   "s3k_51",
   "s3k_59",

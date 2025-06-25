@@ -1580,7 +1580,7 @@ void A_ChangeHeight(mobj_t *actor, int16_t var1, int16_t var2)
 	P_SetThingPosition(actor);
 }
 
-void A_UnidusBall(mobj_t *actor)
+void A_UnidusBall(mobj_t *actor, int16_t var1, int16_t var2)
 {
 	actor->angle += ANG180 / 16;
 
@@ -1666,7 +1666,7 @@ void A_SignSpin(mobj_t *actor, int16_t var1, int16_t var2)
 	}
 }
 
-void A_SteamBurst(mobj_t *actor)
+void A_SteamBurst(mobj_t *actor, int16_t var1, int16_t var2)
 {
 	const mobjinfo_t *info = &mobjinfo[actor->type];
 
@@ -1707,6 +1707,145 @@ void A_SteamBurst(mobj_t *actor)
 			P_SetMobjState(player->mo, S_PLAY_FALL1);
 		}
 	}
+}
+
+// 'Lob' the arrow in a parabola towards the target
+static void P_ParabolicMove(mobj_t *actor, fixed_t x, fixed_t y, fixed_t z, fixed_t speed)
+{
+	fixed_t dh;
+
+	x -= actor->x;
+	y -= actor->y;
+	z -= actor->z;
+
+	dh = P_AproxDistance(x, y);
+
+	actor->momx = FixedMul(FixedDiv(x, dh), speed);
+	actor->momy = FixedMul(FixedDiv(y, dh), speed);
+
+	fixed_t gravity = GRAVITY / 2;
+	if (!gravity)
+		return;
+
+	dh = FixedDiv(FixedMul(dh, gravity), speed);
+	actor->momz = (dh>>1) + FixedDiv(z, dh<<1);
+}
+
+// Function: A_HoodFire
+//
+// Description: Firing Robo-Hood
+//
+// var1 = object type to fire
+// var2 = unused
+//
+void A_HoodFire(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	mobj_t *arrow;
+
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	// Check target first.
+	if (!actor->target)
+	{
+		actor->reactiontime = aInfo->reactiontime;
+		P_SetMobjState(actor, aInfo->spawnstate);
+		return;
+	}
+
+	A_FaceTarget(actor, 0, 0);
+
+	if (!(arrow = P_SpawnMissile(actor, actor->target, (mobjtype_t)var1)))
+		return;
+
+	const mobjinfo_t *arrowInfo = &mobjinfo[arrow->type];
+
+	// Set a parabolic trajectory for the arrow.
+	P_ParabolicMove(arrow, actor->target->x, actor->target->y, actor->target->z, arrowInfo->speed);
+}
+
+// Function: A_HoodThink
+//
+// Description: Thinker for Robo-Hood
+//
+// var1 = unused
+// var2 = unused
+//
+void A_HoodThink(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	fixed_t dx, dy, dz, dm;
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	// Check target first.
+	if (!actor->target)
+	{
+		actor->reactiontime = aInfo->reactiontime;
+		P_SetMobjState(actor, aInfo->spawnstate);
+		return;
+	}
+
+	dx = (actor->target->x - actor->x), dy = (actor->target->y - actor->y), dz = (actor->target->z - actor->z);
+	dm = P_AproxDistance(dx, dy);
+	// Target dangerously close to robohood, retreat then.
+	if ((dm < 256<<FRACBITS) && (D_abs(dz) < 128<<FRACBITS) && !(actor->flags2 & MF2_SPAWNEDJETS))
+	{
+		S_StartSound(actor, aInfo->attacksound);
+		A_FaceTarget(actor, 0, 0);
+		actor->angle = -actor->angle; // Do a 180
+		P_SetObjectMomZ(actor, 6*FRACUNIT, false);
+		P_InstaThrust(actor, actor->angle, 6*FRACUNIT);
+		P_SetMobjState(actor, S_ROBOHOOD_JUMP1);
+		return;
+	}
+
+	// If target on sight, look at it.
+	if (actor->target)
+	{
+		angle_t dang = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
+		if (actor->angle >= ANG180)
+			actor->angle = InvAngle(InvAngle(actor->angle)>>1);
+		else
+			actor->angle >>= 1;
+
+		if (dang >= ANG180)
+			dang = InvAngle(InvAngle(dang)>>1);
+		else
+			dang >>= 1;
+
+		actor->angle += dang;
+	}
+
+	// Check whether to do anything.
+	if ((--actor->reactiontime) <= 0)
+	{
+		actor->reactiontime = aInfo->reactiontime;
+
+		// If way too far, don't shoot.
+		if ((dm < (3072<<FRACBITS)) && actor->target)
+		{
+			P_SetMobjState(actor, aInfo->missilestate);
+			S_StartSound(actor, aInfo->activesound);
+			return;
+		}
+	}
+}
+
+// Function: A_HoodFall
+//
+// Description: Falling Robo-Hood
+//
+// var1 = unused
+// var2 = unused
+//
+void A_HoodFall(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	if (!P_IsObjectOnGround(actor))
+		return;
+
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	actor->momx = actor->momy = 0;
+	actor->reactiontime = aInfo->reactiontime;
+	P_SetMobjState(actor, aInfo->seestate);
 }
 
 /*============================================================================= */
