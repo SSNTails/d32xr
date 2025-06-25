@@ -567,14 +567,12 @@ int TIC_LevelSelect (void)
 			if (selected_map < 0) {
 				selected_map = gamemapcount-1;
 			}
-			oldticrealbuttons != BT_LEFT;
 		}
 		else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
 			selected_map += 1;
 			if (selected_map == gamemapcount) {
 				selected_map = 0;
 			}
-			oldticrealbuttons != BT_RIGHT;
 		}
 
 		if (selected_map != prev_selected_map) {
@@ -599,10 +597,16 @@ int TIC_LevelSelect (void)
 			{
 				R_SetupCopperTable("MENU", 0, next_bank);
 			}
+			if (R_SetupMDPalettes("MENU", selected_map_info.zone) == -1)
+			{
+				R_SetupMDPalettes("MENU", 0);
+			}
 
 			copper_table_selection &= 0x10;
 
 			copper_table_selection++;
+
+			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}
 		else if (copper_table_selection & 0xF) {
 			copper_table_selection++;
@@ -610,6 +614,8 @@ int TIC_LevelSelect (void)
 			if (!(copper_table_selection & 0xF)) {
 				copper_table_selection &= 0x10;
 			}
+
+			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}
 	}
 
@@ -639,7 +645,7 @@ void START_LevelSelect (void)
 
 	R_InitColormap();
 
-	R_SetupBackground("MENU", 1);
+	R_SetupBackground("MENU", 1, 1);
 	R_SetupCopperTable("MENU", 1, 1);
 
 	SetTransition(TransitionType_Entering);

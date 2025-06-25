@@ -36,8 +36,6 @@ static volatile uint16_t mars_controlval[2];
 
 volatile uint8_t legacy_emulator = 0;
 
-volatile uint8_t enable_hints = 0;
-
 volatile unsigned int mars_thru_rgb = 0;
 volatile unsigned int mars_hblank_count = 0;
 
@@ -699,6 +697,24 @@ int Mars_ReadController(int ctrl)
 	return val;
 }
 
+void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size)
+{
+	int i;
+
+	uint16_t s[4];
+	
+	// Load palettes
+
+	s[0] = (uintptr_t)palettes_size>>16, s[1] = (uintptr_t)palettes_size&0xffff;
+	s[2] = ((uintptr_t)palettes_ptr >>16), s[3] = (uintptr_t)palettes_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM0);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x1B01+i;
+	}
+}
+
 #ifdef MDSKY
 /*
 Fade the MD palette
@@ -850,8 +866,20 @@ void pri_vbi_handler(void)
 			mars_newpalette = NULL;
 	}
 
+	if (effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_ENABLED)) {
+		if (IsLevel() && !(effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_SKY_IN_VIEW))) {
+			MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
+		}
+		else {
+			MARS_SYS_INTMSK |= MARS_SYS_HINT;
+		}
+	}
+	else {
+		MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
+	}
+
 	// Update copper buffer
-	if (effects_enabled & EFFECTS_MASK_COPPER)
+	if (effects_flags & EFFECTS_COPPER_ENABLED && effects_flags & EFFECTS_COPPER_REFRESH)
 	{
 		unsigned short *buffer = copper_buffer;
 
@@ -870,9 +898,11 @@ void pri_vbi_handler(void)
 				int degree;
 
 				if (y >= 112) {
+					// Delay fading of the top half of the screen.
 					degree = (transition_frame - ((y >> 4) - 7)) << 1;
 				}
 				else {
+					// Delay fading of the bottom half of the screen.
 					degree = (transition_frame - (6 - (y >> 4))) << 1;
 				}
 
@@ -883,6 +913,7 @@ void pri_vbi_handler(void)
 					degree = 16;
 				}
 
+				// Red cross-fade
 				prev_color = prev_rgb & 0x1F;
 				next_color = next_rgb & 0x1F;
 				if (next_color >= prev_color) {
@@ -891,6 +922,7 @@ void pri_vbi_handler(void)
 					buffer_rgb = (prev_color - (((prev_color - next_color) * degree) >> 4));
 				}
 
+				// Green cross-fade
 				prev_rgb >>= 5;
 				next_rgb >>= 5;
 				prev_color = prev_rgb & 0x1F;
@@ -901,6 +933,7 @@ void pri_vbi_handler(void)
 					buffer_rgb |= ((prev_color - (((prev_color - next_color) * degree) >> 4)) << 5);
 				}
 
+				// Blue cross-fade
 				prev_rgb >>= 5;
 				next_rgb >>= 5;
 				prev_color = prev_rgb & 0x1F;
@@ -911,6 +944,7 @@ void pri_vbi_handler(void)
 					buffer_rgb |= ((prev_color - (((prev_color - next_color) * degree) >> 4)) << 10);
 				}
 
+				// Copy the new color to the copper buffer.
 				*buffer++ = buffer_rgb;
 			}
 		}
@@ -925,6 +959,8 @@ void pri_vbi_handler(void)
 				*buffer++ = *table++;
 			}
 		}
+
+		effects_flags &= (~EFFECTS_COPPER_REFRESH);
 	}
 }
 

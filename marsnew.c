@@ -788,9 +788,20 @@ void I_Update(void)
 	unsigned short scroll_y_offset = (vd.viewz >> 16);
 	unsigned short scroll_y_pan = (vd.aimingangle >> 22);
 
-	if (effects_enabled & EFFECTS_MASK_COPPER) {
+	if (effects_flags & EFFECTS_COPPER_ENABLED) {
+		short prev_index = copper_color_index;
+
+		// Scroll the copper background.
 		copper_color_index = (copper_vertical_offset
 				- scroll_y_base - (scroll_y_offset >> (16-copper_vertical_rate)) - scroll_y_pan) & 511;
+
+		if (copper_color_index != prev_index) {
+			// Update the copper table again.
+			effects_flags |= EFFECTS_COPPER_INDEX_CHANGE;
+		}
+		else {
+			effects_flags &= (~EFFECTS_COPPER_INDEX_CHANGE);
+		}
 	}
 
 #ifdef MDSKY

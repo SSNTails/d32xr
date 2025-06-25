@@ -160,6 +160,8 @@ static void R_DrawTexture(int x, unsigned iscale, int colnum, fixed_t scale2, in
 ATTR_DATA_CACHE_ALIGN
 static void R_Draw32XSky(const int top, const int bottom, const int x, drawcol_t draw32xsky, drawskycol_t drawmdsky)
 {
+    sky_in_view = 1;
+
     if (draw32xsky)
     {
         int colnum = ((vd.viewangle + (xtoviewangle[x]<<FRACBITS)) >> ANGLETOSKYSHIFT) & (skytexturep->width-1);
@@ -180,11 +182,15 @@ static void R_Draw32XSky(const int top, const int bottom, const int x, drawcol_t
         );
     }
 #ifdef MDSKY
-    else
+    else {
         drawmdsky(x, top, bottom);
+
+        if (effects_flags & EFFECTS_COPPER_INDEX_CHANGE || !(effects_flags & EFFECTS_COPPER_SKY_IN_VIEW)) {
+            // The copper index changes, or the sky is appearing after not being present in the previous frame.
+            effects_flags |= (EFFECTS_COPPER_REFRESH | EFFECTS_COPPER_SKY_IN_VIEW);
+        }
+    }
 #endif
-    if (effects_enabled & EFFECTS_MASK_COPPER)
-        enable_hints = 1;
 }
 
 //
@@ -244,7 +250,6 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
 
     uint16_t *segcolmask = ((segl->actionbits & AC_MIDTEXTURE) || (segl->actionbits & AC_FOFSIDE)) ? segl->clipbounds + (stop - start + 1) : NULL;
 
-    enable_hints = 1;
     for (x = start; x <= stop; x++)
     {
        fixed_t r;

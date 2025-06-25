@@ -67,18 +67,16 @@ pixel_t		*workingscreen;
 #ifdef MARS
 static int16_t	curpalette = -1;
 
-__attribute__((aligned(4)))
-int8_t effects_used;
-int8_t effects_enabled;
+__attribute__((aligned(2)))
+uint8_t sky_in_view = 0;
+uint8_t effects_flags;
+uint8_t copper_table_selection;
 
 __attribute__((aligned(2)))
 short distortion_filter_index;
 
 __attribute__((aligned(4)))
 unsigned int distortion_line_bit_shift[8];	// Last index unused; only for making the compiler happy.
-
-__attribute__((aligned(2)))
-byte copper_table_selection;
 
 __attribute__((aligned(2)))
 short copper_color_index;
@@ -491,13 +489,38 @@ VINT CalcFlatSize(int lumplength)
 }
 
 
+int R_SetupMDPalettes(const char *name, int palettes_lump)
+{
+	uint8_t *palettes_ptr;
+	uint32_t palettes_size;
+
+	int lump;
+
+	char lumpname[9];
+
+	D_snprintf(lumpname, 8, "%sP%d", name, palettes_lump);
+	lump = W_CheckNumForName(lumpname);
+	if (lump != -1) {
+		palettes_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
+		palettes_size = W_LumpLength(lump);
+	}
+	else {
+		return -1;
+	}
+
+	Mars_LoadMDPalettes(palettes_ptr, palettes_size);
+
+	return 0;
+}
+
+
 __attribute((noinline))
 static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 {
 	// Retrieve lump for drawing the sky gradient.
 	uint8_t *sky_gradient_ptr;
 
-	effects_enabled &= (~EFFECTS_MASK_COPPER);
+	effects_flags &= (~EFFECTS_COPPER_ENABLED);
 
 	if (copper_source_table[table_bank]) {
 		Z_Free(copper_source_table[table_bank]);
@@ -599,7 +622,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 	}
 
 	// Enable copper effects now that we have finished constructing the table.
-	effects_enabled |= EFFECTS_MASK_COPPER;
+	effects_flags |= (EFFECTS_COPPER_ENABLED | EFFECTS_COPPER_REFRESH);
 
 	return 0;
 }
@@ -607,7 +630,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 
 #ifdef MDSKY
 __attribute((noinline))
-static void R_SetupMDSky(const char *name)
+static void R_SetupMDSky(const char *name, int palettes_lump)
 {
 	// Retrieve lumps for drawing the sky on the MD.
 	uint8_t *sky_metadata_ptr;
@@ -660,7 +683,7 @@ static void R_SetupMDSky(const char *name)
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sPAL", name);
+	D_snprintf(lumpname, 8, "%sP%d", name, palettes_lump);
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_palettes_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -868,7 +891,7 @@ nocache:
 	R_InitTexCacheZone(&r_texcache, 0);
 }
 
-void R_SetupBackground(const char *background, int copper_lump)
+void R_SetupBackground(const char *background, int palettes_lump, int copper_lump)
 {
 	#ifdef MDSKY
 	R_SetupSkyGradient(background, copper_lump, 0);
@@ -888,7 +911,7 @@ void R_SetupBackground(const char *background, int copper_lump)
 		copper_buffer = NULL;
 	}
 
-	R_SetupMDSky(background);
+	R_SetupMDSky(background, palettes_lump);
 	#endif
 }
 
@@ -899,7 +922,7 @@ int R_SetupCopperTable(const char *background, int copper_lump, int table_bank)
 
 void R_SetupLevel(int gamezonemargin, char *background)
 {
-	R_SetupBackground(background, 1);
+	R_SetupBackground(background, 1, 1);
 
 	R_SetupTextureCaches(gamezonemargin);
 
@@ -1671,6 +1694,11 @@ void R_RenderPlayerView(int displayplayer)
 		visplane_t *visplanes_hash_[NUM_VISPLANES_BUCKETS];
 	sector_t *vissectors_[(MAXVISSSEC > MAXVISSPRITES ? MAXVISSSEC : MAXVISSPRITES) + 1];
 	viswallextra_t viswallex_[MAXWALLCMDS + 1] __attribute__((aligned(16)));
+
+	if (sky_in_view == 0) {
+		effects_flags &= (~EFFECTS_COPPER_SKY_IN_VIEW);
+	}
+	sky_in_view = 0;
 
 	t_total = I_GetFRTCounter();
 
