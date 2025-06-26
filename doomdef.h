@@ -695,6 +695,8 @@ extern  boolean		sky_md_layer;
 extern	boolean		sky_32x_layer;
 extern	boolean		extended_sky;
 
+extern  uint8_t     lightning_count;
+
 extern 	VINT 		*gamemapnumbers;
 extern 	VINT 		*gamemaplumps;
 extern 	VINT 		gamemapcount;

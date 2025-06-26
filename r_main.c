@@ -71,6 +71,7 @@ __attribute__((aligned(2)))
 uint8_t sky_in_view = 0;
 uint8_t effects_flags;
 uint8_t copper_table_selection;
+int8_t	copper_table_brightness;
 
 __attribute__((aligned(2)))
 short distortion_filter_index;

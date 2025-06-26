@@ -7,6 +7,8 @@
 int	playertics, thinkertics, sighttics, basetics, latetics;
 int	tictics, drawtics;
 
+uint8_t		lightning_count;
+
 boolean		gamepaused;
 jagobj_t	*pausepic;
 char		clearscreen = 0;
@@ -256,6 +258,31 @@ int P_Ticker (void)
 
 	P_AnimateScenery((int8_t)accum_time);
 	P_UpdateSpecials((int8_t)accum_time);
+
+	if (effects_flags & EFFECTS_COPPER_ENABLED) {
+		int lightning_chance = P_RandomKey(8192);
+
+		if (lightning_chance < 20) {
+			// More intense
+			lightning_count = 0x13;
+		}
+		else if (lightning_chance < 70) {
+			// Less intense
+			lightning_count = 0x03;
+		}
+
+		if ((lightning_count & 0x3) > 0) {
+			const uint8_t brightness_levels[2][3] = {{ 0x13, 0x09, 0x00 }, { 0x1F, 0x0F, 0x00 }};
+
+			copper_table_brightness = brightness_levels[lightning_count >> 4][3-(lightning_count & 0x3)];
+			lightning_count--;
+
+			effects_flags |= EFFECTS_COPPER_BRIGHTNESS_CHANGE;
+		}
+		else {
+			effects_flags &= (~EFFECTS_COPPER_BRIGHTNESS_CHANGE);
+		}
+	}
 
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{

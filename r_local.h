@@ -379,19 +379,20 @@ extern	uint16_t *distscale/*[SCREENWIDTH]*/;
 #define MARKEDOPEN(x) ((x) == OPENMARK)
 #endif
 
-#define EFFECTS_DISTORTION_ENABLED		0x01
-#define EFFECTS_COPPER_ENABLED			0x02
-#define EFFECTS_DISTORTION_REFRESH		0x04
-#define EFFECTS_COPPER_REFRESH			0x08
-#define EFFECTS_COPPER_INDEX_CHANGE		0x40
-#define EFFECTS_COPPER_SKY_IN_VIEW		0x80
+#define EFFECTS_DISTORTION_ENABLED			0x01
+#define EFFECTS_COPPER_ENABLED				0x02
+#define EFFECTS_COPPER_REFRESH				0x04
+#define EFFECTS_COPPER_BRIGHTNESS_CHANGE	0x20
+#define EFFECTS_COPPER_INDEX_CHANGE			0x40
+#define EFFECTS_COPPER_SKY_IN_VIEW			0x80
 
 #ifdef MARS
 __attribute__((aligned(2)))
 #endif
-extern uint8_t sky_in_view;
-extern uint8_t effects_flags;
-extern uint8_t copper_table_selection;
+extern uint8_t	sky_in_view;
+extern uint8_t	effects_flags;
+extern uint8_t	copper_table_selection;
+extern int8_t	copper_table_brightness;
 
 #ifdef MARS
 __attribute__((aligned(2)))

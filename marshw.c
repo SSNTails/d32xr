@@ -883,7 +883,47 @@ void pri_vbi_handler(void)
 	{
 		unsigned short *buffer = copper_buffer;
 
-		if (copper_table_selection & 0xF) {
+		if (copper_table_brightness != 0) {
+			unsigned short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+
+			for (int y=0; y < 224; y++) {
+				int prev_rgb = *table++;
+				int buffer_rgb;
+				int prev_color;
+				int next_color;
+				int degree = copper_table_brightness;
+
+				// Red cross-fade
+				prev_color = prev_rgb & 0x1F;
+				if (copper_table_brightness >= prev_color) {
+					buffer_rgb = (prev_color + (((copper_table_brightness - prev_color) * degree) >> 5));
+				} else {
+					buffer_rgb = (prev_color - (((prev_color - copper_table_brightness) * degree) >> 5));
+				}
+
+				// Green cross-fade
+				prev_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				if (copper_table_brightness >= prev_color) {
+					buffer_rgb |= ((prev_color + (((copper_table_brightness - prev_color) * degree) >> 5)) << 5);
+				} else {
+					buffer_rgb |= ((prev_color - (((prev_color - copper_table_brightness) * degree) >> 5)) << 5);
+				}
+
+				// Blue cross-fade
+				prev_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				if (copper_table_brightness >= prev_color) {
+					buffer_rgb |= ((prev_color + (((copper_table_brightness - prev_color) * degree) >> 5)) << 10);
+				} else {
+					buffer_rgb |= ((prev_color - (((prev_color - copper_table_brightness) * degree) >> 5)) << 10);
+				}
+
+				// Copy the new color to the copper buffer.
+				*buffer++ = buffer_rgb;
+			}
+		}
+		else if (copper_table_selection & 0xF) {
 			// Transitioning between source tables
 			int transition_frame = copper_table_selection & 0xF;
 			unsigned short *next_table = &copper_source_table[(copper_table_selection>>4)^1][copper_color_index];
