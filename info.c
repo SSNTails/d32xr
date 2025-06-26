@@ -29,6 +29,7 @@ const char * const sprnames[NUMSPRITES] = {
 "EGGN",
 "EGLZ",
 "ELEM",
+"ESTA",
 "FISH",
 "FL01",
 "FL02",
@@ -338,10 +339,11 @@ STATE(SPR_KELP,0,-1,NULL,S_NULL), // S_KELP
 
 STATE(SPR_FWR4,0,-1,NULL,S_NULL), // S_CEZFLOWER
 STATE(SPR_BANR,0,-1,NULL,S_NULL), // S_BANNER_RED
-STATE(SPR_FLAM,0,2,NULL,S_TORCH2), // S_TORCH1
-STATE(SPR_FLAM,1,2,NULL,S_TORCH3), // S_TORCH2
-STATE(SPR_FLAM,2,2,NULL,S_TORCH4), // S_TORCH3
-STATE(SPR_FLAM,3,2,NULL,S_TORCH1), // S_TORCH4
+STATE(SPR_FLAM,FF_FULLBRIGHT,2,NULL,S_TORCH2), // S_TORCH1
+STATE(SPR_FLAM,FF_FULLBRIGHT|1,2,NULL,S_TORCH3), // S_TORCH2
+STATE(SPR_FLAM,FF_FULLBRIGHT|2,2,NULL,S_TORCH4), // S_TORCH3
+STATE(SPR_FLAM,FF_FULLBRIGHT|3,2,NULL,S_TORCH1), // S_TORCH4
+STATE(SPR_ESTA,0,-1,NULL,S_NULL), // S_EGGSTATUE1
 
 STATE(SPR_STLG,0,-1,NULL,S_NULL), // S_STLG0
 STATE(SPR_STLG,1,-1,NULL,S_NULL), // S_STLG1
@@ -2352,9 +2354,34 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		sfx_None,       // deathsound
 		0,              // speed
 		8*FRACUNIT,    // radius
-		64*FRACUNIT,    // height
+		32*FRACUNIT,    // height
 		100,            // mass
 		0,              // damage
+		sfx_None,       // activesound
+		MF_NOGRAVITY|MF_STATIC|MF_SPECIAL|MF_RINGMOBJ, // flags
+		0          // flags2
+	},
+	{           // MT_EGGSTATUE
+		1102,           // doomednum
+		S_EGGSTATUE1,   // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,       // seesound
+		8,              // reactiontime
+		sfx_None,       // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		sfx_None,       // deathsound
+		0,              // speed
+		32*FRACUNIT,    // radius
+		240*FRACUNIT,   // height
+		100,            // mass
+		1,              // damage
 		sfx_None,       // activesound
 		MF_NOGRAVITY|MF_STATIC|MF_NOBLOCKMAP|MF_RINGMOBJ, // flags
 		0          // flags2

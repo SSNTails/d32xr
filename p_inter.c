@@ -240,6 +240,12 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 				S_StartSong(gameinfo.emeraldMus, 0, cdtrack_emerald);
 			}
 		}
+		else if (special->type == MT_TORCH)
+		{
+			if (player->shield != SH_ELEMENTAL)
+				P_DamageMobj(toucher, special, special, 1);
+			return;
+		}
 		
 		P_RemoveMobj (special);
 
