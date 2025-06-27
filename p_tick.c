@@ -260,7 +260,7 @@ int P_Ticker (void)
 	P_AnimateScenery((int8_t)accum_time);
 	P_UpdateSpecials((int8_t)accum_time);
 
-	P_Weather();
+	P_SpawnLightningStrike();
 
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
@@ -310,27 +310,39 @@ int P_Ticker (void)
 							/* or ga_secretexit */
 }
 
-inline void P_Weather()
+inline void P_SpawnLightningStrike()
 {
 	if (effects_flags & EFFECTS_COPPER_ENABLED) {
 		unsigned short lightning_chance = P_Random16();
 
-		if (lightning_chance < 160) {
-			// More intense
-			lightning_count = 0x13;
-			S_StartSoundId(sfx_litng1);
+		if (lightning_chance < 160*4) {
+			// Close lightning
+			lightning_count = 0x18;
 		}
-		else if (lightning_chance < 560) {
-			// Less intense
-			lightning_count = 0x03;
-			S_StartSoundId(sfx_litng2);
+		else if (lightning_chance < 560*4) {
+			// Distant lightning
+			lightning_count = 0x08;
 		}
 
-		if ((lightning_count & 0x3) > 0) {
-			const uint8_t brightness_levels[2][3] = {{ 0x13, 0x09, 0x00 }, { 0x1F, 0x0F, 0x00 }};
+		int proximity = lightning_count >> 4;
+		int count = lightning_count & 0xF;
+		if (count > 0) {
+			const uint8_t brightness_levels[2][8] = {
+				{ 0x09, 0x13, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00 },
+				{ 0x0F, 0x1F, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00 }
+			};
 
-			copper_table_brightness = brightness_levels[lightning_count >> 4][3-(lightning_count & 0x3)];
+			copper_table_brightness = brightness_levels[proximity][8-count];
 			lightning_count--;
+
+			if (proximity == 1 && count == 5) {
+				// Close
+				S_StartSoundId(sfx_litng1);
+			}
+			else if (proximity == 0 && count == 1) {
+				// Distant
+				S_StartSoundId(sfx_litng2);
+			}
 
 			effects_flags |= EFFECTS_COPPER_BRIGHTNESS_CHANGE;
 		}
