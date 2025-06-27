@@ -214,6 +214,7 @@ unsigned char rndtable[256] = {
 };
 VINT	rndindex = 0;
 VINT prndindex = 0;
+uint32_t rng_seed = 0;
 
 int P_Random (void)
 {
@@ -245,6 +246,27 @@ void M_ClearRandom (void)
 void P_RandomSeed(int seed)
 {
 	prndindex = seed & 0xff;
+}
+
+uint16_t P_Random16()
+{
+	unsigned int d0 = rng_seed;
+
+	if (d0 == 0) {
+		d0 = 0x2A6D365B;
+	}
+
+	unsigned int d1 = d0 * 41;
+
+	d0 = (d0 & 0xFFFF0000) | (d1 & 0xFFFF);
+	d1 = (d1 << 16) | ((d1 >> 16) & 0xFFFF);
+	d0 += (d1 & 0xFFFF);
+	d1 = (d1 & 0xFFFF0000) | (d0 & 0xFFFF);
+	d1 = (d1 << 16) | ((d1 >> 16) & 0xFFFF);
+
+	rng_seed = d1;
+
+	return d0;
 }
 
 

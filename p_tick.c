@@ -1,5 +1,6 @@
 #include "doomdef.h"
 #include "p_local.h"
+#include "sounds.h"
 #ifdef MARS
 #include "mars.h"
 #endif
@@ -259,30 +260,7 @@ int P_Ticker (void)
 	P_AnimateScenery((int8_t)accum_time);
 	P_UpdateSpecials((int8_t)accum_time);
 
-	if (effects_flags & EFFECTS_COPPER_ENABLED) {
-		int lightning_chance = P_RandomKey(8192);
-
-		if (lightning_chance < 20) {
-			// More intense
-			lightning_count = 0x13;
-		}
-		else if (lightning_chance < 70) {
-			// Less intense
-			lightning_count = 0x03;
-		}
-
-		if ((lightning_count & 0x3) > 0) {
-			const uint8_t brightness_levels[2][3] = {{ 0x13, 0x09, 0x00 }, { 0x1F, 0x0F, 0x00 }};
-
-			copper_table_brightness = brightness_levels[lightning_count >> 4][3-(lightning_count & 0x3)];
-			lightning_count--;
-
-			effects_flags |= EFFECTS_COPPER_BRIGHTNESS_CHANGE;
-		}
-		else {
-			effects_flags &= (~EFFECTS_COPPER_BRIGHTNESS_CHANGE);
-		}
-	}
+	P_Weather();
 
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
@@ -330,6 +308,36 @@ int P_Ticker (void)
 
 	return gameaction;		/* may have been set to ga_died, ga_completed, */
 							/* or ga_secretexit */
+}
+
+inline void P_Weather()
+{
+	if (effects_flags & EFFECTS_COPPER_ENABLED) {
+		unsigned short lightning_chance = P_Random16();
+
+		if (lightning_chance < 160) {
+			// More intense
+			lightning_count = 0x13;
+			S_StartSoundId(sfx_litng1);
+		}
+		else if (lightning_chance < 560) {
+			// Less intense
+			lightning_count = 0x03;
+			S_StartSoundId(sfx_litng2);
+		}
+
+		if ((lightning_count & 0x3) > 0) {
+			const uint8_t brightness_levels[2][3] = {{ 0x13, 0x09, 0x00 }, { 0x1F, 0x0F, 0x00 }};
+
+			copper_table_brightness = brightness_levels[lightning_count >> 4][3-(lightning_count & 0x3)];
+			lightning_count--;
+
+			effects_flags |= EFFECTS_COPPER_BRIGHTNESS_CHANGE;
+		}
+		else {
+			effects_flags &= (~EFFECTS_COPPER_BRIGHTNESS_CHANGE);
+		}
+	}
 }
 
 
