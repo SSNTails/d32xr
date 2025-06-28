@@ -684,6 +684,24 @@ void STOP_LevelSelect (void)
 	Z_Free(chevblku_pic);
 	Z_Free(chevblkd_pic);
 
+	if (copper_source_table[0])
+	{
+		Z_Free(copper_source_table[0]);
+		copper_source_table[0] = NULL;
+	}
+
+	if (copper_source_table[1])
+	{
+		Z_Free(copper_source_table[1]);
+		copper_source_table[1] = NULL;
+	}
+
+	if (copper_buffer)
+	{
+		Z_Free(copper_buffer);
+		copper_buffer = NULL;
+	}
+
 	Z_DumpHeap(mainzone);
 
 //	I_Error("%d (LFB: %d)", Z_FreeMemory(mainzone), Z_LargestFreeBlock(mainzone));
