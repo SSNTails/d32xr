@@ -163,6 +163,7 @@ void I_Print8(int x, int y, const char* string)
 	int16_t colortbl[4];
 	const uint8_t* source;
 	int16_t *dest;
+	int startx = x;
 
 	if (y > (224-16) / 8)
 		return;
@@ -200,6 +201,13 @@ void I_Print8(int x, int y, const char* string)
 			}
 		}
 
+		if (c == '\n')
+		{
+			y += 1;
+			x = startx;
+			dest = (int16_t *)(I_OverwriteBuffer() + 320 + (y * 8) * 160 + x/2);
+			continue;
+		}
 		if (c < 32 || c >= 128)
 		{
 			dest += 4;
@@ -238,14 +246,14 @@ void I_Error (char *error, ...)
 	I_SetPalette(dc_playpals);
 
 	va_list ap;
-	char errormessage[80];
+	char errormessage[4096];
 
 	va_start(ap, error);
 	D_vsnprintf(errormessage, sizeof(errormessage), error, ap);
 	va_end(ap);
 
 	I_ClearFrameBuffer();
-	I_Print8 (0,20,errormessage);
+	I_Print8 (0,0,errormessage);
 	I_Update ();
 
 	while (1)

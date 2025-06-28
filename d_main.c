@@ -639,9 +639,6 @@ void START_LevelSelect (void)
 
 	startmap = 1;
 
-	char buf[512];
-	G_FindMapinfo(G_LumpNumForMapNum(1), &selected_map_info, buf);
-
 	UpdateBuffer();
 
 	I_SetPalette(dc_playpals);
@@ -663,6 +660,9 @@ void START_LevelSelect (void)
 	arrowr_pic = W_CacheLumpName("ARROWR", PU_STATIC);
 	chevblku_pic = W_CacheLumpName("CHEVBLKU", PU_STATIC);
 	chevblkd_pic = W_CacheLumpName("CHEVBLKD", PU_STATIC);
+
+	char buf[512];
+	G_FindMapinfo(G_LumpNumForMapNum(1), &selected_map_info, buf);
 }
 
 #ifdef MEMDEBUG
@@ -682,9 +682,9 @@ void STOP_LevelSelect (void)
 	Z_Free(arrowl_pic);
 	Z_Free(arrowr_pic);
 	Z_Free(chevblku_pic);
-
-//	debugStop = true;
 	Z_Free(chevblkd_pic);
+
+	Z_DumpHeap(mainzone);
 
 //	I_Error("%d (LFB: %d)", Z_FreeMemory(mainzone), Z_LargestFreeBlock(mainzone));
 }

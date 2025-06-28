@@ -821,6 +821,10 @@ void 	Z_Free2 (memzone_t *mainzone,void *ptr);
 #endif
 #define Z_Free(x) Z_Free2(mainzone,x)
 
+#ifdef MEMDEBUG
+void Z_DumpHeap(memzone_t *mainzone);
+#endif
+
 void 	Z_FreeTags (memzone_t *mainzone);
 void	Z_CheckHeap (memzone_t *mainzone);
 void	Z_ChangeTag (void *ptr, int tag);

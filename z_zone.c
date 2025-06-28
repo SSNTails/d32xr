@@ -91,18 +91,6 @@ void Z_Free2 (memzone_t *mainzone, void *ptr)
 	if (block->id != ZONEID)
 		I_Error ("Z_Free: freed a pointer without ZONEID");
 
-#ifdef MEMDEBUG
-	if (debugStop)
-	{
-		if (block->prev && block->next)
-			I_Error("p is %s (%d), n is %s (%d)", block->prev->file, block->prev->line, block->next->file, block->next->line);
-		else if (block->next)
-			I_Error("n is %s (%d)", block->next->file, block->next->line);
-		else if (block->prev)
-			I_Error("p is %d (%d)", block->prev->file, block->prev->line);
-	}
-#endif
-
 	block->tag = 0;
 	block->id = 0;
 
@@ -278,6 +266,37 @@ void Z_CheckHeap (memzone_t *mainzone)
 		if ( checkblock->next->prev != checkblock)
 			I_Error ("Z_CheckHeap: next block doesn't have proper back link\n");
 	}
+}
+
+void Z_DumpHeap(memzone_t *mainzone)
+{
+	char memmap[2048];
+	memmap[0] = '\0';
+	char *mapPtr = memmap;
+	int numblocks = 0;
+
+	memblock_t *block;
+	for (block = &mainzone->blocklist; block; block = block->next)
+	{
+		char appendMe[32];
+
+		if (block->tag)
+			D_snprintf(appendMe, 32, "%s:%d:%d", block->file, block->line, block->size);
+		else
+			D_snprintf(appendMe, 32, "Free:%d", block->size);
+
+		for (int i = 0; i < 32; i++)
+		{
+			if (appendMe[i] == '\0')
+				break;
+			*mapPtr++ = appendMe[i];
+		}
+		*mapPtr++ = '\n';
+		numblocks++;
+	}
+
+	*mapPtr++ = '\0';
+	I_Error("%d blocks:\n%s", numblocks, memmap);
 }
 
 
