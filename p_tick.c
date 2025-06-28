@@ -797,6 +797,7 @@ void P_Start (void)
 void P_Stop (void)
 {
 	M_Stop();
+	ClearCopper();
 	Z_FreeTags (mainzone);
 }
 

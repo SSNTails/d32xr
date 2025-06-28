@@ -684,6 +684,11 @@ void STOP_LevelSelect (void)
 	Z_Free(chevblku_pic);
 	Z_Free(chevblkd_pic);
 
+	ClearCopper();
+}
+
+void ClearCopper()
+{
 	if (copper_source_table[0])
 	{
 		Z_Free(copper_source_table[0]);
@@ -701,10 +706,6 @@ void STOP_LevelSelect (void)
 		Z_Free(copper_buffer);
 		copper_buffer = NULL;
 	}
-
-//	Z_DumpHeap(mainzone);
-
-//	I_Error("%d (LFB: %d)", Z_FreeMemory(mainzone), Z_LargestFreeBlock(mainzone));
 }
 
 void DRAW_LevelSelect (void)
@@ -1205,6 +1206,7 @@ int RunInputDemo (char *demoname)
 	// this will cause shrinking of the zone area available
 	// for the level data after each demo playback and eventual
 	// Z_Malloc failure
+	ClearCopper();
 	Z_FreeTags(mainzone);
 
 	demo = W_CacheLumpNum(lump, PU_STATIC);
@@ -1230,6 +1232,7 @@ int RunPositionDemo (char *demoname)
 	// this will cause shrinking of the zone area available
 	// for the level data after each demo playback and eventual
 	// Z_Malloc failure
+	ClearCopper();
 	Z_FreeTags(mainzone);
 
 	demo = W_CacheLumpNum(lump, PU_STATIC);

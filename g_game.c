@@ -127,6 +127,7 @@ void G_DoLoadLevel (void)
 	Z_CheckHeap (refzone);
 #endif
 
+	ClearCopper();
     Z_FreeTags (mainzone);
 	/*PrintHex (1,1,Z_FreeMemory (mainzone)); */
 /*

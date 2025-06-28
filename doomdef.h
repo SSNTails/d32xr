@@ -1047,6 +1047,7 @@ void G_InitNew (int map, gametype_t gametype, boolean splitscreen);
 void G_ExitLevel (void);
 void G_SecretExitLevel (void);
 void G_WorldDone (void);
+void ClearCopper();
 
 void G_RecordInputDemo  (void);
 void G_RecordPositionDemo (void);
