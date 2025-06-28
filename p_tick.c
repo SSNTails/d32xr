@@ -260,7 +260,7 @@ int P_Ticker (void)
 	P_AnimateScenery((int8_t)accum_time);
 	P_UpdateSpecials((int8_t)accum_time);
 
-	P_SpawnLightningStrike();
+	P_Weather();
 
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
@@ -310,7 +310,7 @@ int P_Ticker (void)
 							/* or ga_secretexit */
 }
 
-inline void P_SpawnLightningStrike()
+inline void P_Weather()
 {
 	if (effects_flags & EFFECTS_COPPER_ENABLED) {
 		unsigned short lightning_chance = P_Random16();

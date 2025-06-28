@@ -662,6 +662,11 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 	}
 }
 
+static void P_SpawnLightningStrike()
+{
+	// Amazing logic goes here.
+}
+
 void T_ScrollTex (scrolltex_t *scrolltex)
 {
 	fixed_t xSpeed = scrolltex->ctrlSector->floorheight >> FRACBITS;
