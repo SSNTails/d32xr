@@ -91,6 +91,18 @@ void Z_Free2 (memzone_t *mainzone, void *ptr)
 	if (block->id != ZONEID)
 		I_Error ("Z_Free: freed a pointer without ZONEID");
 
+#ifdef MEMDEBUG
+	if (debugStop)
+	{
+		if (block->prev && block->next)
+			I_Error("p is %s (%d), n is %s (%d)", block->prev->file, block->prev->line, block->next->file, block->next->line);
+		else if (block->next)
+			I_Error("n is %s (%d)", block->next->file, block->next->line);
+		else if (block->prev)
+			I_Error("p is %d (%d)", block->prev->file, block->prev->line);
+	}
+#endif
+
 	block->tag = 0;
 	block->id = 0;
 
@@ -129,7 +141,11 @@ void Z_Free2 (memzone_t *mainzone, void *ptr)
 
 #define MINFRAGMENT	64
 
+#ifdef MEMDEBUG
+void *Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err, const char *file, int line)
+#else
 void *Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err)
+#endif
 {
 	int		extra;
 	memblock_t	*start, *rover, *new, *base;
@@ -194,6 +210,10 @@ backtostart:
 		base->size = size;
 	}
 	
+#ifdef MEMDEBUG
+	D_strncpy(base->file, file, 16);
+	base->line = line;
+#endif
 	base->tag = tag;
 	base->id = ZONEID;
 #ifndef MARS

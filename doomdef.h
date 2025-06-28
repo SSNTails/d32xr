@@ -779,6 +779,10 @@ typedef struct memblock_s
 	int		size;           /* including the header and possibly tiny fragments */
 	short   tag;            /* purgelevel */
 	short   id;             /* should be ZONEID */
+#ifdef MEMDEBUG
+	char file[16];
+	int line;
+#endif
 #ifndef MARS
 	int		lockframe;		/* don't purge on the same frame */
 #endif
@@ -803,10 +807,18 @@ extern	memzone_t	*refzone;
 void	Z_Init (void);
 memzone_t *Z_InitZone (byte *base, int size);
 
+#ifdef MEMDEBUG
+void 	*Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err, const char *file, int line);
+#else
 void 	*Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err);
+#endif
 void 	Z_Free2 (memzone_t *mainzone,void *ptr);
 
+#ifdef MEMDEBUG
+#define Z_Malloc(x,y) Z_Malloc2(mainzone,x,y,true,__FILE__,__LINE__)
+#else
 #define Z_Malloc(x,y) Z_Malloc2(mainzone,x,y,true)
+#endif
 #define Z_Free(x) Z_Free2(mainzone,x)
 
 void 	Z_FreeTags (memzone_t *mainzone);
@@ -816,6 +828,10 @@ int 	Z_FreeMemory (memzone_t *mainzone);
 int 	Z_LargestFreeBlock(memzone_t *mainzone);
 void 	Z_ForEachBlock(memzone_t *mainzone, memblockcall_t cb, void *userp);
 int		Z_FreeBlocks(memzone_t* mainzone);
+
+#ifdef MEMDEBUG
+extern boolean debugStop;
+#endif
 
 /*------- */
 /*WADFILE */

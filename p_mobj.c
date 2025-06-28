@@ -690,6 +690,21 @@ return;	/*DEBUG */
 		if (mthing->options & MTF_AMBUSH)
 			mobj->flags2 |= MF2_SPAWNEDJETS;
 	}
+	else if (mobj->type == MT_EGGGUARD)
+	{
+		mobj_t *shield = P_SpawnMobj(x, y, z, MT_EGGSHIELD);
+		shield->target = mobj;
+
+		if (mthing->options & MTF_AMBUSH)
+			mobj->flags2 |= MF2_SPAWNEDJETS; // We use this as an extra flag for all kinds of fun stuff. :)
+
+		mobj->extradata = 0;
+
+		if (mthing->options & MTF_EXTRA)
+			SETUPPER8(mobj->extradata, TMGD_RIGHT) // TMGD_RIGHT
+		else if (mthing->options & MTF_OBJECTSPECIAL)
+			SETUPPER8(mobj->extradata, TMGD_LEFT) // TMGD_LEFT
+	}
 
 	if (mobj->flags & MF_RINGMOBJ)
 		return;

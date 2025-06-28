@@ -20,6 +20,7 @@ const char * const sprnames[NUMSPRITES] = {
 "BUS1",
 "BUS2",
 "BUZZ",
+"CBFS",
 "CORL",
 "DRWN",
 "DUST",
@@ -29,6 +30,7 @@ const char * const sprnames[NUMSPRITES] = {
 "EGGN",
 "EGLZ",
 "ELEM",
+"ESHI",
 "ESTA",
 "FISH",
 "FL01",
@@ -73,6 +75,7 @@ const char * const sprnames[NUMSPRITES] = {
 "SPRK",
 "SPRR",
 "SPRY",
+"SPSH",
 "SSHL",
 "SSWY",
 "SSWR",
@@ -135,6 +138,12 @@ void A_SteamBurst();
 void A_HoodFire();
 void A_HoodThink();
 void A_HoodFall();
+void A_FaceStabRev();
+void A_FaceStabHurl();
+void A_FaceStabMiss();
+void A_GuardChase();
+void A_EggShield();
+void A_EggShieldBroken();
 
 #define STATE(sprite,frame,tics,action,nextstate) {sprite,frame,tics,0,0,nextstate,action}
 #define STATE2(sprite,frame,tics,action,var1,var2,nextstate) {sprite,frame,tics,var1,var2,nextstate,action}
@@ -225,6 +234,36 @@ STATE(SPR_ARCH,2,TICRATE,NULL,S_ROBOHOOD_FIRE2), // S_ROBOHOOD_FIRE1
 STATE2(SPR_ARCH,2,20,A_HoodFire,MT_ARROW,0,S_ROBOHOOD_STAND), // S_ROBOHOOD_FIRE2
 STATE(SPR_ARCH,1,2,NULL,S_ROBOHOOD_JUMP2), // S_ROBOHOOD_JUMP1
 STATE(SPR_ARCH,1,1,A_HoodFall,S_ROBOHOOD_JUMP2), // S_ROBOHOOD_JUMP2
+
+// Castlebot Facestabber (yes, we really called it this)
+STATE(SPR_CBFS,0,1,A_Look,S_FACESTABBER_STND1),   // S_FACESTABBER_STND1
+STATE(SPR_CBFS,0,1,A_Chase,S_FACESTABBER_STND3),   // S_FACESTABBER_STND2
+STATE(SPR_CBFS,1,1,A_Chase,S_FACESTABBER_STND2),   // S_FACESTABBER_STND3
+STATE2(SPR_CBFS,0,1,A_FaceStabRev,20,S_FACESTABBER_CHARGE2,S_FACESTABBER_CHARGE1), // S_FACESTABBER_CHARGE1
+STATE(SPR_CBFS,0,1,A_FaceTarget,S_FACESTABBER_CHARGE3), // S_FACESTABBER_CHARGE2
+STATE2(SPR_CBFS,2,1,A_FaceStabHurl,6,S_FACESTABBER_CHARGE4,S_FACESTABBER_CHARGE3), // S_FACESTABBER_CHARGE3
+STATE2(SPR_CBFS,2,1,A_FaceStabMiss,0,S_FACESTABBER_STND1,S_FACESTABBER_CHARGE4), // S_FACESTABBER_CHARGE4
+STATE(SPR_CBFS,0,TICRATE,A_Pain,S_FACESTABBER_STND1), // S_FACESTABBER_PAIN
+STATE2(SPR_CBFS,0,2,A_BossScream,1,0,S_FACESTABBER_DIE2),  // S_FACESTABBER_DIE1
+STATE2(SPR_NULL,0,2,A_BossScream,1,0,S_FACESTABBER_DIE3),  // S_FACESTABBER_DIE2
+STATE2(SPR_NULL,0,0,A_Repeat,7,S_FACESTABBER_DIE1,S_XPLD_FLICKY),       // S_FACESTABBER_DIE3
+
+STATE(SPR_NULL,0,TICRATE/2,NULL,S_NULL), // S_FACESTABBERSPEAR
+
+// Egg Guard
+STATE(SPR_SPSH,0,1,A_Look,S_EGGGUARD_STND),  // S_EGGGUARD_STND
+STATE(SPR_SPSH,1,3,A_GuardChase,S_EGGGUARD_WALK2), // S_EGGGUARD_WALK1
+STATE(SPR_SPSH,2,3,A_GuardChase,S_EGGGUARD_WALK3), // S_EGGGUARD_WALK2
+STATE(SPR_SPSH,3,3,A_GuardChase,S_EGGGUARD_WALK4), // S_EGGGUARD_WALK3
+STATE(SPR_SPSH,4,3,A_GuardChase,S_EGGGUARD_WALK1), // S_EGGGUARD_WALK4
+STATE(SPR_SPSH,5,TICRATE,NULL,S_EGGGUARD_RUN1),  // S_EGGGUARD_MAD1
+STATE(SPR_SPSH,6,1,A_GuardChase,S_EGGGUARD_RUN2),  // S_EGGGUARD_RUN1
+STATE(SPR_SPSH,7,1,A_GuardChase,S_EGGGUARD_RUN3),  // S_EGGGUARD_RUN2
+STATE(SPR_SPSH,8,1,A_GuardChase,S_EGGGUARD_RUN4),  // S_EGGGUARD_RUN3
+STATE(SPR_SPSH,9,1,A_GuardChase,S_EGGGUARD_RUN1),  // S_EGGGUARD_RUN4
+
+STATE(SPR_ESHI,0,1,A_EggShield,S_EGGSHIELD),  // S_EGGSHIELD
+STATE(SPR_ESHI,0,TICRATE/2,A_EggShieldBroken,S_NULL), // S_EGGSHIELDBREAK
 
 STATE(SPR_TOKE,0,2,NULL,S_TOKEN2), // S_TOKEN1
 STATE(SPR_TOKE,1,2,NULL,S_TOKEN3), // S_TOKEN2
@@ -1728,7 +1767,109 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		0, // flags
 		MF2_ENEMY|MF2_SHOOTABLE|MF2_FLOAT  // flags2
 	},
+	{           // MT_FACESTABBER
+		118,            // doomednum
+		S_FACESTABBER_STND1, // spawnstate
+		2,              // spawnhealth
+		S_FACESTABBER_STND1, // seestate
+		sfx_None,       // seesound
+		70,             // reactiontime
+		sfx_s3k_b6,       // attacksound
+		S_FACESTABBER_PAIN, // painstate
+		0,              // painchance
+		sfx_s3k_6e,     // painsound
+		S_FACESTABBER_CHARGE1, // meleestate
+		S_FACESTABBER_CHARGE1, // missilestate
+		S_FACESTABBER_DIE1, // deathstate
+		S_NULL,         // xdeathstate
+		sfx_s3k_b4,      // deathsound
+		3,              // speed
+		32*FRACUNIT,    // radius
+		72*FRACUNIT,    // height
+		100,            // mass
+		0,              // damage
+		sfx_s3k_c5,      // activesound
+		MF_SPECIAL, // flags
+		MF2_SHOOTABLE          // flags2
+	},
 
+	{           // MT_FACESTABBERSPEAR
+		-1,              // doomednum
+		S_FACESTABBERSPEAR, // spawnstate
+		1,               // spawnhealth
+		S_NULL,          // seestate
+		sfx_None,        // seesound
+		35,              // reactiontime
+		sfx_None,        // attacksound
+		S_NULL,          // painstate
+		0,               // painchance
+		sfx_None,        // painsound
+		S_NULL,          // meleestate
+		S_NULL,          // missilestate
+		S_NULL,          // deathstate
+		S_NULL,          // xdeathstate
+		sfx_None,        // deathsound
+		0,               // speed
+		32*FRACUNIT,     // radius
+		72*FRACUNIT,     // height
+		0,       // mass
+		0,               // damage
+		sfx_None,        // activesound
+		MF_SPECIAL|MF_NOGRAVITY, // flags
+		0           // flags2
+	},
+
+	{           // MT_EGGGUARD
+		119,             // doomednum
+		S_EGGGUARD_STND, // spawnstate
+		1,               // spawnhealth
+		S_EGGGUARD_WALK1,// seestate
+		sfx_None,        // seesound
+		35,              // reactiontime
+		sfx_None,        // attacksound
+		S_EGGGUARD_MAD1, // painstate
+		0,               // painchance
+		sfx_None,        // painsound
+		S_EGGGUARD_RUN1, // meleestate
+		S_NULL,          // missilestate
+		S_XPLD_FLICKY,   // deathstate
+		S_NULL,          // xdeathstate
+		sfx_s3k_3d,         // deathsound
+		6,               // speed
+		16*FRACUNIT,     // radius
+		48*FRACUNIT,     // height
+		100,             // mass
+		0,               // damage
+		sfx_None,        // activesound
+		0,        // flags
+		MF2_SHOOTABLE           // flags2
+	},
+
+	{           // MT_EGGSHIELD
+		-1,              // doomednum
+		S_EGGSHIELD,     // spawnstate
+		1,               // spawnhealth
+		S_EGGSHIELD,     // seestate
+		sfx_None,        // seesound
+		35,              // reactiontime
+		sfx_s3k_7b,       // attacksound
+		S_NULL,          // painstate
+		0,               // painchance
+		sfx_s3k_7b,       // painsound
+		S_NULL,          // meleestate
+		S_NULL,          // missilestate
+		S_EGGSHIELDBREAK,// deathstate
+		S_NULL,          // xdeathstate
+		sfx_wbreak,      // deathsound
+		3,               // speed
+		24*FRACUNIT,     // radius
+		128*FRACUNIT,    // height
+		100,             // mass
+		0,               // damage
+		sfx_None,        // activesound
+		MF_SPECIAL|MF_NOGRAVITY, // flags
+		0           // flags2
+	},
 	{           // MT_TOKEN
 		312,            // doomednum
 		S_TOKEN1,         // spawnstate

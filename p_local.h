@@ -33,6 +33,12 @@
 #define	MELEERANGE		(70*FRACUNIT)
 #define	MISSILERANGE	(32*64*FRACUNIT)
 
+enum
+{
+	TMGD_BACK = 0,
+	TMGD_RIGHT = 1,
+	TMGD_LEFT = 2
+};
 
 typedef enum
 {

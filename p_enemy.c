@@ -17,7 +17,7 @@ Most monsters are spawned unaware of all players, but some can be made preaware
 
 boolean P_CheckMeleeRange (mobj_t *actor, fixed_t range);
 boolean P_CheckMissileRange (mobj_t *actor);
-boolean P_Move (mobj_t *actor) ATTR_DATA_CACHE_ALIGN;
+boolean P_Move (mobj_t *actor, fixed_t speed) ATTR_DATA_CACHE_ALIGN;
 boolean P_TryWalk (mobj_t *actor) ATTR_DATA_CACHE_ALIGN;
 void P_NewChaseDir (mobj_t *actor) ATTR_DATA_CACHE_ALIGN;
 void A_Look (mobj_t *actor, int16_t var1, int16_t var2) ATTR_DATA_CACHE_ALIGN;
@@ -95,7 +95,7 @@ boolean P_CheckMissileRange (mobj_t *actor)
 fixed_t	xspeed[8] = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000};
 fixed_t yspeed[8] = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000};
 
-boolean P_Move (mobj_t *actor)
+boolean P_Move(mobj_t *actor, fixed_t speed)
 {
 	fixed_t	tryx, tryy;
 	boolean		good;
@@ -104,8 +104,8 @@ boolean P_Move (mobj_t *actor)
 	if (actor->movedir == DI_NODIR)
 		return false;
 	
-	tryx = actor->x + mobjinfo[actor->type].speed*xspeed[actor->movedir];
-	tryy = actor->y + mobjinfo[actor->type].speed*yspeed[actor->movedir];
+	tryx = actor->x + speed*xspeed[actor->movedir];
+	tryy = actor->y + speed*yspeed[actor->movedir];
 	
 	if (!P_TryMove (&tm, actor, tryx, tryy) )
 	{	/* open any specials */
@@ -151,7 +151,7 @@ boolean P_Move (mobj_t *actor)
 
 boolean P_TryWalk (mobj_t *actor)
 {	
-	if (!P_Move (actor))
+	if (!P_Move (actor, mobjinfo[actor->type].speed))
 		return false;
 
 	actor->movecount = P_Random()&15;
@@ -482,7 +482,7 @@ void A_Chase (mobj_t *actor, int16_t var1, int16_t var2)
 /* */
 /* chase towards player */
 /* */
-	if (--actor->movecount<0 || !P_Move (actor))
+	if (--actor->movecount<0 || !P_Move (actor, ainfo->speed))
 		P_NewChaseDir (actor);
 }
 
@@ -585,7 +585,7 @@ void A_JetJawChomp(mobj_t *actor, int16_t var1, int16_t var2)
 /* */
 /* chase towards player */
 /* */
-	if (--actor->movecount<0 || !P_Move(actor))
+	if (--actor->movecount<0 || !P_Move(actor, ainfo->speed))
 		P_NewChaseDir(actor);
 
 	fixed_t watertop = GetWatertopMo(actor);
@@ -1273,7 +1273,7 @@ nomissile:
 	}
 
 	// chase towards player
-	if (--actor->movecount < 0 || !P_Move(actor))
+	if (--actor->movecount < 0 || !P_Move(actor, mobjinfo[actor->type].speed))
 		P_NewChaseDir(actor);
 }
 
@@ -1439,7 +1439,7 @@ static void A_GooSpray(mobj_t *actor, int speedvar)
 		goop = P_SpawnMobj(actor->x, actor->y, fz, mobjinfo[actor->type].painchance);
 		P_ThrustValues(fa, ns, &goop->momx, &goop->momy);
 		goop->momz = 4*FRACUNIT;
-		goop->reactiontime = TICRATE;
+		goop->reactiontime = 4*TICRATE;
 //		goop->reactiontime = 30+(P_Random()/32);
 
 		S_StartSound(actor, mobjinfo[actor->type].attacksound);
@@ -1846,6 +1846,367 @@ void A_HoodFall(mobj_t *actor, int16_t var1, int16_t var2)
 	actor->momx = actor->momy = 0;
 	actor->reactiontime = aInfo->reactiontime;
 	P_SetMobjState(actor, aInfo->seestate);
+}
+
+// Function: A_FaceStabRev
+//
+// Description: Facestabber rev action
+//
+// var1 = effective duration
+// var2 = effective nextstate
+//
+void A_FaceStabRev(mobj_t *actor, int16_t var1, int16_t var2)
+{/*
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	if (!actor->target)
+	{
+		P_SetMobjState(actor, aInfo->spawnstate);
+		return;
+	}
+
+	actor->extradata = 0;
+
+	if (!actor->reactiontime)
+	{
+		actor->reactiontime = var1;
+		S_StartSound(actor, aInfo->activesound);
+	}
+	else
+	{
+		if ((--actor->reactiontime) == 0)
+		{
+			S_StartSound(actor, aInfo->attacksound);
+			P_SetMobjState(actor, var2);
+		}
+		else
+		{
+			P_TryMove(actor, actor->x - P_ReturnThrustX(actor->angle, 2<<FRACBITS), actor->y - P_ReturnThrustY(actor->angle, 2<<FRACBITS), false);
+			if (!P_MobjWasRemoved(actor))
+				P_FaceStabFlume(actor);
+		}
+	}*/
+}
+
+// Function: A_FaceStabHurl
+//
+// Description: Facestabber hurl action
+//
+// var1 = homing strength (recommended strength between 0-8)
+// var2 = effective nextstate
+//
+void A_FaceStabHurl(mobj_t *actor, int16_t var1, int16_t var2)
+{/*
+	if (actor->target)
+	{
+		angle_t visang = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
+		// Calculate new direction.
+		angle_t dirang = actor->angle;
+		angle_t diffang = visang - dirang;
+
+		if (var1) // Allow homing?
+		{
+			if (diffang > ANG180)
+			{
+				angle_t workang = (int32_t)var1*(InvAngle(diffang)>>5);
+				diffang += InvAngle(workang);
+			}
+			else
+				diffang += (int32_t)var1*(diffang>>5);
+		}
+		diffang += ANG45;
+
+		// Check the sight cone.
+		if (diffang < ANG90)
+		{
+			actor->angle = dirang;
+			if (++actor->extravalue2 < 4)
+				actor->extravalue2 = 4;
+			else if (actor->extravalue2 > 26)
+				actor->extravalue2 = 26;
+
+			if (P_TryMove(actor,
+				actor->x + P_ReturnThrustX(dirang, UPPER8(actor->extradata)<<FRACBITS),
+				actor->y + P_ReturnThrustY(dirang, UPPER8(actor->extradata)<<FRACBITS),
+				false))
+			{
+				// Do the spear damage.
+#define NUMSTEPS 3
+#define NUMGRADS 5
+#define MAXVAL (NUMSTEPS*NUMGRADS)
+
+				int8_t step = (++actor->extravalue1);
+				fixed_t basesize = FRACUNIT/MAXVAL;
+				mobj_t *hwork = actor;
+				int32_t dist = 113;
+				fixed_t xo = P_ReturnThrustX(actor->angle, dist*basesize);
+				fixed_t yo = P_ReturnThrustY(actor->angle, dist*basesize);
+
+				while (step > 0)
+				{
+					if (!P_MobjWasRemoved(hwork->hnext))
+					{
+						hwork = hwork->hnext;
+						hwork->angle = actor->angle + ANG90;
+						P_SetScale(hwork, FixedSqrt(step*basesize), true);
+						hwork->fuse = 2;
+						P_MoveOrigin(hwork, actor->x + xo*(15-step), actor->y + yo*(15-step), actor->z + (actor->height - hwork->height)/2 + (P_MobjFlip(actor)*(8<<FRACBITS)));
+						if (P_MobjWasRemoved(hwork))
+						{
+							// if one of the sections are removed, erase the entire damn thing.
+							mobj_t *hnext = actor->hnext;
+							hwork = actor;
+							do
+							{
+								hnext = hwork->hnext;
+								P_RemoveMobj(hwork);
+								hwork = hnext;
+							}
+							while (!P_MobjWasRemoved(hwork));
+							return;
+						}
+					}
+					step -= NUMGRADS;
+				}
+
+				if (actor->extravalue1 >= MAXVAL)
+					actor->extravalue1 -= NUMGRADS;
+
+				P_FaceStabFlume(actor);
+				return;
+#undef MAXVAL
+#undef NUMGRADS
+#undef NUMSTEPS
+			}
+			if (P_MobjWasRemoved(actor))
+				return;
+		}
+	}
+
+	P_SetMobjState(actor, var2);
+	if (!P_MobjWasRemoved(actor))
+	{
+		const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+		actor->reactiontime = aInfo->reactiontime;
+	}*/
+}
+
+// Function: A_FaceStabMiss
+//
+// Description: Facestabber miss action
+//
+// var1 = unused
+// var2 = effective nextstate
+//
+void A_FaceStabMiss(mobj_t *actor, int16_t var1, int16_t var2)
+{/*
+	if (++actor->extravalue1 >= 3)
+	{
+		actor->extravalue2 -= 2;
+		actor->extravalue1 = 0;
+		S_StartSound(actor, sfx_s3k_47);
+//		P_SharpDust(actor, MT_SPINDUST, actor->angle);
+	}
+
+	if (actor->extravalue2 <= 0 || !P_TryMove(actor,
+		actor->x + P_ReturnThrustX(actor, actor->angle, actor->extravalue2<<FRACBITS),
+		actor->y + P_ReturnThrustY(actor, actor->angle, actor->extravalue2<<FRACBITS),
+		false))
+	{
+		if (P_MobjWasRemoved(actor))
+			return;
+		actor->extravalue2 = 0;
+		P_SetMobjState(actor, var2);
+	}*/
+}
+
+// Function: A_GuardChase
+//
+// Description: Modified A_Chase for Egg Guard
+//
+// var1 = unused
+// var2 = unused
+//
+void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	int32_t delta;
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	if (actor->reactiontime)
+		actor->reactiontime--;
+
+	if (actor->threshold != 42) // In formation...
+	{
+		fixed_t speed;
+		ptrymove_t tm;
+
+		speed = LOWER8(actor->extradata);
+
+		if (actor->flags2 & MF2_SPAWNEDJETS)
+			speed <<= 1;
+
+		if (speed
+		&& !P_TryMove(&tm, actor,
+			actor->x + P_ReturnThrustX(actor->angle, speed),
+			actor->y + P_ReturnThrustY(actor->angle, speed))
+		&& speed > 0) // can't be the same check as previous so that P_TryMove gets to happen.
+		{
+			int32_t direction = UPPER8(actor->extradata);
+
+			switch (direction)
+			{
+				case TMGD_BACK:
+				default:
+					actor->angle += ANG180;
+					break;
+				case TMGD_RIGHT:
+					actor->angle -= ANG90;
+					break;
+				case TMGD_LEFT:
+					actor->angle += ANG90;
+					break;
+			}
+		}
+
+		if (LOWER8(actor->extradata) < aInfo->speed)
+			SETLOWER8(actor->extradata, actor->extradata + 1)
+	}
+	else // Break ranks!
+	{
+		// turn towards movement direction if not there yet
+		if (actor->movedir < NUMDIRS)
+		{
+			actor->angle &= (7<<29);
+			delta = actor->angle - (actor->movedir << 29);
+
+			if (delta > 0)
+				actor->angle -= ANG45;
+			else if (delta < 0)
+				actor->angle += ANG45;
+		}
+
+		// possibly choose another target
+		if (!actor->target || !(actor->target->flags2 & MF2_SHOOTABLE)
+			|| (netgame && (actor->target->health == 0 || !(actor->flags2 & MF2_SEETARGET))))
+		{
+			actor->target = NULL;
+			P_SetMobjState(actor, aInfo->spawnstate);
+			return; // got a new target
+		}
+
+		// chase towards player
+		if (--actor->movecount < 0 || !P_Move(actor, (actor->flags2 & MF2_SPAWNEDJETS) ? aInfo->speed * 2 : aInfo->speed))
+		{
+			P_NewChaseDir(actor);
+			actor->movecount += 5; // Increase tics before change in direction allowed.
+		}
+	}
+
+	// Shields should think and move on their own.
+	// They are spawned immediately after the guard, so it will think
+	// next all by itself, no need to call it here.
+
+/*
+	// Now that we've moved, its time for our shield to move!
+	// Otherwise it'll never act as a proper overlay.
+	if (actor->tracer && actor->tracer->state
+	&& actor->tracer->state->action.acp1)
+	{
+		var1 = actor->tracer->state->var1, var2 = actor->tracer->state->var2;
+		actor->tracer->state->action.acp1(actor->tracer);
+	}*/
+}
+
+// Function: A_EggShield
+//
+// Description: Modified A_Chase for Egg Guard's shield
+//
+// var1 = unused
+// var2 = unused
+//
+void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	fixed_t blockdist;
+	fixed_t newx, newy;
+	fixed_t movex, movey;
+	angle_t angle;
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	if (!actor->target || !actor->target->health)
+	{
+		actor->latecall = LC_REMOVE_MOBJ;
+		return;
+	}
+
+	newx = actor->target->x + P_ReturnThrustX(actor->target->angle, FRACUNIT);
+	newy = actor->target->y + P_ReturnThrustY(actor->target->angle, FRACUNIT);
+
+	movex = newx - actor->x;
+	movey = newy - actor->y;
+
+	actor->angle = actor->target->angle;
+	actor->z = actor->target->z;
+
+	actor->floorz = actor->target->floorz;
+	actor->ceilingz = actor->target->ceilingz;
+
+	if (!movex && !movey)
+		return;
+
+	P_UnsetThingPosition(actor);
+	actor->x = newx;
+	actor->y = newy;
+	P_SetThingPosition(actor);
+
+	// Search for players to push
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		const player_t *player = &players[i];
+
+		if (!player->mo)
+			continue;
+
+		if (player->mo->z > actor->z + (actor->theight << FRACBITS))
+			continue;
+
+		if (player->mo->z + (player->mo->theight << FRACBITS) < actor->z)
+			continue;
+
+		const mobjinfo_t *pInfo = &mobjinfo[MT_PLAYER];
+
+		blockdist = aInfo->radius + pInfo->radius;
+
+		if (D_abs(actor->x - player->mo->x) >= blockdist || D_abs(actor->y - player->mo->y) >= blockdist)
+			continue; // didn't hit it
+
+		angle = R_PointToAngle2(actor->x, actor->y, player->mo->x, player->mo->y) - actor->angle;
+
+		if (angle > ANG90 && angle < ANG270)
+			continue;
+
+		// Blocked by the shield
+		player->mo->momx += movex;
+		player->mo->momy += movey;
+		return;
+	}
+}
+
+void A_EggShieldBroken(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	mobj_t *guard = actor->target;
+
+	if (!guard || guard->health == 0)
+		return;
+
+	// Lost the shield, so get mad!!!
+	actor->target = NULL;
+	guard->threshold = 42;
+	P_SetMobjState(guard, mobjinfo[guard->type].painstate);
+	guard->flags |= MF_SPECIAL;
+	guard->flags2 |= MF2_SHOOTABLE;
 }
 
 /*============================================================================= */
