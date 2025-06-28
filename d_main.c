@@ -702,7 +702,7 @@ void STOP_LevelSelect (void)
 		copper_buffer = NULL;
 	}
 
-	Z_DumpHeap(mainzone);
+//	Z_DumpHeap(mainzone);
 
 //	I_Error("%d (LFB: %d)", Z_FreeMemory(mainzone), Z_LargestFreeBlock(mainzone));
 }
