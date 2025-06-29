@@ -136,6 +136,8 @@ int Mars_ConvGamepadButtons(int ctrl);
 
 int Mars_ROMSize(void);
 
+void Mars_WriteMDVDPRegister(int write);
+
 void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size);
 
 #ifdef MDSKY

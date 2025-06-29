@@ -697,6 +697,13 @@ int Mars_ReadController(int ctrl)
 	return val;
 }
 
+void Mars_WriteMDVDPRegister(int write)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = write;
+	MARS_SYS_COMM0 = 0x1C00;
+}
+
 void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size)
 {
 	int i;
