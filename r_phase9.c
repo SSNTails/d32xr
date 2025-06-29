@@ -153,6 +153,7 @@ static void R_UpdateCache(void)
       void **data, **pdata;
       unsigned w, h, m, pixels;
       boolean masked = false;
+      boolean compressed = false;
 
       id = bestmips[i];
       if (id == -1) {
@@ -184,6 +185,9 @@ static void R_UpdateCache(void)
           w = tex->width, h = tex->height;
           pixels = w * h;
           pdata = (void**)&data[i];
+
+          if (!strcmp(tex->name, "GFZROCK"))
+            compressed = true;
         }
       }
 
@@ -204,7 +208,7 @@ static void R_UpdateCache(void)
         continue;
       }
 
-      R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata);
+      R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata, compressed);
 
       if (debugmode == DEBUGMODE_TEXCACHE)
         continue;
