@@ -965,7 +965,7 @@ static void R_ColorShiftPalette(const uint8_t *in, int idx, uint8_t *out)
 		{ 0x40, 0xA0, 0xFF,  1,  2 }, // 11 - GFZ water
 		{ 0x80, 0x80, 0x80,  1,  2 }, // 12 - Pause
 		{ 0xB7, 0xB7, 0xB7,  1,  2 }, // 13 - THZ water
-		{ 0x3F, 0x2F, 0x17,  2,  3 }, // 14 - CEZ water
+		{ 0x3F, 0x2F, 0x17,  6,  8 }, // 14 - CEZ water
 	};
 
 	static const uint8_t classic_palette_shifts[][4] = {
