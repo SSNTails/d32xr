@@ -2034,7 +2034,7 @@ void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
 		fixed_t speed;
 		ptrymove_t tm;
 
-		speed = LOWER8(actor->extradata);
+		speed = LOWER8(actor->extradata) << FRACBITS;
 
 		if (actor->flags2 & MF2_SPAWNEDJETS)
 			speed <<= 1;
@@ -2063,12 +2063,17 @@ void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
 		}
 
 		if (LOWER8(actor->extradata) < aInfo->speed)
-			SETLOWER8(actor->extradata, actor->extradata + 1)
+		{
+			const uint8_t newvalue = LOWER8(actor->extradata) + 1;
+			SETLOWER8(actor->extradata, newvalue);
+		}
 	}
 	else // Break ranks!
 	{
+		actor->flags2 |= MF2_SHOOTABLE;
+
 		// turn towards movement direction if not there yet
-		if (actor->movedir < NUMDIRS)
+		if (actor->movedir < 8)
 		{
 			actor->angle &= (7<<29);
 			delta = actor->angle - (actor->movedir << 29);
@@ -2079,20 +2084,11 @@ void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
 				actor->angle += ANG45;
 		}
 
-		// possibly choose another target
-		if (!actor->target || !(actor->target->flags2 & MF2_SHOOTABLE)
-			|| (netgame && (actor->target->health == 0 || !(actor->flags2 & MF2_SEETARGET))))
-		{
-			actor->target = NULL;
-			P_SetMobjState(actor, aInfo->spawnstate);
-			return; // got a new target
-		}
-
 		// chase towards player
 		if (--actor->movecount < 0 || !P_Move(actor, (actor->flags2 & MF2_SPAWNEDJETS) ? aInfo->speed * 2 : aInfo->speed))
 		{
 			P_NewChaseDir(actor);
-			actor->movecount += 5; // Increase tics before change in direction allowed.
+//			actor->movecount += 5; // Increase tics before change in direction allowed.
 		}
 	}
 

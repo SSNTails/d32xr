@@ -251,7 +251,7 @@ STATE2(SPR_NULL,0,0,A_Repeat,7,S_FACESTABBER_DIE1,S_XPLD_FLICKY),       // S_FAC
 STATE(SPR_NULL,0,TICRATE/2,NULL,S_NULL), // S_FACESTABBERSPEAR
 
 // Egg Guard
-STATE(SPR_SPSH,0,1,A_Look,S_EGGGUARD_STND),  // S_EGGGUARD_STND
+STATE(SPR_SPSH,0,3,A_Look,S_EGGGUARD_STND),  // S_EGGGUARD_STND
 STATE(SPR_SPSH,1,3,A_GuardChase,S_EGGGUARD_WALK2), // S_EGGGUARD_WALK1
 STATE(SPR_SPSH,2,3,A_GuardChase,S_EGGGUARD_WALK3), // S_EGGGUARD_WALK2
 STATE(SPR_SPSH,3,3,A_GuardChase,S_EGGGUARD_WALK4), // S_EGGGUARD_WALK3
@@ -1790,7 +1790,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		0,              // damage
 		sfx_s3k_c5,      // activesound
 		MF_SPECIAL, // flags
-		MF2_SHOOTABLE          // flags2
+		MF2_SHOOTABLE|MF2_ENEMY          // flags2
 	},
 
 	{           // MT_FACESTABBERSPEAR
@@ -1835,14 +1835,14 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		S_XPLD_FLICKY,   // deathstate
 		S_NULL,          // xdeathstate
 		sfx_s3k_3d,         // deathsound
-		6,               // speed
+		7,               // speed
 		16*FRACUNIT,     // radius
 		48*FRACUNIT,     // height
 		100,             // mass
 		0,               // damage
 		sfx_None,        // activesound
 		0,        // flags
-		MF2_SHOOTABLE           // flags2
+		MF2_ENEMY           // flags2
 	},
 
 	{           // MT_EGGSHIELD
@@ -1868,7 +1868,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		0,               // damage
 		sfx_None,        // activesound
 		MF_SPECIAL|MF_NOGRAVITY, // flags
-		0           // flags2
+		MF2_SHOOTABLE           // flags2
 	},
 	{           // MT_TOKEN
 		312,            // doomednum
