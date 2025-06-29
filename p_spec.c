@@ -662,9 +662,64 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 	}
 }
 
-static void P_SpawnLightningStrike()
+lightningspawn_t *lightningSpawner = NULL;
+
+void P_SpawnLightningStrike()
 {
 	// Amazing logic goes here.
+	if (!lightningSpawner)
+		return; // Should never happen
+
+	lightningSpawner->timer = 0;
+}
+
+void T_LightningFade(lightningspawn_t *spawner)
+{
+	if (spawner->timer < 0)
+		return;
+
+	for (int i = 0; i < spawner->numsectors*2;)
+	{
+		sector_t *sec = &sectors[spawner->sectorData[i++]];
+		const VINT origLightLevel = spawner->sectorData[i++];
+
+		sec->lightlevel -= 4;
+
+		if (sec->lightlevel <= origLightLevel)
+		{
+			sec->lightlevel = (uint8_t)origLightLevel;
+			spawner->timer++;
+		}
+	}
+
+	if (spawner->timer >= spawner->numsectors)
+		spawner->timer = -1;
+}
+
+static void P_InitLightning()
+{
+	VINT numskysectors = 0;
+
+	for (int i = 0; i < numsectors; i++)
+	{
+		if (sectors[i].ceilingpic == (uint8_t)-1)
+			numskysectors++;
+	}
+
+	lightningspawn_t *spawner = Z_Malloc(sizeof(*spawner) + (sizeof(VINT) * 2 * numskysectors), PU_LEVSPEC);
+	spawner->sectorData = (VINT*)((uint8_t*)spawner + sizeof(*spawner));
+	spawner->thinker.function = T_LightningFade;
+	P_AddThinker(&spawner->thinker);
+	spawner->timer = -1;
+
+	int count = 0;
+	for (int i = 0; i < numsectors; i++)
+	{
+		spawner->sectorData[i++] = i;
+		spawner->sectorData[i++] = sectors[i].lightlevel;
+	}
+
+	lightningSpawner = spawner;
 }
 
 void T_ScrollTex (scrolltex_t *scrolltex)
@@ -760,6 +815,8 @@ void P_SpawnSpecials (void)
 	sector_t	*sector;
 	int		i;
 
+	lightningSpawner = NULL;
+
 	/* */
 	/*	Init special SECTORs */
 	/* */
@@ -785,10 +842,8 @@ void P_SpawnSpecials (void)
 		{
 		case 48:	/* EFFECT FIRSTCOL SCROLL+ */
 		case 142:	/* MODERATE VERT SCROLL */
-			linespeciallist[numlineanimspecials] = &lines[i];
-			numlineanimspecials++;
-			if (numlineanimspecials == MAXLINEANIMS)
-				goto done_speciallist;
+			if (numlineanimspecials >= MAXLINEANIMS)
+				continue;
 			break;
 		case 60: // Moving platform
 			EV_DoFloor(&lines[i], floorContinuous);
@@ -887,7 +942,9 @@ void P_SpawnSpecials (void)
 		}
 		}
 	}
-done_speciallist:
+
+	if (effects_flags & EFFECTS_COPPER_ENABLED)
+		P_InitLightning();
 
 	/* */
 	/*	Init other misc stuff */

@@ -194,6 +194,64 @@ int		ticphase;
 #define frtc samplecount
 #endif
 
+void P_Weather()
+{
+	if (effects_flags & EFFECTS_COPPER_ENABLED) {
+		unsigned short lightning_chance = P_Random16();
+
+		if (lightning_chance < 160*4) {
+			// Close lightning
+			lightning_count = 0x18;
+		}
+		else if (lightning_chance < 560*4) {
+			// Distant lightning
+			lightning_count = 0x08;
+		}
+
+		int proximity = lightning_count >> 4;
+		int count = lightning_count & 0xF;
+		if (count > 0) {
+			const uint8_t brightness_levels[2][8] = {
+				{ 0x09, 0x13, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00 },
+				{ 0x0F, 0x1F, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00 }
+			};
+
+			if (proximity == 1)
+			{
+				// Close strike
+				if (count == 8) {
+					// Disable shadow/highlight for a short time to lighten the sky.
+					R_SetShadowHighlight(false);
+				}
+				else if (count == 5) {
+					// Re-enable shadow/highlight to return the sky back to normal (i.e. dark).
+					R_SetShadowHighlight(true);
+					S_StartSoundId(sfx_litng1);
+					P_SpawnLightningStrike();
+				}
+			}
+			else //if (proximity == 0)
+			{
+				// Distant strike
+				if (count == 1) {
+					// Enable shadow/highlight in case it wasn't already enabled previously.
+					R_SetShadowHighlight(true);
+					S_StartSoundId(sfx_litng2);
+					P_SpawnLightningStrike();
+				}
+			}
+
+			copper_table_brightness = brightness_levels[proximity][8-count];
+			lightning_count--;
+
+			effects_flags |= EFFECTS_COPPER_BRIGHTNESS_CHANGE;
+		}
+		else {
+			effects_flags &= (~EFFECTS_COPPER_BRIGHTNESS_CHANGE);
+		}
+	}
+}
+
 int P_Ticker (void)
 {
 	int		ticstart;
@@ -309,63 +367,6 @@ int P_Ticker (void)
 	return gameaction;		/* may have been set to ga_died, ga_completed, */
 							/* or ga_secretexit */
 }
-
-inline void P_Weather()
-{
-	if (effects_flags & EFFECTS_COPPER_ENABLED) {
-		unsigned short lightning_chance = P_Random16();
-
-		if (lightning_chance < 160*4) {
-			// Close lightning
-			lightning_count = 0x18;
-		}
-		else if (lightning_chance < 560*4) {
-			// Distant lightning
-			lightning_count = 0x08;
-		}
-
-		int proximity = lightning_count >> 4;
-		int count = lightning_count & 0xF;
-		if (count > 0) {
-			const uint8_t brightness_levels[2][8] = {
-				{ 0x09, 0x13, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00 },
-				{ 0x0F, 0x1F, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00 }
-			};
-
-			if (proximity == 1)
-			{
-				// Close strike
-				if (count == 8) {
-					// Disable shadow/highlight for a short time to lighten the sky.
-					R_SetShadowHighlight(false);
-				}
-				else if (count == 5) {
-					// Re-enable shadow/highlight to return the sky back to normal (i.e. dark).
-					R_SetShadowHighlight(true);
-					S_StartSoundId(sfx_litng1);
-				}
-			}
-			else //if (proximity == 0)
-			{
-				// Distant strike
-				if (count == 1) {
-					// Enable shadow/highlight in case it wasn't already enabled previously.
-					R_SetShadowHighlight(true);
-					S_StartSoundId(sfx_litng2);
-				}
-			}
-
-			copper_table_brightness = brightness_levels[proximity][8-count];
-			lightning_count--;
-
-			effects_flags |= EFFECTS_COPPER_BRIGHTNESS_CHANGE;
-		}
-		else {
-			effects_flags &= (~EFFECTS_COPPER_BRIGHTNESS_CHANGE);
-		}
-	}
-}
-
 
 gameaction_t RecordDemo()
 {
