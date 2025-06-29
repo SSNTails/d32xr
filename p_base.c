@@ -530,6 +530,12 @@ void P_ZMovement(mobj_t *mo)
          P_SetMobjState(mo, mobjinfo[mo->type].deathstate);
          S_StartSound(mo, mobjinfo[mo->type].deathsound);
       }
+      else if (mo->type == MT_GOOP)
+      {
+         mo->momx = mo->momy = mo->momz = 0;
+         P_SetMobjState(mo, mobjinfo[mo->type].meleestate);
+         S_StartSound(mo, mobjinfo[mo->type].painsound);
+      }
       else
       {
          if(mo->momz < 0)

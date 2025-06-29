@@ -1427,19 +1427,13 @@ static void A_GooSpray(mobj_t *actor, int speedvar)
 		const fixed_t ns = 3 * FRACUNIT;
 		mobj_t *goop;
 		fixed_t fz = actor->z+(actor->theight<<FRACBITS)+56*FRACUNIT;
-		angle_t fa = 0;
-		// actor->movedir is used to determine the last
-		// direction goo was sprayed in. There are 8 possible
-		// directions to spray. (45-degree increments)
 
-		actor->movedir++;
-		actor->movedir &= 7;
-//		fa = (actor->movedir*FINEANGLES/8) & FINEMASK;
+		const angle_t fa = P_Random() << 24;
 
 		goop = P_SpawnMobj(actor->x, actor->y, fz, mobjinfo[actor->type].painchance);
 		P_ThrustValues(fa, ns, &goop->momx, &goop->momy);
 		goop->momz = 4*FRACUNIT;
-		goop->reactiontime = 4*TICRATE;
+		goop->reactiontime = 255;
 //		goop->reactiontime = 30+(P_Random()/32);
 
 		S_StartSound(actor, mobjinfo[actor->type].attacksound);
