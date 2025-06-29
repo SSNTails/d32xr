@@ -675,7 +675,7 @@ void P_SpawnLightningStrike()
 		return; // Should never happen
 
 	lightningSpawner->timer = 0;
-	
+
 	for (int i = 0; i < lightningSpawner->numsectors*2; i += 2)
 	{
 		sector_t *sec = &sectors[lightningSpawner->sectorData[i]];
@@ -693,7 +693,7 @@ void T_LightningFade(lightningspawn_t *spawner)
 		sector_t *sec = &sectors[spawner->sectorData[i++]];
 		const VINT origLightLevel = spawner->sectorData[i++];
 
-		sec->lightlevel -= 4;
+		sec->lightlevel -= 6;
 
 		if (sec->lightlevel <= origLightLevel)
 		{
