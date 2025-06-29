@@ -127,7 +127,8 @@ void G_DoLoadLevel (void)
 	Z_CheckHeap (refzone);
 #endif
 
-        Z_FreeTags (mainzone);
+	ClearCopper();
+    Z_FreeTags (mainzone);
 	/*PrintHex (1,1,Z_FreeMemory (mainzone)); */
 /*
  * get lump number for the next map

@@ -607,6 +607,11 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	return sec->floorheight + dz;
 }
 
+#define MTF_EXTRA 1
+#define MTF_OBJECTFLIP 2
+#define MTF_OBJECTSPECIAL 4
+#define MTF_AMBUSH 8
+
 void P_SpawnMapThing (mapthing_t *mthing, int thingid)
 {
 	int			i;
@@ -679,6 +684,26 @@ return;	/*DEBUG */
 	{
 		mobj_t *eggmech = P_SpawnMobj(x, y, z, MT_EGGMOBILE2_MECH);
 		eggmech->target = mobj;
+	}
+	else if (mobj->type == MT_ROBOHOOD)
+	{
+		if (mthing->options & MTF_AMBUSH)
+			mobj->flags2 |= MF2_SPAWNEDJETS;
+	}
+	else if (mobj->type == MT_EGGGUARD)
+	{
+		mobj_t *shield = P_SpawnMobj(x, y, z, MT_EGGSHIELD);
+		shield->target = mobj;
+
+		if (mthing->options & MTF_AMBUSH)
+			mobj->flags2 |= MF2_SPAWNEDJETS; // We use this as an extra flag for all kinds of fun stuff. :)
+
+		mobj->extradata = 0;
+
+		if (mthing->options & MTF_EXTRA)
+			SETUPPER8(mobj->extradata, TMGD_RIGHT) // TMGD_RIGHT
+		else if (mthing->options & MTF_OBJECTSPECIAL)
+			SETUPPER8(mobj->extradata, TMGD_LEFT) // TMGD_LEFT
 	}
 
 	if (mobj->flags & MF_RINGMOBJ)
@@ -759,7 +784,7 @@ void P_CheckMissileSpawn (mobj_t *th)
 ================
 */
 
-void P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type)
+mobj_t *P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type)
 {
 	mobj_t		*th;
 	angle_t		an;
@@ -784,6 +809,8 @@ void P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type)
 		dist = 1;
 	th->momz = (dest->z - source->z) / dist;
 	P_CheckMissileSpawn (th);
+
+	return th;
 }
 
 void P_MobjCheckWater(mobj_t *mo)

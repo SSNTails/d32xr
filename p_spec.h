@@ -225,6 +225,7 @@ typedef struct
 	thinker_t thinker;
 	VINT *lines;
 	VINT numlines;
+	VINT totalLines;
 	sector_t *ctrlSector;
 } scrolltex_t;
 
@@ -232,6 +233,7 @@ typedef struct {
 	thinker_t thinker;
 	VINT *sectors;
 	VINT numsectors;
+	VINT totalSectors;
 	line_t *ctrlLine;
 	boolean carry;
 } scrollflat_t;

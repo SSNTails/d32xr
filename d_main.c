@@ -538,12 +538,13 @@ unsigned short screenCount = 0;
 int8_t selected_map = 0;
 dmapinfo_t selected_map_info;
 
-static short lvlsel;
-static short lvlselstatic[3];
-static short arrowl;
-static short arrowr;
-static short chevblku;
-static short chevblkd;
+static jagobj_t *lvlsel_pic = NULL;
+static jagobj_t *lvlsel_static[3] = { NULL, NULL, NULL };
+static jagobj_t *arrowl_pic = NULL;
+static jagobj_t *arrowr_pic = NULL;
+static jagobj_t *chevblku_pic = NULL;
+static jagobj_t *chevblkd_pic = NULL;
+static VINT lvlsel_lump = -1;
 
 int TIC_LevelSelect (void)
 {
@@ -605,7 +606,9 @@ int TIC_LevelSelect (void)
 			lvlsel_name[6] += (startmap / 10);
 			lvlsel_name[7] += (startmap % 10);
 
-			lvlsel = W_CheckNumForName(lvlsel_name);
+			lvlsel_lump = W_CheckNumForName(lvlsel_name);
+			if (lvlsel_lump != -1)
+				W_ReadLump(lvlsel_lump, lvlsel_pic);
 
 			char buf[512];
 			G_FindMapinfo(G_LumpNumForMapNum(startmap), &selected_map_info, buf);
@@ -658,9 +661,6 @@ void START_LevelSelect (void)
 
 	startmap = 1;
 
-	char buf[512];
-	G_FindMapinfo(G_LumpNumForMapNum(1), &selected_map_info, buf);
-
 	UpdateBuffer();
 
 	I_SetPalette(dc_playpals);
@@ -672,21 +672,62 @@ void START_LevelSelect (void)
 
 	SetTransition(TransitionType_Entering);
 
-	lvlsel = W_CheckNumForName("LVLSEL01");
-	lvlselstatic[0] = W_CheckNumForName("LVLSELS1");
-	lvlselstatic[1] = W_CheckNumForName("LVLSELS2");
-	lvlselstatic[2] = W_CheckNumForName("LVLSELS3");
+	lvlsel_lump = W_CheckNumForName("LVLSEL01");
+	lvlsel_pic = W_CacheLumpNum(lvlsel_lump, PU_STATIC);
+	lvlsel_static[0] = W_CacheLumpName("LVLSELS1", PU_STATIC);
+	lvlsel_static[1] = W_CacheLumpName("LVLSELS2", PU_STATIC);
+	lvlsel_static[2] = W_CacheLumpName("LVLSELS3", PU_STATIC);
 
-	arrowl = W_CheckNumForName("ARROWL");
-	arrowr = W_CheckNumForName("ARROWR");
-	chevblku = W_CheckNumForName("CHEVBLKU");
-	chevblkd = W_CheckNumForName("CHEVBLKD");
+	arrowl_pic = W_CacheLumpName("ARROWL", PU_STATIC);
+	arrowr_pic = W_CacheLumpName("ARROWR", PU_STATIC);
+	chevblku_pic = W_CacheLumpName("CHEVBLKU", PU_STATIC);
+	chevblkd_pic = W_CacheLumpName("CHEVBLKD", PU_STATIC);
+
+	char buf[512];
+	G_FindMapinfo(G_LumpNumForMapNum(1), &selected_map_info, buf);
 }
+
+#ifdef MEMDEBUG
+boolean debugStop = false;
+#endif
 
 void STOP_LevelSelect (void)
 {
 	// Set to totally black
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+
+	Z_Free(lvlsel_pic);
+
+	for (int i = 0; i < 3; i++)
+		Z_Free(lvlsel_static[i]);
+
+	Z_Free(arrowl_pic);
+	Z_Free(arrowr_pic);
+	Z_Free(chevblku_pic);
+	Z_Free(chevblkd_pic);
+
+	ClearCopper();
+}
+
+void ClearCopper()
+{
+	if (copper_source_table[0])
+	{
+		Z_Free(copper_source_table[0]);
+		copper_source_table[0] = NULL;
+	}
+
+	if (copper_source_table[1])
+	{
+		Z_Free(copper_source_table[1]);
+		copper_source_table[1] = NULL;
+	}
+
+	if (copper_buffer)
+	{
+		Z_Free(copper_buffer);
+		copper_buffer = NULL;
+	}
 }
 
 void DRAW_LevelSelect (void)
@@ -756,15 +797,15 @@ void DRAW_LevelSelect (void)
 	}
 
 	// Draw arrows
-	DrawJagobjLump(arrowl, ((320-16)>>1)-96 - arrow_offset, 112, NULL, NULL);
-	DrawJagobjLump(arrowr, ((320-16)>>1)+96 + arrow_offset, 112, NULL, NULL);
+	DrawJagobj(arrowl_pic, ((320-16)>>1)-96 - arrow_offset, 112);
+	DrawJagobj(arrowr_pic, ((320-16)>>1)+96 + arrow_offset, 112);
 
 	// Draw level picture
-	if (lvlsel == -1) {
-		DrawJagobjLump(lvlselstatic[((screenCount >> 2) % 3)], (320-96)>>1, 72, NULL, NULL);
+	if (lvlsel_lump < 0) {
+		DrawJagobj(lvlsel_static[((screenCount >> 2) % 3)], (320-96)>>1, 72);
 	}
 	else {
-		DrawJagobjLump(lvlsel, (320-96)>>1, 72, NULL, NULL);
+		DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
 	}
 
 	// Draw black lines
@@ -782,12 +823,12 @@ void DRAW_LevelSelect (void)
 	// Draw chevrons
 	int chev_offset = (screenCount & 0x1F);
 	for (int i=0; i < 0x140; i += 0x20) {
-		DrawJagobjLump(chevblkd, i + chev_offset, 0, NULL, NULL);
-		DrawJagobjLump(chevblku, i - chev_offset, 224-16, NULL, NULL);
+		DrawJagobj(chevblkd_pic, i + chev_offset, 0);
+		DrawJagobj(chevblku_pic, i - chev_offset, 224-16);
 	}
 	if (chev_offset != 0) {
-		DrawJagobjLump(chevblkd, -0x20 + chev_offset, 0, NULL, NULL);
-		DrawJagobjLump(chevblku, 0x140 - chev_offset, 224-16, NULL, NULL);
+		DrawJagobj(chevblkd_pic, -0x20 + chev_offset, 0);
+		DrawJagobj(chevblku_pic, 0x140 - chev_offset, 224-16);
 	}
 }
 
@@ -1187,6 +1228,7 @@ int RunInputDemo (char *demoname)
 	// this will cause shrinking of the zone area available
 	// for the level data after each demo playback and eventual
 	// Z_Malloc failure
+	ClearCopper();
 	Z_FreeTags(mainzone);
 
 	demo = W_CacheLumpNum(lump, PU_STATIC);
@@ -1212,6 +1254,7 @@ int RunPositionDemo (char *demoname)
 	// this will cause shrinking of the zone area available
 	// for the level data after each demo playback and eventual
 	// Z_Malloc failure
+	ClearCopper();
 	Z_FreeTags(mainzone);
 
 	demo = W_CacheLumpNum(lump, PU_STATIC);

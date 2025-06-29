@@ -129,7 +129,11 @@ void Z_Free2 (memzone_t *mainzone, void *ptr)
 
 #define MINFRAGMENT	64
 
+#ifdef MEMDEBUG
+void *Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err, const char *file, int line)
+#else
 void *Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err)
+#endif
 {
 	int		extra;
 	memblock_t	*start, *rover, *new, *base;
@@ -169,8 +173,13 @@ backtostart:
 			
 			if (base == start)	/* scaned all the way around the list */
 			{
+#if MEMDEBUG
+				if (err)
+					I_Error("Z_Malloc: failed on %i (LFB:%i)\n%s:%d", size, Z_LargestFreeBlock(mainzone), file, line);
+#else
 				if (err)
 					I_Error("Z_Malloc: failed on %i (LFB:%i)", size, Z_LargestFreeBlock(mainzone));
+#endif
 				return NULL;
 			}
 			continue;
@@ -194,6 +203,10 @@ backtostart:
 		base->size = size;
 	}
 	
+#ifdef MEMDEBUG
+	D_strncpy(base->file, file, 16);
+	base->line = line;
+#endif
 	base->tag = tag;
 	base->id = ZONEID;
 #ifndef MARS
@@ -258,6 +271,46 @@ void Z_CheckHeap (memzone_t *mainzone)
 		if ( checkblock->next->prev != checkblock)
 			I_Error ("Z_CheckHeap: next block doesn't have proper back link\n");
 	}
+}
+
+void Z_DumpHeap(memzone_t *mainzone)
+{
+	char memmap[2048];
+	memmap[0] = '\0';
+	char *mapPtr = memmap;
+	int numblocks = 0;
+
+	int skipCount = 20;
+	int i = 0;
+
+	memblock_t *block;
+	for (block = &mainzone->blocklist; block; block = block->next)
+	{
+		if (i < skipCount)
+		{
+			i++;
+			continue;
+		}
+		char appendMe[32];
+
+		if (block->tag)
+			D_snprintf(appendMe, 32, "%s:%d:%d", block->file, block->line, block->size);
+		else
+			D_snprintf(appendMe, 32, "Free:%d", block->size);
+
+		for (int i = 0; i < 32; i++)
+		{
+			if (appendMe[i] == '\0')
+				break;
+			*mapPtr++ = appendMe[i];
+		}
+		*mapPtr++ = '\n';
+		numblocks++;
+		i++;
+	}
+
+	*mapPtr++ = '\0';
+	I_Error("%d blocks:\n%s", numblocks, memmap);
 }
 
 

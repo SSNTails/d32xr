@@ -344,7 +344,12 @@ static void R_PrepRing(ringmobj_t *thing, int scenery)
    if (vd.fixedcolormap)
        vis->colormap = vd.fixedcolormap;
    else
-       vis->colormap = HWLIGHT(sec->lightlevel);
+   {
+      if (thingframe & FF_FULLBRIGHT)
+         vis->colormap = HWLIGHT(255);
+      else
+         vis->colormap = HWLIGHT(sec->lightlevel);
+   }
 }
 
 //

@@ -33,6 +33,12 @@
 #define	MELEERANGE		(70*FRACUNIT)
 #define	MISSILERANGE	(32*64*FRACUNIT)
 
+enum
+{
+	TMGD_BACK = 0,
+	TMGD_RIGHT = 1,
+	TMGD_LEFT = 2
+};
 
 typedef enum
 {
@@ -142,7 +148,7 @@ boolean	P_SetMobjState (mobj_t *mobj, statenum_t state) ATTR_DATA_CACHE_ALIGN;
 void 	P_MobjThinker (mobj_t *mobj);
 void 	P_PreSpawnMobjs(int count, int staticcount, int ringcount, int scenerycount);
 
-void	P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type);
+mobj_t *P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type);
 
 void    P_AnimateScenery(int8_t numframes);
 void	P_RunMobjBase2 (void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));

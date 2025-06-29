@@ -183,7 +183,11 @@ void R_AddToTexCache(r_texcache_t* c, int id, int pixels, void **userp)
 
 	trynum = 0;
 retry:
+#ifdef MEMDEBUG
+	entry = Z_Malloc2(c->zone, size, PU_LEVEL, false, __FILE__, __LINE__);
+#else
 	entry = Z_Malloc2(c->zone, size, PU_LEVEL, false);
+#endif
 	if (!entry)
 	{
 		if (trynum != 0)

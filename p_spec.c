@@ -633,8 +633,11 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 			scrollflat_t *sf = (scrollflat_t*)currentthinker;
 			uint8_t stTag = P_GetLineTag(sf->ctrlLine);
 
-			if (stTag == tag)
+			if (stTag == tag && sf->ctrlLine == line)
 			{
+				if (sf->numsectors > sf->totalSectors) // Bounds check
+					return;
+
 				sf->sectors[sf->numsectors++] = (VINT)(sector-sectors);
 				return;
 			}
@@ -651,13 +654,14 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 				numScrollflatSectors++;
 		}
 
-		scrollflat_t *scrollflat = Z_Malloc (sizeof(*scrollflat), PU_LEVSPEC);
+		scrollflat_t *scrollflat = Z_Malloc (sizeof(*scrollflat)+(sizeof(VINT)*numScrollflatSectors), PU_LEVSPEC);
 		P_AddThinker (&scrollflat->thinker);
 		scrollflat->thinker.function = T_ScrollFlat;
 		scrollflat->ctrlLine = line;
-		scrollflat->sectors = Z_Malloc(sizeof(VINT)*numScrollflatSectors, PU_LEVSPEC);
+		scrollflat->sectors = (VINT*)((uint8_t*)scrollflat + sizeof(*scrollflat));
 		scrollflat->sectors[0] = (VINT)(sector - sectors);
 		scrollflat->numsectors = 1;
+		scrollflat->totalSectors = numScrollflatSectors;
 		scrollflat->carry = carry;
 	}
 }
@@ -772,6 +776,9 @@ static void P_StartScrollTex(line_t *line)
 
 			if (stTag == tag)
 			{
+				if (st->numlines >= st->totalLines) // Bounds check
+					return;
+
 				st->lines[st->numlines++] = (VINT)(line-lines);
 				return;
 			}
@@ -797,12 +804,13 @@ static void P_StartScrollTex(line_t *line)
 				numScrolltexLines++;
 		}
 
-		scrolltex_t *scrolltex = Z_Malloc (sizeof(*scrolltex), PU_LEVSPEC);
+		scrolltex_t *scrolltex = Z_Malloc (sizeof(*scrolltex)+(sizeof(VINT)*numScrolltexLines), PU_LEVSPEC);
 		P_AddThinker (&scrolltex->thinker);
 		scrolltex->thinker.function = T_ScrollTex;
 		scrolltex->ctrlSector = paramSector;
-		scrolltex->lines = Z_Malloc(sizeof(VINT)*numScrolltexLines, PU_LEVSPEC);
+		scrolltex->lines = (VINT*)((uint8_t*)scrolltex + sizeof(*scrolltex));
 		scrolltex->lines[0] = (VINT)(line - lines);
+		scrolltex->totalLines = numScrolltexLines;
 		scrolltex->numlines = 1;
 	}
 }

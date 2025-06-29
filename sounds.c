@@ -38,6 +38,7 @@ const char * const S_sfxnames[NUMSFX] =
   "dstrfire",
   "dstrpowr",
   "dsturhit",
+  "dswbreak",
   "dswdjump",
   "dswirlsg",
   "dswslap",
@@ -52,6 +53,7 @@ const char * const S_sfxnames[NUMSFX] =
   "s3k_3c",
   "s3k_3d",
   "s3k_43",
+  "s3k_4a",
   "s3k_4e",
   "s3k_51",
   "s3k_59",
@@ -66,6 +68,7 @@ const char * const S_sfxnames[NUMSFX] =
   "s3k_6c",
   "s3k_6d",
   "s3k_6e",
+  "s3k_7b",
   "s3k_86",
   "s3k_9e",
   "s3k_a9",
@@ -77,6 +80,7 @@ const char * const S_sfxnames[NUMSFX] =
   "s3k_b4",
   "s3k_b6",
   "s3k_b9",
+  "s3k_c5",
   "drcymcr1",   // Drums: Cymbal crash 1
   "drkick1",    // Drums: Kick 1
   "drsnare1",   // Drums: Snare 1
