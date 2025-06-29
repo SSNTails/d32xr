@@ -675,6 +675,12 @@ void P_SpawnLightningStrike()
 		return; // Should never happen
 
 	lightningSpawner->timer = 0;
+	
+	for (int i = 0; i < lightningSpawner->numsectors*2; i += 2)
+	{
+		sector_t *sec = &sectors[lightningSpawner->sectorData[i]];
+		sec->lightlevel = 255;
+	}
 }
 
 void T_LightningFade(lightningspawn_t *spawner)
@@ -712,6 +718,7 @@ static void P_InitLightning()
 
 	lightningspawn_t *spawner = Z_Malloc(sizeof(*spawner) + (sizeof(VINT) * 2 * numskysectors), PU_LEVSPEC);
 	spawner->sectorData = (VINT*)((uint8_t*)spawner + sizeof(*spawner));
+	spawner->numsectors = numskysectors;
 	spawner->thinker.function = T_LightningFade;
 	P_AddThinker(&spawner->thinker);
 	spawner->timer = -1;
@@ -719,8 +726,11 @@ static void P_InitLightning()
 	int count = 0;
 	for (int i = 0; i < numsectors; i++)
 	{
-		spawner->sectorData[i++] = i;
-		spawner->sectorData[i++] = sectors[i].lightlevel;
+		if (sectors[i].ceilingpic == (uint8_t)-1)
+		{
+			spawner->sectorData[count++] = i;
+			spawner->sectorData[count++] = sectors[i].lightlevel;
+		}
 	}
 
 	lightningSpawner = spawner;
