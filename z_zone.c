@@ -173,8 +173,13 @@ backtostart:
 			
 			if (base == start)	/* scaned all the way around the list */
 			{
+#if MEMDEBUG
+				if (err)
+					I_Error("Z_Malloc: failed on %i (LFB:%i)\n%s:%d", size, Z_LargestFreeBlock(mainzone), file, line);
+#else
 				if (err)
 					I_Error("Z_Malloc: failed on %i (LFB:%i)", size, Z_LargestFreeBlock(mainzone));
+#endif
 				return NULL;
 			}
 			continue;
@@ -275,9 +280,17 @@ void Z_DumpHeap(memzone_t *mainzone)
 	char *mapPtr = memmap;
 	int numblocks = 0;
 
+	int skipCount = 20;
+	int i = 0;
+
 	memblock_t *block;
 	for (block = &mainzone->blocklist; block; block = block->next)
 	{
+		if (i < skipCount)
+		{
+			i++;
+			continue;
+		}
 		char appendMe[32];
 
 		if (block->tag)
@@ -293,6 +306,7 @@ void Z_DumpHeap(memzone_t *mainzone)
 		}
 		*mapPtr++ = '\n';
 		numblocks++;
+		i++;
 	}
 
 	*mapPtr++ = '\0';
