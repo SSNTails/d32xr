@@ -330,14 +330,11 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 				toucher->momz = -toucher->momz >> 1;
 				player->homingTimer = 0;
 
-				if (special->target)
-				{
-					P_InstaThrust(special->target, -special->target->angle, 3*FRACUNIT);
-					P_SetMobjState(special->target, mobjinfo[special->target->type].painstate);
-					special->target->threshold = 42;
-				}
+				P_SetMobjState(special, sInfo->deathstate);
+				P_InstaThrust(special, special->angle, 3*FRACUNIT);
+				special->momz = 4*FRACUNIT;
+				special->flags &= ~MF_NOGRAVITY;
 
-				special->latecall = LC_REMOVE_MOBJ;
 //				S_StartSound(toucher, sInfo->deathsound);
 				S_StartSound(toucher, sfx_wbreak);
 			}

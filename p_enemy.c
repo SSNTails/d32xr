@@ -2195,7 +2195,6 @@ void A_EggShieldBroken(mobj_t *actor, int16_t var1, int16_t var2)
 	actor->target = NULL;
 	guard->threshold = 42;
 	P_SetMobjState(guard, mobjinfo[guard->type].painstate);
-	guard->flags |= MF_SPECIAL;
 	guard->flags2 |= MF2_SHOOTABLE;
 }
 
