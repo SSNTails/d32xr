@@ -260,6 +260,8 @@ static void G_AddMapinfoKey(char* key, char* value, dmapinfo_t* mi)
 		mi->skyBottomColor = D_atoi(value);
 	else if (!D_strcasecmp(key, "mapnumber"))
 		mi->mapNumber = D_atoi(value);
+	else if (!D_strcasecmp(key, "lightning"))
+		mi->lightning = D_atoi(value);
 	else if (!D_strcasecmp(key, "music"))
 		mi->musicLump = W_CheckNumForName(value);
 	else if (!D_strcasecmp(key, "afterBossMusic"))

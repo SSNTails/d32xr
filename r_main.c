@@ -942,7 +942,7 @@ void R_SetShadowHighlight(boolean enabled)
 	if (enabled) {
 		reg12_write |= 0x08;
 	}
-	if (!extended_sky || legacy_emulator == LEGACY_EMULATOR_GENS) {
+	if (extended_sky || legacy_emulator == LEGACY_EMULATOR_GENS) {
 		reg12_write |= 0x81;
 	}
 	Mars_WriteMDVDPRegister(reg12_write);

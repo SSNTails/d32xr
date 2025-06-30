@@ -196,7 +196,7 @@ int		ticphase;
 
 void P_Weather()
 {
-	if (effects_flags & EFFECTS_COPPER_ENABLED) {
+	if (gamemapinfo.lightning) {
 		unsigned short lightning_chance = P_Random16();
 
 		if (lightning_chance < 160*4) {
