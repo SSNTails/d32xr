@@ -1771,15 +1771,15 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		118,            // doomednum
 		S_FACESTABBER_STND1, // spawnstate
 		2,              // spawnhealth
-		S_FACESTABBER_STND1, // seestate
+		S_FACESTABBER_STND2, // seestate
 		sfx_None,       // seesound
 		70,             // reactiontime
 		sfx_s3k_b6,       // attacksound
 		S_FACESTABBER_PAIN, // painstate
 		0,              // painchance
 		sfx_s3k_6e,     // painsound
-		S_FACESTABBER_CHARGE1, // meleestate
-		S_FACESTABBER_CHARGE1, // missilestate
+		S_NULL,//S_FACESTABBER_CHARGE1, // meleestate
+		S_NULL,//S_FACESTABBER_CHARGE1, // missilestate
 		S_FACESTABBER_DIE1, // deathstate
 		S_NULL,         // xdeathstate
 		sfx_s3k_b4,      // deathsound
@@ -1789,7 +1789,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		100,            // mass
 		0,              // damage
 		sfx_s3k_c5,      // activesound
-		MF_SPECIAL, // flags
+		0, // flags
 		MF2_SHOOTABLE|MF2_ENEMY          // flags2
 	},
 
