@@ -238,6 +238,14 @@ typedef struct {
 	boolean carry;
 } scrollflat_t;
 
+typedef struct {
+	thinker_t thinker;
+	VINT *sectorData;
+	VINT numsectors;
+	VINT timer;
+} lightningspawn_t;
+
+void P_SpawnLightningStrike();
 
 #define	CEILSPEED		FRACUNIT*THINKERS_TICS
 #define MAXCEILINGS		16

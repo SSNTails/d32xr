@@ -1,11 +1,14 @@
 #include "doomdef.h"
 #include "p_local.h"
+#include "sounds.h"
 #ifdef MARS
 #include "mars.h"
 #endif
 
 int	playertics, thinkertics, sighttics, basetics, latetics;
 int	tictics, drawtics;
+
+uint8_t		lightning_count;
 
 boolean		gamepaused;
 jagobj_t	*pausepic;
@@ -191,6 +194,65 @@ int		ticphase;
 #define frtc samplecount
 #endif
 
+void P_Weather()
+{
+	if (gamemapinfo.lightning) {
+		unsigned short lightning_chance = P_Random16();
+
+		if (lightning_chance < 160*4) {
+			// Close lightning
+			lightning_count = 0x18;
+		}
+		else if (lightning_chance < 560*4) {
+			// Distant lightning
+			lightning_count = 0x08;
+		}
+
+		int proximity = lightning_count >> 4;
+		int count = lightning_count & 0xF;
+		if (count > 0) {
+			const uint8_t brightness_levels[2][4] = {
+				{ 0x09, 0x13, 0x09, 0x00 },
+				{ 0x0F, 0x1F, 0x0F, 0x00 }
+			};
+
+			if (proximity == 1)
+			{
+				// Close strike
+				if (count == 8) {
+					// Disable shadow for a short time to lighten the sky.
+					R_SetShadowHighlight(false);
+					P_SpawnLightningStrike();
+				}
+				else if (count == 5) {
+					// Re-enable shadow to return the sky back to normal (i.e. dark).
+					R_SetShadowHighlight(true);
+					S_StartSoundId(sfx_litng1);
+				}
+			}
+			else //if (proximity == 0)
+			{
+				// Distant strike
+				if (count == 1) {
+					// Enable shadow in case it wasn't already enabled previously.
+					R_SetShadowHighlight(true);
+					S_StartSoundId(sfx_litng2);
+				}
+			}
+
+			if (count > 4) {
+				copper_table_brightness = brightness_levels[proximity][8-count];
+				effects_flags |= EFFECTS_COPPER_BRIGHTNESS_CHANGE;
+			}
+			else {
+				effects_flags &= (~EFFECTS_COPPER_BRIGHTNESS_CHANGE);
+			}
+
+			lightning_count--;
+		}
+	}
+}
+
 int P_Ticker (void)
 {
 	int		ticstart;
@@ -257,6 +319,8 @@ int P_Ticker (void)
 	P_AnimateScenery((int8_t)accum_time);
 	P_UpdateSpecials((int8_t)accum_time);
 
+	P_Weather();
+
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
 		if (IsDemoModeType(DemoMode_Playback)) {
@@ -304,7 +368,6 @@ int P_Ticker (void)
 	return gameaction;		/* may have been set to ga_died, ga_completed, */
 							/* or ga_secretexit */
 }
-
 
 gameaction_t RecordDemo()
 {

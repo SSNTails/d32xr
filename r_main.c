@@ -8,6 +8,8 @@
 #include "marshw.h"
 #endif
 
+extern volatile uint8_t legacy_emulator;
+
 int16_t viewportWidth, viewportHeight;
 int16_t centerX, centerY;
 fixed_t centerXFrac, centerYFrac;
@@ -71,6 +73,7 @@ __attribute__((aligned(2)))
 uint8_t sky_in_view = 0;
 uint8_t effects_flags;
 uint8_t copper_table_selection;
+int8_t	copper_table_brightness;
 
 __attribute__((aligned(2)))
 short distortion_filter_index;
@@ -931,6 +934,18 @@ void R_SetupLevel(int gamezonemargin, char *background)
 #ifdef MARS
 	curpalette = -1;
 #endif
+}
+
+void R_SetShadowHighlight(boolean enabled)
+{
+	int reg12_write = 0x8C00;
+	if (enabled) {
+		reg12_write |= 0x08;
+	}
+	if (extended_sky || legacy_emulator == LEGACY_EMULATOR_GENS) {
+		reg12_write |= 0x81;
+	}
+	Mars_WriteMDVDPRegister(reg12_write);
 }
 
 static void R_ColorShiftPalette(const uint8_t *in, int idx, uint8_t *out)

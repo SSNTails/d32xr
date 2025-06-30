@@ -41,6 +41,7 @@ typedef struct
 	VINT skyTopColor;
 	VINT skyBottomColor;
 	VINT mapNumber;
+	VINT lightning;
 	VINT musicLump;
 	VINT afterBossMusic;
 	VINT spheresNeeded;

@@ -185,7 +185,9 @@ static void R_Draw32XSky(const int top, const int bottom, const int x, drawcol_t
     else {
         drawmdsky(x, top, bottom);
 
-        if (effects_flags & EFFECTS_COPPER_INDEX_CHANGE || !(effects_flags & EFFECTS_COPPER_SKY_IN_VIEW)) {
+        if (effects_flags & EFFECTS_COPPER_INDEX_CHANGE
+                || effects_flags & EFFECTS_COPPER_BRIGHTNESS_CHANGE
+                || !(effects_flags & EFFECTS_COPPER_SKY_IN_VIEW)) {
             // The copper index changes, or the sky is appearing after not being present in the previous frame.
             effects_flags |= (EFFECTS_COPPER_REFRESH | EFFECTS_COPPER_SKY_IN_VIEW);
         }

@@ -38,6 +38,8 @@ typedef enum
   sfx_frcssg,
   sfx_ghit,
   sfx_gspray,
+  sfx_litng1,
+  sfx_litng2,
   sfx_lvpass,
   sfx_ngskid,
   sfx_pogo,

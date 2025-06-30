@@ -695,6 +695,8 @@ extern  boolean		sky_md_layer;
 extern	boolean		sky_32x_layer;
 extern	boolean		extended_sky;
 
+extern  uint8_t     lightning_count;
+
 extern 	VINT 		*gamemapnumbers;
 extern 	VINT 		*gamemaplumps;
 extern 	VINT 		gamemapcount;
@@ -1138,6 +1140,7 @@ fixed_t P_RandomFixed (void);
 int P_RandomKey (int max);
 void M_ClearRandom (void);
 void P_RandomSeed(int seed);
+uint16_t P_Random16();
 void M_ClearBox (fixed_t *box);
 void M_AddToBox (fixed_t *box, fixed_t x, fixed_t y);
 

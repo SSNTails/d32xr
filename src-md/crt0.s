@@ -613,7 +613,7 @@ no_cmd:
         dc.w    set_gamemode - prireqtbl          /* 0x19 */
         dc.w    set_scroll_positions - prireqtbl  /* 0x1A */
         dc.w    load_md_palettes - prireqtbl      /* 0x1B */
-        dc.w    no_cmd - prireqtbl                /* 0x1C */ /* FREE TO USE */
+        dc.w    queue_register_write - prireqtbl  /* 0x1C */
         dc.w    load_sfx - prireqtbl              /* 0x1D */
         dc.w    play_sfx - prireqtbl              /* 0x1E */
         dc.w    get_sfx_status - prireqtbl        /* 0x1F */
@@ -1724,6 +1724,15 @@ decompress_lump:
         lea     decomp_buffer,a1
         jmp     Kos_Decomp_Main
         |rts    /* Kos_Decomp_Main will do an 'rts' for us. */
+
+
+
+queue_register_write:
+        move.w  0xA15122,register_write_queue
+
+        move.w  #0,0xA15120         /* done */
+
+        bra     main_loop
 
 
 
@@ -2900,9 +2909,16 @@ vert_blank:
         move.w  #0x8A00,d0
         move.w  d0,(a0)             /* reg 10 = HINT = 0 */
 
+        tst.w   register_write_queue
+        beq.s   10f
+        move.w  register_write_queue,d0
+        move.w  d0,(a0)
+        moveq   #0,d0
+        move.w  d0,register_write_queue
 
 
 
+10:
         move.b  #1,need_bump_fm
         move.b  #1,need_ctrl_int
 
@@ -3402,6 +3418,11 @@ hint_1_interval:
 hint_2_interval:
         dc.b    0
         
+        .align  2
+
+register_write_queue:
+        dc.w    0
+
         .align  4
 
 lump_ptr:
