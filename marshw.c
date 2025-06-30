@@ -897,7 +897,6 @@ void pri_vbi_handler(void)
 				int prev_rgb = *table++;
 				int buffer_rgb;
 				int prev_color;
-				int next_color;
 				int degree = copper_table_brightness;
 
 				// Red cross-fade
