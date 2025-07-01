@@ -199,11 +199,11 @@ void P_Weather()
 	if (gamemapinfo.weather == 1) {
 		unsigned short lightning_chance = P_Random16();
 
-		if (lightning_chance < 160*4) {
+		if (lightning_chance < 160) {
 			// Close lightning
 			lightning_count = 0x18;
 		}
-		else if (lightning_chance < 560*4) {
+		else if (lightning_chance < 560) {
 			// Distant lightning
 			lightning_count = 0x08;
 		}

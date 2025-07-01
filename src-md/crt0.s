@@ -2454,22 +2454,22 @@ init_vdp:
 | load font tile data
 
 load_font:
-        lea     0xC00004,a0         /* VDP cmd/sts reg */
-        lea     0xC00000,a1         /* VDP data reg */
-        move.w  #0x8F02,(a0)        /* INC = 2 */
-        move.l  #0x40000000,(a0)    /* write VRAM address 0 */
-        lea     font_data,a2
-        move.w  #0x6B*8-1,d2
+        |lea     0xC00004,a0         /* VDP cmd/sts reg */
+        |lea     0xC00000,a1         /* VDP data reg */
+        |move.w  #0x8F02,(a0)        /* INC = 2 */
+        |move.l  #0x40000000,(a0)    /* write VRAM address 0 */
+        |lea     font_data,a2
+        |move.w  #0x6B*8-1,d2
 0:
-        move.l  (a2)+,d0            /* font fg mask */
-        move.l  d0,d1
-        not.l   d1                  /* font bg mask */
-        and.l   fg_color,d0         /* set font fg color */
-        and.l   bg_color,d1         /* set font bg color */
-        or.l    d1,d0
-        move.l  d0,(a1)             /* set tile line */
-        dbra    d2,0b
-        rts
+        |move.l  (a2)+,d0            /* font fg mask */
+        |move.l  d0,d1
+        |not.l   d1                  /* font bg mask */
+        |and.l   fg_color,d0         /* set font fg color */
+        |and.l   bg_color,d1         /* set font bg color */
+        |or.l    d1,d0
+        |move.l  d0,(a1)             /* set tile line */
+        |dbra    d2,0b
+        |rts
 
 
 | Bump the FM player to keep the music going
