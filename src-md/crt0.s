@@ -590,7 +590,7 @@ no_cmd:
         dc.w    write_sram - prireqtbl            /* 0x02 */
         dc.w    start_music - prireqtbl           /* 0x03 */
         dc.w    stop_music - prireqtbl            /* 0x04 */
-        dc.w    read_mouse - prireqtbl            /* 0x05 */
+        dc.w    /*read_mouse*/ no_cmd - prireqtbl            /* 0x05 */
         dc.w    read_cdstate - prireqtbl          /* 0x06 */
         dc.w    set_usecd - prireqtbl             /* 0x07 */
         dc.w    set_crsr - prireqtbl              /* 0x08 */
@@ -1082,55 +1082,55 @@ stop_cd:
         bra     main_loop
 
 read_mouse:
-        tst.b   d0
-        bne.b   1f                  /* skip port 1 */
+        |tst.b   d0
+        |bne.b   1f                  /* skip port 1 */
 
-        move.w  ctrl1_val,d0
-        cmpi.w  #0xF001,d0
-        bne.b   1f                  /* no mouse in port 1 */
-        lea     0xA10003,a0
-        bsr     get_mky
-        cmpi.l  #-1,d0
-        beq.b   no_mky1
-        bset    #31,d0
-        move.w  d0,0xA15122
-        swap    d0
-        move.w  d0,0xA15120
+        |move.w  ctrl1_val,d0
+        |cmpi.w  #0xF001,d0
+        |bne.b   1f                  /* no mouse in port 1 */
+        |lea     0xA10003,a0
+        |bsr     get_mky
+        |cmpi.l  #-1,d0
+        |beq.b   no_mky1
+        |bset    #31,d0
+        |move.w  d0,0xA15122
+        |swap    d0
+        |move.w  d0,0xA15120
 0:
-        move.w  0xA15120,d0
-        bne.b   0b                  /* wait for SH2 to read mouse value */
-        bra     main_loop
+        |move.w  0xA15120,d0
+        |bne.b   0b                  /* wait for SH2 to read mouse value */
+        |bra     main_loop
 1:
-        move.w  ctrl2_val,d0
-        cmpi.w  #0xF001,d0
-        bne.b   no_mouse            /* no mouse in port 2 */
-        lea     0xA10005,a0
-        bsr     get_mky
-        cmpi.l  #-1,d0
-        beq.b   no_mky2
-        bset    #31,d0
-        move.w  d0,0xA15122
-        swap    d0
-        move.w  d0,0xA15120
+        |move.w  ctrl2_val,d0
+        |cmpi.w  #0xF001,d0
+        |bne.b   no_mouse            /* no mouse in port 2 */
+        |lea     0xA10005,a0
+        |bsr     get_mky
+        |cmpi.l  #-1,d0
+        |beq.b   no_mky2
+        |bset    #31,d0
+        |move.w  d0,0xA15122
+        |swap    d0
+        |move.w  d0,0xA15120
 2:
-        move.w  0xA15120,d0
-        bne.b   2b                  /* wait for SH2 to read mouse value */
-        bra     main_loop
+        |move.w  0xA15120,d0
+        |bne.b   2b                  /* wait for SH2 to read mouse value */
+        |bra     main_loop
 
 no_mky1:
-        move.w  #0xF000,ctrl1_val    /* nothing in port 1 */
-        bra.b   no_mouse
+        |move.w  #0xF000,ctrl1_val    /* nothing in port 1 */
+        |bra.b   no_mouse
 no_mky2:
-       move.w   #0xF000,ctrl2_val    /* nothing in port 2 */
+        |move.w   #0xF000,ctrl2_val    /* nothing in port 2 */
 no_mouse:
-        moveq   #-1,d0              /* no mouse */
-        move.w  d0,0xA15122
-        swap    d0
-        move.w  d0,0xA15120
+        |moveq   #-1,d0              /* no mouse */
+        |move.w  d0,0xA15122
+        |swap    d0
+        |move.w  d0,0xA15120
 4:
-        move.w  0xA15120,d0
-        bne.b   4b                  /* wait for SH2 to read mouse value */
-        bra     main_loop
+        |move.w  0xA15120,d0
+        |bne.b   4b                  /* wait for SH2 to read mouse value */
+        |bra     main_loop
 
 
 read_cdstate:
@@ -3021,146 +3021,146 @@ get_input:
 | entry: a0 = mouse control port
 | exit:  d0 = mouse value (0  0  0  0  0  0  0  0  YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0) or -2 (timeout) or -1 (no mouse)
 get_mky:
-        move.w  sr,d2
-        move.w  #0x2700,sr      /* disable ints */
+        |move.w  sr,d2
+        |move.w  #0x2700,sr      /* disable ints */
 
-        move.b  #0x60,6(a0)     /* set direction bits */
-        nop
-        nop
-        move.b  #0x60,(a0)      /* first phase of mouse packet */
-        nop
-        nop
+        |move.b  #0x60,6(a0)     /* set direction bits */
+        |nop
+        |nop
+        |move.b  #0x60,(a0)      /* first phase of mouse packet */
+        |nop
+        |nop
 0:
-        btst    #4,(a0)
-        beq.b   0b              /* wait on handshake */
-        move.b  (a0),d0
-        andi.b  #15,d0
-        bne     mky_err         /* not 0 means not mouse */
+        |btst    #4,(a0)
+        |beq.b   0b              /* wait on handshake */
+        |move.b  (a0),d0
+        |andi.b  #15,d0
+        |bne     mky_err         /* not 0 means not mouse */
 
-        move.b  #0x20,(a0)      /* next phase */
-        move.w  #254,d1         /* number retries before timeout */
+        |move.b  #0x20,(a0)      /* next phase */
+        |move.w  #254,d1         /* number retries before timeout */
 1:
-        btst    #4,(a0)
-        bne.b   2f              /* handshake */
-        dbra    d1,1b
-        bra     timeout_err
+        |btst    #4,(a0)
+        |bne.b   2f              /* handshake */
+        |dbra    d1,1b
+        |bra     timeout_err
 2:
-        move.b  (a0),d0
-        andi.b  #15,d0
-        move.b  #0,(a0)         /* next phase */
-        cmpi.b  #11,d0
-        bne     mky_err         /* not 11 means not mouse */
+        |move.b  (a0),d0
+        |andi.b  #15,d0
+        |move.b  #0,(a0)         /* next phase */
+        |cmpi.b  #11,d0
+        |bne     mky_err         /* not 11 means not mouse */
 3:
-        btst    #4,(a0)
-        beq.b   4f              /* handshake */
-        dbra    d1,3b
-        bra     timeout_err
+        |btst    #4,(a0)
+        |beq.b   4f              /* handshake */
+        |dbra    d1,3b
+        |bra     timeout_err
 4:
-        move.b  (a0),d0         /* specs say should be 15 */
-        nop
-        nop
-        move.b  #0x20,(a0)      /* next phase */
-        nop
-        nop
+        |move.b  (a0),d0         /* specs say should be 15 */
+        |nop
+        |nop
+        |move.b  #0x20,(a0)      /* next phase */
+        |nop
+        |nop
 5:
-        btst    #4,(a0)
-        bne.b   6f
-        dbra    d1,5b
-        bra     timeout_err
+        |btst    #4,(a0)
+        |bne.b   6f
+        |dbra    d1,5b
+        |bra     timeout_err
 6:
-        move.b  (a0),d0         /* specs say should be 15 */
-        nop
-        nop
-        move.b  #0,(a0)         /* next phase */
-        moveq   #0,d0           /* clear reg to hold packet */
-        nop
+        |move.b  (a0),d0         /* specs say should be 15 */
+        |nop
+        |nop
+        |move.b  #0,(a0)         /* next phase */
+        |moveq   #0,d0           /* clear reg to hold packet */
+        |nop
 7:
-        btst    #4,(a0)
-        beq.b   8f              /* handshake */
-        dbra    d1,7b
-        bra     timeout_err
+        |btst    #4,(a0)
+        |beq.b   8f              /* handshake */
+        |dbra    d1,7b
+        |bra     timeout_err
 8:
-        move.b  (a0),d0         /* YO XO YS XS */
-        move.b  #0x20,(a0)      /* next phase */
-        lsl.w   #8,d0           /* save nibble */
+        |move.b  (a0),d0         /* YO XO YS XS */
+        |move.b  #0x20,(a0)      /* next phase */
+        |lsl.w   #8,d0           /* save nibble */
 9:
-        btst    #4,(a0)
-        bne.b   10f             /* handshake */
-        dbra    d1,9b
-        bra     timeout_err
+        |btst    #4,(a0)
+        |bne.b   10f             /* handshake */
+        |dbra    d1,9b
+        |bra     timeout_err
 10:
-        move.b  (a0),d0         /* S  M  R  L */
-        move.b  #0,(a0)         /* next phase */
-        lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  0  0  0  0 */
-        lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  0  0  0  0  0  0  0  0 */
+        |move.b  (a0),d0         /* S  M  R  L */
+        |move.b  #0,(a0)         /* next phase */
+        |lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  0  0  0  0 */
+        |lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  0  0  0  0  0  0  0  0 */
 11:
-        btst    #4,(a0)
-        beq.b   12f             /* handshake */
-        dbra    d1,11b
-        bra     timeout_err
+        |btst    #4,(a0)
+        |beq.b   12f             /* handshake */
+        |dbra    d1,11b
+        |bra     timeout_err
 12:
-        move.b  (a0),d0         /* X7 X6 X5 X4 */
-        move.b  #0x20,(a0)      /* next phase */
-        lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 0  0  0  0 */
-        lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 0  0  0  0  0  0  0  0 */
+        |move.b  (a0),d0         /* X7 X6 X5 X4 */
+        |move.b  #0x20,(a0)      /* next phase */
+        |lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 0  0  0  0 */
+        |lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 0  0  0  0  0  0  0  0 */
 13:
-        btst    #4,(a0)
-        bne.b   14f             /* handshake */
-        dbra    d1,13b
-        bra     timeout_err
+        |btst    #4,(a0)
+        |bne.b   14f             /* handshake */
+        |dbra    d1,13b
+        |bra     timeout_err
 14:
-        move.b  (a0),d0         /* X3 X2 X1 X0 */
-        move.b  #0,(a0)         /* next phase */
-        lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 0  0  0  0 */
-        lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 0  0  0  0  0  0  0  0 */
+        |move.b  (a0),d0         /* X3 X2 X1 X0 */
+        |move.b  #0,(a0)         /* next phase */
+        |lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 0  0  0  0 */
+        |lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 0  0  0  0  0  0  0  0 */
 15:
-        btst    #4,(a0)
-        beq.b   16f             /* handshake */
-        dbra    d1,15b
-        bra     timeout_err
+        |btst    #4,(a0)
+        |beq.b   16f             /* handshake */
+        |dbra    d1,15b
+        |bra     timeout_err
 16:
-        move.b  (a0),d0         /* Y7 Y6 Y5 Y4 */
-        move.b  #0x20,(a0)      /* next phase */
-        lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 0  0  0  0 */
-        lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 0  0  0  0  0  0  0  0*/
+        |move.b  (a0),d0         /* Y7 Y6 Y5 Y4 */
+        |move.b  #0x20,(a0)      /* next phase */
+        |lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 0  0  0  0 */
+        |lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 0  0  0  0  0  0  0  0*/
 17:
-        btst    #4,(a0)
-        beq.b   18f             /* handshake */
-        dbra    d1,17b
-        bra     timeout_err
+        |btst    #4,(a0)
+        |beq.b   18f             /* handshake */
+        |dbra    d1,17b
+        |bra     timeout_err
 18:
-        move.b  (a0),d0         /* Y3 Y2 Y1 Y0 */
-        move.b  #0x60,(a0)      /* first phase */
-        lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 0  0  0  0 */
-        lsr.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */
+        |move.b  (a0),d0         /* Y3 Y2 Y1 Y0 */
+        |move.b  #0x60,(a0)      /* first phase */
+        |lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 0  0  0  0 */
+        |lsr.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */
 19:
-        btst    #4,(a0)
-        beq.b   19b             /* wait on handshake */
+        |btst    #4,(a0)
+        |beq.b   19b             /* wait on handshake */
 
-        move.w  d2,sr           /* restore int status */
-        rts
+        |move.w  d2,sr           /* restore int status */
+        |rts
 
 timeout_err:
-        move.b  #0x60,(a0)      /* first phase */
-        nop
-        nop
+        |move.b  #0x60,(a0)      /* first phase */
+        |nop
+        |nop
 0:
-        btst    #4,(a0)
-        beq.b   0b              /* wait on handshake */
+        |btst    #4,(a0)
+        |beq.b   0b              /* wait on handshake */
 
-        move.w  d2,sr           /* restore int status */
-        moveq   #-2,d0
-        rts
+        |move.w  d2,sr           /* restore int status */
+        |moveq   #-2,d0
+        |rts
 
 mky_err:
-        move.b  #0x40,6(a0)     /* set direction bits */
-        nop
-        nop
-        move.b  #0x40,(a0)
+        |move.b  #0x40,6(a0)     /* set direction bits */
+        |nop
+        |nop
+        |move.b  #0x40,(a0)
 
-        move.w  d2,sr           /* restore int status */
-        moveq   #-1,d0
-        rts
+        |move.w  d2,sr           /* restore int status */
+        |moveq   #-1,d0
+        |rts
 
 
 | get_port: returns ID bits of controller pointed to by a0 in d0
