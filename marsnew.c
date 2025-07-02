@@ -808,7 +808,7 @@ void I_Update(void)
 	if (sky_md_layer) {
 		unsigned short scroll_x = (*((unsigned short *)&vd.viewangle) >> 6);
 
-		if (extended_sky) {
+		if (h40_sky) {
 			// Use this to scroll the sky 1280 pixels. Works well for 256-width skies.
 			scroll_x += (scroll_x >> 2);
 		}

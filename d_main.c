@@ -16,7 +16,7 @@ VINT		controltype = 0;		/* determine settings for BT_* */
 boolean		sky_md_layer = false;
 boolean		sky_32x_layer = false;
 
-boolean		extended_sky = false;
+boolean		h40_sky = false;
 
 VINT			gamevbls;		/* may not really be vbls in multiplayer */
 VINT			vblsinframe;		/* range from ticrate to ticrate*2 */

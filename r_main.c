@@ -688,7 +688,7 @@ static void R_SetupMDSky(const char *name, int palettes_lump)
 
 	// Get the thru-pixel color from the metadata.
 	mars_thru_rgb_reference = sky_metadata_ptr[0];
-	extended_sky = (sky_metadata_ptr[2] & 0x81);	// false = H32 mode; true = H40 mode
+	h40_sky = (sky_metadata_ptr[2] & 0x81);	// false = H32 mode; true = H40 mode
 	
 
 	Mars_LoadMDSky(sky_metadata_ptr,
@@ -922,7 +922,7 @@ void R_SetShadowHighlight(boolean enabled)
 	if (enabled) {
 		reg12_write |= 0x08;
 	}
-	if (extended_sky || legacy_emulator == LEGACY_EMULATOR_GENS) {
+	if (h40_sky || legacy_emulator == LEGACY_EMULATOR_GENS) {
 		reg12_write |= 0x81;
 	}
 	Mars_WriteMDVDPRegister(reg12_write);
