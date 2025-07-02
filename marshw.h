@@ -51,8 +51,6 @@ void Mars_InitLineTable(void);
 void Mars_SetBrightness(int16_t brightness);
 int Mars_BackBuffer(void);
 void Mars_SetPalette(const uint8_t *palette);
-int Mars_PollMouse(void);
-int Mars_ParseMousePacket(int mouse, int* pmx, int* pmy);
 
 extern volatile uint8_t legacy_emulator;
 

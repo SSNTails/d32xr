@@ -31,7 +31,6 @@
 static volatile uint16_t mars_activescreen = 0;
 
 static char mars_gamepadport[MARS_MAX_CONTROLLERS];
-static char mars_mouseport;
 static volatile uint16_t mars_controlval[2];
 
 volatile uint8_t legacy_emulator = 0;
@@ -176,51 +175,6 @@ static char Mars_UploadPalette(const uint8_t* palette)
 	return 1;
 }
 
-int Mars_PollMouse(void)
-{
-	unsigned int mouse1, mouse2;
-	int port = mars_mouseport;
-
-	if (port < 0)
-		return -1;
-
-	while (MARS_SYS_COMM0); // wait until 68000 has responded to any earlier requests
-	MARS_SYS_COMM0 = 0x0500 | port; // tells 68000 to read mouse
-	while (MARS_SYS_COMM0 == (0x0500 | port)); // wait for mouse value
-
-	mouse1 = MARS_SYS_COMM0;
-	mouse2 = MARS_SYS_COMM2;
-	MARS_SYS_COMM0 = 0; // tells 68000 we got the mouse value
-
-	return (int)((mouse1 << 16) | mouse2);
-}
-
-int Mars_ParseMousePacket(int mouse, int* pmx, int* pmy)
-{
-	int mx, my;
-
-	// (YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0)
-
-	mx = ((unsigned)mouse >> 8) & 0xFF;
-	// check overflow
-	if (mouse & 0x00400000)
-		mx = (mouse & 0x00100000) ? -256 : 256;
-	else if (mouse & 0x00100000)
-		mx |= 0xFFFFFF00;
-
-	my = mouse & 0xFF;
-	// check overflow
-	if (mouse & 0x00800000)
-		my = (mouse & 0x00200000) ? -256 : 256;
-	else if (mouse & 0x00200000)
-		my |= 0xFFFFFF00;
-
-	*pmx = mx;
-	*pmy = my;
-
-	return mouse;
-}
-
 int Mars_GetWDTCount(void)
 {
 	unsigned int cnt = SH2_WDT_RTCNT;
@@ -276,7 +230,6 @@ void Mars_Init(void)
 	/* no controllers or mouse by default */
 	for (i = 0; i < MARS_MAX_CONTROLLERS; i++)
 		mars_gamepadport[i] = -1;
-	mars_mouseport = -1;
 
 	//SH2_WDT_WTCSR_TCNT = 0xA518; /* WDT TCSR = clr OVF, IT mode, timer off, clksel = Fs/2 */
 	
@@ -643,7 +596,6 @@ void Mars_DetectInputDevices(void)
 	unsigned i;
 	unsigned ctrl_wait = 0xFF00;
 
-	mars_mouseport = -1;
 	for (i = 0; i < MARS_MAX_CONTROLLERS; i++)
 		mars_gamepadport[i] = -1;
 
@@ -655,11 +607,6 @@ void Mars_DetectInputDevices(void)
 		int val = MARS_SYS_COMM2;
 		if (val == 0xF000)
 		{
-			mars_controlval[i] = 0;
-		}
-		else if (val == 0xF001)
-		{
-			mars_mouseport = i;
 			mars_controlval[i] = 0;
 		}
 		else

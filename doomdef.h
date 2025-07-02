@@ -532,9 +532,7 @@ extern	int		ticon;
 extern	int		frameon;
 extern	int		ticbuttons[MAXPLAYERS];
 extern	int		oldticbuttons[MAXPLAYERS];
-extern	int		ticmousex[MAXPLAYERS], ticmousey[MAXPLAYERS];
 extern	int		ticrealbuttons, oldticrealbuttons; /* buttons for the console player before reading the demo file */
-extern	boolean		mousepresent;
 
 int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		,  int (*ticker)(void), void (*drawer)(void)
@@ -936,7 +934,6 @@ void I_SetPalette (const byte *palette);
 
 int I_ReadControls(void);
 int I_ReadControls2(void);
-int I_ReadMouse(int *pmx, int *pmy);
 
 void I_NetSetup (void);
 unsigned I_NetTransfer (unsigned buttons);

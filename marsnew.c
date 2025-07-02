@@ -190,31 +190,6 @@ static int Mars_HandleStartHeld(int *ctrl, const int ctrl_start, btnstate_t *sta
 	return morebuttons;
 }
 
-static int Mars_ConvMouseButtons(int mouse)
-{
-	int ctrl = 0;
-	if (mouse & SEGA_CTRL_LMB)
-	{
-		ctrl |= BT_JUMP; // L -> B
-		ctrl |= BT_LMBTN;
-	}
-	if (mouse & SEGA_CTRL_RMB)
-	{
-		ctrl |= BT_SPIN; // R -> C
-		ctrl |= BT_RMBTN;
-	}
-	if (mouse & SEGA_CTRL_MMB)
-	{
-		ctrl |= BT_FLIP; // M -> Y
-		ctrl |= BT_MMBTN;
-	}
-	if (mouse & SEGA_CTRL_STARTMB)
-	{
-		//ctrl |= BT_START;
-	}
-	return ctrl;
-}
-
 void Mars_Secondary(void)
 {
 	// init thread-local storage
@@ -468,40 +443,6 @@ int I_ReadControls2(void)
 {
 	static btnstate_t startbtn2 = { 0 };
 	return I_ReadControls_(1, &startbtn2);
-}
-
-int I_ReadMouse(int* pmx, int *pmy)
-{
-	int mval, ctrl;
-	static int oldmval = 0;
-	unsigned val;
-
-	*pmx = *pmy = 0;
-
-	mval = Mars_PollMouse();
-	switch (mval)
-	{
-	case -2:
-		// timeout - return old buttons and no deltas
-		mval = oldmval & 0x00F70000;
-		break;
-	case -1:
-		// no mouse
-		mousepresent = false;
-		oldmval = 0;
-		return 0;
-	default:
-		mousepresent = true;
-		oldmval = mval;
-		break;
-	}
-
-	val = Mars_ParseMousePacket(mval, pmx, pmy);
-
-	ctrl = 0;
-	//ctrl |= Mars_HandleStartHeld(&val, SEGA_CTRL_STARTMB);
-	ctrl |= Mars_ConvMouseButtons(val);
-	return ctrl;
 }
 
 int	I_GetTime (void)

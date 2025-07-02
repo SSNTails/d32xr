@@ -312,9 +312,7 @@ int		ticon;
 int		frameon;
 int		ticbuttons[MAXPLAYERS];
 int		oldticbuttons[MAXPLAYERS];
-int		ticmousex[MAXPLAYERS], ticmousey[MAXPLAYERS];
 int		ticrealbuttons, oldticrealbuttons;
-boolean	mousepresent;
 
 extern	VINT	lasttics;
 
@@ -363,7 +361,6 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 	total_frt_count = 0;
 
 	ticbuttons[0] = ticbuttons[1] = oldticbuttons[0] = oldticbuttons[1] = 0;
-	ticmousex[0] = ticmousex[1] = ticmousey[0] = ticmousey[1] = 0;
 
 	do
 	{
@@ -411,20 +408,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 			exit = ga_exitdemo;
 			break;
 		}
-
-		buttons |= I_ReadMouse(&mx, &my);
 		
-		if (IsDemoModeType(DemoMode_Playback))
-		{
-			ticmousex[consoleplayer] = 0;
-			ticmousey[consoleplayer] = 0;
-		}
-		else
-		{
-			ticmousex[consoleplayer] = mx;
-			ticmousey[consoleplayer] = my;
-		}
-
 		ticbuttons[consoleplayer] = buttons;
 		ticrealbuttons = buttons;
 
