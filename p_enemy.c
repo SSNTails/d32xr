@@ -1842,6 +1842,17 @@ void A_HoodFall(mobj_t *actor, int16_t var1, int16_t var2)
 	P_SetMobjState(actor, aInfo->seestate);
 }
 
+static void P_SharpDust(mobj_t *actor, mobjtype_t type, angle_t ang)
+{
+	mobj_t *dust;
+
+	if (!type || !P_IsObjectOnGround(actor))
+		return;
+
+	dust = P_SpawnMobj(actor->x - P_ReturnThrustX(ang, 16<<FRACBITS), actor->y - P_ReturnThrustY(ang, 16<<FRACBITS), actor->z, type);
+	P_SetObjectMomZ(dust, (1+(P_Random() & 3))<<FRACBITS, false);
+}
+
 // Function: A_FaceStabRev
 //
 // Description: Facestabber rev action
@@ -1850,7 +1861,7 @@ void A_HoodFall(mobj_t *actor, int16_t var1, int16_t var2)
 // var2 = effective nextstate
 //
 void A_FaceStabRev(mobj_t *actor, int16_t var1, int16_t var2)
-{/*
+{
 	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
 
 	if (!actor->target)
@@ -1875,11 +1886,11 @@ void A_FaceStabRev(mobj_t *actor, int16_t var1, int16_t var2)
 		}
 		else
 		{
-			P_TryMove(actor, actor->x - P_ReturnThrustX(actor->angle, 2<<FRACBITS), actor->y - P_ReturnThrustY(actor->angle, 2<<FRACBITS), false);
-			if (!P_MobjWasRemoved(actor))
-				P_FaceStabFlume(actor);
+			ptrymove_t tm;
+			P_TryMove(&tm, actor, actor->x - P_ReturnThrustX(actor->angle, 2<<FRACBITS), actor->y - P_ReturnThrustY(actor->angle, 2<<FRACBITS));
+//			P_FaceStabFlume(actor);
 		}
-	}*/
+	}
 }
 
 // Function: A_FaceStabHurl
@@ -1890,7 +1901,7 @@ void A_FaceStabRev(mobj_t *actor, int16_t var1, int16_t var2)
 // var2 = effective nextstate
 //
 void A_FaceStabHurl(mobj_t *actor, int16_t var1, int16_t var2)
-{/*
+{
 	if (actor->target)
 	{
 		angle_t visang = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
@@ -1914,75 +1925,30 @@ void A_FaceStabHurl(mobj_t *actor, int16_t var1, int16_t var2)
 		if (diffang < ANG90)
 		{
 			actor->angle = dirang;
-			if (++actor->extravalue2 < 4)
-				actor->extravalue2 = 4;
-			else if (actor->extravalue2 > 26)
-				actor->extravalue2 = 26;
 
-			if (P_TryMove(actor,
-				actor->x + P_ReturnThrustX(dirang, UPPER8(actor->extradata)<<FRACBITS),
-				actor->y + P_ReturnThrustY(dirang, UPPER8(actor->extradata)<<FRACBITS),
-				false))
+			int16_t extravalue2 = UPPER8(actor->extradata);
+
+			if (++extravalue2 < 4)
+				extravalue2 = 4;
+			else if (extravalue2 > 26)
+				extravalue2 = 26;
+
+			SETUPPER8(actor->extradata, extravalue2);
+
+			ptrymove_t pt;
+
+			if (P_TryMove(&pt, actor,
+				actor->x + P_ReturnThrustX(actor->angle, extravalue2<<FRACBITS),
+				actor->y + P_ReturnThrustY(actor->angle, extravalue2<<FRACBITS)))
 			{
-				// Do the spear damage.
-#define NUMSTEPS 3
-#define NUMGRADS 5
-#define MAXVAL (NUMSTEPS*NUMGRADS)
-
-				int8_t step = (++actor->extravalue1);
-				fixed_t basesize = FRACUNIT/MAXVAL;
-				mobj_t *hwork = actor;
-				int32_t dist = 113;
-				fixed_t xo = P_ReturnThrustX(actor->angle, dist*basesize);
-				fixed_t yo = P_ReturnThrustY(actor->angle, dist*basesize);
-
-				while (step > 0)
-				{
-					if (!P_MobjWasRemoved(hwork->hnext))
-					{
-						hwork = hwork->hnext;
-						hwork->angle = actor->angle + ANG90;
-						P_SetScale(hwork, FixedSqrt(step*basesize), true);
-						hwork->fuse = 2;
-						P_MoveOrigin(hwork, actor->x + xo*(15-step), actor->y + yo*(15-step), actor->z + (actor->height - hwork->height)/2 + (P_MobjFlip(actor)*(8<<FRACBITS)));
-						if (P_MobjWasRemoved(hwork))
-						{
-							// if one of the sections are removed, erase the entire damn thing.
-							mobj_t *hnext = actor->hnext;
-							hwork = actor;
-							do
-							{
-								hnext = hwork->hnext;
-								P_RemoveMobj(hwork);
-								hwork = hnext;
-							}
-							while (!P_MobjWasRemoved(hwork));
-							return;
-						}
-					}
-					step -= NUMGRADS;
-				}
-
-				if (actor->extravalue1 >= MAXVAL)
-					actor->extravalue1 -= NUMGRADS;
-
-				P_FaceStabFlume(actor);
 				return;
-#undef MAXVAL
-#undef NUMGRADS
-#undef NUMSTEPS
 			}
-			if (P_MobjWasRemoved(actor))
-				return;
 		}
 	}
 
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+	actor->reactiontime = aInfo->reactiontime;
 	P_SetMobjState(actor, var2);
-	if (!P_MobjWasRemoved(actor))
-	{
-		const mobjinfo_t *aInfo = &mobjinfo[actor->type];
-		actor->reactiontime = aInfo->reactiontime;
-	}*/
 }
 
 // Function: A_FaceStabMiss
@@ -1993,25 +1959,30 @@ void A_FaceStabHurl(mobj_t *actor, int16_t var1, int16_t var2)
 // var2 = effective nextstate
 //
 void A_FaceStabMiss(mobj_t *actor, int16_t var1, int16_t var2)
-{/*
-	if (++actor->extravalue1 >= 3)
+{
+	int16_t extravalue1 = LOWER8(actor->extradata);
+	int16_t extravalue2 = UPPER8(actor->extradata);
+
+	if (++extravalue1 >= 3)
 	{
-		actor->extravalue2 -= 2;
-		actor->extravalue1 = 0;
-		S_StartSound(actor, sfx_s3k_47);
-//		P_SharpDust(actor, MT_SPINDUST, actor->angle);
+		extravalue2 -= 2;
+		extravalue1 = 0;
+//		S_StartSound(actor, sfx_s3k_47);
+		P_SharpDust(actor, MT_DUST, actor->angle);
 	}
 
-	if (actor->extravalue2 <= 0 || !P_TryMove(actor,
-		actor->x + P_ReturnThrustX(actor, actor->angle, actor->extravalue2<<FRACBITS),
-		actor->y + P_ReturnThrustY(actor, actor->angle, actor->extravalue2<<FRACBITS),
-		false))
+	ptrymove_t pt;
+	if (extravalue2 <= 0 || !P_TryMove(&pt, actor,
+		actor->x + P_ReturnThrustX(actor->angle, extravalue2<<FRACBITS),
+		actor->y + P_ReturnThrustY(actor->angle, extravalue2<<FRACBITS)))
 	{
-		if (P_MobjWasRemoved(actor))
-			return;
-		actor->extravalue2 = 0;
+		extravalue2 = 0;
 		P_SetMobjState(actor, var2);
-	}*/
+	}
+
+	SETLOWER8(actor->extradata, extravalue1);
+	SETUPPER8(actor->extradata, extravalue2);
+	actor->reactiontime = 0;
 }
 
 // Function: A_GuardChase

@@ -705,6 +705,13 @@ return;	/*DEBUG */
 		else if (mthing->options & MTF_OBJECTSPECIAL)
 			SETUPPER8(mobj->extradata, TMGD_LEFT) // TMGD_LEFT
 	}
+	else if (mobj->type == MT_FACESTABBER)
+	{
+		mobj_t *jet = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_JETFUME1);
+		jet->target = mobj;
+		jet->flags2 |= MF2_DONTDRAW;
+		jet->movecount = 4; // This tells it which one it is
+	}
 
 	if (mobj->flags & MF_RINGMOBJ)
 		return;

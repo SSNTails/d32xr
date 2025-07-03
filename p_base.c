@@ -771,19 +771,40 @@ static boolean P_JetFume1Think(mobj_t *mobj)
 	}
 	else if (mobj->movecount == 2) // Second
 	{
-		mobj->x = jetx + P_ReturnThrustX(mobj->target->angle - ANG90, 24*FRACUNIT);
-		mobj->y = jety + P_ReturnThrustY(mobj->target->angle - ANG90, 24*FRACUNIT);
+      mobj->x = jetx;
+      mobj->y = jety;
+      P_ThrustValues(mobj->target->angle - ANG90, 24*FRACUNIT, &mobj->x, &mobj->y);
 		mobj->z = mobj->target->z + 12*FRACUNIT;
 	}
 	else if (mobj->movecount == 3) // Third
 	{
-		mobj->x = jetx + P_ReturnThrustX(mobj->target->angle + ANG90, 24*FRACUNIT);
-		mobj->y = jety + P_ReturnThrustY(mobj->target->angle + ANG90, 24*FRACUNIT);
+      mobj->x = jetx;
+      mobj->y = jety;
+      P_ThrustValues(mobj->target->angle + ANG90, 24<<FRACBITS, &mobj->x, &mobj->y);
 		mobj->z = mobj->target->z + 12*FRACUNIT;
 	}
+   else if (mobj->movecount == 4) // Castlebot Facestabber
+   {
+      mobj->x = mobj->target->x;
+      mobj->y = mobj->target->y;
+      P_ThrustValues(mobj->target->angle + ANG180, 36<<FRACBITS, &mobj->x, &mobj->y);
+
+      if (mobj->target->state == S_FACESTABBER_CHARGE3)
+         mobj->z = mobj->target->z + (72<<FRACBITS);
+      else
+         mobj->z = mobj->target->z + (36<<FRACBITS);
+
+      if (mobj->target->state < S_FACESTABBER_CHARGE1 || mobj->target->state > S_FACESTABBER_CHARGE3)
+         mobj->flags2 |= MF2_DONTDRAW;
+      else if (leveltime & 1)
+         mobj->flags2 &= ~MF2_DONTDRAW;
+      
+      if (mobj->target->health <= 0)
+         mobj->target = NULL;
+   }
 	mobj->floorz = mobj->z;
 	mobj->ceilingz = mobj->z + (mobj->theight << FRACBITS);
-	P_SetThingPosition(mobj);
+	P_SetThingPosition2(mobj, mobj->target->isubsector);
 	
 	return true;
 }
