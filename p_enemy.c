@@ -1985,6 +1985,11 @@ void A_FaceStabMiss(mobj_t *actor, int16_t var1, int16_t var2)
 	actor->reactiontime = 0;
 }
 
+void A_FaceStabUnPain(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	actor->flags2 &= ~MF2_FRET;
+}
+
 // Function: A_GuardChase
 //
 // Description: Modified A_Chase for Egg Guard

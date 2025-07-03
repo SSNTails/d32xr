@@ -754,7 +754,7 @@ static boolean P_JetFume1Think(mobj_t *mobj)
 		return false;
 	}
 
-   if (leveltime & 1)
+   if (gametic & 1)
       mobj->flags2 |= MF2_DONTDRAW;
    else
       mobj->flags2 &= ~MF2_DONTDRAW;
@@ -796,7 +796,7 @@ static boolean P_JetFume1Think(mobj_t *mobj)
 
       if (mobj->target->state < S_FACESTABBER_CHARGE1 || mobj->target->state > S_FACESTABBER_CHARGE3)
          mobj->flags2 |= MF2_DONTDRAW;
-      else if (leveltime & 1)
+      else if (gametic & 1)
          mobj->flags2 &= ~MF2_DONTDRAW;
       
       if (mobj->target->health <= 0)
@@ -845,7 +845,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
       {
          case MT_FLINGRING:
             mobj->threshold--;
-            if (mobj->threshold < 3*TICRATE && (mobj->threshold & 1))
+            if (mobj->threshold < 3*TICRATE && (gametic & 1))
                mobj->flags2 |= MF2_DONTDRAW;
             else
                mobj->flags2 &= ~MF2_DONTDRAW;

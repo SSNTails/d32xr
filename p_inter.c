@@ -259,27 +259,44 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 	}
 
 	// Ignore eggman in "ouchie" mode
-	if ((special->type == MT_EGGMOBILE || special->type == MT_EGGMOBILE2) && (special->flags2 & MF2_FRET))
+	if ((mobjinfo[special->type].spawnhealth > 1) && (special->flags2 & MF2_FRET))
 		return;
 
 	if ((special->flags2 & MF2_SHOOTABLE) && !(special->flags2 & MF2_MISSILE))
 	{
 		if (special->flags2 & MF2_ENEMY) // enemy rules
 		{
-			if (special->type == MT_SPRINGSHELL && special->health > 0)
+			if (special->health > 0)
 			{
-				fixed_t tmz = toucher->z - toucher->momz;
-				fixed_t tmznext = toucher->z;
-				fixed_t shelltop = special->z + (special->theight << FRACBITS);
-				fixed_t sprarea = 12*FRACUNIT;
-
-				if ((tmznext <= shelltop && tmz > shelltop) || (tmznext > shelltop - sprarea && tmznext < shelltop))
+				if (special->type == MT_SPRINGSHELL)
 				{
-					P_DoSpring(special, player);
-					return;
+					fixed_t tmz = toucher->z - toucher->momz;
+					fixed_t tmznext = toucher->z;
+					fixed_t shelltop = special->z + (special->theight << FRACBITS);
+					fixed_t sprarea = 12*FRACUNIT;
+
+					if ((tmznext <= shelltop && tmz > shelltop) || (tmznext > shelltop - sprarea && tmznext < shelltop))
+					{
+						P_DoSpring(special, player);
+						return;
+					}
+					else if (tmz > shelltop - sprarea && tmz < shelltop) // Don't damage people springing up / down
+						return;
 				}
-				else if (tmz > shelltop - sprarea && tmz < shelltop) // Don't damage people springing up / down
-					return;
+				else if (special->type == MT_FACESTABBER)
+				{
+					if (special->state == S_FACESTABBER_CHARGE3)
+					{
+						// If you hit him head on, you get hurt instead.
+						angle_t botToPlayer = R_PointToAngle2(special->x, special->y, toucher->x - toucher->momx, toucher->y - toucher->momy);
+						if (botToPlayer < special->angle + ANG90
+							&& botToPlayer > special->angle - ANG90)
+						{
+							P_DamageMobj(toucher, special, special, 1);
+							return;
+						}
+					}
+				}
 			}
 
 			if ((player->pflags & PF_JUMPED) || (player->pflags & PF_SPINNING) || player->powers[pw_invulnerability])
@@ -615,7 +632,7 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 	if (target->health <= 0)
 		return;
 
-	if (target->type == MT_EGGMOBILE || target->type == MT_EGGMOBILE2)
+	if (targinfo->spawnhealth > 1)
 	{
 		if (target->flags2 & MF2_FRET) // Currently flashing from being hit
 			return;

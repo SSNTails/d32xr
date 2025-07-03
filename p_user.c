@@ -1586,7 +1586,7 @@ void P_PlayerThink(player_t *player)
 	if (player->powers[pw_flashing] && player->powers[pw_flashing] < FLASHINGTICS)
 		player->powers[pw_flashing]--;
 
-	if (player->powers[pw_flashing] < FLASHINGTICS && (player->powers[pw_flashing] & 1))
+	if (player->powers[pw_flashing] > 0 && player->powers[pw_flashing] < FLASHINGTICS && (gametic & 1))
 		player->mo->flags2 |= MF2_DONTDRAW;
 	else
 		player->mo->flags2 &= ~MF2_DONTDRAW;

@@ -162,7 +162,7 @@ static void R_PrepMobj(mobj_t *thing)
        vis->colormap = vd.fixedcolormap;
    else
    {
-      if ((thing->type == MT_EGGMOBILE_MECH || thing->type == MT_EGGMOBILE2_MECH) && (thing->flags2 & MF2_FRET) && (gametic & 1))
+      if ((thing->type == MT_FACESTABBER || thing->type == MT_EGGMOBILE_MECH || thing->type == MT_EGGMOBILE2_MECH) && (thing->flags2 & MF2_FRET) && (gametic & 1))
          vis->colormap = BOSSFLASHCOLORMAP;
       else
       {
