@@ -247,6 +247,20 @@ typedef struct {
 
 void P_SpawnLightningStrike();
 
+typedef enum
+{
+	TMM_DOUBLESIZE      = 1,
+	TMM_SILENT          = 1<<1,
+	TMM_ALLOWYAWCONTROL = 1<<2,
+	TMM_SWING           = 1<<3,
+	TMM_MACELINKS       = 1<<4,
+	TMM_CENTERLINK      = 1<<5,
+	TMM_CLIP            = 1<<6,
+	TMM_ALWAYSTHINK     = 1<<7,
+} textmapmaceflags_t;
+
+void P_AddMaceChain(mobj_t *point, VINT angle, VINT pitch, VINT roll, VINT *args);
+
 #define	CEILSPEED		FRACUNIT*THINKERS_TICS
 #define MAXCEILINGS		16
 

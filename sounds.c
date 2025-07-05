@@ -81,6 +81,7 @@ const char * const S_sfxnames[NUMSFX] =
   "s3k_b6",
   "s3k_b9",
   "s3k_c5",
+  "s3k_c9",
   "drcymcr1",   // Drums: Cymbal crash 1
   "drkick1",    // Drums: Kick 1
   "drsnare1",   // Drums: Snare 1

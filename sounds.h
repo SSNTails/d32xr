@@ -96,6 +96,7 @@ typedef enum
   sfx_s3k_b6,
   sfx_s3k_b9,
   sfx_s3k_c5,
+  sfx_s3k_c9,
   sfx_drcymcr1,
   sfx_drkick1,
   sfx_drsnare1,

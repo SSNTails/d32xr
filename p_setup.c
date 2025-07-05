@@ -271,6 +271,14 @@ static void P_SpawnItemRow(mapthing_t *mt, VINT type, VINT count, VINT horizonta
 	}
 }
 
+typedef struct
+{
+	short		x,y;
+	short		angle;
+	short		type;
+	short		options;
+} mapmapthing_t; // Lol, only needed here
+
 void P_LoadThings (int lump)
 {
 	byte			*data;
@@ -284,22 +292,26 @@ void P_LoadThings (int lump)
 	for (int i = 0; i < NUMMOBJTYPES; i++)
 		ringmobjtics[i] = -1;
 
-	data = I_TempBuffer ();
-	W_ReadLump (lump,data);
-	numthings = W_LumpLength (lump) / sizeof(mapthing_t);
+	data = I_TempBuffer();
+	numthings = W_LumpLength (lump) / sizeof(mapmapthing_t);
 	numthingsreal = 0;
 	numstaticthings = 0;
 	numringthings = 0;
 	numscenerymobjs = 0;
 
+	mapmapthing_t *mmt = (mapmapthing_t*)(data + (sizeof(mapthing_t) * numthings));
+	W_ReadLump(lump, mmt);
+
 	mt = (mapthing_t *)data;
-	for (i=0 ; i<numthings ; i++, mt++)
+	for (i=0 ; i<numthings ; i++, mt++, mmt++)
 	{
-		mt->x = LITTLESHORT(mt->x);
-		mt->y = LITTLESHORT(mt->y);
-		mt->angle = LITTLESHORT(mt->angle);
-		mt->type = LITTLESHORT(mt->type);
-		mt->options = LITTLESHORT(mt->options);
+		mt->x = LITTLESHORT(mmt->x);
+		mt->y = LITTLESHORT(mmt->y);
+		mt->angle = LITTLESHORT(mmt->angle);
+		mt->type = LITTLESHORT(mmt->type);
+		mt->options = LITTLESHORT(mmt->options);
+		mt->extrainfo = mt->type >> 12;
+		mt->type &= 4095;
 	}
 
 	mt = (mapthing_t *)data;
@@ -311,6 +323,8 @@ void P_LoadThings (int lump)
 				break;
 			case 1:
 				numthingsreal++;
+				if (mt->type == 118)
+					numthingsreal += 3; // Jet fume, dash dust
 				break;
 			case 2:
 				numstaticthings++;

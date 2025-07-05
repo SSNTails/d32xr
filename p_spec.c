@@ -825,6 +825,70 @@ static void P_StartScrollTex(line_t *line)
 	}
 }
 
+typedef struct
+{
+	scenerymobj_t *point;
+	scenerymobj_t **chain;
+	mobj_t *maceball;
+	int numchain;
+	fixed_t interval; // The diameter to space out the links
+} macechain_t;
+
+typedef struct
+{
+	thinker_t thinker;
+	macechain_t macechain;
+	int numchains;
+	fixed_t speed;
+
+	VINT angle, pitch, roll;
+
+	VINT args[10];
+} swingmace_t;
+
+void T_SwingMace(swingmace_t *swingmace)
+{
+	boolean nearSomebody = false;
+
+	// Are you near a player? Otherwise don't bother
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		const mobj_t *playermo = players[i].mo;
+
+		if (D_abs(swingmace->macechain.point->x - playermo->x) > 2048*FRACUNIT
+			|| D_abs(swingmace->macechain.point->y - playermo->y) > 2048*FRACUNIT)
+			continue;
+
+		nearSomebody = true;
+	}
+
+	if (nearSomebody)
+	{
+		
+	}
+}
+
+#define D_max(a,b) (((a) > (b)) ? (a) : (b))
+#define D_min(a,b) (((a) < (b)) ? (a) : (b))
+
+void P_AddMaceChain(mobj_t *point, VINT angle, VINT pitch, VINT roll, VINT *args)
+{
+	// First, determine the # of items in the chain
+	VINT mlength = D_abs(args[0]);
+	VINT mminlength = D_max(0, D_min(mlength - 1, args[7]));
+
+
+
+
+//	swingmace_t *sm = Z_Malloc(sizeof(swingmace_t) + (mminlength * sizeof(scenerymobj_t*)), PU_LEVSPEC);
+//	P_AddThinker (&sm->thinker);
+//	sm->macechain.chain = (scenerymobj_t**)((uint8_t*)sm + sizeof(*sm));
+
+}
+
 VINT		numlineanimspecials = 0;
 line_t	**linespeciallist = NULL;
 

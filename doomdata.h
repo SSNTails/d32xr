@@ -65,7 +65,10 @@ typedef struct
 #define ML_CULLING			32	/* Cull this line by distance */
 #define ML_NOCLIMB			64
 #define ML_UNDERWATERONLY  128 /* Cull line if view is out of water */
+#define ML_UNUSED1_MIDPEG   256
 #define	ML_MIDTEXTUREBLOCK  512	/* Collide with midtexture (fences, etc.) */
+
+#define ML_UNUSED2_WRAPMIDTEX 1024 // TODO: I like this idea...
 
 /* to aid move clipping */
 #define ML_ST_HORIZONTAL 	4096 // Not used
@@ -111,6 +114,7 @@ typedef struct
 	short		angle;
 	short		type;
 	short		options;
+	short       extrainfo;
 } mapthing_t;
 
 /*
