@@ -279,6 +279,81 @@ typedef struct
 	short		options;
 } mapmapthing_t; // Lol, only needed here
 
+
+void P_SetupMace(mapthing_t *mthing)
+{
+	VINT args[10];
+	int tag = mthing->angle;
+	line_t *line = NULL;
+	for (int i = 0; i < numlines; i++)
+	{
+		int lineTag = P_GetLineTag(&lines[i]);
+		int lineSpecial = P_GetLineSpecial(&lines[i]);
+
+		if (lineSpecial == 9 && lineTag == tag)
+		{
+			line = &lines[i];
+			break;
+		}
+	}
+
+	if (!line)
+		return;
+
+	D_memset(args, 0, sizeof(args));
+
+	const sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
+	const mapvertex_t *v1 = &vertexes[line->v1];
+	const mapvertex_t *v2 = &vertexes[lines->v2];
+	const VINT angle = frontsector->ceilingheight >> FRACBITS;
+	const VINT pitch = frontsector->floorheight >> FRACBITS;
+	VINT roll = 0;
+	VINT textureoffset = sides[line->sidenum[0]].textureoffset & 0xfff;
+    textureoffset <<= 4; // sign extend
+    textureoffset >>= 4; // sign extend
+    VINT rowoffset = (sides[line->sidenum[0]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[0]].rowoffset << 4);
+    rowoffset >>= 4; // sign extend
+
+	args[0] = D_abs(v1->x - v2->x); // # of links
+	args[1] = mthing->type >> 12;
+	args[3] = D_abs(v1->y - v2->y);
+	args[4] = textureoffset;
+	args[7] = -rowoffset;
+	if (line->sidenum[1] > 0)
+	{
+		const sector_t *backsector = &sectors[sides[line->sidenum[1]].sector];
+		VINT backtextureoffset = sides[line->sidenum[1]].textureoffset & 0xfff;
+		textureoffset <<= 4; // sign extend
+		textureoffset >>= 4; // sign extend
+		VINT backrowoffset = (sides[line->sidenum[1]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[1]].rowoffset << 4);
+		rowoffset >>= 4; // sign extend
+
+		roll = backsector->ceilingheight >> FRACBITS;
+		args[2] = backrowoffset;
+		args[5] = backsector->floorheight >> FRACBITS;
+		args[6] = backtextureoffset;
+	}
+	if (mthing->options & MTF_AMBUSH)
+		args[8] |= TMM_DOUBLESIZE;
+	if (mthing->options & MTF_OBJECTSPECIAL)
+		args[8] |= TMM_SILENT;
+	if (ldflags[line-lines] & ML_NOCLIMB)
+		args[8] |= TMM_ALLOWYAWCONTROL;
+	if (ldflags[line-lines] & ML_CULLING)
+		args[8] |= TMM_SWING;
+	if (ldflags[line-lines] & ML_UNDERWATERONLY)
+		args[8] |= TMM_MACELINKS;
+	if (ldflags[line-lines] & ML_UNUSED1_MIDPEG)
+		args[8] |= TMM_CENTERLINK;
+	if (ldflags[line-lines] & ML_MIDTEXTUREBLOCK)
+		args[8] |= TMM_CLIP;
+	if (ldflags[line-lines] & ML_UNUSED2_WRAPMIDTEX)
+		args[8] |= TMM_ALWAYSTHINK;
+
+	// Whew! We gathered all of the info. Let's do something with it, now.
+	P_AddMaceChain(mthing, angle, pitch, roll, args);
+}
+
 void P_LoadThings (int lump)
 {
 	byte			*data;
@@ -317,29 +392,37 @@ void P_LoadThings (int lump)
 	mt = (mapthing_t *)data;
 	for (i=0 ; i<numthings ; i++, mt++)
 	{
-		switch (P_MapThingSpawnsMobj(mt))
+		if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
 		{
-			case 0:
-				break;
-			case 1:
-				numthingsreal++;
-				if (mt->type == 118)
-					numthingsreal += 3; // Jet fume, dash dust
-				break;
-			case 2:
-				numstaticthings++;
-				break;
-			case 3:
-				if (mt->type >= 600 && mt->type <= 602)
-					numringthings += 5;
-				else if (mt->type == 603)
-					numringthings += 10;
-				else
-					numringthings++;
-				break;
-			case 4:
-				numscenerymobjs++;
-				break;
+			// TODO: Determine the # of objects that will be spawned
+
+		}
+		else
+		{
+			switch (P_MapThingSpawnsMobj(mt))
+			{
+				case 0:
+					break;
+				case 1:
+					numthingsreal++;
+					if (mt->type == 118)
+						numthingsreal += 3; // Jet fume, dash dust
+					break;
+				case 2:
+					numstaticthings++;
+					break;
+				case 3:
+					if (mt->type >= 600 && mt->type <= 602)
+						numringthings += 5;
+					else if (mt->type == 603)
+						numringthings += 10;
+					else
+						numringthings++;
+					break;
+				case 4:
+					numscenerymobjs++;
+					break;
+			}
 		}
 	}
 
@@ -367,6 +450,8 @@ void P_LoadThings (int lump)
 			P_SpawnItemRow(mt, mobjinfo[MT_RING].doomednum, 5, 64, 64);
 		else if (mt->type == 603) // 10 diagonal rings (yellow spring)
 			P_SpawnItemRow(mt, mobjinfo[MT_RING].doomednum, 10, 64, 64);
+		else if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
+			P_SetupMace(mt);
 		else
 			P_SpawnMapThing(mt, i);
 	}

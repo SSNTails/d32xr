@@ -259,7 +259,7 @@ typedef enum
 	TMM_ALWAYSTHINK     = 1<<7,
 } textmapmaceflags_t;
 
-void P_AddMaceChain(mobj_t *point, VINT angle, VINT pitch, VINT roll, VINT *args);
+void P_AddMaceChain(mapthing_t *point, VINT angle, VINT pitch, VINT roll, VINT *args);
 
 #define	CEILSPEED		FRACUNIT*THINKERS_TICS
 #define MAXCEILINGS		16

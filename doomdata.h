@@ -117,6 +117,11 @@ typedef struct
 	short       extrainfo;
 } mapthing_t;
 
+#define MTF_EXTRA 1
+#define MTF_OBJECTFLIP 2
+#define MTF_OBJECTSPECIAL 4
+#define MTF_AMBUSH 8
+
 /*
 ===============================================================================
 

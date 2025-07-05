@@ -874,14 +874,11 @@ void T_SwingMace(swingmace_t *swingmace)
 #define D_max(a,b) (((a) > (b)) ? (a) : (b))
 #define D_min(a,b) (((a) < (b)) ? (a) : (b))
 
-void P_AddMaceChain(mobj_t *point, VINT angle, VINT pitch, VINT roll, VINT *args)
+void P_AddMaceChain(mapthing_t *point, VINT angle, VINT pitch, VINT roll, VINT *args)
 {
 	// First, determine the # of items in the chain
 	VINT mlength = D_abs(args[0]);
 	VINT mminlength = D_max(0, D_min(mlength - 1, args[7]));
-
-
-
 
 //	swingmace_t *sm = Z_Malloc(sizeof(swingmace_t) + (mminlength * sizeof(scenerymobj_t*)), PU_LEVSPEC);
 //	P_AddThinker (&sm->thinker);
