@@ -406,7 +406,7 @@ void P_LoadThings (int lump)
 				case 1:
 					numthingsreal++;
 					if (mt->type == 118)
-						numthingsreal += 3; // Jet fume, dash dust
+						numthingsreal++; // Jet fume
 					break;
 				case 2:
 					numstaticthings++;
