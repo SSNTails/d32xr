@@ -279,8 +279,32 @@ typedef struct
 	short		options;
 } mapmapthing_t; // Lol, only needed here
 
+static short P_GetMaceLinkCount(mapthing_t *mthing)
+{
+	int tag = mthing->angle;
+	line_t *line = NULL;
+	for (int i = 0; i < numlines; i++)
+	{
+		int lineTag = P_GetLineTag(&lines[i]);
+		int lineSpecial = P_GetLineSpecial(&lines[i]);
 
-void P_SetupMace(mapthing_t *mthing)
+		if (lineSpecial == 9 && lineTag == tag)
+		{
+			line = &lines[i];
+			break;
+		}
+	}
+
+	if (!line)
+		return 0;
+
+	const mapvertex_t *v1 = &vertexes[line->v1];
+	const mapvertex_t *v2 = &vertexes[lines->v2];
+
+	return D_abs(v1->x - v2->x); // # of links
+}
+
+static void P_SetupMace(mapthing_t *mthing)
 {
 	VINT args[10];
 	int tag = mthing->angle;
@@ -395,7 +419,8 @@ void P_LoadThings (int lump)
 		if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
 		{
 			// TODO: Determine the # of objects that will be spawned
-
+			numthingsreal++;
+			numscenerymobjs += P_GetMaceLinkCount(mt);
 		}
 		else
 		{
