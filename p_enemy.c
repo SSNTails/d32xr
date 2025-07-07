@@ -777,7 +777,7 @@ void A_Fall (mobj_t *actor, int16_t var1, int16_t var2)
 	// Also want to set these
 	P_UnsetThingPosition(actor);
 	actor->flags |= MF_NOBLOCKMAP|MF_NOCLIP|MF_NOGRAVITY;
-	P_SetThingPosition(actor);
+	P_SetThingPosition2(actor, actor->isubsector);
 
 	if (var1)
 		actor->extradata = var1;
@@ -970,7 +970,7 @@ static void P_DoBossDefaultDeath(mobj_t *mo)
 	P_UnsetThingPosition(mo);
 	mo->flags |= MF_NOBLOCKMAP|MF_NOGRAVITY|MF_NOCLIP;
 	mo->flags2 |= MF2_FLOAT;
-	P_SetThingPosition(mo);
+	P_SetThingPosition2(mo, mo->isubsector);
 
 	mo->movedir = 0;
 	mo->extradata = 2*TICRATE;
@@ -1042,11 +1042,9 @@ void A_MonitorPop(mobj_t *actor, int16_t var1, int16_t var2)
 
 	// We're dead now. De-solidify.
 	actor->health = 0;
-	P_UnsetThingPosition(actor);
 	actor->flags &= ~MF_SOLID;
 	actor->flags2 &= ~MF2_SHOOTABLE;
 	actor->flags |= MF_NOCLIP;
-	P_SetThingPosition(actor);
 
 	iconItem = mobjinfo[actor->type].damage;
 
@@ -1366,9 +1364,6 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 		mo->target = actor;
 
 		mo->angle = point->angle;
-//		P_UnsetThingPosition(mo);
-//		mo->flags = MF_NOCLIP|MF_NOGRAVITY;
-//		P_SetThingPosition(mo);
 
 		if ((dur & 1) && pointInfo->missilestate)
 			P_SetMobjState(mo, pointInfo->missilestate);
@@ -1485,16 +1480,13 @@ void A_Boss2Chase(mobj_t *actor, int16_t var1, int16_t var2)
 	const fixed_t radius = mobjinfo[actor->target->type].radius;
 	actor->target->angle += FixedDiv(FixedMul(ANG45/15,actor->movecount*actor->health), speedvar);
 
-	P_UnsetThingPosition(actor);
 	{
 		fixed_t fx = 0;
 		fixed_t fy = 0;
 		P_ThrustValues(actor->target->angle, radius, &fx, &fy);
 		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x + fx, actor->target->y + fy);
-		actor->x = actor->target->x + fx;
-		actor->y = actor->target->y + fy;
+		P_SetThingPositionConditionally(actor, actor->target->x + fx, actor->target->y + fy, R_PointInSubsector2(actor->x, actor->y));
 	}
-	P_SetThingPosition(actor);
 
 	// Spray goo once every second
 	A_GooSpray(actor, speedvar);
@@ -1569,9 +1561,7 @@ void A_Repeat(mobj_t *actor, int16_t var1, int16_t var2)
 //
 void A_ChangeHeight(mobj_t *actor, int16_t var1, int16_t var2)
 {
-	P_UnsetThingPosition(actor);
 	actor->theight = var1;
-	P_SetThingPosition(actor);
 }
 
 void A_UnidusBall(mobj_t *actor, int16_t var1, int16_t var2)
@@ -1591,16 +1581,15 @@ void A_UnidusBall(mobj_t *actor, int16_t var1, int16_t var2)
 		return;
 	}
 
-	P_UnsetThingPosition(actor);
 	{
 		const angle_t angle = actor->movedir + ANGLE_1 * (mobjinfo[actor->type].speed*(leveltime%360));
 		const uint16_t fa = angle>>ANGLETOFINESHIFT;
 
-		actor->x = actor->target->x + FixedMul(finecosine(fa),actor->threshold);
-		actor->y = actor->target->y + FixedMul(  finesine(fa),actor->threshold);
 		actor->z = actor->target->z + (actor->target->theight << (FRACBITS-1)) - (actor->theight << (FRACBITS-1));
+		P_SetThingPositionConditionally(actor, actor->target->x + FixedMul(finecosine(fa),actor->threshold),
+			actor->target->y + FixedMul(  finesine(fa),actor->threshold),
+			R_PointInSubsector2(actor->x, actor->y));
 	}
-	P_SetThingPosition(actor);
 }
 
 // Function: A_BubbleSpawn
@@ -2119,10 +2108,7 @@ void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
 	if (!movex && !movey)
 		return;
 
-	P_UnsetThingPosition(actor);
-	actor->x = newx;
-	actor->y = newy;
-	P_SetThingPosition(actor);
+	P_SetThingPositionConditionally(actor, newx, newy, R_PointInSubsector2(actor->x, actor->y));
 
 	// Search for players to push
 	for (int i = 0; i < MAXPLAYERS; i++)

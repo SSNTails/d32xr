@@ -121,11 +121,8 @@ void P_Attract(mobj_t *source, mobj_t *dest)
 	{
 		// place us on top of them then.
 		source->momx = source->momy = source->momz = 0;
-		P_UnsetThingPosition(source);
-		source->x = tx;
-		source->y = ty;
 		source->z = tz;
-		P_SetThingPosition(source);
+		P_SetThingPositionConditionally(source, tx, ty, dest->isubsector);
 	}
 }
 

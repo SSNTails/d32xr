@@ -818,10 +818,7 @@ static boolean P_DrownNumbersThink(mobj_t *mobj)
       return false;
    }
 
-   P_UnsetThingPosition(mobj);
-   mobj->x = mobj->target->x;
-   mobj->y = mobj->target->y;
-   P_SetThingPosition(mobj);
+   P_SetThingPositionConditionally(mobj, mobj->target->x, mobj->target->y, mobj->target->isubsector);
 
    if (player->pflags & PF_VERTICALFLIP)
       mobj->z = mobj->target->z - 16*FRACUNIT - (mobj->theight << FRACBITS);
@@ -908,11 +905,8 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                    }
                }
 
-               P_UnsetThingPosition(mobj);
-               mobj->x = mobj->target->x;
-               mobj->y = mobj->target->y;
                mobj->z = mobj->target->z;
-               P_SetThingPosition(mobj);
+               P_SetThingPositionConditionally(mobj, mobj->target->x, mobj->target->y, mobj->target->isubsector);
             }
             break;
          case MT_GOOP:

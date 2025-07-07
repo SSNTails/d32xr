@@ -523,12 +523,9 @@ boolean P_TryMove2(ptrymove_t *tm, boolean checkposonly)
    }
 
    // the move is ok, so link the thing into its new position.
-   P_UnsetThingPosition(tmthing);
    tmthing->floorz   = mw.tmfloorz;
    tmthing->ceilingz = mw.tmceilingz;
-   tmthing->x        = mw.tmx;
-   tmthing->y        = mw.tmy;
-   P_SetThingPosition2(tmthing, SS_TO_I(mw.newsubsec));
+   P_SetThingPositionConditionally(tmthing, mw.tmx, mw.tmy, SS_TO_I(mw.newsubsec));
 
    return true;
 }

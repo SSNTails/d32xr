@@ -212,6 +212,7 @@ boolean P_BlockThingsIterator (int x, int y, blockthingsiter_t, void *userp );
 void 	P_UnsetThingPosition (mobj_t *thing);
 void	P_SetThingPosition (mobj_t *thing);
 void	P_SetThingPosition2 (mobj_t *thing, VINT iss);
+void    P_SetThingPositionConditionally(mobj_t *thing, fixed_t x, fixed_t y, VINT iss);
 
 uint8_t P_GetLineTag(line_t *line);
 uint8_t P_GetLineSpecial(line_t *line);
