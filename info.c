@@ -2637,7 +2637,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		100,            // mass
 		1,              // damage
 		sfx_None,       // activesound
-		MF_STATIC|MF_RINGMOBJ,MF_NOBLOCKMAP|MF_NOGRAVITY, // flags
+		MF_STATIC|MF_RINGMOBJ|MF_NOBLOCKMAP|MF_NOGRAVITY, // flags
 		0          // flags2
 	},
 
