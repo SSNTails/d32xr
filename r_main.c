@@ -329,8 +329,8 @@ void R_SetViewportSize(int num)
 	viewportWidth = width;
 	viewportHeight = height;
 
-	centerX = viewportWidth / 2;
-	centerY = viewportHeight / 2;
+	centerX = viewportWidth >> 1;
+	centerY = viewportHeight >> 1;
 
 	centerXFrac = centerX * FRACUNIT;
 	centerYFrac = centerY * FRACUNIT;
