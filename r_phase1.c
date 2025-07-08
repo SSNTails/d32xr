@@ -914,13 +914,11 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
       else if (backsector->ceilingheight == frontsector->ceilingheight &&
         backsector->floorheight == frontsector->floorheight)
       {
-        sidetex_t *st = SIDETEX(sidedef);
-  
         // reject empty lines used for triggers and special events
-        if (st->midtexture == 0 &&
-         !(backsector->fofsec || frontsector->fofsec) &&
+        if (!(backsector->fofsec || frontsector->fofsec) &&
            *(int16_t *)&backsector->floorpic == *(int16_t *)&frontsector->floorpic && // compares both floorpic and ceilingpic
-           *(int8_t *)&backsector->lightlevel == *(int8_t *)&frontsector->lightlevel) // hack to get rid of the extu.w on SH-2
+           *(int8_t *)&backsector->lightlevel == *(int8_t *)&frontsector->lightlevel && // hack to get rid of the extu.w on SH-2
+            SIDETEX(sidedef)->midtexture == 0)
            return;
       }
    }
