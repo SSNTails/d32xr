@@ -97,6 +97,7 @@ static void P_CameraThinker(player_t *player, camera_t *thiscam)
 		mo.z = thiscam->z;
 		mo.floorz = thiscam->floorz;
 		mo.ceilingz = thiscam->ceilingz;
+		mo.isubsector = thiscam->subsector - subsectors;
 		mo.momx = thiscam->momx;
 		mo.momy = thiscam->momy;
 		mo.momz = thiscam->momz;
@@ -140,7 +141,7 @@ camwrapup:
 		thiscam->momx = mo.momx;
 		thiscam->momy = mo.momy;
 		thiscam->momz = mo.momz;
-      thiscam->subsector = I_TO_SS(R_PointInSubsector2(thiscam->x, thiscam->y));
+      	thiscam->subsector = I_TO_SS(mo.isubsector);
    }
 
 	// P_CameraZMovement()
