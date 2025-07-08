@@ -304,6 +304,9 @@ static inline unsigned NetToLocal (unsigned cmd)
  
 /*=============================================================================  */
 
+#ifndef SHOW_DISCLAIMER
+VINT debugCounter = 0;
+#endif
 VINT		accum_time;
 VINT		frames_to_skip = 0;
 VINT		ticrate = 4;

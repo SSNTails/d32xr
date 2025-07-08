@@ -274,7 +274,7 @@ VINT R_PointInSubsector2 (fixed_t x, fixed_t y)
 	
 	if (!numnodes)				/* single subsector is a special case */
 		return 0;
-		
+
 	nodenum = numnodes-1;
 
 	do

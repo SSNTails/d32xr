@@ -884,6 +884,10 @@ void* W_GetLumpData(int lump, const char *file, int line) ATTR_DATA_CACHE_ALIGN;
 void D_DoomMain (void);
 void D_DoomLoop (void);
 
+#ifndef SHOW_DISCLAIMER
+extern VINT debugCounter;
+#endif
+
 extern	boolean onscreen_prompt;
 extern	boolean titlescreen;
 extern	boolean	demoplayback, demorecording;

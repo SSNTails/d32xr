@@ -323,6 +323,9 @@ int P_Ticker (void)
 
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
+#ifndef SHOW_DISCLAIMER
+		debugCounter = 0;
+#endif
 		if (IsDemoModeType(DemoMode_Playback)) {
 			players[0].buttons = Mars_ConvGamepadButtons(rec_buttons);
 		}
@@ -352,6 +355,10 @@ int P_Ticker (void)
 //		start = frtc;
 		P_RunMobjBase();
 //		basetics = frtc - start;
+
+#ifndef SHOW_DISCLAIMER
+//		CONS_Printf("DebugCounter: %d", debugCounter);
+#endif
 
 		leveltime++;
 
