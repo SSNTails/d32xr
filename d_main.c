@@ -387,6 +387,9 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 			total_frt_count -= frametime;
 		}
 
+		if (accum_time > 3)
+			accum_time = 3;
+
 		last_frt_count = frt_count;
 
 		if (optionsMenuOn || gamemapinfo.mapNumber == TITLE_MAP_NUMBER || leveltime < TICRATE / 4) // Don't include map loading times into frameskip calculation
@@ -412,7 +415,6 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		ticbuttons[consoleplayer] = buttons;
 		ticrealbuttons = buttons;
 
-		
 		if (IsTitleScreen()) {
 			int timeleft = (gameinfo.titleTime >> 1) - leveltime;
 			if (timeleft <= 0) {
