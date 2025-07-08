@@ -46,7 +46,7 @@ static void R_StoreWallRange(rbspWork_t *rbsp, int start, int stop) ATTR_DATA_CA
 static void R_RenderBSPNode(rbspWork_t *rbsp, int bspnum, int16_t *outerbbox) ATTR_DATA_CACHE_ALIGN;
 static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    fixed_t *restrict floorheight, fixed_t *restrict floornewheight, 
-   fixed_t *restrict ceilingnewheight, fixed_t *restrict fofInfo) ATTR_DATA_CACHE_ALIGN  __attribute__((noinline));
+   fixed_t *restrict ceilingnewheight, fixed_t *restrict fofInfo) ATTR_DATA_CACHE_ALIGN;
 
 #ifdef MARS
 __attribute__((aligned(4)))
