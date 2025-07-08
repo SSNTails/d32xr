@@ -834,7 +834,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    rbsp->lastangle1 = angle1;
    rbsp->lastangle2 = angle2;
 
-   if (ldflags[line->linedef] & ML_UNDERWATERONLY && !vd.underwater)
+   if ((ldflags[line->linedef] & ML_UNDERWATERONLY) && !vd.underwater)
       return;
 
    if ((ldflags[line->linedef] & ML_CULLING) && (D_abs(vd.viewx - (v1->x << FRACBITS)) > 2048*FRACUNIT || D_abs(vd.viewy - (v1->y << FRACBITS)) > 2048*FRACUNIT))
