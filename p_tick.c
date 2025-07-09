@@ -232,6 +232,9 @@ void P_Weather()
 			}
 			else //if (proximity == 0)
 			{
+				if (count == 8)
+					P_SpawnLightningStrike();
+					
 				// Distant strike
 				if (count == 1) {
 					// Enable shadow in case it wasn't already enabled previously.
