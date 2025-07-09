@@ -93,6 +93,7 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 			player->justSprung = TICRATE;
 	}
 
+	boolean totallySideways = false;
 	if (vertispeed > 0)
 		player->mo->z = spring->z + (spring->theight << FRACBITS) + 1;
 	else if (vertispeed < 0)
@@ -103,6 +104,7 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 		fixed_t offy = 0;
 		// Horizontal springs teleport you in FRONT of them.
 		player->mo->momx = player->mo->momy = 0;
+		totallySideways = true;
 
 		// Overestimate the distance to position you at
 		P_ThrustValues(spring->angle, (springinfo->radius + playerinfo->radius + 1) * 2, &offx, &offy);
@@ -148,7 +150,7 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 
 		if (horizspeed)
 		{
-			player->justSprung = TICRATE;
+			player->justSprung = totallySideways ? TICRATE >> 2 : TICRATE;
 			player->mo->angle = spring->angle;
 		}
 
