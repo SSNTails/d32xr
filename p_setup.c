@@ -299,7 +299,7 @@ static short P_GetMaceLinkCount(mapthing_t *mthing)
 		return 0;
 
 	const mapvertex_t *v1 = &vertexes[line->v1];
-	const mapvertex_t *v2 = &vertexes[lines->v2];
+	const mapvertex_t *v2 = &vertexes[line->v2];
 
 	return D_abs(v1->x - v2->x); // # of links
 }
