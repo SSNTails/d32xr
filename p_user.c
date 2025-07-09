@@ -733,10 +733,9 @@ void P_PlayerHitFloor(player_t *player)
 {
 	if (player->pflags & PF_JUMPED)
 		player->pflags &= ~PF_SPINNING;
-	else if (!(player->pflags & PF_USEDOWN))
-		player->pflags &= ~PF_SPINNING;
 
-	if (!((player->pflags & PF_SPINNING) && (player->pflags & PF_USEDOWN)))
+	// A little bit different from PC - if hit the floor while spinning, continue to spin.
+	if (!(player->pflags & PF_SPINNING))
 	{
 		P_ResetScore(player);
 		P_SetMobjState(player->mo, S_PLAY_RUN1);
