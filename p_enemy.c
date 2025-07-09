@@ -335,7 +335,7 @@ newtarget:
 	if (!mo || mo->health <= 0)
 		goto newtarget;
 
-	if (distLimit > 0 && P_AproxDistance(P_AproxDistance(actor->x - mo->x, actor->y - mo->y), actor->z - mo->z) > distLimit)
+	if (distLimit > 0 && (D_abs(actor->z - mo->z) > distLimit || P_AproxDistance(actor->x - mo->x, actor->y - mo->y) > distLimit))
 		return false;
 		
 	if (!allaround)
