@@ -2033,7 +2033,7 @@ void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
 			SETLOWER8(actor->extradata, newvalue);
 		}
 	}
-	else // Break ranks!
+	else if (actor->target) // Break ranks!
 	{
 		actor->flags2 |= MF2_SHOOTABLE;
 
