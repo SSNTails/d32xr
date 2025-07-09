@@ -196,7 +196,7 @@ fixed_t	P_FindNextHighestCeiling(sector_t *sec,int currentheight)
 		if (!other)
 			continue;
 		if (other->ceilingheight > height)
-			heightlist[h++] = other->floorheight;
+			heightlist[h++] = other->ceilingheight;
 		if (h == sizeof(heightlist) / sizeof(heightlist[0]))
 			break;
 	}
