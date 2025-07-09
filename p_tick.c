@@ -222,7 +222,7 @@ void P_Weather()
 				if (count == 8) {
 					// Disable shadow for a short time to lighten the sky.
 					R_SetShadowHighlight(false);
-					P_SpawnLightningStrike();
+					P_SpawnLightningStrike(true);
 				}
 				else if (count == 5) {
 					// Re-enable shadow to return the sky back to normal (i.e. dark).
@@ -233,8 +233,8 @@ void P_Weather()
 			else //if (proximity == 0)
 			{
 				if (count == 8)
-					P_SpawnLightningStrike();
-					
+					P_SpawnLightningStrike(false);
+
 				// Distant strike
 				if (count == 1) {
 					// Enable shadow in case it wasn't already enabled previously.

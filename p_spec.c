@@ -668,7 +668,7 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 
 lightningspawn_t *lightningSpawner = NULL;
 
-void P_SpawnLightningStrike()
+void P_SpawnLightningStrike(boolean close)
 {
 	// Amazing logic goes here.
 	if (!lightningSpawner)
@@ -679,7 +679,7 @@ void P_SpawnLightningStrike()
 	for (int i = 0; i < lightningSpawner->numsectors*2; i += 2)
 	{
 		sector_t *sec = &sectors[lightningSpawner->sectorData[i]];
-		sec->lightlevel = 255;
+		sec->lightlevel = (uint8_t)(close ? 255 : (255 + (int32_t)sec->lightlevel) >> 1);
 	}
 }
 

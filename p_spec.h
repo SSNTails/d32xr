@@ -245,7 +245,7 @@ typedef struct {
 	VINT timer;
 } lightningspawn_t;
 
-void P_SpawnLightningStrike();
+void P_SpawnLightningStrike(boolean close);
 
 typedef enum
 {
