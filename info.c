@@ -3201,7 +3201,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 	20,    // mass
 	0,              // damage
 	sfx_None,       // activesound
-	MF_NOBLOCKMAP,     // flags
+	MF_NOBLOCKMAP|MF_NOGRAVITY,     // flags
 	0          // flags2
 },
 	{           // MT_GHOST
