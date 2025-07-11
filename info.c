@@ -2606,12 +2606,12 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		S_NULL,           // xdeathstate
 		sfx_None,         // deathsound
 		24*FRACUNIT,      // speed
-		17*FRACUNIT,      // radius
+		12*FRACUNIT,      // radius
 		34*FRACUNIT,      // height
 		100,              // mass
 		1,                // damage
 		sfx_None,         // activesound
-		MF_STATIC|MF_RINGMOBJ|MF_NOBLOCKMAP|MF_NOGRAVITY, // flags
+		MF_STATIC|MF_RINGMOBJ|MF_NOCLIP|MF_NOGRAVITY, // flags
 		0                 // flags2
 	},
 
@@ -2632,12 +2632,12 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		48*FRACUNIT,    // speed
-		34*FRACUNIT,    // radius
+		24*FRACUNIT,    // radius
 		68*FRACUNIT,    // height
 		100,            // mass
 		1,              // damage
 		sfx_None,       // activesound
-		MF_STATIC|MF_RINGMOBJ|MF_NOBLOCKMAP|MF_NOGRAVITY, // flags
+		MF_STATIC|MF_RINGMOBJ|MF_NOCLIP|MF_NOGRAVITY, // flags
 		0          // flags2
 	},
 

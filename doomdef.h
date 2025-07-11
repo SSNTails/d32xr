@@ -188,6 +188,8 @@ typedef enum
 /* library replacements */
 /* */
 
+#define D_max(a,b) (((a) > (b)) ? (a) : (b))
+#define D_min(a,b) (((a) < (b)) ? (a) : (b))
 #define D_abs(x) ((x < 0) ? -(x) : x)
 void D_memset (void *dest, int val, size_t count) __attribute__((nonnull));
 void D_memcpy (void *dest, const void *src, size_t count) __attribute__((nonnull));

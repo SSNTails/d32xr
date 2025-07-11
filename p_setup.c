@@ -301,7 +301,15 @@ static short P_GetMaceLinkCount(mapthing_t *mthing)
 	const mapvertex_t *v1 = &vertexes[line->v1];
 	const mapvertex_t *v2 = &vertexes[line->v2];
 
-	return D_abs(v1->x - v2->x); // # of links
+	VINT rowoffset = (sides[line->sidenum[0]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[0]].rowoffset << 4);
+    rowoffset >>= 4; // sign extend
+	VINT subtract = -rowoffset;
+
+	if (subtract < 0) // Compatibility
+		subtract = 0;
+
+	VINT mlength = D_abs(v1->x - v2->x);
+	return mlength - subtract; // # of links
 }
 
 static void P_SetupMace(mapthing_t *mthing)
@@ -328,7 +336,7 @@ static void P_SetupMace(mapthing_t *mthing)
 
 	const sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
 	const mapvertex_t *v1 = &vertexes[line->v1];
-	const mapvertex_t *v2 = &vertexes[lines->v2];
+	const mapvertex_t *v2 = &vertexes[line->v2];
 	const VINT angle = frontsector->ceilingheight >> FRACBITS;
 	const VINT pitch = frontsector->floorheight >> FRACBITS;
 	VINT roll = 0;
@@ -343,6 +351,10 @@ static void P_SetupMace(mapthing_t *mthing)
 	args[3] = D_abs(v1->y - v2->y);
 	args[4] = textureoffset;
 	args[7] = -rowoffset;
+
+	if (args[7] < 0) // Compatiblity
+		args[7] = 0;
+
 	if (line->sidenum[1] > 0)
 	{
 		const sector_t *backsector = &sectors[sides[line->sidenum[1]].sector];
@@ -389,7 +401,10 @@ void P_LoadThings (int lump)
 	ringmobjtics = Z_Malloc(sizeof(*ringmobjtics) * NUMMOBJTYPES, PU_LEVEL);
 
 	for (int i = 0; i < NUMMOBJTYPES; i++)
-		ringmobjtics[i] = -1;
+	{
+		ringmobjstates[i] = mobjinfo[i].spawnstate;
+		ringmobjtics[i] = states[mobjinfo[i].spawnstate].tics;
+	}
 
 	data = I_TempBuffer();
 	numthings = W_LumpLength (lump) / sizeof(mapmapthing_t);
@@ -413,14 +428,19 @@ void P_LoadThings (int lump)
 		mt->type &= 4095;
 	}
 
+	int numMaces = 0;
+
 	mt = (mapthing_t *)data;
 	for (i=0 ; i<numthings ; i++, mt++)
 	{
 		if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
 		{
-			// TODO: Determine the # of objects that will be spawned
-			numthingsreal++;
-			numscenerymobjs += P_GetMaceLinkCount(mt);
+			int maceLinkCount = P_GetMaceLinkCount(mt);
+
+			// Determine the # of objects that will be spawned
+			numthingsreal++; // End of chain (ball)
+			numringthings += maceLinkCount; // links
+			numMaces++;
 		}
 		else
 		{
@@ -463,6 +483,9 @@ void P_LoadThings (int lump)
 	}
 
 	P_PreSpawnMobjs(numthingsreal, numstaticthings, numringthings, numscenerymobjs);
+
+	// Pre-allocate maces, too.
+	P_PreallocateMaces(numMaces);
 
 	mt = (mapthing_t *)data;
 	for (i=0 ; i<numthings ; i++, mt++)

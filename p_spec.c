@@ -827,11 +827,11 @@ static void P_StartScrollTex(line_t *line)
 
 typedef struct
 {
-	scenerymobj_t *point;
-	scenerymobj_t **chain;
+	VINT x, y, z;
+	ringmobj_t *chain; // First item in the chain list.
 	mobj_t *maceball;
-	int numchain;
-	fixed_t interval; // The diameter to space out the links
+	VINT numchain;
+	VINT interval; // The diameter (in FRACUNITs) to space out the links
 } macechain_t;
 
 typedef struct
@@ -858,8 +858,8 @@ void T_SwingMace(swingmace_t *swingmace)
 
 		const mobj_t *playermo = players[i].mo;
 
-		if (D_abs(swingmace->macechain.point->x - playermo->x) > 2048*FRACUNIT
-			|| D_abs(swingmace->macechain.point->y - playermo->y) > 2048*FRACUNIT)
+		if (D_abs(swingmace->macechain.x - playermo->x) > 2048*FRACUNIT
+			|| D_abs(swingmace->macechain.y - playermo->y) > 2048*FRACUNIT)
 			continue;
 
 		nearSomebody = true;
@@ -871,19 +871,115 @@ void T_SwingMace(swingmace_t *swingmace)
 	}
 }
 
-#define D_max(a,b) (((a) > (b)) ? (a) : (b))
-#define D_min(a,b) (((a) < (b)) ? (a) : (b))
+static swingmace_t *cursorMace = NULL;
+void P_PreallocateMaces(int numMaces)
+{
+	size_t allocSize = sizeof(swingmace_t) * numMaces;
+	cursorMace = Z_Malloc(allocSize, PU_LEVSPEC);
+}
 
 void P_AddMaceChain(mapthing_t *point, VINT angle, VINT pitch, VINT roll, VINT *args)
 {
+	VINT mphase = args[4] % 360;
+	VINT mpinch = args[5] % 360;
+	pitch %= 360;
+	VINT yaw = angle % 360;
+	roll %= 360;
+
 	// First, determine the # of items in the chain
 	VINT mlength = D_abs(args[0]);
-	VINT mminlength = D_max(0, D_min(mlength - 1, args[7]));
+	VINT msublinks = args[7];
+	VINT mminlength = D_max(0, D_min(mlength - 1, msublinks));
 
-//	swingmace_t *sm = Z_Malloc(sizeof(swingmace_t) + (mminlength * sizeof(scenerymobj_t*)), PU_LEVSPEC);
-//	P_AddThinker (&sm->thinker);
-//	sm->macechain.chain = (scenerymobj_t**)((uint8_t*)sm + sizeof(*sm));
+	swingmace_t *sm = cursorMace;
+	cursorMace++;
+	P_AddThinker (&sm->thinker);
 
+	fixed_t x = point->x << FRACBITS;
+	fixed_t y = point->y << FRACBITS;
+	fixed_t z = (point->options >> 4) << FRACBITS;
+	int i;
+	for (i=0 ; i< NUMMOBJTYPES ; i++)
+		if (point->type == mobjinfo[i].doomednum)
+			break;
+	z = P_GetMapThingSpawnHeight(i, point, x, y, z);
+
+	mobjtype_t macetype;
+	mobjtype_t chainlink;
+	boolean mchainlike = false;
+
+	if (i == MT_CHAINPOINT)
+	{
+		if (args[8] & TMM_DOUBLESIZE)
+		{
+			macetype = MT_BIGGRABCHAIN;
+			chainlink = MT_BIGMACECHAIN;
+		}
+		else
+		{
+			macetype = MT_SMALLGRABCHAIN;
+			chainlink = MT_SMALLMACECHAIN;
+		}
+		mchainlike = true;
+	}
+	else
+	{
+		if (args[8] & TMM_DOUBLESIZE)
+		{
+			macetype = MT_BIGMACE;
+			chainlink = MT_BIGMACECHAIN;
+		}
+		else
+		{
+			macetype = MT_SMALLMACE;
+			chainlink = MT_SMALLMACECHAIN;
+		}
+	}
+
+	boolean msound = (mchainlike ? 0 : 1);
+	VINT radiusfactor = 1;
+	VINT widthfactor = 2;
+
+	VINT mmaxlength = mlength;
+
+	fixed_t dist = mobjinfo[chainlink].radius;
+	sm->macechain.interval = (dist >> FRACBITS) << 1;
+
+	while (msublinks > 0)
+	{
+		dist += sm->macechain.interval << FRACBITS;
+		msublinks--;
+		mlength--;
+	}
+
+	sm->macechain.numchain = 0;
+	boolean first = true;
+	VINT count = 0;
+
+	while (count < mlength)
+	{
+		fixed_t spawnX = x;
+		fixed_t spawnY = y;
+
+		P_ThrustValues(yaw, dist, &spawnX, &spawnY);
+		ringmobj_t *link = P_SpawnMobj(spawnX, spawnY, z - (mobjinfo[chainlink].height >> 2), chainlink);
+		if (first)
+		{
+			first = false;
+			sm->macechain.chain = link;
+		}
+		sm->macechain.numchain++;
+		dist += sm->macechain.interval << FRACBITS;
+		count++;
+	}
+
+	dist += mobjinfo[macetype].radius;
+
+	// Now spawn the end piece
+	fixed_t spawnX = x;
+	fixed_t spawnY = y;
+	P_ThrustValues(yaw, dist, &spawnX, &spawnY);
+	sm->macechain.maceball = P_SpawnMobj(spawnX, spawnY, z - (mobjinfo[macetype].height >> 1), macetype);
 }
 
 VINT		numlineanimspecials = 0;

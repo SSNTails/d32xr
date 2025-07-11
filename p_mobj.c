@@ -640,12 +640,6 @@ return;	/*DEBUG */
 	if (i==NUMMOBJTYPES)
 		I_Error ("P_SpawnMapThing: Unknown type %i at (%i, %i)",mthing->type
 		, mthing->x, mthing->y);
-
-	if (mobjinfo[i].flags & MF_RINGMOBJ)
-	{
-		ringmobjstates[i] = mobjinfo[i].spawnstate;
-		ringmobjtics[i] = states[mobjinfo[i].spawnstate].tics;
-	}
 	
 /* spawn it */
 
