@@ -4,15 +4,6 @@
 
 #define LENSHIFT 4		/* this must be log2(LOOKAHEAD_SIZE) */
 
-#define UpdateBitfield()\
-	bitfield >>= 1;\
-	bits_read++;\
-	if(bits_read == 16){\
-		bitfield = *input++;\
-		bitfield |= ((*input++) << 8);\
-		bits_read = 0;\
-	}
-
 void lzss_reset(lzss_state_t* lzss)
 {
 	lzss->outpos = 0;
@@ -149,65 +140,59 @@ int lzss_read(lzss_state_t* lzss, uint16_t chunk)
 
 int lzss_read_all(lzss_state_t* lzss)
 {
+	uint16_t len;
+	uint8_t getidbyte = 0;
+	uint32_t source = 0;
+	uint8_t* input = lzss->input;
+	uint8_t* output = lzss->buf;
+	uint32_t outpos = 0;
+	uint32_t buf_size = lzss->buf_size;
+
 	if (!lzss->input)
 		return 0;
 
-	int16_t write_count;
-	uint16_t bitfield = 0;
-	int16_t reference_offset = 0;
-	uint8_t* input = lzss->input;
-	uint8_t* output = lzss->buf;
-	uint16_t bits_read = 0;
-
-	bitfield = *input++;
-	bitfield |= ((*input++) << 8);
-
+	len = 0;
+	getidbyte = 0;
 	while (1)
 	{
-		uint8_t compression_type = bitfield & 1;
-		UpdateBitfield();
+		uint8_t idbyte;
 
-		if (compression_type == 0) {
-			compression_type = (bitfield & 1) << 1;
-			UpdateBitfield();
-		}
+		/* get a new idbyte if necessary */
+		if (!getidbyte) idbyte = *input++;
 
-		switch (compression_type)
+		if (idbyte & 1)
 		{
-			case 0:
-				// inline
-				write_count = (bitfield & 1) << 1;
-				UpdateBitfield();
-				write_count |= (bitfield & 1);
-				write_count++;
-				UpdateBitfield();
-				reference_offset = 0xFF00 | *input++;
-				break;
-			case 1:
-				// direct copy
-				*output++ = *input++;
-				write_count = -1;
-				break;
-			case 2:
-				// embedded/separate
-				reference_offset = ((((input[1]) << 5) & 0x1F00) | *input) | 0xE000;
-				write_count = (input[1] & 7) + 1;
-				input += 2;
-				if(write_count == 1){
-					write_count = *input++;
-					if(write_count == 0)
-						return output - lzss->buf;
-					else if(write_count == 1)
-						write_count = -1;
-				}
-				break;
+			uint16_t j;
+			uint16_t pos;
+
+			/* decompress */
+			if (buf_size <= 0x1000)
+			{
+				pos = *input++ << LENSHIFT;
+				pos = pos | (*input >> LENSHIFT);
+				len = (*input++ & 0xf) + 1;
+			}
+			else
+			{
+				pos = *input++ << 8;
+				pos = pos | (*input++);
+				len = (*input++ & 0xff) + 1;
+			}
+			source = outpos - pos - 1;
+
+			if (len == 1) {
+				/* end of stream */
+				return output - lzss->buf;
+			}
+
+			for (j = 0; j < len; j++)
+				output[outpos++] = output[source++];
 		}
-		
-		while(write_count >= 0){
-			*output = output[reference_offset];
-			output++;
-			write_count--;
+		else {
+			output[outpos++] = *input++;
 		}
+		idbyte = idbyte >> 1;
+		getidbyte = (getidbyte + 1) & 7;
 	}
 
 	return output - lzss->buf;

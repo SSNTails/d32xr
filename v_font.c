@@ -1,5 +1,5 @@
 #include "v_font.h"
-#include "lzss.h"
+#include "lzexe.h"
 
 font_t menuFont;
 font_t titleFont;
@@ -98,13 +98,13 @@ int V_DrawStringLeftWithColormap(const font_t *font, int x, int y, const char *s
                 else
                 {
                     // Can draw compressed characters
-                    lzss_state_t gfx_lzss;
-	                uint8_t lzss_buf[32];
-                    lzss_setup(&gfx_lzss, lump, lzss_buf, 32);
-                    if (lzss_read(&gfx_lzss, 16) != 16)
+                    lzexe_state_t gfx_lzexe;
+	                uint8_t lzexe_buf[32];
+                    lzexe_setup(&gfx_lzexe, lump, lzexe_buf, 32);
+                    if (lzexe_read_partial(&gfx_lzexe, 16) != 16)
                         continue;
 
-                    jo = (jagobj_t*)gfx_lzss.buf;
+                    jo = (jagobj_t*)gfx_lzexe.output;
                     if (colormap)
                         DrawJagobjLumpWithColormap(lumpnum, x, y + font->verticalOffset - jo->height, NULL, NULL, colormap);
                     else
@@ -204,13 +204,13 @@ int V_DrawStringCenterWithColormap(const font_t *font, int x, int y, const char 
                 else
                 {
                     // Can draw compressed characters
-                    lzss_state_t gfx_lzss;
-	                uint8_t lzss_buf[32];
-                    lzss_setup(&gfx_lzss, lump, lzss_buf, 32);
-                    if (lzss_read(&gfx_lzss, 16) != 16)
+                    lzexe_state_t gfx_lzexe;
+	                uint8_t lzexe_buf[32];
+                    lzexe_setup(&gfx_lzexe, lump, lzexe_buf, 32);
+                    if (lzexe_read_partial(&gfx_lzexe, 16) != 16)
                         continue;
 
-                    jo = (jagobj_t*)gfx_lzss.buf;
+                    jo = (jagobj_t*)gfx_lzexe.output;
 		            x -= jo->width / 2;
                 }
             }

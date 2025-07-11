@@ -9,7 +9,7 @@ WAD ?= doom32x.wad
 LDSCRIPTSDIR = $(ROOTDIR)/ldscripts
 
 LIBPATH = -L$(ROOTDIR)/sh-elf/lib -L$(ROOTDIR)/sh-elf/lib/gcc/sh-elf/4.6.2 -L$(ROOTDIR)/sh-elf/sh-elf/lib
-INCPATH = -I. -I$(ROOTDIR)/sh-elf/include -I$(ROOTDIR)/sh-elf/sh-elf/include -I./liblzss
+INCPATH = -I. -I$(ROOTDIR)/sh-elf/include -I$(ROOTDIR)/sh-elf/sh-elf/include -I./liblzexe
 
 CCFLAGS = -c -std=c11 -m2 -mb
 CCFLAGS += -Wall -Wextra -pedantic -Wno-unused-parameter -Wimplicit-fallthrough=0 -Wno-missing-field-initializers -Wnonnull
@@ -119,7 +119,7 @@ OBJS = \
 	r_cache.o \
 	m_fire.o \
 	v_font.o \
-	lzss.o
+	lzexe.o
 
 release: $(TARGET).32x
 
@@ -148,7 +148,7 @@ marshw.o: marshw.c
 %.o: %.c
 	$(CC) $(CCFLAGS) $(INCPATH) $< -o $@
 
-%.o: liblzss/%.c
+%.o: liblzexe/%.c
 	$(CC) $(CCFLAGS) $(INCPATH) $< -o $@
 
 %.o: %.s

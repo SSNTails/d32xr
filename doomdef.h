@@ -14,7 +14,7 @@
 
 /*define	MARS */
 
-#define LZSS_BUF_SIZE	0x1000
+#define LZEXE_BUF_SIZE	0x2000
 
 /* if rangecheck is undefined, most parameter validation debugging code */
 /* will not be compiled */
