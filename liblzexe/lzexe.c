@@ -58,33 +58,33 @@ int lzexe_read_all(uint8_t* input, uint8_t* output)
 
 		switch (compression_type)
 		{
-		case 0:
-			// inline
-			copy_count = (bitfield & 1) << 1;
-			UpdateBitfield();
-			copy_count |= (bitfield & 1);
-			copy_count++;
-			UpdateBitfield();
-			reference_offset = 0xFF00 | *input++;
-			break;
-		case 1:
-			// direct copy
-			*output++ = *input++;
-			copy_count = -1;
-			break;
-		case 2:
-			// embedded/separate
-			reference_offset = ((((input[1]) << 5) & 0x1F00) | *input) | 0xE000;
-			copy_count = (input[1] & 7) + 2;
-			input += 2;
-			if (copy_count == 2) {
-				// large copy
-				copy_count = (*input++) + 1;
-				if (copy_count == 1) {
-					return output - output_start;
+			case 0:
+				// inline
+				copy_count = (bitfield & 1) << 1;
+				UpdateBitfield();
+				copy_count |= (bitfield & 1);
+				copy_count += 2;
+				UpdateBitfield();
+				reference_offset = 0xFF00 | *input++;
+				break;
+			case 1:
+				// direct copy
+				*output++ = *input++;
+				copy_count = -1;
+				break;
+			case 2:
+				// embedded/separate
+				reference_offset = ((((input[1]) << 5) & 0x1F00) | *input) | 0xE000;
+				copy_count = (input[1] & 7) + 2;
+				input += 2;
+				if (copy_count == 2) {
+					// large copy
+					copy_count = (*input++) + 1;
+					if (copy_count == 1) {
+						return output - output_start;
+					}
 				}
-			}
-			break;
+				break;
 		}
 
 		while (copy_count > 0) {
@@ -164,38 +164,38 @@ int lzexe_read_partial(lzexe_state_t* lzexe, uint16_t chunk_size)
 
 		switch (compression_type)
 		{
-		case 0:
-			// inline
-			copy_count = (bitfield & 1) << 1;
-			UpdateBitfield();
-			copy_count |= (bitfield & 1);
-			copy_count++;
-			UpdateBitfield();
-			reference_offset = 0xFF00 | *input++;
-			goto copy_bytes;
-		case 1:
-			// direct copy
-			//printf("direct copy\n");
-			*output++ = *input++;
-			chunk_bytes_left--;
-			if (chunk_bytes_left == 0) {
-				goto save_lzexe_state;
-			}
-			goto read_bitfield;
-		case 2:
-			// embedded/separate
-			reference_offset = ((((input[1]) << 5) & 0x1F00) | *input) | 0xE000;
-			copy_count = (input[1] & 7) + 2;
-			input += 2;
-			if (copy_count == 2) {
-				// large copy
-				copy_count = (*input++) + 1;
-				if (copy_count == 1) {
-					copy_count = 0;
-					goto lzexe_eof;
-				}
+			case 0:
+				// inline
+				copy_count = (bitfield & 1) << 1;
+				UpdateBitfield();
+				copy_count |= (bitfield & 1);
+				copy_count += 2;
+				UpdateBitfield();
+				reference_offset = 0xFF00 | *input++;
 				goto copy_bytes;
-			}
+			case 1:
+				// direct copy
+				//printf("direct copy\n");
+				*output++ = *input++;
+				chunk_bytes_left--;
+				if (chunk_bytes_left == 0) {
+					goto save_lzexe_state;
+				}
+				goto read_bitfield;
+			case 2:
+				// embedded/separate
+				reference_offset = ((((input[1]) << 5) & 0x1F00) | *input) | 0xE000;
+				copy_count = (input[1] & 7) + 2;
+				input += 2;
+				if (copy_count == 2) {
+					// large copy
+					copy_count = (*input++) + 1;
+					if (copy_count == 1) {
+						copy_count = 0;
+						goto lzexe_eof;
+					}
+					goto copy_bytes;
+				}
 		}
 	}
 
