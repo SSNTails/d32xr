@@ -28,7 +28,7 @@
 #include "doomdef.h"
 #include "mars.h"
 #include "r_local.h"
-#include "lzss.h"
+#include "lzexe.h"
 
 /*
 ==============================================================================
@@ -404,8 +404,8 @@ void I_DrawSkyColumnNoDraw(int dc_x, int dc_yl, int dc_yh)
 
 void GetJagobjSize(int lumpnum, int* ow, int *oh)
 {
-	lzss_state_t gfx_lzss;
-	uint8_t lzss_buf[LZSS_BUF_SIZE];
+	lzexe_state_t gfx_lzexe;
+	uint8_t lzexe_buf[LZEXE_BUF_SIZE];
 	byte* lump;
 	jagobj_t* jo;
 
@@ -420,11 +420,11 @@ void GetJagobjSize(int lumpnum, int* ow, int *oh)
 	}
 	else // decompress
 	{
-		lzss_setup(&gfx_lzss, lump, lzss_buf, LZSS_BUF_SIZE);
-		if (lzss_read(&gfx_lzss, 16) != 16)
+		lzexe_setup(&gfx_lzexe, lump, lzexe_buf, LZEXE_BUF_SIZE);
+		if (lzexe_read_partial(&gfx_lzexe, 16) != 16)
 			return;
 
-		jo = (jagobj_t*)gfx_lzss.buf;
+		jo = (jagobj_t*)gfx_lzexe.output;
 	}
 
 	if (ow) *ow = BIGSHORT(jo->width);
@@ -433,8 +433,8 @@ void GetJagobjSize(int lumpnum, int* ow, int *oh)
 
 void DrawJagobjLump(int lumpnum, int x, int y, int* ow, int* oh)
 {
-	lzss_state_t gfx_lzss;
-	uint8_t lzss_buf[LZSS_BUF_SIZE];
+	lzexe_state_t gfx_lzexe;
+	uint8_t lzexe_buf[LZEXE_BUF_SIZE];
 	byte* lump;
 	jagobj_t* jo;
 	int width, height;
@@ -453,11 +453,11 @@ void DrawJagobjLump(int lumpnum, int x, int y, int* ow, int* oh)
 		return;
 	}
 
-	lzss_setup(&gfx_lzss, lump, lzss_buf, LZSS_BUF_SIZE);
-	if (lzss_read(&gfx_lzss, 16) != 16)
+	lzexe_setup(&gfx_lzexe, lump, lzexe_buf, LZEXE_BUF_SIZE);
+	if (lzexe_read_partial(&gfx_lzexe, 16) != 16)
 		return;
 
-	jo = (jagobj_t*)gfx_lzss.buf;
+	jo = (jagobj_t*)gfx_lzexe.output;
 	width = BIGSHORT(jo->width);
 	height = BIGSHORT(jo->height);
 
@@ -478,7 +478,7 @@ void DrawJagobjLump(int lumpnum, int x, int y, int* ow, int* oh)
 		pixel_t* ob;
 		unsigned p;
 
-		source = gfx_lzss.buf;
+		source = gfx_lzexe.output;
 		p = 16;
 
 		fb = (byte*)I_FrameBuffer();
@@ -489,11 +489,11 @@ void DrawJagobjLump(int lumpnum, int x, int y, int* ow, int* oh)
 		{
 			int i;
 
-			lzss_read(&gfx_lzss, width);
+			lzexe_read_partial(&gfx_lzexe, width);
 
 			i = 0;
-			if (p + width > LZSS_BUF_SIZE) {
-				int rem = LZSS_BUF_SIZE - p;
+			if (p + width > LZEXE_BUF_SIZE) {
+				int rem = LZEXE_BUF_SIZE - p;
 				for (; i < rem; i++)
 					dest[i] = source[p++];
 				p = 0;
@@ -626,8 +626,8 @@ void DrawJagobjWithColormap(jagobj_t* jo, int x, int y,
 void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int colormap)
 {
 	int16_t *dc_colormap = (int16_t*)dc_colormaps + colormap;
-	lzss_state_t gfx_lzss;
-	uint8_t lzss_buf[LZSS_BUF_SIZE];
+	lzexe_state_t gfx_lzexe;
+	uint8_t lzexe_buf[LZEXE_BUF_SIZE];
 	byte* lump;
 	jagobj_t* jo;
 	int width, height;
@@ -646,11 +646,11 @@ void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int
 		return;
 	}
 
-	lzss_setup(&gfx_lzss, lump, lzss_buf, LZSS_BUF_SIZE);
-	if (lzss_read(&gfx_lzss, 16) != 16)
+	lzexe_setup(&gfx_lzexe, lump, lzexe_buf, LZEXE_BUF_SIZE);
+	if (lzexe_read_partial(&gfx_lzexe, 16) != 16)
 		return;
 
-	jo = (jagobj_t*)gfx_lzss.buf;
+	jo = (jagobj_t*)gfx_lzexe.output;
 	width = BIGSHORT(jo->width);
 	height = BIGSHORT(jo->height);
 
@@ -670,7 +670,7 @@ void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int
 		byte* fb;
 		unsigned p;
 
-		source = gfx_lzss.buf;
+		source = gfx_lzexe.output;
 		p = 16;
 
 		fb = (byte*)I_FrameBuffer();
@@ -680,11 +680,11 @@ void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int
 		{
 			int i;
 
-			lzss_read(&gfx_lzss, width);
+			lzexe_read_partial(&gfx_lzexe, width);
 
 			i = 0;
-			if (p + width > LZSS_BUF_SIZE) {
-				int rem = LZSS_BUF_SIZE - p;
+			if (p + width > LZEXE_BUF_SIZE) {
+				int rem = LZEXE_BUF_SIZE - p;
 				for (; i < rem; i++)
 					dest[i] = dc_colormap[source[p++]];
 				p = 0;

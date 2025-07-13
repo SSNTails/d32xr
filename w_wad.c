@@ -2,7 +2,7 @@
 
 #include "32x.h"
 #include "doomdef.h"
-#include "lzss.h"
+#include "lzexe.h"
 #include "mars.h"
 
 /* include "r_local.h" */
@@ -66,11 +66,9 @@ void decode(unsigned char *input, unsigned char *output)
 	;
 }
 #else
-void decode(unsigned char* input, unsigned char* output)
+inline void decode(unsigned char* input, unsigned char* output)
 {
-	lzss_state_t lzss;
-	lzss_setup(&lzss, input, output, LZSS_BUF_SIZE);
-	lzss_read_all(&lzss);
+	lzexe_read_all(input, output);
 #endif
 }
 
