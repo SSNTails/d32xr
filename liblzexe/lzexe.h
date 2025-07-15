@@ -21,8 +21,8 @@ typedef struct
 
     // the output ring buffer
     uint8_t* output;
-    uint8_t* buf_top;
-    uint32_t buf_size;
+    uint16_t output_pos;
+    uint16_t output_mask;
 } lzexe_state_t;
 
 void lzexe_reset(lzexe_state_t* lzexe);

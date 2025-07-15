@@ -4,9 +4,9 @@
 
 void lzexe_reset(lzexe_state_t* lzexe)
 {
+	lzexe->output_pos = 0;
 	lzexe->eof = 0;
 	lzexe->input = lzexe->input_top;
-	lzexe->output = lzexe->buf_top;
 	lzexe->need_bitfield = 1;
 	lzexe->copy_count = 0;
 	lzexe->bitfield = 0;
@@ -17,8 +17,8 @@ void lzexe_reset(lzexe_state_t* lzexe)
 void lzexe_setup(lzexe_state_t* lzexe, uint8_t* input, uint8_t* output, uint32_t buf_size)
 {
 	lzexe->input_top = input;
-	lzexe->buf_top = output;
-	lzexe->buf_size = buf_size;
+	lzexe->output = output;
+	lzexe->output_mask = buf_size - 1;
 	lzexe_reset(lzexe);
 }
 
@@ -111,17 +111,14 @@ int lzexe_read_partial(lzexe_state_t* lzexe, uint16_t chunk_size)
 	int16_t reference_offset = lzexe->reference_offset;
 	uint8_t* input = lzexe->input;
 	uint8_t* output = lzexe->output;
+	uint16_t output_pos = lzexe->output_pos;
+	uint16_t output_mask = lzexe->output_mask;
 	uint16_t bits_read = lzexe->bits_read;
 
 	uint16_t chunk_bytes_left = chunk_size;
 
 	int16_t partial_copy_count;
 	uint8_t compression_type;
-	uint16_t bytes_written;
-
-	if (output >= lzexe->buf_top + lzexe->buf_size) {
-		output = lzexe->buf_top;
-	}
 
 	if (lzexe->need_bitfield) {
 		bitfield = *input++;
@@ -147,8 +144,10 @@ int lzexe_read_partial(lzexe_state_t* lzexe, uint16_t chunk_size)
 
 			//printf("referenced copy %d bytes\n", partial_copy_count);
 			while (partial_copy_count > 0) {
-				*output = output[reference_offset];
-				output++;
+				output[output_pos++] = output[reference_offset++];
+				output_pos &= output_mask;
+				reference_offset &= output_mask;
+
 				partial_copy_count--;
 			}
 
@@ -175,12 +174,13 @@ int lzexe_read_partial(lzexe_state_t* lzexe, uint16_t chunk_size)
 				copy_count |= (bitfield & 1);
 				copy_count += 2;
 				UpdateBitfield();
-				reference_offset = 0xFF00 | *input++;
+				reference_offset = ((*input++) + output_pos - 256) & output_mask;
 				goto copy_bytes;
 			case 1:
 				// direct copy
 				//printf("direct copy\n");
-				*output++ = *input++;
+				output[output_pos++] = *input++;
+				output_pos &= output_mask;
 				chunk_bytes_left--;
 				if (chunk_bytes_left == 0) {
 					goto save_lzexe_state;
@@ -188,7 +188,7 @@ int lzexe_read_partial(lzexe_state_t* lzexe, uint16_t chunk_size)
 				goto read_bitfield;
 			case 2:
 				// embedded/separate
-				reference_offset = ((((input[1]) << 5) & 0x1F00) | *input) | 0xE000;
+				reference_offset = (((((input[1]) << 5) & 0x1F00) | *input) + output_pos - 8192) & output_mask;
 				copy_count = (input[1] & 7) + 2;
 				input += 2;
 				if (copy_count == 2) {
@@ -212,6 +212,7 @@ save_lzexe_state:
 	lzexe->reference_offset = reference_offset;
 	lzexe->input = input;
 	lzexe->output = output;
+	lzexe->output_pos = output_pos;
 	lzexe->bits_read = bits_read;
 
 	//printf("copy_count ............ %d\n", copy_count);
@@ -220,7 +221,7 @@ save_lzexe_state:
 	//printf("input ................. 0x%08X\n", input);
 	//printf("output ................ 0x%08X\n", output);
 	//printf("bits_read ............. %d\n", bits_read);
-	//printf("\nbytes_written = %d\n\n", output - lzexe->buf_top);
+	//printf("\nbytes_written = %d\n\n", chunk_size - chunk_bytes_left);
 
-	return output - lzexe->buf_top;
+	return chunk_size - chunk_bytes_left;
 }
