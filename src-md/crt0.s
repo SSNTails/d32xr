@@ -807,7 +807,7 @@ start_music:
         bsr     set_rom_bank
 
         move.l  a1,-(sp)            /* MD lump ptr */
-        jsr     vgm_setup           /* setup lzss, set pcm_baseoffs, set vgm_ptr, read first block */
+        jsr     vgm_setup           /* setup lzexe, set pcm_baseoffs, set vgm_ptr, read first block */
         lea     4(sp),sp
 
         /* start VGM on Z80 */
@@ -836,7 +836,7 @@ start_music:
         bne.b   3b
 
 | FM setup
-        movea.l vgm_ptr,a6          /* lzss buffer */
+        movea.l vgm_ptr,a6          /* lzexe buffer */
         lea     0x1C(a6),a6         /* loop offset */
 | get vgm loop offset
         move.b  (a6)+,d0
@@ -2525,7 +2525,7 @@ play_drum_sound:
 
         addi.w  #512,d2
         addi.w  #512,d3
-        andi.w  #0x7FFF,d2          /* 32KB buffer */
+        andi.w  #0x1FFF,d2          /* 8KB buffer */
         andi.w  #0x0FFF,d3          /* 4KB buffer */
 
         cmpi.w  #512,d4
@@ -2549,7 +2549,7 @@ play_drum_sound:
         jsr     vgm_read2
         addq.l  #4,sp
         move.w  d0,d2
-        andi.w  #0x7FFF,d2          /* amount data pre-read (with wrap around) */
+        andi.w  #0x1FFF,d2          /* amount data pre-read (with wrap around) */
 14:
         move.w  d2,offs68k
         move.w  d3,offsz80
