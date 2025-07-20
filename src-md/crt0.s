@@ -1660,6 +1660,8 @@ get_lump_source_and_size:
 
 decompress_lump:
         bsr     get_lump_source_and_size
+        tst.l   lump_size
+        beq.s   decompress_lump_done
         move.l  lump_ptr,d0
         andi.l  #0x7FFFF,d0
         addi.l  #0x880000,d0
@@ -1669,7 +1671,8 @@ decompress_lump:
         move.l  d0,lump_size
         lea     decomp_buffer,a1
         jmp     Kos_Decomp_Main
-        |rts    /* Kos_Decomp_Main will do an 'rts' for us. */
+decompress_lump_done:
+        rts     /* Kos_Decomp_Main will do an 'rts' for us. */
 
 
 
@@ -1731,6 +1734,7 @@ load_md_sky:
         move.l  a3,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
+        move.l  d2,-(sp)
 
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -1743,6 +1747,12 @@ load_md_sky:
         ||move.w  #0x8554,(a0) /* reg 5 = Sprite Attr Tbl = 0xA800 */
         ||move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
         ||move.w  #0x8D2B,(a0) /* reg 13 = HScroll Tbl = 0xAC00 */
+
+
+        move.w  #0x0707,d0
+        move.w  d0,pattern_name_table_base_address_b
+        move.w  #0x3030,d0
+        move.w  d0,pattern_name_table_base_address_a
 
 
         /* Load metadata */
@@ -1803,36 +1813,122 @@ load_md_sky:
         sub.b   d1,d0
         move.b  d0,scroll_a_vert_rate_bottom
 
+        move.w  (a2)+,d0
+        move.w  d0,pattern_name_table_swap_left_b
+
+        move.w  (a2)+,d0
+        move.w  d0,pattern_name_table_swap_right_b
+
+        move.w  (a2)+,d0
+        move.w  d0,pattern_name_table_swap_left_a
+
+        move.w  (a2)+,d0
+        move.w  d0,pattern_name_table_swap_right_a
 
 
-        /* Load pattern name table A */
+
+        /* Load pattern name table B1 */
         bsr     decompress_lump
         lea     0xC00004,a0
         lea     0xC00000,a1
         move.w  #0x8F02,(a0)
-        move.l  #0x40000003,(a0)        /* Set destination offset to pattern name table A at position 0x0 */
+        move.l  #0x60000003,(a0)        /* Set destination offset to pattern name table B1 at position 0x0 */
         lea     decomp_buffer,a2
         move.l  lump_size,d1
         lsr.l   #1,d1
         sub.l   #1,d1
 0:
-        move.w  (a2)+,(a1)              /* Write 0 to pattern name table A at position 0x0 */
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
         dbra    d1,0b
 
 
-        /* Load pattern name table B */
+        /* Load pattern name table A1 */
         bsr     decompress_lump
         lea     0xC00004,a0
         lea     0xC00000,a1
         move.w  #0x8F02,(a0)
-        move.l  #0x60000003,(a0)        /* Set destination offset to pattern name table B at position 0x0 */
+        move.l  #0x40000003,(a0)        /* Set destination offset to pattern name table A1 at position 0x0 */
         lea     decomp_buffer,a2
         move.l  lump_size,d1
         lsr.l   #1,d1
         sub.l   #1,d1
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table A1 at position 0x0 */
+        dbra    d1,0b
+
+
+        move.b  #0x2C,d2                /* Initial Window data address (0xB000 >> 10) */
+
+
+        /* Load pattern name table B2 */
+        bsr     decompress_lump
+        tst.l   lump_size
+        beq.s   9f                      /* Skip loading pattern name table B2 since the lump doesn't exist */
+        subq.b  #8,d2
+        move.b  #0x05,d1
+        move.b  d1,pattern_name_table_base_address_b2
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.w  #0x8F02,(a0)
+        move.l  #0x60000002,(a0)        /* Set destination offset to pattern name table B2 at position 0x0 */
+        lea     decomp_buffer,a2
+        move.l  lump_size,d1
+        lsr.l   #1,d1
+        sub.l   #1,d1
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B2 at position 0x0 */
+        dbra    d1,0b
+9:
+
+
+        /* Load pattern name table A2 */
+        bsr     decompress_lump
+        tst.l   lump_size
+        beq.s   9f                      /* Skip loading pattern name table A2 since the lump doesn't exist */
+        subq.b  #8,d2
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.w  #0x8F02,(a0)
+
+        cmpi.b  #7,pattern_name_table_base_address_b2
+        beq.b   0f
+        move.b  #0x20,d1
+        move.l  #0x40000002,(a0)        /* Set destination offset to pattern name table A2 at position 0x0 */
+        bra.s   1f
+0:
+        move.b  #0x28,d1
+        move.l  #0x60000002,(a0)        /* Set destination offset to pattern name table A2 at position 0x0 */
 1:
-        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B at position 0x0 */
-        dbra    d1,1b
+        move.b  d1,pattern_name_table_base_address_a2
+        lea     decomp_buffer,a2
+        move.l  lump_size,d1
+        lsr.l   #1,d1
+        sub.l   #1,d1
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table A2 at position 0x0 */
+        dbra    d1,0b
+9:
+
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
+        move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
+
+        move.w  d2,d1
+        ori.w   #0x8300,d1
+        move.w  d1,(a0) /* reg 3 = Name Tbl W = D1 (normally 0xB000) */
+        
+        subq.b  #1,d2
+        move.w  d2,d1
+        ori.w   #0x8D00,d1
+        move.w  d1,(a0) /* reg 13 = HScroll Tbl = D1 (normally 0xAC00) */
+
+        subq.b  #1,d2
+        lsl.b   #1,d1
+        ori.w   #0x8500,d1
+        move.w  d1,(a0) /* reg 5 = Sprite Attr Tbl = D1 (normally 0xA800) */
 
 
         /* Load palettes */
@@ -1869,6 +1965,7 @@ load_md_sky:
         move.w  (a2)+,(a1)              /* Copy eight pixels from the source */
         dbra    d1,3b
 
+        move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
         move.l  (sp)+,a3
@@ -3226,6 +3323,27 @@ lump_ptr:
         dc.l    0
 lump_size:
         dc.l    0
+
+pattern_name_table_base_address_b:
+pattern_name_table_base_address_b1:
+        dc.b    0x07
+pattern_name_table_base_address_b2:
+        dc.b    0x07
+pattern_name_table_base_address_a:
+pattern_name_table_base_address_a1:
+        dc.b    0x30
+pattern_name_table_base_address_a2:
+        dc.b    0x30
+
+pattern_name_table_swap_left_b:
+        dc.w    0
+pattern_name_table_swap_right_b:
+        dc.w    0
+
+pattern_name_table_swap_left_a:
+        dc.w    0
+pattern_name_table_swap_right_a:
+        dc.w    0
 
 base_palette_1:
         .space  32

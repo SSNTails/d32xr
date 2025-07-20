@@ -145,8 +145,10 @@ void Mars_SetScrollPositions(
 		short scroll_b_top_x, short scroll_b_top_y, short scroll_b_bottom_x, short scroll_b_bottom_y,
 		short scroll_a_top_x, short scroll_a_top_y, short scroll_a_bottom_x, short scroll_a_bottom_y);
 void Mars_LoadMDSky(void *sky_metadata_ptr,
-		void *sky_names_a_ptr, int sky_names_a_size,
-		void *sky_names_b_ptr, int sky_names_b_size,
+		void *sky_names_a1_ptr, int sky_names_a1_size,
+		void *sky_names_b1_ptr, int sky_names_b1_size,
+		void *sky_names_a2_ptr, int sky_names_a2_size,
+		void *sky_names_b2_ptr, int sky_names_b2_size,
 		void *sky_palettes_ptr, int sky_palettes_size,
 		void *sky_tiles_ptr, int sky_tiles_size);
 #endif

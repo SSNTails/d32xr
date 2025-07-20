@@ -723,8 +723,10 @@ void Mars_SetScrollPositions(
 Load the MD sky tiles, palettes, and pattern name table into the MD VDP.
 */
 void Mars_LoadMDSky(void *sky_metadata_ptr,
-		void *sky_names_a_ptr, int sky_names_a_size,
-		void *sky_names_b_ptr, int sky_names_b_size,
+		void *sky_names_a1_ptr, int sky_names_a1_size,
+		void *sky_names_b1_ptr, int sky_names_b1_size,
+		void *sky_names_a2_ptr, int sky_names_a2_size,
+		void *sky_names_b2_ptr, int sky_names_b2_size,
 		void *sky_palettes_ptr, int sky_palettes_size,
 		void *sky_tiles_ptr, int sky_tiles_size)
 {
@@ -745,10 +747,10 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	}
 
 
-	// Load pattern name table A
+	// Load pattern name table B1
 
-	s[0] = (uintptr_t)sky_names_a_size>>16, s[1] = (uintptr_t)sky_names_a_size&0xffff;
-	s[2] = ((uintptr_t)sky_names_a_ptr >>16), s[3] = (uintptr_t)sky_names_a_ptr &0xffff;
+	s[0] = (uintptr_t)sky_names_b1_size>>16, s[1] = (uintptr_t)sky_names_b1_size&0xffff;
+	s[2] = ((uintptr_t)sky_names_b1_ptr >>16), s[3] = (uintptr_t)sky_names_b1_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
 		while (MARS_SYS_COMM0);
@@ -757,10 +759,34 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	}
 
 
-	// Load pattern name table B
+	// Load pattern name table A1
 
-	s[0] = (uintptr_t)sky_names_b_size>>16, s[1] = (uintptr_t)sky_names_b_size&0xffff;
-	s[2] = ((uintptr_t)sky_names_b_ptr >>16), s[3] = (uintptr_t)sky_names_b_ptr &0xffff;
+	s[0] = (uintptr_t)sky_names_a1_size>>16, s[1] = (uintptr_t)sky_names_a1_size&0xffff;
+	s[2] = ((uintptr_t)sky_names_a1_ptr >>16), s[3] = (uintptr_t)sky_names_a1_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM0);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x0F01+i;
+	}
+
+
+	// Load pattern name table B2
+
+	s[0] = (uintptr_t)sky_names_b2_size>>16, s[1] = (uintptr_t)sky_names_b2_size&0xffff;
+	s[2] = ((uintptr_t)sky_names_b2_ptr >>16), s[3] = (uintptr_t)sky_names_b2_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM0);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x0F01+i;
+	}
+
+
+	// Load pattern name table A2
+
+	s[0] = (uintptr_t)sky_names_a2_size>>16, s[1] = (uintptr_t)sky_names_a2_size&0xffff;
+	s[2] = ((uintptr_t)sky_names_a2_ptr >>16), s[3] = (uintptr_t)sky_names_a2_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
 		while (MARS_SYS_COMM0);

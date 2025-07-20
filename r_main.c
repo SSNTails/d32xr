@@ -617,14 +617,14 @@ static void R_SetupMDSky(const char *name, int palettes_lump)
 {
 	// Retrieve lumps for drawing the sky on the MD.
 	uint8_t *sky_metadata_ptr;
-	uint8_t *sky_names_a_ptr;
-	uint8_t *sky_names_b_ptr;
+	uint8_t *sky_names_a_ptr[2];
+	uint8_t *sky_names_b_ptr[2];
 	uint8_t *sky_palettes_ptr;
 	uint8_t *sky_tiles_ptr;
 
 	//uint32_t sky_metadata_size;
-	uint32_t sky_names_a_size;
-	uint32_t sky_names_b_size;
+	uint32_t sky_names_a_size[2];
+	uint32_t sky_names_b_size[2];
 	uint32_t sky_palettes_size;
 	uint32_t sky_tiles_size;
 	
@@ -646,21 +646,43 @@ static void R_SetupMDSky(const char *name, int palettes_lump)
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sA", name);
+	D_snprintf(lumpname, 8, "%sA1", name);
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
-		sky_names_a_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
-		sky_names_a_size = W_LumpLength(lump);
+		sky_names_a_ptr[0] = (uint8_t *)W_POINTLUMPNUM(lump);
+		sky_names_a_size[0] = W_LumpLength(lump);
+
+		D_snprintf(lumpname, 8, "%sA2", name);
+		lump = W_CheckNumForName(lumpname);
+		if (lump != -1) {
+			sky_names_a_ptr[1] = (uint8_t *)W_POINTLUMPNUM(lump);
+			sky_names_a_size[1] = W_LumpLength(lump);
+		}
+		else {
+			sky_names_a_ptr[1] = 0;
+			sky_names_a_size[1] = 0;
+		}
 	}
 	else {
 		return;
 	}
 
-	D_snprintf(lumpname, 8, "%sB", name);
+	D_snprintf(lumpname, 8, "%sB1", name);
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
-		sky_names_b_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
-		sky_names_b_size = W_LumpLength(lump);
+		sky_names_b_ptr[0] = (uint8_t *)W_POINTLUMPNUM(lump);
+		sky_names_b_size[0] = W_LumpLength(lump);
+
+		D_snprintf(lumpname, 8, "%sB2", name);
+		lump = W_CheckNumForName(lumpname);
+		if (lump != -1) {
+			sky_names_b_ptr[1] = (uint8_t *)W_POINTLUMPNUM(lump);
+			sky_names_b_size[1] = W_LumpLength(lump);
+		}
+		else {
+			sky_names_b_ptr[1] = 0;
+			sky_names_b_size[1] = 0;
+		}
 	}
 	else {
 		return;
@@ -692,9 +714,11 @@ static void R_SetupMDSky(const char *name, int palettes_lump)
 	
 
 	Mars_LoadMDSky(sky_metadata_ptr,
-			sky_names_a_ptr, sky_names_a_size, 
-			sky_names_b_ptr, sky_names_b_size, 
-			sky_palettes_ptr, sky_palettes_size, 
+			sky_names_a_ptr[0], sky_names_a_size[0],
+			sky_names_b_ptr[0], sky_names_b_size[0],
+			sky_names_a_ptr[1], sky_names_a_size[1],
+			sky_names_b_ptr[1], sky_names_b_size[1],
+			sky_palettes_ptr, sky_palettes_size,
 			sky_tiles_ptr, sky_tiles_size);
 }
 #endif
