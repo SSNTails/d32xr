@@ -185,9 +185,9 @@ init_hardware:
         move.w  #0x8004,(a0) /* reg 0 = /IE1 (no HBL INT), /M3 (enable read H/V cnt) */
         move.w  #0x8114,(a0) /* reg 1 = /DISP (display off), /IE0 (no VBL INT), M1 (DMA enabled), /M2 (V28 mode) */
         move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
-        move.w  #0x832C,(a0) /* reg 3 = Name Tbl W = 0xB000 */
+        move.w  #0x8328,(a0) /* reg 3 = Name Tbl W = 0xA000 */
         move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        move.w  #0x8554,(a0) /* reg 5 = Sprite Attr Tbl = 0xA800 */
+        move.w  #0x8558,(a0) /* reg 5 = Sprite Attr Tbl = 0xB000 */
         move.w  #0x8600,(a0) /* reg 6 = always 0 */
         move.w  #0x8700,(a0) /* reg 7 = BG color */
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
@@ -196,7 +196,7 @@ init_hardware:
         move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
         |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
-        move.w  #0x8D2B,(a0) /* reg 13 = HScroll Tbl = 0xAC00 */
+        move.w  #0x8D2E,(a0) /* reg 13 = HScroll Tbl = 0xB800 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
         move.w  #0x8F01,(a0) /* reg 15 = data INC = 1 */
         move.w  #0x9010,(a0) /* reg 16 = Scroll Size = 32x64 */
@@ -213,8 +213,8 @@ init_hardware:
         dbra    d1,0b
 
 | The VDP state at this point is: Display disabled, ints disabled, Name Tbl A at 0xC000,
-| Name Tbl B at 0xE000, Name Tbl W at 0xB000, Sprite Attr Tbl at 0xA800, HScroll Tbl at 0xAC00,
-| H40 V28 mode, and Scroll size is 64x32.
+| Name Tbl B at 0xE000, Sprite Attr Tbl at 0xB000, HScroll Tbl at 0xB800, H40 V28 mode,
+| and Scroll size is 64x32.
 
 | Clear CRAM
         move.l  #0x81048F01,(a0)        /* set reg 1 and reg 15 */
@@ -1742,11 +1742,11 @@ load_md_sky:
         move.w  #0x8016,(a0) /* reg 0 = /IE1 (enable HBL INT), /M3 (enable read H/V cnt) */
         move.w  #0x8174,(a0) /* reg 1 = /DISP (display off), /IE0 (enable VBL INT), M1 (DMA enabled), /M2 (V28 mode) */
         ||move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
-        ||move.w  #0x832C,(a0) /* reg 3 = Name Tbl W = 0xB000 */
+        ||move.w  #0x8328,(a0) /* reg 3 = Name Tbl W = 0xA000 */
         ||move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        ||move.w  #0x8554,(a0) /* reg 5 = Sprite Attr Tbl = 0xA800 */
+        ||move.w  #0x8558,(a0) /* reg 5 = Sprite Attr Tbl = 0xB000 */
         ||move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
-        ||move.w  #0x8D2B,(a0) /* reg 13 = HScroll Tbl = 0xAC00 */
+        ||move.w  #0x8D2E,(a0) /* reg 13 = HScroll Tbl = 0xB800 */
 
 
         move.w  #0x0707,d0
@@ -1857,7 +1857,7 @@ load_md_sky:
         dbra    d1,0b
 
 
-        move.b  #0x2C,d2                /* Initial Window data address (0xB000 >> 10) */
+        move.w  #0x002E,d2              /* Initial Horizontal Scroll Table address (0xB800 >> 10) */
 
 
         /* Load pattern name table B2 */
@@ -1910,6 +1910,26 @@ load_md_sky:
 9:
 
 
+
+        cmpi.b  #0x2E,d2
+        bne.s   91f
+        move.l  #0x70000002,write_sprite_attribute_table
+        move.l  #0x78000002,write_horizontal_scroll_table
+        bra.s   93f
+91:
+        cmpi.b  #0x26,d2
+        bne.s   92f
+        move.l  #0x50000002,write_sprite_attribute_table
+        move.l  #0x58000002,write_horizontal_scroll_table
+        bra.s   93f
+92:
+        |cmpi.b  #0x1E,d2
+        |bne.s   93f
+        move.l  #0x70000001,write_sprite_attribute_table
+        move.l  #0x78000001,write_horizontal_scroll_table
+93:
+
+
         lea     0xC00004,a0
         lea     0xC00000,a1
 
@@ -1917,18 +1937,14 @@ load_md_sky:
         move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
 
         move.w  d2,d1
-        ori.w   #0x8300,d1
-        move.w  d1,(a0) /* reg 3 = Name Tbl W = D1 (normally 0xB000) */
-        
-        subq.b  #1,d2
-        move.w  d2,d1
         ori.w   #0x8D00,d1
-        move.w  d1,(a0) /* reg 13 = HScroll Tbl = D1 (normally 0xAC00) */
+        move.w  d1,(a0) /* reg 13 = HScroll Tbl = D1 (normally 0xB800) */
 
-        subq.b  #1,d2
-        lsl.b   #1,d1
+        subq.b  #2,d2
+        move.w  d2,d1
+        add.b   d1,d1
         ori.w   #0x8500,d1
-        move.w  d1,(a0) /* reg 5 = Sprite Attr Tbl = D1 (normally 0xA800) */
+        move.w  d1,(a0) /* reg 5 = Sprite Attr Tbl = D1 (normally 0xB000) */
 
 
         /* Load palettes */
@@ -2109,7 +2125,7 @@ scroll_md_sky:
         bne.b   4b
 
         /* Horizontal */
-        move.l  #0x6C000002,d3
+        move.l  write_horizontal_scroll_table,d3
         moveq   #0,d0
         move.w  0xA15122,d0         /* scroll_x */
         move.w  d0,current_scroll_b_top_x
@@ -2411,9 +2427,9 @@ init_vdp:
         move.w  #0x8004,(a0) /* reg 0 = /IE1 (no HBL INT), /M3 (enable read H/V cnt) */
         move.w  #0x8114,(a0) /* reg 1 = /DISP (display off), /IE0 (no VBL INT), M1 (DMA enabled), /M2 (V28 mode) */
         move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
-        move.w  #0x832C,(a0) /* reg 3 = Name Tbl W = 0xB000 */
+        move.w  #0x8328,(a0) /* reg 3 = Name Tbl W = 0xA000 */
         move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        move.w  #0x8554,(a0) /* reg 5 = Sprite Attr Tbl = 0xA800 */
+        move.w  #0x8558,(a0) /* reg 5 = Sprite Attr Tbl = 0xB000 */
         move.w  #0x8600,(a0) /* reg 6 = always 0 */
         move.w  #0x8700,(a0) /* reg 7 = BG color */
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
@@ -2422,7 +2438,7 @@ init_vdp:
         move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
         |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
-        move.w  #0x8D2B,(a0) /* reg 13 = HScroll Tbl = 0xAC00 */
+        move.w  #0x8D2E,(a0) /* reg 13 = HScroll Tbl = 0xB800 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
         move.w  #0x8F01,(a0) /* reg 15 = data INC = 1 */
         move.w  #0x9010,(a0) /* reg 16 = Scroll Size = 32x64 */
@@ -2451,7 +2467,7 @@ init_vdp:
         tst.w   d2
         beq.b   9f
 
-        move.l  #0x60000002,(a0)        /* write VRAM address 0xA800 */
+        move.l  write_sprite_attribute_table,(a0)   /* write VRAM address 0xB000 */
         moveq   #0,d0
         move.w  #0x02BF,d1              /* 704 - 1 tiles */
 8:
@@ -2467,8 +2483,8 @@ init_vdp:
         bra.b   3f
 
 | The VDP state at this point is: Display disabled, ints disabled, Name Tbl A at 0xC000,
-| Name Tbl B at 0xE000, Name Tbl W at 0xB000, Sprite Attr Tbl at 0xA800, HScroll Tbl at 0xAC00,
-| H40 V28 mode, and Scroll size is 64x32.
+| Name Tbl B at 0xE000, Sprite Attr Tbl at 0xB000, HScroll Tbl at 0xB800, H40 V28 mode,
+| and Scroll size is 64x32.
 
 9:
 | Clear CRAM
@@ -3344,6 +3360,11 @@ pattern_name_table_swap_left_a:
         dc.w    0
 pattern_name_table_swap_right_a:
         dc.w    0
+
+write_sprite_attribute_table:
+        dc.l    0x70000002      /* Default VRAM write to address 0xB000 */
+write_horizontal_scroll_table:
+        dc.l    0x78000002      /* Default VRAM write to address 0xB800 */
 
 base_palette_1:
         .space  32
