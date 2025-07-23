@@ -187,7 +187,7 @@ init_hardware:
         move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
         move.w  #0x8328,(a0) /* reg 3 = Name Tbl W = 0xA000 */
         move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        move.w  #0x8558,(a0) /* reg 5 = Sprite Attr Tbl = 0xB000 */
+        move.w  #0x8504,(a0) /* reg 5 = Sprite Attr Tbl = 0x0800 */
         move.w  #0x8600,(a0) /* reg 6 = always 0 */
         move.w  #0x8700,(a0) /* reg 7 = BG color */
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
@@ -196,7 +196,7 @@ init_hardware:
         move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
         |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
-        move.w  #0x8D2E,(a0) /* reg 13 = HScroll Tbl = 0xB800 */
+        move.w  #0x8D00,(a0) /* reg 13 = HScroll Tbl = 0x0000 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
         move.w  #0x8F01,(a0) /* reg 15 = data INC = 1 */
         move.w  #0x9010,(a0) /* reg 16 = Scroll Size = 32x64 */
@@ -213,7 +213,7 @@ init_hardware:
         dbra    d1,0b
 
 | The VDP state at this point is: Display disabled, ints disabled, Name Tbl A at 0xC000,
-| Name Tbl B at 0xE000, Sprite Attr Tbl at 0xB000, HScroll Tbl at 0xB800, H40 V28 mode,
+| Name Tbl B at 0xE000, Sprite Attr Tbl at 0x0800, HScroll Tbl at 0x0000, H40 V28 mode,
 | and Scroll size is 64x32.
 
 | Clear CRAM
@@ -1726,6 +1726,7 @@ load_md_palettes:
 
 
 load_md_sky:
+        move.l  #224,test_end      /* TESTING */
         move.w  #0x2700,sr          /* disable ints */
 
         move.l  a0,-(sp)
@@ -1744,18 +1745,13 @@ load_md_sky:
         ||move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
         ||move.w  #0x8328,(a0) /* reg 3 = Name Tbl W = 0xA000 */
         ||move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        ||move.w  #0x8558,(a0) /* reg 5 = Sprite Attr Tbl = 0xB000 */
+        ||move.w  #0x8504,(a0) /* reg 5 = Sprite Attr Tbl = 0x0800 */
         ||move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
-        ||move.w  #0x8D2E,(a0) /* reg 13 = HScroll Tbl = 0xB800 */
-
-
-        move.w  #0x0707,d0
-        move.w  d0,pattern_name_table_base_address_b
-        move.w  #0x3030,d0
-        move.w  d0,pattern_name_table_base_address_a
+        ||move.w  #0x8D00,(a0) /* reg 13 = HScroll Tbl = 0x0000 */
 
 
         /* Load metadata */
+        bset.l  #0,(test_values+20)      /* TESTING */
         bsr     get_lump_source_and_size
         lea     0xC00004,a0
         move.l  lump_ptr,d0
@@ -1828,126 +1824,319 @@ load_md_sky:
 
 
         /* Load pattern name table B1 */
+        move.l  #0,(test_values+0)
+        bset.l  #0,(test_values+0)      /* TESTING */
         bsr     decompress_lump
         lea     0xC00004,a0
         lea     0xC00000,a1
-        move.w  #0x8F02,(a0)
-        move.l  #0x60000003,(a0)        /* Set destination offset to pattern name table B1 at position 0x0 */
         lea     decomp_buffer,a2
+        move.w  #0x8F02,(a0)
         move.l  lump_size,d1
+        cmpi.w  #0x2000,d1              /* Greater than 8KB? */
+        bgt.s   1f
+
+        | Scroll B is either 256 or 512 pixels wide
+        bset.l  #1,(test_values+0)      /* TESTING */
+        move.l  #0x60000003,(a0)        /* Set destination offset to pattern name table B1 at position 0x0 */
+        move.b  #0x30,scroll_a_address_register_values
+        move.l  #0x07070707,scroll_b_address_register_values
+        move.l  #0x60000003,write_scroll_b_table_1
+        move.l  #0x60000003,write_scroll_b_table_2
+        move.l  #0x60000003,write_scroll_b_table_3
+        move.l  #0x60000003,write_scroll_b_table_4
         lsr.l   #1,d1
         sub.l   #1,d1
 0:
         move.w  (a2)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
         dbra    d1,0b
+        bra.w   9f
+1:
+        | Scroll B is 1024 pixels wide
+        bset.l  #2,(test_values+0)      /* TESTING */
+        move.l  #0x40000002,(a0)
+        move.l  #0x18181818,scroll_a_address_register_values
+        move.l  #0x07060504,scroll_b_address_register_values
+        move.l  #0x40000002,write_scroll_b_table_1
+        move.l  #0x60000002,write_scroll_b_table_2
+        move.l  #0x40000003,write_scroll_b_table_3
+        move.l  #0x60000003,write_scroll_b_table_4
+
+        move.l  a4,-(sp)
+        move.l  a5,-(sp)
+        lea     decomp_buffer+0x1000,a3
+        lea     decomp_buffer+0x2000,a4
+        lea     decomp_buffer+0x3000,a5
+
+        | Table B1 (1/2 panel configuration)
+        bset.l  #3,(test_values+0)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a3)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a2
+        suba    #0x1000,a3
+
+        | Table B2 (3/2 panel configuration)
+        bset.l  #4,(test_values+0)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a4)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a3)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a3
+        suba    #0x1000,a4
+
+        | Table B3 (3/4 panel configuration)
+        bset.l  #5,(test_values+0)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a4)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a5)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a4
+        suba    #0x1000,a5
+
+        | Table B4 (1/4 panel configuration)
+        bset.l  #6,(test_values+0)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a5)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        move.l  (sp)+,a4
+        move.l  (sp)+,a5
+9:
 
 
         /* Load pattern name table A1 */
+        move.l  #0,(test_values+4)
+        bset.l  #0,(test_values+4)      /* TESTING */
         bsr     decompress_lump
         lea     0xC00004,a0
         lea     0xC00000,a1
-        move.w  #0x8F02,(a0)
-        move.l  #0x40000003,(a0)        /* Set destination offset to pattern name table A1 at position 0x0 */
         lea     decomp_buffer,a2
+        move.w  #0x8F02,(a0)
         move.l  lump_size,d1
+        cmpi.w  #0x2000,d1              /* Greater than 8KB? */
+        bgt.w   1f
+        cmpi.b  #0x30,scroll_a_address_register_values
+        beq.s   0f
+
+        | Scroll A is either 256 or 512 pixels wide
+        | Scroll B is either 256 or 512 pixels wide
+        bset.l  #1,(test_values+4)      /* TESTING */
+        move.l  #0x40000003,(a0)        /* Set destination offset to pattern name table A1 at position 0x0 */
+        move.l  #0x30303030,scroll_a_address_register_values
+        move.l  #0x40000003,write_scroll_a_table_1
+        move.l  #0x40000003,write_scroll_a_table_2
+        move.l  #0x40000003,write_scroll_a_table_3
+        move.l  #0x40000003,write_scroll_a_table_4
+        bra.w   2f
+0:
+        | Scroll A is either 256 or 512 pixels wide
+        | Scroll B is 1024 pixels wide
+        bset.l  #2,(test_values+4)      /* TESTING */
+        move.l  #0x60000001,(a0)
+        move.l  #0x18181818,scroll_a_address_register_values
+        move.l  #0x60000001,write_scroll_a_table_1
+        move.l  #0x60000001,write_scroll_a_table_2
+        move.l  #0x60000001,write_scroll_a_table_3
+        move.l  #0x60000001,write_scroll_a_table_4
+        bra.w   2f
+1:
+        | Scroll A is 1024 pixels wide
+        bset.l  #3,(test_values+4)      /* TESTING */
+        move.l  #0x60000001,(a0)
+        move.l  #0x30282018,scroll_a_address_register_values
+        move.l  #0x60000001,write_scroll_a_table_1
+        move.l  #0x40000002,write_scroll_a_table_2
+        move.l  #0x60000002,write_scroll_a_table_3
+        move.l  #0x40000003,write_scroll_a_table_4
+
+        move.l  a4,-(sp)
+        move.l  a5,-(sp)
+        lea     decomp_buffer+0x1000,a3
+        lea     decomp_buffer+0x2000,a4
+        lea     decomp_buffer+0x3000,a5
+
+        | Table A1 (1/2 panel configuration)
+        bset.l  #4,(test_values+4)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a3)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a2
+        suba    #0x1000,a3
+
+        | Table A2 (3/2 panel configuration)
+        bset.l  #5,(test_values+4)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a4)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a3)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a3
+        suba    #0x1000,a4
+
+        | Table A3 (3/4 panel configuration)
+        bset.l  #6,(test_values+4)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a4)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a5)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a4
+        suba    #0x1000,a5
+
+        | Table A4 (1/4 panel configuration)
+        bset.l  #7,(test_values+4)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a5)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a2
+        suba    #0x1000,a5
+
+        move.l  (sp)+,a4
+        move.l  (sp)+,a5
+        bra.s   9f
+2:
         lsr.l   #1,d1
         sub.l   #1,d1
 0:
         move.w  (a2)+,(a1)              /* Write 0 to pattern name table A1 at position 0x0 */
         dbra    d1,0b
-
-
-        move.w  #0x002E,d2              /* Initial Horizontal Scroll Table address (0xB800 >> 10) */
-
-
-        /* Load pattern name table B2 */
-        bsr     decompress_lump
-        tst.l   lump_size
-        beq.s   9f                      /* Skip loading pattern name table B2 since the lump doesn't exist */
-        subq.b  #8,d2
-        move.b  #0x05,d1
-        move.b  d1,pattern_name_table_base_address_b2
-        lea     0xC00004,a0
-        lea     0xC00000,a1
-        move.w  #0x8F02,(a0)
-        move.l  #0x60000002,(a0)        /* Set destination offset to pattern name table B2 at position 0x0 */
-        lea     decomp_buffer,a2
-        move.l  lump_size,d1
-        lsr.l   #1,d1
-        sub.l   #1,d1
-0:
-        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B2 at position 0x0 */
-        dbra    d1,0b
 9:
 
 
-        /* Load pattern name table A2 */
-        bsr     decompress_lump
-        tst.l   lump_size
-        beq.s   9f                      /* Skip loading pattern name table A2 since the lump doesn't exist */
-        subq.b  #8,d2
+|        move.w  #0x0000,d2              /* Initial Horizontal Scroll Table address (0x0000 >> 10) */
+|
+|
+|        /* Load pattern name table B2 */
+|        bsr     decompress_lump
+|        tst.l   lump_size
+|        beq.s   9f                      /* Skip loading pattern name table B2 since the lump doesn't exist */
+|        subq.b  #8,d2
+|        move.b  #0x05,d1
+|        move.b  d1,scroll_b_address_register_values_2
+|        lea     0xC00004,a0
+|        lea     0xC00000,a1
+|        move.w  #0x8F02,(a0)
+|        move.l  #0x60000002,(a0)        /* Set destination offset to pattern name table B2 at position 0x0 */
+|        lea     decomp_buffer,a2
+|        move.l  lump_size,d1
+|        lsr.l   #1,d1
+|        sub.l   #1,d1
+|0:
+|        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B2 at position 0x0 */
+|        dbra    d1,0b
+|9:
+|
+|
+|        /* Load pattern name table A2 */
+|        bsr     decompress_lump
+|        tst.l   lump_size
+|        beq.s   9f                      /* Skip loading pattern name table A2 since the lump doesn't exist */
+|        subq.b  #8,d2
+|        lea     0xC00004,a0
+|        lea     0xC00000,a1
+|        move.w  #0x8F02,(a0)
+|
+|        cmpi.b  #7,scroll_b_address_register_values_2
+|        beq.b   0f
+|        move.b  #0x20,d1
+|        move.l  #0x40000002,(a0)        /* Set destination offset to pattern name table A2 at position 0x0 */
+|        bra.s   1f
+|0:
+|        move.b  #0x28,d1
+|        move.l  #0x60000002,(a0)        /* Set destination offset to pattern name table A2 at position 0x0 */
+|1:
+|        move.b  d1,scroll_a_address_register_values_2
+|        lea     decomp_buffer,a2
+|        move.l  lump_size,d1
+|        lsr.l   #1,d1
+|        sub.l   #1,d1
+|0:
+|        move.w  (a2)+,(a1)              /* Write 0 to pattern name table A2 at position 0x0 */
+|        dbra    d1,0b
+|9:
+
+
+
         lea     0xC00004,a0
         lea     0xC00000,a1
-        move.w  #0x8F02,(a0)
 
-        cmpi.b  #7,pattern_name_table_base_address_b2
-        beq.b   0f
-        move.b  #0x20,d1
-        move.l  #0x40000002,(a0)        /* Set destination offset to pattern name table A2 at position 0x0 */
-        bra.s   1f
-0:
-        move.b  #0x28,d1
-        move.l  #0x60000002,(a0)        /* Set destination offset to pattern name table A2 at position 0x0 */
-1:
-        move.b  d1,pattern_name_table_base_address_a2
-        lea     decomp_buffer,a2
-        move.l  lump_size,d1
-        lsr.l   #1,d1
-        sub.l   #1,d1
-0:
-        move.w  (a2)+,(a1)              /* Write 0 to pattern name table A2 at position 0x0 */
-        dbra    d1,0b
-9:
+        move.w  #0x8200,d0
+        move.b  scroll_a_address_register_values_1,d0
+        move.w  d0,(a0) /* reg 2 = Name Tbl A */
 
+        move.w  #0x8400,d0
+        move.b  scroll_b_address_register_values_1,d0
+        move.w  d0,(a0) /* reg 4 = Name Tbl B */
 
-
-        cmpi.b  #0x2E,d2
-        bne.s   91f
-        move.l  #0x70000002,write_sprite_attribute_table
-        move.l  #0x78000002,write_horizontal_scroll_table
-        bra.s   93f
-91:
-        cmpi.b  #0x26,d2
-        bne.s   92f
-        move.l  #0x50000002,write_sprite_attribute_table
-        move.l  #0x58000002,write_horizontal_scroll_table
-        bra.s   93f
-92:
-        |cmpi.b  #0x1E,d2
-        |bne.s   93f
-        move.l  #0x70000001,write_sprite_attribute_table
-        move.l  #0x78000001,write_horizontal_scroll_table
-93:
-
-
-        lea     0xC00004,a0
-        lea     0xC00000,a1
-
-        move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
-        move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-
-        move.w  d2,d1
-        ori.w   #0x8D00,d1
-        move.w  d1,(a0) /* reg 13 = HScroll Tbl = D1 (normally 0xB800) */
-
-        subq.b  #2,d2
-        move.w  d2,d1
-        add.b   d1,d1
-        ori.w   #0x8500,d1
-        move.w  d1,(a0) /* reg 5 = Sprite Attr Tbl = D1 (normally 0xB000) */
 
 
         /* Load palettes */
+        bset.l  #0,(test_values+8)      /* TESTING */
         bsr     get_lump_source_and_size
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -1968,11 +2157,12 @@ load_md_sky:
         dbra    d1,2b
 
         /* Load patterns */
+        bset.l  #0,(test_values+12)      /* TESTING */
         bsr     decompress_lump
         lea     0xC00004,a0
         lea     0xC00000,a1
         move.w  #0x8F02,(a0)
-        move.l  #0x40000000,(a0)        /* Write VRAM address 0 */
+        move.l  #0x4A800000,(a0)        /* Write VRAM address 0x0A80 */
         lea     decomp_buffer,a2
         move.l  lump_size,d1
         lsr.l   #1,d1
@@ -2145,6 +2335,20 @@ scroll_md_sky:
         subq    #1,d2
         cmp.w   #0,d2
         bne.b   0b
+
+        lsr.w   #8,d0
+
+        move.w  #0x8200,d1
+        lea     scroll_a_address_register_values,a1
+        adda.w  d0,a1
+        move.b  (a1),d1
+        move.w  d1,(a0) /* reg 2 = Name Tbl A */
+
+        move.w  #0x8400,d1
+        lea     scroll_b_address_register_values,a1
+        adda.w  d0,a1
+        move.b  (a1),d1
+        move.w  d1,(a0) /* reg 4 = Name Tbl B */
 
         move.l  (sp)+,d7
         move.l  (sp)+,d6
@@ -2429,7 +2633,7 @@ init_vdp:
         move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
         move.w  #0x8328,(a0) /* reg 3 = Name Tbl W = 0xA000 */
         move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        move.w  #0x8558,(a0) /* reg 5 = Sprite Attr Tbl = 0xB000 */
+        move.w  #0x8504,(a0) /* reg 5 = Sprite Attr Tbl = 0x0800 */
         move.w  #0x8600,(a0) /* reg 6 = always 0 */
         move.w  #0x8700,(a0) /* reg 7 = BG color */
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
@@ -2438,7 +2642,7 @@ init_vdp:
         move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
         |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
-        move.w  #0x8D2E,(a0) /* reg 13 = HScroll Tbl = 0xB800 */
+        move.w  #0x8D00,(a0) /* reg 13 = HScroll Tbl = 0x0000 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
         move.w  #0x8F01,(a0) /* reg 15 = data INC = 1 */
         move.w  #0x9010,(a0) /* reg 16 = Scroll Size = 32x64 */
@@ -2467,7 +2671,7 @@ init_vdp:
         tst.w   d2
         beq.b   9f
 
-        move.l  write_sprite_attribute_table,(a0)   /* write VRAM address 0xB000 */
+        move.l  write_sprite_attribute_table,(a0)   /* write VRAM address 0x0800 */
         moveq   #0,d0
         move.w  #0x02BF,d1              /* 704 - 1 tiles */
 8:
@@ -2483,7 +2687,7 @@ init_vdp:
         bra.b   3f
 
 | The VDP state at this point is: Display disabled, ints disabled, Name Tbl A at 0xC000,
-| Name Tbl B at 0xE000, Sprite Attr Tbl at 0xB000, HScroll Tbl at 0xB800, H40 V28 mode,
+| Name Tbl B at 0xE000, Sprite Attr Tbl at 0x0800, HScroll Tbl at 0x0000, H40 V28 mode,
 | and Scroll size is 64x32.
 
 9:
@@ -3340,16 +3544,6 @@ lump_ptr:
 lump_size:
         dc.l    0
 
-pattern_name_table_base_address_b:
-pattern_name_table_base_address_b1:
-        dc.b    0x07
-pattern_name_table_base_address_b2:
-        dc.b    0x07
-pattern_name_table_base_address_a:
-pattern_name_table_base_address_a1:
-        dc.b    0x30
-pattern_name_table_base_address_a2:
-        dc.b    0x30
 
 pattern_name_table_swap_left_b:
         dc.w    0
@@ -3361,10 +3555,65 @@ pattern_name_table_swap_left_a:
 pattern_name_table_swap_right_a:
         dc.w    0
 
-write_sprite_attribute_table:
-        dc.l    0x70000002      /* Default VRAM write to address 0xB000 */
+
+next_write_pattern_name_table:
+        dc.l    0x60000003      /* bank 0 (0xE000) */
+        dc.l    0x40000003      /* bank 1 (0xC000) */
+        dc.l    0x60000002      /* bank 2 (0xA000) */
+        dc.l    0x40000002      /* bank 3 (0x8000) */
+        dc.l    0x60000001      /* bank 4 (0x6000) */
+
+write_scroll_b_table:
+write_scroll_b_table_1:
+        dc.l    0x60000003
+write_scroll_b_table_2:
+        dc.l    0x60000003
+write_scroll_b_table_3:
+        dc.l    0x60000003
+write_scroll_b_table_4:
+        dc.l    0x60000003
+write_scroll_a_table:
+write_scroll_a_table_1:
+        dc.l    0x40000003
+write_scroll_a_table_2:
+        dc.l    0x40000003
+write_scroll_a_table_3:
+        dc.l    0x40000003
+write_scroll_a_table_4:
+        dc.l    0x40000003
+
+scroll_b_address_register_values:
+scroll_b_address_register_values_1:
+        dc.b    0x07
+scroll_b_address_register_values_2:
+        dc.b    0x07
+scroll_b_address_register_values_3:
+        dc.b    0x07
+scroll_b_address_register_values_4:
+        dc.b    0x07
+
+scroll_a_address_register_values:
+scroll_a_address_register_values_1:
+        dc.b    0x30
+scroll_a_address_register_values_2:
+        dc.b    0x30
+scroll_a_address_register_values_3:
+        dc.b    0x30
+scroll_a_address_register_values_4:
+        dc.b    0x30
+
 write_horizontal_scroll_table:
-        dc.l    0x78000002      /* Default VRAM write to address 0xB800 */
+        dc.l    0x40000000      /* Default VRAM write to address 0x0000 */
+write_sprite_attribute_table:
+        dc.l    0x48000000      /* Default VRAM write to address 0x0800 */
+
+test_start:
+        dc.l    0x08257368
+test_values:
+        .space  128
+test_end:
+        dc.l    0x08257368
+
 
 base_palette_1:
         .space  32
@@ -3427,4 +3676,4 @@ FMReset:
 col_store:                      /* Is this label still needed? */
 decomp_buffer:
         |.space  21*224*2        /* 140 double-columns in vram, 20 in wram, 1 in wram for swap */
-        .space  12288           /* 12 KB */
+        .space  16384           /* 16 KB */
