@@ -70,7 +70,7 @@ static void R_FinishWall(viswall_t* wc)
     if (ceilingpicnum == -1)
     {
         // cache skytexture if needed
-        skytexturep->data = R_CheckPixels(skytexturep->lumpnum);
+        //TODO: //DLG: skytexturep->data = R_CheckPixels(skytexturep->lumpnum);
     }
     else
     {

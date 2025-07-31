@@ -29,7 +29,8 @@ uint8_t			*texturetranslation;	/* for global animation */
 
 flattex_t		*flatpixels;
 
-texture_t	*skytexturep;
+//texture_t	*skytexturep;
+uint8_t		*skytexturep;
 
 uint8_t		*dc_playpals, *dc_cshift_playpals;
 

@@ -440,6 +440,8 @@ __attribute__((aligned(4)))
 #endif
 extern unsigned short *copper_buffer;
 
+extern uint8_t *skystretch/*[SCREENWIDTH/2]*/;
+
 #ifdef MARS
 __attribute__((aligned(16)))
 #endif
@@ -474,7 +476,8 @@ extern	int		phasetime[9];
 /* */
 /* R_data.c */
 /* */
-extern	texture_t	*skytexturep;
+//extern	texture_t	*skytexturep;
+extern	uint8_t		*skytexturep;
 
 extern	VINT		numtextures;
 extern	texture_t	*textures;
