@@ -729,6 +729,13 @@ void I_Update(void)
 	unsigned short scroll_y_offset = (vd.viewz >> 16);
 	unsigned short scroll_y_pan = (vd.aimingangle >> 22);
 
+	if (IsLevel()) {
+		scroll_y_base += 22;
+	}
+	else if (IsTitleScreen()) {
+		scroll_y_base += 44;
+	}
+
 	if (effects_flags & EFFECTS_COPPER_ENABLED) {
 		short prev_index = copper_color_index;
 

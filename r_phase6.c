@@ -180,10 +180,10 @@ static void R_Draw32XSky(const int top, const int bottom, const int x, drawcol_t
 
 
         //inpixel_t* data = skytexturep->data[0] + colnum * skytexturep->height;
-        char *column_info = skytexturep + (colnum << 2);
+        unsigned char *column_info = skytexturep + (colnum << 2);
         
         int height = *column_info;
-        int y_offset = column_info[1];
+        int y_offset = column_info[1];// + 128;
         inpixel_t* data = (skytexturep + (1024 << 2)) + (*((short *)&column_info[2]));
 
         draw32xsky(
@@ -218,15 +218,15 @@ static void R_Draw32XSky(const int top, const int bottom, const int x, drawcol_t
 #ifdef MDSKY
     else {
         drawmdsky(x, top, bottom);
-
-        if (effects_flags & EFFECTS_COPPER_INDEX_CHANGE
-                || effects_flags & EFFECTS_COPPER_BRIGHTNESS_CHANGE
-                || !(effects_flags & EFFECTS_COPPER_SKY_IN_VIEW)) {
-            // The copper index changes, or the sky is appearing after not being present in the previous frame.
-            effects_flags |= (EFFECTS_COPPER_REFRESH | EFFECTS_COPPER_SKY_IN_VIEW);
-        }
     }
 #endif
+
+    if (effects_flags & EFFECTS_COPPER_INDEX_CHANGE
+            || effects_flags & EFFECTS_COPPER_BRIGHTNESS_CHANGE
+            || !(effects_flags & EFFECTS_COPPER_SKY_IN_VIEW)) {
+        // The copper index changes, or the sky is appearing after not being present in the previous frame.
+        effects_flags |= (EFFECTS_COPPER_REFRESH | EFFECTS_COPPER_SKY_IN_VIEW);
+    }
 }
 
 //
