@@ -1809,18 +1809,6 @@ load_md_sky:
         sub.b   d1,d0
         move.b  d0,scroll_a_vert_rate_bottom
 
-        move.w  (a2)+,d0
-        move.w  d0,pattern_name_table_swap_left_b
-
-        move.w  (a2)+,d0
-        move.w  d0,pattern_name_table_swap_right_b
-
-        move.w  (a2)+,d0
-        move.w  d0,pattern_name_table_swap_left_a
-
-        move.w  (a2)+,d0
-        move.w  d0,pattern_name_table_swap_right_a
-
 
 
         /* Load pattern name table B1 */
@@ -2337,6 +2325,7 @@ scroll_md_sky:
         bne.b   0b
 
         lsr.w   #8,d0
+        andi.w  #3,d0
 
         move.w  #0x8200,d1
         lea     scroll_a_address_register_values,a1
@@ -3543,17 +3532,6 @@ lump_ptr:
         dc.l    0
 lump_size:
         dc.l    0
-
-
-pattern_name_table_swap_left_b:
-        dc.w    0
-pattern_name_table_swap_right_b:
-        dc.w    0
-
-pattern_name_table_swap_left_a:
-        dc.w    0
-pattern_name_table_swap_right_a:
-        dc.w    0
 
 
 next_write_pattern_name_table:
