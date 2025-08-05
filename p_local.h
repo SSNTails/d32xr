@@ -278,6 +278,8 @@ extern	uint16_t			numthings;
 
 extern	VINT		*validcount;		/* (0 - increment every time a check is made, [1..numlines]) x 2 */
 
+fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mthing, const fixed_t x, const fixed_t y, const fixed_t z);
+
 /*
 ===============================================================================
 

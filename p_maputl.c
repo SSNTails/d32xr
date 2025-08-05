@@ -17,6 +17,177 @@ void P_SetThingPositionConditionally(mobj_t *thing, fixed_t x, fixed_t y, VINT i
 boolean P_BlockLinesIterator(int x, int y, boolean(*func)(line_t*, void*), void *userp) ATTR_DATA_CACHE_ALIGN;
 boolean P_BlockThingsIterator(int x, int y, boolean(*func)(mobj_t*, void*), void *userp) ATTR_DATA_CACHE_ALIGN;
 
+vector4_t *FV4_Load(vector4_t *vec, fixed_t x, fixed_t y, fixed_t z, fixed_t a) ATTR_DATA_CACHE_ALIGN;
+matrix_t *FM_RotateX(matrix_t *dest, angle_t rad) ATTR_DATA_CACHE_ALIGN;
+matrix_t *FM_RotateZ(matrix_t *dest, angle_t rad) ATTR_DATA_CACHE_ALIGN;
+const vector4_t *FM_MultMatrixVec4(const matrix_t *matrix, const vector4_t *vec, vector4_t *out) ATTR_DATA_CACHE_ALIGN;
+vector4_t *FV4_Copy(vector4_t *a_o, const vector4_t *a_i) ATTR_DATA_CACHE_ALIGN;
+vector3_t *FV3_Cross(const vector3_t *a_1, const vector3_t *a_2, vector3_t *a_o) ATTR_DATA_CACHE_ALIGN;
+vector3_t *FV3_Normalize(const vector3_t *a_normal, vector3_t *a_o); // Don't need this to be fast
+
+vector4_t *FV4_Load(vector4_t *vec, fixed_t x, fixed_t y, fixed_t z, fixed_t a)
+{
+	vec->x = x;
+	vec->y = y;
+	vec->z = z;
+	vec->a = a;
+	return vec;
+}
+
+void FM_LoadIdentity(matrix_t* matrix)
+{
+#define M(row,col)  matrix->m[col * 4 + row]
+	memset(matrix, 0, sizeof(matrix_t));
+
+	M(0, 0) = FRACUNIT;
+	M(1, 1) = FRACUNIT;
+	M(2, 2) = FRACUNIT;
+	M(3, 3) = FRACUNIT;
+#undef M
+}
+
+#define M(row,col) dest->m[row * 4 + col]
+matrix_t *FM_RotateX(matrix_t *dest, angle_t rad)
+{
+	const angle_t fa = rad>>ANGLETOFINESHIFT;
+	const fixed_t cosrad = finecosine(fa), sinrad = finesine(fa);
+
+	M(0, 0) = FRACUNIT;
+	M(0, 1) = 0;
+	M(0, 2) = 0;
+	M(0, 3) = 0;
+	M(1, 0) = 0;
+	M(1, 1) = cosrad;
+	M(1, 2) = sinrad;
+	M(1, 3) = 0;
+	M(2, 0) = 0;
+	M(2, 1) = -sinrad;
+	M(2, 2) = cosrad;
+	M(2, 3) = 0;
+	M(3, 0) = 0;
+	M(3, 1) = 0;
+	M(3, 2) = 0;
+	M(3, 3) = FRACUNIT;
+
+	return dest;
+}
+
+matrix_t *FM_RotateZ(matrix_t *dest, angle_t rad)
+{
+	const angle_t fa = rad>>ANGLETOFINESHIFT;
+	const fixed_t cosrad = finecosine(fa), sinrad = finesine(fa);
+
+	M(0, 0) = cosrad;
+	M(0, 1) = sinrad;
+	M(0, 2) = 0;
+	M(0, 3) = 0;
+	M(1, 0) = -sinrad;
+	M(1, 1) = cosrad;
+	M(1, 2) = 0;
+	M(1, 3) = 0;
+	M(2, 0) = 0;
+	M(2, 1) = 0;
+	M(2, 2) = FRACUNIT;
+	M(2, 3) = 0;
+	M(3, 0) = 0;
+	M(3, 1) = 0;
+	M(3, 2) = 0;
+	M(3, 3) = FRACUNIT;
+
+	return dest;
+}
+#undef M
+
+const vector4_t *FM_MultMatrixVec4(const matrix_t *matrix, const vector4_t *vec, vector4_t *out)
+{
+#define M(row,col)  matrix->m[col * 4 + row]
+	out->x = FixedMul(vec->x, M(0, 0))
+		+ FixedMul(vec->y, M(0, 1))
+		+ FixedMul(vec->z, M(0, 2))
+		+ FixedMul(vec->a, M(0, 3));
+
+	out->y = FixedMul(vec->x, M(1, 0))
+		+ FixedMul(vec->y, M(1, 1))
+		+ FixedMul(vec->z, M(1, 2))
+		+ FixedMul(vec->a, M(1, 3));
+
+	out->z = FixedMul(vec->x, M(2, 0))
+		+ FixedMul(vec->y, M(2, 1))
+		+ FixedMul(vec->z, M(2, 2))
+		+ FixedMul(vec->a, M(2, 3));
+
+
+	out->a = FixedMul(vec->x, M(3, 0))
+		+ FixedMul(vec->y, M(3, 1))
+		+ FixedMul(vec->z, M(3, 2))
+		+ FixedMul(vec->a, M(3, 3));
+#undef M
+	return out;
+}
+
+vector4_t *FV4_Copy(vector4_t *a_o, const vector4_t *a_i)
+{
+	D_memcpy(a_o, a_i, sizeof(vector4_t));
+	return a_o;
+}
+
+vector3_t *FV3_Cross(const vector3_t *a_1, const vector3_t *a_2, vector3_t *a_o)
+{
+	a_o->x = FixedMul(a_1->y, a_2->z) - FixedMul(a_1->z, a_2->y);
+	a_o->y = FixedMul(a_1->z, a_2->x) - FixedMul(a_1->x, a_2->z);
+	a_o->z = FixedMul(a_1->x, a_2->y) - FixedMul(a_1->y, a_2->x);
+	return a_o;
+}
+
+fixed_t FixedSqrt(fixed_t x)
+{
+	// The neglected art of Fixed Point arithmetic
+	// Jetro Lauha
+	// Seminar Presentation
+	// Assembly 2006, 3rd- 6th August 2006
+	// (Revised: September 13, 2006)
+	// URL: http://jet.ro/files/The_neglected_art_of_Fixed_Point_arithmetic_20060913.pdf
+	uint32_t root, remHi, remLo, testDiv, count;
+	root = 0;         /* Clear root */
+	remHi = 0;        /* Clear high part of partial remainder */
+	remLo = x;        /* Get argument into low part of partial remainder */
+	count = (15 + (FRACBITS >> 1));    /* Load loop counter */
+	do
+	{
+		remHi = (remHi << 2) | (remLo >> 30); remLo <<= 2;  /* get 2 bits of arg */
+		root <<= 1;   /* Get ready for the next bit in the root */
+		testDiv = (root << 1) + 1;    /* Test radical */
+		if (remHi >= testDiv)
+		{
+			remHi -= testDiv;
+			root += 1;
+		}
+	} while (count-- != 0);
+	return root;
+}
+
+fixed_t FV3_Magnitude(const vector3_t *a_normal)
+{
+	fixed_t xs = FixedMul(a_normal->x, a_normal->x);
+	fixed_t ys = FixedMul(a_normal->y, a_normal->y);
+	fixed_t zs = FixedMul(a_normal->z, a_normal->z);
+	return FixedSqrt(xs + ys + zs);
+}
+
+vector3_t *FV3_Normalize(const vector3_t *a_normal, vector3_t *a_o)
+{
+	fixed_t magnitude = FV3_Magnitude(a_normal);
+	a_o->x = FixedDiv(a_normal->x, magnitude);
+	a_o->y = FixedDiv(a_normal->y, magnitude);
+	a_o->z = FixedDiv(a_normal->z, magnitude);
+	return magnitude;
+}
+
+fixed_t FV3_Dot(const vector3_t *a_1, const vector3_t *a_2)
+{
+	return (FixedMul(a_1->x, a_2->x) + FixedMul(a_1->y, a_2->y) + FixedMul(a_1->z, a_2->z));
+}
+
 /*
 ===================
 =

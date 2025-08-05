@@ -729,6 +729,33 @@ fixed_t	FixedDiv (fixed_t a, fixed_t b);
 #define IDiv(a,b) ((a) / (b))
 #endif
 
+typedef struct
+{
+	fixed_t m[16];
+} matrix_t;
+
+typedef struct
+{
+	fixed_t x, y, z;
+} vector3_t;
+
+typedef struct
+{
+	fixed_t x, y, z, a;
+} vector4_t;
+
+vector4_t *FV4_Load(vector4_t *vec, fixed_t x, fixed_t y, fixed_t z, fixed_t a);
+void FM_LoadIdentity(matrix_t* matrix);
+matrix_t *FM_RotateX(matrix_t *dest, angle_t rad);
+matrix_t *FM_RotateZ(matrix_t *dest, angle_t rad);
+const vector4_t *FM_MultMatrixVec4(const matrix_t *matrix, const vector4_t *vec, vector4_t *out);
+vector4_t *FV4_Copy(vector4_t *a_o, const vector4_t *a_i);
+vector3_t *FV3_Cross(const vector3_t *a_1, const vector3_t *a_2, vector3_t *a_o);
+fixed_t FV3_Magnitude(const vector3_t *a_normal);
+vector3_t *FV3_Normalize(const vector3_t *a_normal, vector3_t *a_o);
+fixed_t FV3_Dot(const vector3_t *a_1, const vector3_t *a_2);
+fixed_t FixedSqrt(fixed_t x);
+
 #define	ACC_FIXEDMUL	4
 #define	ACC_FIXEDDIV	8
 #define	ACC_MULSI3		12
