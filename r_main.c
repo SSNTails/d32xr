@@ -615,7 +615,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 
 #ifdef MDSKY
 __attribute((noinline))
-static void R_SetupMDSky(const char *name, int palettes_lump)
+void R_SetupMDSky(const char *name, int palettes_lump)
 {
 	// Retrieve lumps for drawing the sky on the MD.
 	uint8_t *sky_metadata_ptr;
@@ -918,7 +918,10 @@ void R_SetupBackground(const char *background, int palettes_lump, int copper_lum
 		copper_buffer = NULL;
 	}
 
-	R_SetupMDSky(background, palettes_lump);
+	if (!IsTitleScreen()) {
+		// Avoid running this here for the title screen so music playback doesn't stall.
+		R_SetupMDSky(background, palettes_lump);
+	}
 	#endif
 }
 

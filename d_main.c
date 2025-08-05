@@ -599,6 +599,11 @@ int TIC_LevelSelect (void)
 			if (lvlsel_lump != -1)
 				W_ReadLump(lvlsel_lump, lvlsel_pic);
 
+			if (gamemapinfo.data)
+				Z_Free(gamemapinfo.data);
+			gamemapinfo.data = NULL;
+			D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
+
 			char buf[512];
 			G_FindMapinfo(G_LumpNumForMapNum(startmap), &selected_map_info, buf);
 
@@ -672,6 +677,11 @@ void START_LevelSelect (void)
 	chevblku_pic = W_CacheLumpName("CHEVBLKU", PU_STATIC);
 	chevblkd_pic = W_CacheLumpName("CHEVBLKD", PU_STATIC);
 
+	if (gamemapinfo.data)
+		Z_Free(gamemapinfo.data);
+	gamemapinfo.data = NULL;
+	D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
+	
 	char buf[512];
 	G_FindMapinfo(G_LumpNumForMapNum(1), &selected_map_info, buf);
 }
@@ -1175,6 +1185,20 @@ void START_Title(void)
 	DoubleBufferSetup();
 #endif
 
+	/*
+	if (gamemapinfo.data)
+		Z_Free(gamemapinfo.data);
+	gamemapinfo.data = NULL;
+	D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
+
+	char buf[512];
+	G_FindMapinfo(G_LumpNumForMapNum(TITLE_MAP_NUMBER), &gamemapinfo, buf);
+
+	R_SetupMDSky(gamemapinfo.sky, 1);
+	*/
+
+	R_SetupMDSky("sky1", 1); //TODO: //DLG: Load MAP30 gamemapinfo to get the sky name.
+
 	titlepic = gameinfo.titlePage != -1 ? W_CacheLumpNum(gameinfo.titlePage, PU_STATIC) : NULL;
 
 	ticon = 0;
@@ -1343,11 +1367,11 @@ D_printf ("DM_Main\n");
 	if (!gameinfo.noAttractDemo) {
 		do {
 			// Title intro
+			G_InitNew (TITLE_MAP_NUMBER, gt_single, false);
 			MiniLoop (START_Title, STOP_Title, TIC_Abortable, DRAW_Title, UpdateBuffer);
 
 			// Title with menu
 			M_Start();
-			G_InitNew (TITLE_MAP_NUMBER, gt_single, false);
 			SetTitleScreen();
 			exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
 			M_Stop();

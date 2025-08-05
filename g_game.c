@@ -138,6 +138,7 @@ void G_DoLoadLevel (void)
 	if (gamemapinfo.data)
 		Z_Free(gamemapinfo.data);
 	gamemapinfo.data = NULL;
+	D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
 
 	if (G_FindMapinfo(gamemaplump, &gamemapinfo, NULL) == 0) {
 		int nextmap;
@@ -519,6 +520,7 @@ void G_InitNew (int map, gametype_t gametype, boolean splitscr)
 
 	if (gamemapinfo.data)
 		Z_Free(gamemapinfo.data);
+	gamemapinfo.data = NULL;
 	D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
 
 	/* these may be reset by I_NetSetup */
