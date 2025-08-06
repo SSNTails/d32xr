@@ -878,27 +878,21 @@ nocache:
 
 void R_SetupBackground(const char *background, int palettes_lump, int copper_lump)
 {
+	skystretch = NULL;
 	#ifdef MDSKY
 	if (sky_32x_layer) {
 		// The 32X layer is used, so create the sky stretch table.
-		if (skystretch == NULL) {
-			skystretch = Z_Malloc(sizeof(unsigned char) * (SCREENWIDTH/2), PU_STATIC);
+		skystretch = Z_Malloc(sizeof(unsigned char) * (SCREENWIDTH/2), PU_LEVEL);
 
-			int x=0;
-			int i=0;
-			while (i < 160) {
-				skystretch[i++] = x++;
-				skystretch[i++] = x++;
-				skystretch[i++] = x++;
-				skystretch[i++] = x++;
-				skystretch[i++] = x;
-			}
+		int x=0;
+		int i=0;
+		while (i < 160) {
+			skystretch[i++] = x++;
+			skystretch[i++] = x++;
+			skystretch[i++] = x++;
+			skystretch[i++] = x++;
+			skystretch[i++] = x;
 		}
-	}
-	else if (skystretch) {
-		// The 32X layer is not used, so we don't need this data.
-		Z_Free(skystretch);
-		skystretch = NULL;
 	}
 
 	R_SetupSkyGradient(background, copper_lump, 0);

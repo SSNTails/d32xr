@@ -316,7 +316,7 @@ int P_Ticker (void)
 
 	// If we don't do this every tic, it seems sight checking is broken.
 	// Is there a way we can do this infrequently? Even every half second would be fine.
-//	if (!(gametic & 31))
+	if (!(gametic & 31))
 		P_CheckSights();
 
 	P_AnimateScenery((int8_t)accum_time);

@@ -273,14 +273,13 @@ void Z_CheckHeap (memzone_t *mainzone)
 	}
 }
 
-void Z_DumpHeap(memzone_t *mainzone)
+void Z_DumpHeap(memzone_t *mainzone, int skipCount)
 {
 	char memmap[2048];
 	memmap[0] = '\0';
 	char *mapPtr = memmap;
 	int numblocks = 0;
 
-	int skipCount = 20;
 	int i = 0;
 
 	memblock_t *block;
