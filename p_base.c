@@ -733,7 +733,7 @@ static void P_Boss2Thinker(mobj_t *mobj)
 
    if (mobj->state == mobjInfo->spawnstate && mobj->health > mobjInfo->damage)
 	   A_Boss2Chase(mobj, 0, 0);
- /*  else if (mobj->state == S_EGGMOBILE2_POGO1
+   else if (mobj->state == S_EGGMOBILE2_POGO1
       || mobj->state == S_EGGMOBILE2_POGO2
       || mobj->state == S_EGGMOBILE2_POGO3
       || mobj->state == S_EGGMOBILE2_POGO4
@@ -741,7 +741,7 @@ static void P_Boss2Thinker(mobj_t *mobj)
    {
       mobj->flags &= ~MF_NOGRAVITY;
       A_Boss2Pogo(mobj, 0, 0);
-   }*/
+   }
 }
 
 static boolean P_JetFume1Think(mobj_t *mobj)

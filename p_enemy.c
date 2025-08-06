@@ -1450,8 +1450,6 @@ static void A_GooSpray(mobj_t *actor, int speedvar)
 
 void A_Boss2Chase(mobj_t *actor, int16_t var1, int16_t var2)
 {
-	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
-
 	if (actor->health <= 0)
 		return;
 
@@ -1521,7 +1519,7 @@ void A_Boss2Pogo(mobj_t *actor, int16_t var1, int16_t var2)
 			goop->momy = FixedMul(finesine(fa),ns);
 			goop->momz = 4*FRACUNIT;
 
-			goop->reactiontime = 30+(P_Random()/32);
+			goop->reactiontime = 255;
 		}
 		actor->reactiontime = 0; // we already shot goop, so don't do it again!
 		if (aInfo->attacksound)
@@ -1532,7 +1530,55 @@ void A_Boss2Pogo(mobj_t *actor, int16_t var1, int16_t var2)
 
 void A_Boss2PogoTarget(mobj_t *actor, int16_t var1, int16_t var2)
 {
+	if (!actor->target)
+		return;
 
+	player_t *player = &players[actor->target->player - 1];
+	fixed_t locvar1 = var1 << FRACBITS;
+	fixed_t locvar2 = var2 << FRACBITS;
+
+	// Target hit, retreat!
+	if ((player->powers[pw_flashing] > TICRATE) || (actor->flags2 & MF2_FRET))
+	{
+		int prandom = P_Random();
+		actor->z++; // unstick from the floor
+		actor->momz = locvar1; // Bounce up in air
+		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y) + (P_Random() & 1 ? -prandom : +prandom); // Pick a direction, and randomize it.
+		P_InstaThrust(actor, actor->angle+ANG180, FixedMul(mobjinfo[actor->type].speed, locvar2)); // Move at wandering speed
+	}
+	// Try to land on top of the player.
+	else if (P_AproxDistance(actor->x-actor->target->x, actor->y-actor->target->y) < 512*FRACUNIT)
+	{
+		fixed_t airtime, gravityadd, zoffs, height;
+
+		// check gravity in the sector (for later math)
+		gravityadd = GRAVITY >> 1;
+
+		actor->z++; // unstick from the floor
+		actor->momz = locvar1 + (locvar1>>2); // Bounce up in air
+
+		height = P_GetPlayerHeight() >> 1;
+
+		zoffs = height + (actor->target->floorz - actor->floorz); // offset by the difference in floor height plus half the player height,
+		airtime = FixedDiv((-actor->momz - FixedSqrt(FixedMul(actor->momz,actor->momz)+zoffs)), gravityadd)<<1; // to try and land on their head rather than on their feet
+
+		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
+		P_InstaThrust(actor, actor->angle, FixedDiv(P_AproxDistance(actor->x - actor->target->x, actor->y - actor->target->y), airtime));
+	}
+	// Wander semi-randomly towards the player to get closer.
+	else
+	{
+		int prandom = P_Random();
+		actor->z++; // unstick from the floor
+		actor->momz = locvar1; // Bounce up in air
+		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y) + (P_Random() & 1 ? -prandom : +prandom); // Pick a direction, and randomize it.
+		P_InstaThrust(actor, actor->angle, FixedMul(mobjinfo[actor->type].speed, locvar2)); // Move at wandering speed
+	}
+
+	// Boing!
+	S_StartSound(actor, mobjinfo[actor->type].activesound);
+
+	actor->reactiontime = 1;
 }
 
 void A_Boss2TakeDamage(mobj_t *actor, int16_t var1, int16_t var2)

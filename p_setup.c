@@ -339,9 +339,9 @@ static void P_SetupMace(mapthing_t *mthing)
 	const sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
 	const mapvertex_t *v1 = &vertexes[line->v1];
 	const mapvertex_t *v2 = &vertexes[line->v2];
-	const VINT angle = frontsector->ceilingheight >> FRACBITS;
-	const VINT pitch = frontsector->floorheight >> FRACBITS;
-	VINT roll = 0;
+//	const VINT angle = frontsector->ceilingheight >> FRACBITS;
+//	const VINT pitch = frontsector->floorheight >> FRACBITS;
+//	VINT roll = 0;
 	VINT textureoffset = sides[line->sidenum[0]].textureoffset & 0xfff;
     textureoffset <<= 4; // sign extend
     textureoffset >>= 4; // sign extend
@@ -370,7 +370,7 @@ static void P_SetupMace(mapthing_t *mthing)
 		VINT backrowoffset = (sides[line->sidenum[1]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[1]].rowoffset << 4);
 		backrowoffset >>= 4; // sign extend
 
-		roll = backsector->ceilingheight >> FRACBITS;
+//		roll = backsector->ceilingheight >> FRACBITS;
 		args[2] = backrowoffset;
 		args[5] = backsector->floorheight >> FRACBITS;
 		args[6] = backtextureoffset;

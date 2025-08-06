@@ -607,7 +607,7 @@ fixed_t P_GetPlayerSpinHeight()
 	return FixedMul(mobjinfo[MT_PLAYER].height, 2*FRACUNIT/3);
 }
 
-static inline fixed_t P_GetPlayerHeight()
+fixed_t P_GetPlayerHeight()
 {
 	return mobjinfo[MT_PLAYER].height;
 }

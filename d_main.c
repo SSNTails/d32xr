@@ -341,7 +341,6 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 	int		i;
 	int		exit;
 	int		buttons;
-	int		mx, my;
 	boolean firstdraw = true;
 
 /* */

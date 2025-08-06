@@ -23,7 +23,7 @@ matrix_t *FM_RotateZ(matrix_t *dest, angle_t rad) ATTR_DATA_CACHE_ALIGN;
 const vector4_t *FM_MultMatrixVec4(const matrix_t *matrix, const vector4_t *vec, vector4_t *out) ATTR_DATA_CACHE_ALIGN;
 vector4_t *FV4_Copy(vector4_t *a_o, const vector4_t *a_i) ATTR_DATA_CACHE_ALIGN;
 vector3_t *FV3_Cross(const vector3_t *a_1, const vector3_t *a_2, vector3_t *a_o) ATTR_DATA_CACHE_ALIGN;
-vector3_t *FV3_Normalize(const vector3_t *a_normal, vector3_t *a_o); // Don't need this to be fast
+fixed_t FV3_Normalize(const vector3_t *a_normal, vector3_t *a_o); // Don't need this to be fast
 
 vector4_t *FV4_Load(vector4_t *vec, fixed_t x, fixed_t y, fixed_t z, fixed_t a)
 {
@@ -37,7 +37,7 @@ vector4_t *FV4_Load(vector4_t *vec, fixed_t x, fixed_t y, fixed_t z, fixed_t a)
 void FM_LoadIdentity(matrix_t* matrix)
 {
 #define M(row,col)  matrix->m[col * 4 + row]
-	memset(matrix, 0, sizeof(matrix_t));
+	D_memset(matrix, 0, sizeof(matrix_t));
 
 	M(0, 0) = FRACUNIT;
 	M(1, 1) = FRACUNIT;
@@ -174,7 +174,7 @@ fixed_t FV3_Magnitude(const vector3_t *a_normal)
 	return FixedSqrt(xs + ys + zs);
 }
 
-vector3_t *FV3_Normalize(const vector3_t *a_normal, vector3_t *a_o)
+fixed_t FV3_Normalize(const vector3_t *a_normal, vector3_t *a_o)
 {
 	fixed_t magnitude = FV3_Magnitude(a_normal);
 	a_o->x = FixedDiv(a_normal->x, magnitude);
