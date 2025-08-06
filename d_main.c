@@ -1197,7 +1197,7 @@ void START_Title(void)
 	R_SetupMDSky(gamemapinfo.sky, 1);
 	*/
 
-	R_SetupMDSky("sky1", 1); //TODO: //DLG: Load MAP30 gamemapinfo to get the sky name.
+	R_SetupMDSky("sky1", 1); // TODO: //DLG: Load MAP30 gamemapinfo to get the sky name.
 
 	titlepic = gameinfo.titlePage != -1 ? W_CacheLumpNum(gameinfo.titlePage, PU_STATIC) : NULL;
 
