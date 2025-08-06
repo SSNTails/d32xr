@@ -326,6 +326,7 @@ void    R_SetFlatData(int f, uint8_t *start, int size);
 void    R_ResetTextures(void);
 int		R_SetupMDPalettes(const char *name, int palettes_lump);
 void	R_SetupBackground(const char *background, int palettes_lump, int copper_lump);
+void	R_SetupMDSky(const char *name, int palettes_lump);
 int		R_SetupCopperTable(const char *background, int copper_lump, int table_bank);
 void	R_SetupLevel(int gamezonemargin, char *background);
 void	R_SetShadowHighlight(boolean enabled);
@@ -440,6 +441,8 @@ __attribute__((aligned(4)))
 #endif
 extern unsigned short *copper_buffer;
 
+extern uint8_t *skystretch/*[SCREENWIDTH/2]*/;
+
 #ifdef MARS
 __attribute__((aligned(16)))
 #endif
@@ -474,7 +477,8 @@ extern	int		phasetime[9];
 /* */
 /* R_data.c */
 /* */
-extern	texture_t	*skytexturep;
+//extern	texture_t	*skytexturep;
+extern	uint8_t		*skytexturep;
 
 extern	VINT		numtextures;
 extern	texture_t	*textures;

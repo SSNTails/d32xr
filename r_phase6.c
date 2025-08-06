@@ -164,10 +164,44 @@ static void R_Draw32XSky(const int top, const int bottom, const int x, drawcol_t
 
     if (draw32xsky)
     {
-        int colnum = ((vd.viewangle + (xtoviewangle[x]<<FRACBITS)) >> ANGLETOSKYSHIFT) & (skytexturep->width-1);
-        inpixel_t* data = skytexturep->data[0] + colnum * skytexturep->height;
+        unsigned short scroll_x = (*((unsigned short *)&vd.viewangle) >> 6);
+
+        int colnum = ((skystretch[x] << 1) - scroll_x) & 1023;
+
+
+        // Half width:
+        //int colnum = (((vd.viewangle) >> ANGLETOSKYSHIFT) - (x<<1)) & (1023); //(skytexturep->width-1);
+
+        // Normal width:
+        //int colnum = (((vd.viewangle) >> ANGLETOSKYSHIFT) - x) & (1023); //(skytexturep->width-1);
+
+        // Sine stretching:
+        //int colnum = ((vd.viewangle + (xtoviewangle[x]<<FRACBITS)) >> ANGLETOSKYSHIFT) & (1023); //(skytexturep->width-1);
+
+
+        //inpixel_t* data = skytexturep->data[0] + colnum * skytexturep->height;
+        unsigned char *column_info = skytexturep + (colnum << 2);
+        
+        int height = *column_info;
+        int y_offset = column_info[1];// + 128;
+        inpixel_t* data = (skytexturep + (1024 << 2)) + (*((short *)&column_info[2]));
 
         draw32xsky(
+            x,
+            -gamemapinfo.skyOffsetY
+                    - gamemapinfo.skyBitmapOffsetY
+                    - y_offset
+                    - (((signed int)vd.aimingangle) >> 22)
+                    - ((vd.viewz >> 16) >> (16-gamemapinfo.skyBitmapScrollRate)),
+            top,
+            bottom,
+            gamemapinfo.skyTopColor,
+            gamemapinfo.skyBottomColor,
+            data,
+            height
+        );
+
+        /*draw32xsky(
             x,
             -gamemapinfo.skyOffsetY
                     - gamemapinfo.skyBitmapOffsetY
@@ -179,20 +213,20 @@ static void R_Draw32XSky(const int top, const int bottom, const int x, drawcol_t
             gamemapinfo.skyBottomColor,
             data,
             skytexturep->height
-        );
+        );*/
     }
 #ifdef MDSKY
     else {
         drawmdsky(x, top, bottom);
-
-        if (effects_flags & EFFECTS_COPPER_INDEX_CHANGE
-                || effects_flags & EFFECTS_COPPER_BRIGHTNESS_CHANGE
-                || !(effects_flags & EFFECTS_COPPER_SKY_IN_VIEW)) {
-            // The copper index changes, or the sky is appearing after not being present in the previous frame.
-            effects_flags |= (EFFECTS_COPPER_REFRESH | EFFECTS_COPPER_SKY_IN_VIEW);
-        }
     }
 #endif
+
+    if (effects_flags & EFFECTS_COPPER_INDEX_CHANGE
+            || effects_flags & EFFECTS_COPPER_BRIGHTNESS_CHANGE
+            || !(effects_flags & EFFECTS_COPPER_SKY_IN_VIEW)) {
+        // The copper index changes, or the sky is appearing after not being present in the previous frame.
+        effects_flags |= (EFFECTS_COPPER_REFRESH | EFFECTS_COPPER_SKY_IN_VIEW);
+    }
 }
 
 //

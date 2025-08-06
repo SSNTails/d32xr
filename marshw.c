@@ -745,10 +745,10 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	}
 
 
-	// Load pattern name table A
+	// Load pattern name table B
 
-	s[0] = (uintptr_t)sky_names_a_size>>16, s[1] = (uintptr_t)sky_names_a_size&0xffff;
-	s[2] = ((uintptr_t)sky_names_a_ptr >>16), s[3] = (uintptr_t)sky_names_a_ptr &0xffff;
+	s[0] = (uintptr_t)sky_names_b_size>>16, s[1] = (uintptr_t)sky_names_b_size&0xffff;
+	s[2] = ((uintptr_t)sky_names_b_ptr >>16), s[3] = (uintptr_t)sky_names_b_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
 		while (MARS_SYS_COMM0);
@@ -757,10 +757,10 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	}
 
 
-	// Load pattern name table B
+	// Load pattern name table A
 
-	s[0] = (uintptr_t)sky_names_b_size>>16, s[1] = (uintptr_t)sky_names_b_size&0xffff;
-	s[2] = ((uintptr_t)sky_names_b_ptr >>16), s[3] = (uintptr_t)sky_names_b_ptr &0xffff;
+	s[0] = (uintptr_t)sky_names_a_size>>16, s[1] = (uintptr_t)sky_names_a_size&0xffff;
+	s[2] = ((uintptr_t)sky_names_a_ptr >>16), s[3] = (uintptr_t)sky_names_a_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
 		while (MARS_SYS_COMM0);

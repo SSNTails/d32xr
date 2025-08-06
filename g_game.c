@@ -51,7 +51,8 @@ unsigned char *demobuffer = 0;
 */
 
 extern int              skytexture;
-extern texture_t		*skytexturep;
+//extern texture_t		*skytexturep;
+extern uint8_t			*skytexturep;
 extern texture_t		*textures;
 
 static int G_MapNumForLumpNum(int lump)
@@ -94,8 +95,7 @@ static char* G_GetMapNameForLump(int lump)
 
 void G_DoLoadLevel (void) 
 { 
-	int             i; 
-	int		skytexturel;
+	int             i;
 	int 		gamemap;
 	int			music;
 
@@ -138,6 +138,7 @@ void G_DoLoadLevel (void)
 	if (gamemapinfo.data)
 		Z_Free(gamemapinfo.data);
 	gamemapinfo.data = NULL;
+	D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
 
 	if (G_FindMapinfo(gamemaplump, &gamemapinfo, NULL) == 0) {
 		int nextmap;
@@ -186,9 +187,13 @@ void G_DoLoadLevel (void)
 		sky_32x_layer = false;
 	}
 	else {
-		skytexturel = R_TextureNumForName(gamemapinfo.sky);
- 		skytexturep = &textures[skytexturel];
-		sky_32x_layer = (skytexturel > 0);
+		//int lump = R_TextureNumForName(gamemapinfo.sky);
+ 		//skytexturep = &textures[lump];
+
+		int lump = W_CheckNumForName(gamemapinfo.sky);
+		skytexturep = (uint8_t *)W_POINTLUMPNUM(lump);
+
+		sky_32x_layer = (lump >= 0);
 	}
 
 	P_SetupLevel (gamemaplump);
@@ -515,6 +520,7 @@ void G_InitNew (int map, gametype_t gametype, boolean splitscr)
 
 	if (gamemapinfo.data)
 		Z_Free(gamemapinfo.data);
+	gamemapinfo.data = NULL;
 	D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
 
 	/* these may be reset by I_NetSetup */

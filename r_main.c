@@ -134,6 +134,8 @@ VINT *viewangletox/*[FINEANGLES/2]*/;
 
 uint16_t *xtoviewangle/*[SCREENWIDTH+1]*/;
 
+uint8_t *skystretch/*[SCREENWIDTH/2]*/;
+
 /* */
 /* performance counters */
 /* */
@@ -613,7 +615,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 
 #ifdef MDSKY
 __attribute((noinline))
-static void R_SetupMDSky(const char *name, int palettes_lump)
+void R_SetupMDSky(const char *name, int palettes_lump)
 {
 	// Retrieve lumps for drawing the sky on the MD.
 	uint8_t *sky_metadata_ptr;
@@ -692,9 +694,9 @@ static void R_SetupMDSky(const char *name, int palettes_lump)
 	
 
 	Mars_LoadMDSky(sky_metadata_ptr,
-			sky_names_a_ptr, sky_names_a_size, 
-			sky_names_b_ptr, sky_names_b_size, 
-			sky_palettes_ptr, sky_palettes_size, 
+			sky_names_a_ptr, sky_names_a_size,
+			sky_names_b_ptr, sky_names_b_size,
+			sky_palettes_ptr, sky_palettes_size,
 			sky_tiles_ptr, sky_tiles_size);
 }
 #endif
@@ -877,6 +879,28 @@ nocache:
 void R_SetupBackground(const char *background, int palettes_lump, int copper_lump)
 {
 	#ifdef MDSKY
+	if (sky_32x_layer) {
+		// The 32X layer is used, so create the sky stretch table.
+		if (skystretch == NULL) {
+			skystretch = Z_Malloc(sizeof(unsigned char) * (SCREENWIDTH/2), PU_STATIC);
+
+			int x=0;
+			int i=0;
+			while (i < 160) {
+				skystretch[i++] = x++;
+				skystretch[i++] = x++;
+				skystretch[i++] = x++;
+				skystretch[i++] = x++;
+				skystretch[i++] = x;
+			}
+		}
+	}
+	else if (skystretch) {
+		// The 32X layer is not used, so we don't need this data.
+		Z_Free(skystretch);
+		skystretch = NULL;
+	}
+
 	R_SetupSkyGradient(background, copper_lump, 0);
 
 	copper_table_selection = 0;
@@ -894,7 +918,10 @@ void R_SetupBackground(const char *background, int palettes_lump, int copper_lum
 		copper_buffer = NULL;
 	}
 
-	R_SetupMDSky(background, palettes_lump);
+	if (!IsTitleScreen()) {
+		// Avoid running this here for the title screen so music playback doesn't stall.
+		R_SetupMDSky(background, palettes_lump);
+	}
 	#endif
 }
 
