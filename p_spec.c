@@ -840,53 +840,51 @@ typedef struct
 	macechain_t macechain;
 
 	// Old style
-	fixed_t mlength;
-//	fixed_t mmaxlength;
-//	fixed_t mlengthset;
-	fixed_t mspeed;
-	fixed_t mphase;
-	fixed_t mminlength;
-	fixed_t mpinch;
-//	fixed_t mnumnospokes;
-	fixed_t mwidth;
-//	fixed_t mwidthset;
-//	fixed_t mmin;
-//	int16_t radiusfactor;
-//	int16_t widthfactor;
-	int16_t myaw;
-	int16_t mpitch;
-	int16_t mroll;
-	//
+	int16_t mlength;
+	int16_t mspeed;
+	int16_t mphase;
+	int16_t mminlength;
+	int16_t mwidth;
+	int16_t tag; // for debugging
 
-//	VINT phase; // the 'start angle' of the chain
 	boolean sound;
-//	VINT curPos;
-
 	boolean swinging;
 
 	// new idea
 	vector3_t nv; // Normalized vector
+	vector3_t rotation;
 
 	VINT args[10];
 } swingmace_t;
-/*
+
 void P_SSNMaceRotate(swingmace_t *sm)
 {
 	// Always update movedir to prevent desync. But do we really have to?
 	// Can't this be calculated from leveltime? Why yes, yes it can...
-	sm->curPos = (sm->speed * leveltime) & FINEMASK;
+	int16_t curPos = (sm->mspeed * leveltime) & FINEMASK;
 
-	matrix_t m;
 	vector4_t axis;
 	vector4_t rotationDir;
 
-	FV4_Load(&axis, sm->nv.x, sm->nv.y, sm->nv.z, 0);
+	if (sm->swinging)
+	{
 
-	FV4_Load(&rotationDir, sm->rotDir.x, sm->rotDir.y, sm->rotDir.z, 0);
+		angle_t swingmag = FixedMul(finecosine(curPos), (sm->mspeed * sm->mspeed * sm->mspeed) << FRACBITS);
+		angle_t fa = swingmag >> ANGLETOFINESHIFT;
+//		CONS_Printf("fa: %d", fa);
 
-	CONS_Printf("a: %d, %d, %d; r: %d, %d, %d", sm->nv.x, sm->nv.y, sm->nv.z, sm->rotDir.x, sm->rotDir.y, sm->rotDir.z);
-return;
-	axis.x = 0; axis.y = 0; axis.z = FRACUNIT;
+		curPos = fa;
+	}
+
+//		CONS_Printf("a: %d, %d, %d; r: %d, %d, %d", sm->nv.x, sm->nv.y, sm->nv.z, sm->rotation.x, sm->rotation.y, sm->rotation.z);
+
+	// int8_t to fixed_t
+	axis.x = sm->nv.x << 9;
+	axis.y = sm->nv.y << 9;
+	axis.z = sm->nv.z << 9;
+	rotationDir.x = sm->rotation.x << 9;
+	rotationDir.y = sm->rotation.y << 9;
+	rotationDir.z = sm->rotation.z << 9;
 
 	const fixed_t ux = FixedMul(axis.x, rotationDir.x);
 	const fixed_t uy = FixedMul(axis.x, rotationDir.y);
@@ -897,8 +895,8 @@ return;
 	const fixed_t wx = FixedMul(axis.z, rotationDir.x);
 	const fixed_t wy = FixedMul(axis.z, rotationDir.y);
 	const fixed_t wz = FixedMul(axis.z, rotationDir.z);
-	fixed_t sa = finesine(sm->curPos);
-	fixed_t ca = finecosine(sm->curPos);
+	fixed_t sa = finesine(curPos);
+	fixed_t ca = finecosine(curPos);
 
 	vector4_t rotVec;
 	rotVec.x = FixedMul(axis.x,(ux+vy+wz))
@@ -921,8 +919,8 @@ return;
 
 		//		P_UnsetThingPosition((mobj_t*)link);
 		link->x = sm->macechain.x + ((rotVec.x * distAccum) >> FRACBITS);
-		link->y = sm->macechain.y + ((rotVec.y * distAccum) >> FRACBITS);
-		link->z = sm->macechain.z + ((rotVec.z * distAccum) >> FRACBITS);
+		link->y = sm->macechain.y + ((rotVec.z * distAccum) >> FRACBITS);
+		link->z = sm->macechain.z + ((rotVec.y * distAccum) >> FRACBITS);
 		link->z -= (mobjinfo[link->type].height >> FRACBITS) >> 2;
 //		P_SetThingPosition((mobj_t*)link);
 	}
@@ -930,79 +928,11 @@ return;
 	distAccum += mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS;
 	P_UnsetThingPosition(sm->macechain.maceball);
 	sm->macechain.maceball->x = (sm->macechain.x << FRACBITS) + (rotVec.x * distAccum);
-	sm->macechain.maceball->y = (sm->macechain.y << FRACBITS) + (rotVec.y * distAccum);
-	sm->macechain.maceball->z = (sm->macechain.z << FRACBITS) + (rotVec.z * distAccum);
+	sm->macechain.maceball->y = (sm->macechain.y << FRACBITS) + (rotVec.z * distAccum);
+	sm->macechain.maceball->z = (sm->macechain.z << FRACBITS) + (rotVec.y * distAccum);
 	sm->macechain.maceball->z -= (sm->macechain.maceball->theight << FRACBITS) >> 1;
-	P_SetThingPosition(sm->macechain.maceball);
-}*/
-
-void P_MaceRotate(swingmace_t *sm)
-{
-	// Always update movedir to prevent desync. But do we really have to?
-	// Can't this be calculated from leveltime? Why yes, yes it can...
-	int movedir = (sm->mspeed * leveltime) & FINEMASK;
-
-	matrix_t m;
-	vector4_t res;
-	boolean dosound = false;
-
-	res.x = sm->nv.x;
-	res.y = sm->nv.y;
-	res.z = sm->nv.z;
-
-	res.y = FixedMul(res.y, -FixedMul(FRACUNIT, finesine(sm->mpinch)));
-	res.x = FixedMul(finecosine(movedir), res.x);
-	res.z = FixedMul(finesine(movedir), res.z);
-	res.a = FRACUNIT;
-
-	// TODO: Swinging chains
-	vector4_t temp;
-	FV4_Copy(&temp, &res);
-	FM_RotateX(&m, sm->mpitch * ANGLE_1);
-	FM_MultMatrixVec4(&m, &temp, &res);
-	FV4_Copy(&temp, &res);
-	FM_RotateZ(&m, sm->myaw * ANGLE_1);
-	FM_MultMatrixVec4(&m, &temp, &res);
-
-	int countup = 1;
-	ringmobj_t *mobj = sm->macechain.chain;
-	fixed_t distAccum = 0;
-	for (int i = 0; i < sm->macechain.numchain; mobj++, i++, countup++)
-	{
-		distAccum += sm->macechain.interval;
-		const mobjinfo_t *minfo = &mobjinfo[mobj->type];
-		fixed_t finalx, finaly, finalz;
-		finalx = sm->macechain.x<<FRACBITS;
-		finaly = sm->macechain.y<<FRACBITS;
-		finalz = sm->macechain.z<<FRACBITS;
-
-		finalx += (res.x * distAccum);
-		finaly += (res.y * distAccum);
-		finalz += (res.z * distAccum);
-
-		fixed_t zstore = 0;
-
-		// Cut the height to align the link with the axis.
-		if (mobj->type == MT_SMALLMACECHAIN || mobj->type == MT_BIGMACECHAIN || mobj->type == MT_SMALLGRABCHAIN || mobj->type == MT_BIGGRABCHAIN)
-			zstore -= minfo->height >> 2;
-		else
-			zstore -= minfo->height >> 1;
-
-		finalz += zstore;
-
-//		P_UnsetThingPosition((mobj_t*)mobj);
-		mobj->x = finalx >> FRACBITS;
-		mobj->y = finaly >> FRACBITS;
-		mobj->z = finalz >> FRACBITS;
-//		P_SetThingPosition((mobj_t*)mobj);
-	}
-
-	distAccum += mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS;
-	P_UnsetThingPosition(sm->macechain.maceball);
-	sm->macechain.maceball->x = (sm->macechain.x << FRACBITS) + (res.x * distAccum);
-	sm->macechain.maceball->y = (sm->macechain.y << FRACBITS) + (res.y * distAccum);
-	sm->macechain.maceball->z = (sm->macechain.z << FRACBITS) + (res.z * distAccum);
-	sm->macechain.maceball->z -= (sm->macechain.maceball->theight << FRACBITS) >> 1;
+	sm->macechain.maceball->floorz = sm->macechain.maceball->z;
+	sm->macechain.maceball->ceilingz = sm->macechain.maceball->z + (sm->macechain.maceball->theight << FRACBITS);
 	P_SetThingPosition(sm->macechain.maceball);
 }
 
@@ -1026,7 +956,7 @@ void T_SwingMace(swingmace_t *sm)
 	}
 
 	if (nearSomebody)
-		P_MaceRotate(sm);
+		P_SSNMaceRotate(sm);
 }
 
 static swingmace_t *cursorMace = NULL;
@@ -1034,56 +964,18 @@ void P_PreallocateMaces(int numMaces)
 {
 	size_t allocSize = sizeof(swingmace_t) * numMaces;
 	cursorMace = Z_Malloc(allocSize, PU_LEVSPEC);
+	D_memset(cursorMace, 0, allocSize);
 }
 
-// Converts roll, pitch, yaw (in degrees) to a unit vector (forward direction)
-// Returns components in fixed_t (x, y, z), scaled by FRACUNIT
-void EulerToUnitVector(int roll, int pitch, int yaw, fixed_t *out_x, fixed_t *out_y, fixed_t *out_z)
+// TODO:
+// Support for creating rows of chains (ceilingheight?)
+// Support for the 'mphase' (offset in the rotation)
+void P_AddMaceChain(mapthing_t *point, vector3_t *axis, vector3_t *rotation, VINT *args)
 {
-    // Convert degrees to angle_t (SRB2's angle format)
-    angle_t yaw_angle = yaw * ANGLE_1;   // Converts degrees to angle_t
-    angle_t pitch_angle = pitch * ANGLE_1;
-    // angle_t roll_angle = FixedAngle(roll); // Unused for forward vector
-
-    // Compute trigonometric values using SRB2's fixed-point functions
-    fixed_t cos_yaw = finecosine(yaw_angle >> ANGLETOFINESHIFT);   // Returns fixed_t (FRACUNIT scale)
-    fixed_t sin_yaw = finesine(yaw_angle >> ANGLETOFINESHIFT);
-    fixed_t cos_pitch = finecosine(pitch_angle >> ANGLETOFINESHIFT);
-    fixed_t sin_pitch = finesine(pitch_angle >> ANGLETOFINESHIFT);
-
-    // Compute unit vector components
-    // x = cos(yaw) * cos(pitch)
-    // y = sin(yaw) * cos(pitch)
-    // z = sin(pitch)
-    *out_x = FixedMul(cos_yaw, cos_pitch); // cos(yaw) * cos(pitch)
-    *out_y = FixedMul(sin_yaw, cos_pitch); // sin(yaw) * cos(pitch)
-    *out_z = sin_pitch;                    // sin(pitch)
-
-    // Normalization is typically not needed if inputs are valid, as sin^2 + cos^2 = 1
-    // But if needed, normalize using FixedDiv:
-    /*
-    fixed_t length = FixedSqrt(FixedMul(*out_x, *out_x) + 
-                               FixedMul(*out_y, *out_y) + 
-                               FixedMul(*out_z, *out_z));
-    if (length != 0 && length != FRACUNIT) {
-        *out_x = FixedDiv(*out_x, length);
-        *out_y = FixedDiv(*out_y, length);
-        *out_z = FixedDiv(*out_z, length);
-    }
-    */
-}
-
-void P_AddMaceChain(mapthing_t *point, VINT yaw, VINT pitch, VINT roll, VINT *args)
-{
-	VINT mpinch = args[5] % 360;
-	pitch %= 360;
-	yaw %= 360;
-	roll %= 360;
-
 	// First, determine the # of items in the chain
 	VINT mlength = D_abs(args[0]);
 	VINT msublinks = args[7];
-	VINT mminlength = D_max(0, D_min(mlength - 1, msublinks));
+//	VINT mminlength = D_max(0, D_min(mlength - 1, msublinks));
 
 	swingmace_t *sm = cursorMace;
 	cursorMace++;
@@ -1096,36 +988,11 @@ sm->mlength = D_abs(args[0]);
 sm->mwidth = D_max(0, args[2]);
 sm->mspeed = D_abs(args[3] << 4);
 sm->mphase = args[4] % 360;
-sm->mpinch = args[5] % 360;
 //sm->mnumnospokes = args[6];
 sm->mminlength = D_max(0, D_min(mlength - 1, args[7]));
-sm->mpitch = pitch;
-sm->myaw = yaw;
-sm->mroll = roll;
+sm->tag = point->angle;
 
-	EulerToUnitVector(roll, pitch, yaw, &sm->nv.x, &sm->nv.y, &sm->nv.z);
-
-	if (args[8] & TMM_SWING)
-	{
-		sm->swinging = true;
-
-		vector3_t downward;
-		downward.x = 0;
-		downward.y = 0;
-		downward.z = -FRACUNIT;
-		vector3_t cross;
-		FV3_Cross(&downward, &sm->nv, &cross);
-		FV3_Normalize(&cross, &cross);
-
-		fixed_t dot = FV3_Dot(&downward, &sm->nv);
-
-//		I_Error("%d, %d, %d\n%d, %d, %d", sm->nv.x, sm->nv.y, sm->nv.z, cross.x, cross.y, cross.z);
-		sm->nv.x = cross.x;
-		sm->nv.y = cross.y;
-		sm->nv.z = cross.z;
-	}
-//	else
-//		I_Error("%d, %d, %d", sm->nv.x, sm->nv.y, sm->nv.z);
+	sm->swinging = (args[8] & TMM_SWING);
 
 	fixed_t x = point->x << FRACBITS;
 	fixed_t y = point->y << FRACBITS;
@@ -1172,10 +1039,10 @@ sm->mroll = roll;
 	}
 
 	sm->sound = (mchainlike ? 0 : 1);
-	VINT radiusfactor = 1;
-	VINT widthfactor = 2;
+//	VINT radiusfactor = 1;
+//	VINT widthfactor = 2;
 
-	VINT mmaxlength = mlength;
+//	VINT mmaxlength = mlength;
 
 	fixed_t dist = mobjinfo[chainlink].radius;
 	sm->macechain.interval = (dist >> FRACBITS) << 1;
@@ -1216,6 +1083,13 @@ sm->mroll = roll;
 	const fixed_t spawnY = y + FixedMul(dist, sm->nv.y);
 	const fixed_t spawnZ = (z - (mobjinfo[macetype].height >> 1)) + FixedMul(dist, sm->nv.z);
 	sm->macechain.maceball = P_SpawnMobj(spawnX, spawnY, spawnZ, macetype);
+
+	sm->nv.x = axis->x;
+	sm->nv.y = axis->y;
+	sm->nv.z = axis->z;
+	sm->rotation.x = rotation->x;
+	sm->rotation.y = rotation->y;
+	sm->rotation.z = rotation->z;
 }
 
 VINT		numlineanimspecials = 0;

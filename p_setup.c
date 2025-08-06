@@ -334,6 +334,8 @@ static void P_SetupMace(mapthing_t *mthing)
 
 	D_memset(args, 0, sizeof(args));
 
+	vector3_t axis, rotation;
+
 	const sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
 	const mapvertex_t *v1 = &vertexes[line->v1];
 	const mapvertex_t *v2 = &vertexes[line->v2];
@@ -345,6 +347,10 @@ static void P_SetupMace(mapthing_t *mthing)
     textureoffset >>= 4; // sign extend
     VINT rowoffset = (sides[line->sidenum[0]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[0]].rowoffset << 4);
     rowoffset >>= 4; // sign extend
+
+	axis.x = textureoffset;
+	axis.y = rowoffset;
+	axis.z = frontsector->floorheight >> FRACBITS;
 
 	args[0] = D_abs(v1->x - v2->x); // # of links
 	args[1] = mthing->type >> 12;
@@ -359,16 +365,21 @@ static void P_SetupMace(mapthing_t *mthing)
 	{
 		const sector_t *backsector = &sectors[sides[line->sidenum[1]].sector];
 		VINT backtextureoffset = sides[line->sidenum[1]].textureoffset & 0xfff;
-		textureoffset <<= 4; // sign extend
-		textureoffset >>= 4; // sign extend
+		backtextureoffset <<= 4; // sign extend
+		backtextureoffset >>= 4; // sign extend
 		VINT backrowoffset = (sides[line->sidenum[1]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[1]].rowoffset << 4);
-		rowoffset >>= 4; // sign extend
+		backrowoffset >>= 4; // sign extend
 
 		roll = backsector->ceilingheight >> FRACBITS;
 		args[2] = backrowoffset;
 		args[5] = backsector->floorheight >> FRACBITS;
 		args[6] = backtextureoffset;
+
+		rotation.x = backtextureoffset;
+		rotation.y = backrowoffset;
+		rotation.z = backsector->floorheight >> FRACBITS;
 	}
+
 	if (mthing->options & MTF_AMBUSH)
 		args[8] |= TMM_DOUBLESIZE;
 	if (mthing->options & MTF_OBJECTSPECIAL)
@@ -387,7 +398,7 @@ static void P_SetupMace(mapthing_t *mthing)
 		args[8] |= TMM_ALWAYSTHINK;
 
 	// Whew! We gathered all of the info. Let's do something with it, now.
-	P_AddMaceChain(mthing, angle, pitch, roll, args);
+	P_AddMaceChain(mthing, &axis, &rotation, args);
 }
 
 void P_LoadThings (int lump)

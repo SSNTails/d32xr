@@ -260,7 +260,7 @@ typedef enum
 } textmapmaceflags_t;
 
 void P_PreallocateMaces(int numMaces);
-void P_AddMaceChain(mapthing_t *point, VINT angle, VINT pitch, VINT roll, VINT *args);
+void P_AddMaceChain(mapthing_t *point, vector3_t *axis, vector3_t *rotation, VINT *args);
 
 #define	CEILSPEED		FRACUNIT*THINKERS_TICS
 #define MAXCEILINGS		16
