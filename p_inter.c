@@ -391,6 +391,9 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 
 	switch(special->type)
 	{
+		case MT_GOOP:
+			P_DamageMobj(toucher, special, special, 1);
+			return;
 		case MT_ATTRACTRING:
 		case MT_FLINGRING:
 			P_SpawnMobj(special->x, special->y, special->z, MT_SPARK);

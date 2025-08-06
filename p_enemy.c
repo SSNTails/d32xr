@@ -1536,6 +1536,7 @@ void A_Boss2PogoTarget(mobj_t *actor, int16_t var1, int16_t var2)
 	player_t *player = &players[actor->target->player - 1];
 	fixed_t locvar1 = var1 << FRACBITS;
 	fixed_t locvar2 = var2 << FRACBITS;
+	const fixed_t dist = P_AproxDistance(actor->x-actor->target->x, actor->y-actor->target->y);
 
 	// Target hit, retreat!
 	if ((player->powers[pw_flashing] > TICRATE) || (actor->flags2 & MF2_FRET))
@@ -1544,10 +1545,10 @@ void A_Boss2PogoTarget(mobj_t *actor, int16_t var1, int16_t var2)
 		actor->z++; // unstick from the floor
 		actor->momz = locvar1; // Bounce up in air
 		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y) + (P_Random() & 1 ? -prandom : +prandom); // Pick a direction, and randomize it.
-		P_InstaThrust(actor, actor->angle+ANG180, FixedMul(mobjinfo[actor->type].speed, locvar2)); // Move at wandering speed
+		P_InstaThrust(actor, actor->angle+ANG180, mobjinfo[actor->type].speed * locvar2); // Move at wandering speed
 	}
 	// Try to land on top of the player.
-	else if (P_AproxDistance(actor->x-actor->target->x, actor->y-actor->target->y) < 512*FRACUNIT)
+	else if (dist < 512*FRACUNIT)
 	{
 		fixed_t airtime, gravityadd, zoffs, height;
 
@@ -1563,7 +1564,7 @@ void A_Boss2PogoTarget(mobj_t *actor, int16_t var1, int16_t var2)
 		airtime = FixedDiv((-actor->momz - FixedSqrt(FixedMul(actor->momz,actor->momz)+zoffs)), gravityadd)<<1; // to try and land on their head rather than on their feet
 
 		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
-		P_InstaThrust(actor, actor->angle, FixedDiv(P_AproxDistance(actor->x - actor->target->x, actor->y - actor->target->y), airtime));
+		P_InstaThrust(actor, actor->angle, -FixedDiv(dist, airtime));
 	}
 	// Wander semi-randomly towards the player to get closer.
 	else
@@ -1571,8 +1572,8 @@ void A_Boss2PogoTarget(mobj_t *actor, int16_t var1, int16_t var2)
 		int prandom = P_Random();
 		actor->z++; // unstick from the floor
 		actor->momz = locvar1; // Bounce up in air
-		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y) + (P_Random() & 1 ? -prandom : +prandom); // Pick a direction, and randomize it.
-		P_InstaThrust(actor, actor->angle, FixedMul(mobjinfo[actor->type].speed, locvar2)); // Move at wandering speed
+		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y) + ((P_Random() & 1 ? -(prandom >> 2) : (prandom >> 2)) * ANGLE_1); // Pick a direction, and randomize it.
+		P_InstaThrust(actor, actor->angle, mobjinfo[actor->type].speed * locvar2); // Move at wandering speed
 	}
 
 	// Boing!
@@ -1583,7 +1584,8 @@ void A_Boss2PogoTarget(mobj_t *actor, int16_t var1, int16_t var2)
 
 void A_Boss2TakeDamage(mobj_t *actor, int16_t var1, int16_t var2)
 {
-
+	A_Pain(actor, var1, var2);
+	actor->reactiontime = 1;
 }
 
 void A_PrepareRepeat(mobj_t *actor, int16_t var1, int16_t var2)
