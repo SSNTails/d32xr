@@ -223,6 +223,21 @@ typedef struct
 typedef struct
 {
 	thinker_t thinker;
+	sector_t *fofSector;
+	sector_t *watersec;
+	sector_t *targetSector;
+	fixed_t speed;
+	fixed_t distance;
+	fixed_t floorwasheight;
+	fixed_t ceilingwasheight;
+	boolean low;
+} bouncecheese_t;
+
+void EV_BounceSector(sector_t *fofsec, sector_t *targetSector, fixed_t momz, VINT heightsec);
+
+typedef struct
+{
+	thinker_t thinker;
 	VINT *lines;
 	VINT numlines;
 	VINT totalLines;

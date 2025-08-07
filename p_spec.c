@@ -567,6 +567,152 @@ void P_UpdateSpecials (int8_t numframes)
 ===============================================================================
 */
 
+//////////////////////////////////////////////////
+// T_BounceCheese ////////////////////////////////
+//////////////////////////////////////////////////
+// Bounces a floating cheese
+// Fun fact: I originally called it this
+// because the floating block in Labyrinth Zone
+// looks like a giant block of swiss cheese. :)
+
+void T_BounceCheese(bouncecheese_t *bouncer)
+{
+	fixed_t sectorheight;
+	fixed_t halfheight;
+	fixed_t waterheight;
+	fixed_t floorheight;
+	sector_t *actionsector;
+	boolean remove;
+
+	actionsector = bouncer->targetSector;
+
+	sectorheight = D_abs(bouncer->fofSector->ceilingheight - bouncer->fofSector->floorheight);
+	halfheight = sectorheight >> 1;
+
+	waterheight = bouncer->watersec->ceilingheight;
+
+	floorheight = bouncer->targetSector->floorheight;
+
+	remove = false;
+
+	// Water level is up to the ceiling.
+	if (waterheight > bouncer->fofSector->ceilingheight - halfheight && bouncer->fofSector->ceilingheight >= actionsector->ceilingheight) // Tails 01-08-2004
+	{
+		bouncer->fofSector->ceilingheight = actionsector->ceilingheight;
+		bouncer->fofSector->floorheight = actionsector->ceilingheight - sectorheight;
+		remove = true;
+	}
+	// Water level is too shallow.
+	else if (waterheight < bouncer->fofSector->floorheight + halfheight && bouncer->fofSector->floorheight <= floorheight)
+	{
+		bouncer->fofSector->ceilingheight = floorheight + sectorheight;
+		bouncer->fofSector->floorheight = floorheight;
+		remove = true;
+	}
+	else
+	{
+		bouncer->ceilingwasheight = waterheight + halfheight;
+		bouncer->floorwasheight = waterheight - halfheight;
+	}
+
+	if (remove)
+	{
+		T_MovePlane(bouncer->fofSector, 0, bouncer->fofSector->ceilingheight, false, true, -1); // update things on ceiling
+		T_MovePlane(bouncer->fofSector, 0, bouncer->fofSector->floorheight, false, false, -1); // update things on floor
+		P_ChangeSector(actionsector, false);
+		P_RemoveThinker(&bouncer->thinker); // remove bouncer from actives
+		return;
+	}
+
+	if (bouncer->speed >= 0) // move floor first to fix height desync and any bizarre bugs following that
+	{
+		T_MovePlane(bouncer->fofSector, bouncer->speed/2, bouncer->fofSector->floorheight - 70*FRACUNIT,
+				false, false, -1); // move floor
+		T_MovePlane(bouncer->fofSector, bouncer->speed/2, bouncer->fofSector->ceilingheight -
+				70*FRACUNIT, false, true, -1); // move ceiling
+	}
+	else
+	{
+		T_MovePlane(bouncer->fofSector, bouncer->speed/2, bouncer->fofSector->ceilingheight -
+				70*FRACUNIT, false, true, -1); // move ceiling
+		T_MovePlane(bouncer->fofSector, bouncer->speed/2, bouncer->fofSector->floorheight - 70*FRACUNIT,
+				false, false, -1); // move floor
+	}
+
+	P_ChangeSector(actionsector, false);
+
+	if ((bouncer->fofSector->ceilingheight < bouncer->ceilingwasheight && !bouncer->low) // Down
+		|| (bouncer->fofSector->ceilingheight > bouncer->ceilingwasheight && bouncer->low)) // Up
+	{
+		if (D_abs(bouncer->speed) < 6*FRACUNIT)
+			bouncer->speed -= bouncer->speed/3;
+		else
+			bouncer->speed -= bouncer->speed/2;
+
+		bouncer->low = !bouncer->low;
+		if (D_abs(bouncer->speed) > 6*FRACUNIT)
+		{
+//			mobj_t *mp = (void *)&actionsector->soundorg;
+//			actionsector->soundorg.z = bouncer->sector->floorheight;
+//			S_StartSound(mp, sfx_splash);
+		}
+	}
+
+	if (bouncer->fofSector->ceilingheight < bouncer->ceilingwasheight) // Down
+	{
+		bouncer->speed -= bouncer->distance;
+	}
+	else if (bouncer->fofSector->ceilingheight > bouncer->ceilingwasheight) // Up
+	{
+		bouncer->speed += GRAVITY;
+	}
+
+	if (D_abs(bouncer->speed) < 2*FRACUNIT
+		&& D_abs(bouncer->fofSector->ceilingheight-bouncer->ceilingwasheight) < FRACUNIT/4)
+	{
+		bouncer->fofSector->floorheight = bouncer->floorwasheight;
+		bouncer->fofSector->ceilingheight = bouncer->ceilingwasheight;
+		T_MovePlane(bouncer->fofSector, 0, bouncer->fofSector->ceilingheight, false, true, -1); // update things on ceiling
+		T_MovePlane(bouncer->fofSector, 0, bouncer->fofSector->floorheight, false, false, -1); // update things on floor
+		P_ChangeSector(actionsector, false);
+		P_RemoveThinker(&bouncer->thinker);    // remove bouncer from actives
+	}
+
+	if (bouncer->distance > 0)
+		bouncer->distance--;
+}
+
+void EV_BounceSector(sector_t *fofsec, sector_t *targetSector, fixed_t momz, VINT heightsec)
+{
+	bouncecheese_t *bouncer;
+
+	thinker_t *currentthinker = thinkercap.next;
+	while (currentthinker != &thinkercap)
+	{
+		if (currentthinker->function == T_BounceCheese)
+		{
+			bouncer = (bouncecheese_t*)currentthinker;
+			if (bouncer->fofSector == fofsec)
+				return; // This sector already has an active T_BounceCheese, so don't go any further.
+		}
+		currentthinker = currentthinker->next;
+	}
+
+	if (currentthinker == &thinkercap) // Hit the end of the list, so this is totally new
+	{
+		bouncer = Z_Malloc(sizeof(*bouncer), PU_LEVSPEC);
+		P_AddThinker(&bouncer->thinker);
+		bouncer->thinker.function = T_BounceCheese;
+
+		bouncer->targetSector = targetSector;
+		bouncer->fofSector = fofsec;
+		bouncer->watersec = &sectors[heightsec];
+		bouncer->speed = momz >> 1;
+		bouncer->distance = FRACUNIT;
+		bouncer->low = true;
+	}
+}
+
 #define CARRYFACTOR (10240 + 4096 + 224) // Pretty darn close...
 #define SCROLL_SHIFT 4
 
@@ -1178,6 +1324,7 @@ void P_SpawnSpecials (void)
 
 				// These are always SF_FOF_SWAPHEIGHTS
 				sectors[s].flags |= SF_FOF_SWAPHEIGHTS;
+				sectors[s].flags |= SF_FLOATBOB;
 			}
 			break;
 		}

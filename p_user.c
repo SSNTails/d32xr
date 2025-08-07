@@ -39,6 +39,44 @@ void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move)
 	P_ThrustValues(angle, move, &mo->momx, &mo->momy);
 }
 
+static void P_InnerCheckFloatbobPlatforms(player_t *player, sector_t *sector)
+{
+	if (sector->fofsec < 0 || sector->heightsec < 0)
+		return;
+
+	if (!(sector->flags & SF_FLOATBOB))
+		return;
+
+	sector_t *fofsec = &sectors[sector->fofsec];
+	if (P_MobjFlip(player->mo) < 0)
+	{
+		if (D_abs(fofsec->floorheight - (player->mo->z + (player->mo->theight << FRACBITS))) > D_abs(player->mo->momz))
+			return;
+	}
+	else
+	{
+		if (D_abs(fofsec->ceilingheight - player->mo->z) > D_abs(player->mo->momz))
+			return;
+	}
+
+	// Trigger a bounce
+	EV_BounceSector(fofsec, sector, -player->mo->momz, sector->heightsec);
+}
+
+static void P_CheckFloatbobPlatforms(player_t *player)
+{
+	if (P_MobjFlip(player->mo)*player->mo->momz >= 0)
+		return;
+	
+	for (int i = 0; i < player->num_touching_sectors; i++)
+	{
+		sector_t *sector = &sectors[player->touching_sectorlist[i]];
+		P_InnerCheckFloatbobPlatforms(player, sector);
+	}
+
+	P_InnerCheckFloatbobPlatforms(player, SS_SECTOR(player->mo->isubsector));
+}
+
 void P_RestoreMusic(player_t *player)
 {
 	if (player->exiting)
@@ -362,6 +400,8 @@ void P_PlayerMobjThink(mobj_t *mobj)
 	}
 	else if (!(mobj->flags & MF_NOCLIP))
  		P_PlayerCheckForStillPickups(mobj);
+
+	P_CheckFloatbobPlatforms(player);
 
 	if ((mobj->z != mobj->floorz) || mobj->momz)
 		P_PlayerZMovement(mobj);
