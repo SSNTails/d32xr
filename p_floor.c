@@ -323,7 +323,7 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 				floor->sector = sec;
 				floor->controlSector = &sectors[sides[line->sidenum[0]].sector];
 				floor->origSpeed = P_AproxDistance((vertexes[line->v1].x - vertexes[line->v2].x) << FRACBITS,
-												(vertexes[line->v1].y - vertexes[line->v2].y) << FRACBITS) / 4;
+												(vertexes[line->v1].y - vertexes[line->v2].y) << FRACBITS) >> 2;
 				floor->speed = floor->origSpeed;
 				if (ldflags[line-lines] & ML_BLOCKMONSTERS)
 					floor->dontChangeSector = true;

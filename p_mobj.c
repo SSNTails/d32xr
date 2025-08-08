@@ -849,7 +849,7 @@ void P_MobjCheckWater(mobj_t *mo)
 		{
 			// Check to make sure you didn't just cross into a sector to jump out of
 			// that has shallower water than the block you were originally in.
-			if (watertop - mo->floorz <= mobjinfo[MT_PLAYER].height / 2)
+			if (watertop - mo->floorz <= mobjinfo[MT_PLAYER].height >> 1)
 				return;
 
 			if (wasinwater && mo->momz > 0)
@@ -857,7 +857,7 @@ void P_MobjCheckWater(mobj_t *mo)
 
 			if (mo->momz < 0)
 			{
-				if (mo->z + mobjinfo[MT_PLAYER].height / 2 - mo->momz >= watertop)
+				if (mo->z + (mobjinfo[MT_PLAYER].height >> 1) - mo->momz >= watertop)
 				{
 					// Spawn a splash
 					P_SpawnMobj(mo->x, mo->y, watertop, MT_SPLISH);

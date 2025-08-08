@@ -1348,7 +1348,7 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 	const int iterations = 24;
 	point->target = actor;
 	point->angle = actor->angle;
-	speed = mobjinfo[point->type].radius + (mobjinfo[point->type].radius / 2);
+	speed = mobjinfo[point->type].radius + (mobjinfo[point->type].radius >> 1);
 	point->momz = FixedMul(finecosine(angle>>ANGLETOFINESHIFT), speed);
 	point->momx = FixedMul(finesine(angle>>ANGLETOFINESHIFT), FixedMul(finecosine(point->angle>>ANGLETOFINESHIFT), speed));
 	point->momy = FixedMul(finesine(angle>>ANGLETOFINESHIFT), FixedMul(finesine(point->angle>>ANGLETOFINESHIFT), speed));
@@ -1754,7 +1754,7 @@ static void P_ParabolicMove(mobj_t *actor, fixed_t x, fixed_t y, fixed_t z, fixe
 	actor->momx = FixedMul(FixedDiv(x, dh), speed);
 	actor->momy = FixedMul(FixedDiv(y, dh), speed);
 
-	fixed_t gravity = GRAVITY / 2;
+	fixed_t gravity = GRAVITY >> 1;
 	if (!gravity)
 		return;
 

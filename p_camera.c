@@ -217,7 +217,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 
 	P_CameraThinker(player, thiscam);
 
-	camspeed = FRACUNIT / 4;
+	camspeed = FRACUNIT >> 2;
 	camdist = CAM_DIST;
 	camheight = 20 << FRACBITS;
 
