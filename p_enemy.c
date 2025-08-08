@@ -1019,7 +1019,7 @@ void A_FishJump(mobj_t *mo, int16_t var1, int16_t var2)
 		else
 			jumpval = 16 << FRACBITS;
 
-		jumpval = FixedMul(jumpval, FixedDiv(30 << FRACBITS, 35 << FRACBITS));
+		jumpval = FixedMul(jumpval, 56173/* 30 / 35 */);
 
 		mo->momz = jumpval;
 		P_SetMobjState(mo, mobjinfo[mo->type].seestate);
@@ -1150,7 +1150,7 @@ void A_FlickyFly(mobj_t *actor, int16_t var1, int16_t var2)
 void A_BubbleRise(mobj_t *actor, int16_t var1, int16_t var2)
 {
 	if (actor->type == MT_EXTRALARGEBUBBLE)
-		actor->momz = FixedDiv(6*FRACUNIT, 5*FRACUNIT);
+		actor->momz = 78643; // 6 / 5
 	else
 		actor->momz += FRACUNIT / 32;
 

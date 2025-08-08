@@ -248,7 +248,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	pviewheight = VIEWHEIGHT;
 
 	if (player->pflags & PF_VERTICALFLIP)
-		z = mo->z + FixedDiv(FixedMul(mobjinfo[mo->type].height,3),4) -
+		z = mo->z + FixedMul(mobjinfo[mo->type].height, 49152 /*height * 0.75*/) -
 			(((mo->theight << FRACBITS) != mobjinfo[mo->type].height) ? mobjinfo[mo->type].height - (mo->theight << FRACBITS) : 0)
          - pviewheight - camheight;
 	else
@@ -295,7 +295,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
    dist = P_AproxDistance(viewpointx - thiscam->x, viewpointy - thiscam->y);
 
    if (player->pflags & PF_VERTICALFLIP)
-		angle = R_PointToAngle2(0, thiscam->z, dist,mo->z + (FixedDiv(FixedMul(mobjinfo[mo->type].height,3),4) >> 1)
+		angle = R_PointToAngle2(0, thiscam->z, dist,mo->z + (FixedMul(mobjinfo[mo->type].height, 49152 /*0.75*/) >> 1)
 			- (((mo->theight << FRACBITS) != mobjinfo[mo->type].height) ? (mobjinfo[mo->type].height - (mo->theight << FRACBITS)) >> 1 : 0));
 	else
 		angle = R_PointToAngle2(0, thiscam->z, dist, mo->z + (mobjinfo[mo->type].height >> 2));

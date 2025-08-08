@@ -813,7 +813,7 @@ static void P_DoJump(player_t *player)
 
 	// Reduce jump strength when underwater
 	if (player->pflags & PF_UNDERWATER)
-		player->mo->momz = FixedMul(player->mo->momz, FixedDiv(117 * FRACUNIT, 200 * FRACUNIT));
+		player->mo->momz = FixedMul(player->mo->momz, 38338/*117/200*/);
 
 	player->mo->z++;
 

@@ -494,7 +494,7 @@ void P_ZMovement(mobj_t *mo)
 
       if (mo->type == MT_FLINGRING)
       {
-         mo->momz = -FixedMul(mo->momz, FixedDiv(17*FRACUNIT, 20*FRACUNIT));
+         mo->momz = -FixedMul(mo->momz, 55705); //FixedDiv(17*FRACUNIT, 20*FRACUNIT));
       }
       else if (mo->type == MT_GFZDEBRIS)
       {
@@ -563,7 +563,7 @@ void P_ZMovement(mobj_t *mo)
 
       if (mo->type == MT_FLINGRING && false) // TODO: MF_VERTICALFLIP
       {
-         mo->momz = -FixedMul(mo->momz, FixedDiv(17*FRACUNIT, 20*FRACUNIT));
+         mo->momz = -FixedMul(mo->momz, 55705); // FixedDiv(17*FRACUNIT, 20*FRACUNIT));
       }
       else if (mo->type == MT_SMALLBUBBLE || mo->type == MT_MEDIUMBUBBLE
          || mo->type == MT_EXTRALARGEBUBBLE)

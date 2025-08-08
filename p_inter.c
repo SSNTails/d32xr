@@ -564,9 +564,9 @@ static void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor)
 	player->mo->z++; // Lift off the ground a little
 
 	if (player->pflags & PF_UNDERWATER)
-		player->mo->momz = FixedDiv(10511*FRACUNIT, 2600*FRACUNIT) * P_MobjFlip(player->mo);
+		player->mo->momz = (4 << FRACBITS) * P_MobjFlip(player->mo);
 	else
-		player->mo->momz = FixedDiv(69*FRACUNIT, 10*FRACUNIT) * P_MobjFlip(player->mo);
+		player->mo->momz = 452198 /*6.9*/ * P_MobjFlip(player->mo);
 
 	ang = ((player->mo->momx || player->mo->momy) ? R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy) : player->mo->angle);
 

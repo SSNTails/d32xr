@@ -854,7 +854,7 @@ void P_MobjCheckWater(mobj_t *mo)
 				return;
 
 			if (wasinwater && mo->momz > 0)
-				mo->momz = FixedMul(mo->momz, FixedDiv(780*FRACUNIT, 457*FRACUNIT)); // Give the mobj a little out-of-water boost.
+				mo->momz = FixedMul(mo->momz, 111855/*1.7*/); // Give the mobj a little out-of-water boost.
 
 			if (mo->momz < 0)
 			{
