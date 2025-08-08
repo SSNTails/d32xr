@@ -195,6 +195,7 @@ typedef struct
 
 
 fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
+fixed_t P_AproxDistance3D (fixed_t dx, fixed_t dy, fixed_t dz);
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, divline_t *line);
 int     P_DivlineSide(fixed_t x, fixed_t y, divline_t *node);

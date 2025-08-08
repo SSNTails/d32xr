@@ -207,6 +207,30 @@ fixed_t P_AproxDistance (fixed_t dx, fixed_t dy)
 	return dx+dy-(dy>>1);
 }
 
+fixed_t P_AproxDistance3D (fixed_t dx, fixed_t dy, fixed_t dz)
+{
+	dx = D_abs(dx);
+	dy = D_abs(dy);
+	dz = D_abs(dz);
+
+	if (dx < dy)
+	{
+		dx = dx+dy-(dx>>1);
+
+		if (dz < dx)
+			return dx+dz-(dx>>1);
+	
+		return dx+dy-(dx>>1);
+	}
+
+	dx = dx+dy-(dy>>1);
+
+	if (dz < dx)
+		return dx+dz-(dx>>1);
+		
+	return dx+dy-(dy>>1);
+}
+
 
 /*
 ==================
