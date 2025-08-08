@@ -91,13 +91,12 @@ void P_Attract(mobj_t *source, mobj_t *dest)
 	fixed_t tx = dest->x;
 	fixed_t ty = dest->y;
 	fixed_t tz = dest->z + (dest->theight << (FRACBITS-1)); // Aim for center
-	fixed_t xydist = P_AproxDistance(tx - source->x, ty - source->y);
 
 	// change angle
 	source->angle = R_PointToAngle2(source->x, source->y, tx, ty);
 
 	// change slope
-	dist = P_AproxDistance(xydist, tz - source->z);
+	dist = P_AproxDistance3D(tx - source->x, ty - source->y, tz - source->z);
 
 	if (dist < 1)
 		dist = 1;
@@ -113,8 +112,8 @@ void P_Attract(mobj_t *source, mobj_t *dest)
 	source->momz = FixedMul(FixedDiv(tz - source->z, dist), speedmul);
 
 	// Instead of just unsetting NOCLIP like an idiot, let's check the distance to our target.
-	ndist = P_AproxDistance(P_AproxDistance(tx - (source->x+source->momx),
-											ty - (source->y+source->momy)),
+	ndist = P_AproxDistance3D(tx - (source->x+source->momx),
+											ty - (source->y+source->momy),
 											tz - (source->z+source->momz));
 
 	if (ndist > dist) // gone past our target

@@ -213,23 +213,11 @@ fixed_t P_AproxDistance3D(fixed_t dx, fixed_t dy, fixed_t dz)
     dy = D_abs(dy);
     dz = D_abs(dz);
 
-    if (dx > dy) {
-        if (dx > dz) {
-            // dx is max
-            return dx + ((dy > dz ? dy : dz) + (dy > dz ? dz : dy)) >> 1;
-        } else {
-            // dz is max
-            return dz + (dx + dy) >> 1;
-        }
-    } else {
-        if (dy > dz) {
-            // dy is max
-            return dy + ((dx > dz ? dx : dz) + (dx > dz ? dz : dx)) >> 1;
-        } else {
-            // dz is max
-            return dz + (dx + dy) >> 1;
-        }
-    }
+    // First step: Compute P_AproxDistance(dx, dy)
+    dx = dx < dy ? dx + dy - (dx >> 1) : dx + dy - (dy >> 1);
+
+    // Second step: Compute P_AproxDistance(temp, dz)
+    return dx < dz ? dx + dz - (dx >> 1) : dx + dz - (dz >> 1);
 }
 
 /*

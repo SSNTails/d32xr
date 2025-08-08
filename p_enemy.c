@@ -515,8 +515,8 @@ void A_BuzzFly(mobj_t *actor, int16_t var1, int16_t var2)
 
 		realspeed = mobjinfo[actor->type].speed;
 
-		dist = P_AproxDistance(P_AproxDistance(actor->target->x - actor->x,
-			actor->target->y - actor->y), actor->target->z - actor->z);
+		dist = P_AproxDistance3D(actor->target->x - actor->x,
+			actor->target->y - actor->y, actor->target->z - actor->z);
 
 		if (dist < 1)
 			dist = 1;
@@ -613,7 +613,7 @@ void A_MineRange(mobj_t *actor, int16_t var1, int16_t var2)
 	if (!actor->target)
 		return;
 
-	if (P_AproxDistance(P_AproxDistance(actor->x - actor->target->x, actor->y - actor->target->y), actor->z - actor->target->z)>>FRACBITS < var1)
+	if (P_AproxDistance3D(actor->x - actor->target->x, actor->y - actor->target->y, actor->z - actor->target->z)>>FRACBITS < var1)
 		P_SetMobjState(actor, mobjinfo[actor->type].meleestate);
 }
 

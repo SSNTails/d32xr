@@ -160,7 +160,7 @@ boolean PIT_RingMagnet(mobj_t *thing, mobj_t *spot)
 
 	ringmobj_t *ring = (ringmobj_t*)thing;
 
-	const fixed_t dist = P_AproxDistance(P_AproxDistance((ring->x << FRACBITS) - spot->x, (ring->y << FRACBITS) - spot->y), (ring->z << FRACBITS) - spot->z);
+	const fixed_t dist = P_AproxDistance3D((ring->x << FRACBITS) - spot->x, (ring->y << FRACBITS) - spot->y, (ring->z << FRACBITS) - spot->z);
 
 	if (dist > RING_DIST)
 		return true;

@@ -860,7 +860,7 @@ boolean P_LookForTarget(player_t *player)
 		if (node->z > player->mo->z + (player->mo->theight << FRACBITS))
 			continue;
 
-		fixed_t dist = P_AproxDistance(P_AproxDistance(node->x - player->mo->x, node->y - player->mo->y), node->z - player->mo->z);
+		fixed_t dist = P_AproxDistance3D(node->x - player->mo->x, node->y - player->mo->y, node->z - player->mo->z);
 
 		if (dist > targetMaxDist)
 			continue;
@@ -903,7 +903,7 @@ static void P_HomingAttack(mobj_t *source, mobj_t *dest)
 
 	source->angle = R_PointToAngle2(source->x, source->y, dest->x, dest->y);
 
-	fixed_t dist = P_AproxDistance(P_AproxDistance(dest->x - source->x, dest->y - source->y), dest->z - source->z);
+	fixed_t dist = P_AproxDistance3D(dest->x - source->x, dest->y - source->y, dest->z - source->z);
 
 	if (dist < 1) // Don't divide by zero
 		dist = 1;

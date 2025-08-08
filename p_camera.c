@@ -197,7 +197,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
    const mobjinfo_t *caminfo = &mobjinfo[MT_CAMERA];
 
 	mo = player->mo;
-   thiscam->distFromPlayer = P_AproxDistance(P_AproxDistance(thiscam->x - mo->x, thiscam->y - mo->y), thiscam->z - mo->z);
+   thiscam->distFromPlayer = P_AproxDistance3D(thiscam->x - mo->x, thiscam->y - mo->y, thiscam->z - mo->z);
 
    // If there is a boss, should focus on the boss
    if (camBossMobj)
