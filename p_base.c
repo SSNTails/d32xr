@@ -1022,6 +1022,7 @@ void B_JetFume(mobj_t *mobj)
 
 void B_AttractRing(mobj_t *mobj)
 {
+   B_StateCycle(mobj);
    B_Movement(mobj);
    
    if (mobj->target->health <= 0)
@@ -1036,8 +1037,6 @@ void B_AttractRing(mobj_t *mobj)
    }
    else
       P_Attract(mobj, mobj->target);
-
-   B_StateCycle(mobj);
 }
 
 void B_DrownNumbers(mobj_t *mobj)
