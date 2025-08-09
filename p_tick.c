@@ -256,6 +256,12 @@ void P_Weather()
 	}
 }
 
+void Mars_Sec_P_Tick()
+{
+	P_AnimateScenery((int8_t)accum_time);
+	P_UpdateSpecials((int8_t)accum_time);
+}
+
 int P_Ticker (void)
 {
 	int		ticstart;
@@ -319,10 +325,9 @@ int P_Ticker (void)
 	if (!(gametic & 31))
 		P_CheckSights();
 
-	P_AnimateScenery((int8_t)accum_time);
-	P_UpdateSpecials((int8_t)accum_time);
-
 	P_Weather();
+
+	Mars_R_Begin_P_Tick();
 
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{

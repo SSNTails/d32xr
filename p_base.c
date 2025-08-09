@@ -1022,7 +1022,16 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
 //
 void P_MobjThinker(mobj_t *mobj)
 {
-   if (!(mobj->flags & MF_STATIC))
+   if (mobj->flags & MF_STATIC)
+   {
+      switch(mobj->type)
+      {
+         case MT_SCORE:
+            mobj->z += mobjinfo[mobj->type].speed;
+               break;
+      }
+   }
+   else
    {
       // momentum movement
       if(mobj->momx || mobj->momy)
@@ -1041,16 +1050,7 @@ void P_MobjThinker(mobj_t *mobj)
 
       if (!P_MobjSpecificActions(mobj))
          return;
-   }
-   else
-   {
-      switch(mobj->type)
-      {
-         case MT_SCORE:
-            mobj->z += mobjinfo[mobj->type].speed;
-               break;
-      }
-   }
+   }   
 
    // cycle through states
    if (mobj->tics >= 0)

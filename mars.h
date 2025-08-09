@@ -44,7 +44,7 @@ enum
 	MARS_SECCMD_R_DRAW_FOFPLANES,
 	MARS_SECCMD_R_DRAW_SPRITES,
 
-	MARS_SECCMD_UNUSED,
+	MARS_SECCMD_P_TICK,
 
 	MARS_SECCMD_S_INIT_DMA,
 
@@ -127,6 +127,12 @@ static inline void Mars_R_BeginDrawSprites(int sprscreenhalf)
 
 static inline void Mars_R_EndDrawSprites(void)
 {
+}
+
+static inline void Mars_R_Begin_P_Tick()
+{
+	Mars_R_SecWait();
+	MARS_SYS_COMM4 = MARS_SECCMD_P_TICK;
 }
 
 static inline void Mars_InitSoundDMA(int initfull)
