@@ -950,20 +950,18 @@ void B_EggmobileTarget(mobj_t *mobj)
       mobj->reactiontime--;
       if (mobj->reactiontime == 0)
       {
-         if (mobj->type == MT_EGGMOBILE_TARGET)
+         for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
          {
-            for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
-            {
-               if (node->target == mobj)
-                  node->target = NULL;
-            }
+            if (node->target == mobj)
+               node->target = NULL;
          }
 
          mobj->latecall = LC_REMOVE_MOBJ;
+         return;
       }
    }
 
-   // No need to even state cycle
+   B_Default(mobj);
 }
 
 void B_GhostFade(mobj_t *mobj)

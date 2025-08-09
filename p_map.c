@@ -157,7 +157,7 @@ boolean PIT_RingMagnet(mobj_t *thing, mobj_t *spot)
 {
 	if (!(thing->type == MT_RING || thing->type == MT_FLINGRING))
 		return true;
-
+	
 	ringmobj_t *ring = (ringmobj_t*)thing;
 
 	const fixed_t dist = P_AproxDistance3D((ring->x << FRACBITS) - spot->x, (ring->y << FRACBITS) - spot->y, (ring->z << FRACBITS) - spot->z);
@@ -168,6 +168,7 @@ boolean PIT_RingMagnet(mobj_t *thing, mobj_t *spot)
 	// Replace object with an attraction ring
 	mobj_t *attractring = P_SpawnMobj(ring->x << FRACBITS, ring->y << FRACBITS, ring->z << FRACBITS, MT_ATTRACTRING);
 	attractring->target = spot;
+	thing->type = 0;
 	P_RemoveMobj(thing);
 	return true;
 }

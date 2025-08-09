@@ -4016,7 +4016,7 @@ B_Default, // thinker
 		sfx_None,       // activesound
 		MF_SPECIAL,     // flags
 		0,          // flags2
-		B_Default, // thinker
+		B_GhostFade, // thinker
 	},
 
 	{           // MT_AXIS
