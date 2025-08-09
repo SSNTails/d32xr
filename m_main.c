@@ -693,7 +693,7 @@ void M_Drawer (void)
 	{
 		VINT logoPos = 160 - (m_doom->width / 2);
 		DrawJagobj(m_doom, logoPos, 16);
-		y_offset = m_doom->height + 16 - STARTY;
+		y_offset = m_doom->height + 24 - STARTY;
 
 		DrawJagobj(m_hand[cursorframe % NUMHANDFRAMES], 160 + 3, 16 + 32);
 
