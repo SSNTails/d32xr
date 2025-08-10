@@ -380,6 +380,21 @@ int	P_FindSectorFromLineTagNum(uint8_t tag,int start)
 	return -1;
 }
 
+// Pass '-1' to this to start
+VINT P_FindNextLineWithTag(uint8_t tag, int *start)
+{
+	for (int i = *start + 2; i < numlinetags*2; i += 2)
+	{
+		if (linetags[i] == tag)
+		{
+			*start = i;
+			return linetags[i - 1];
+		}
+	}
+
+	return -1;
+}
+
 /*================================================================== */
 /* */
 /*	Find minimum light from an adjacent sector */
@@ -439,6 +454,108 @@ typedef struct
 	uint8_t flags;
 } crumble_t;
 
+static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
+{
+	uint8_t special = P_GetLineSpecial(line);
+//	uint8_t tag = P_GetLineTag(line);
+
+	switch (special)
+	{
+		case 220: // Move Floor According to Front Texture Offsets
+		{
+			side_t *side = &sides[line->sidenum[0]];
+			int16_t textureoffset = side->textureoffset & 0xfff;
+	    	textureoffset <<= 4; // sign extend
+    	  	textureoffset >>= 4; // sign extend
+			int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
+      		rowoffset >>= 4; // sign extend
+
+			if (ldflags[line-lines] & ML_NOCLIMB)
+			{
+				// Instant
+				int secnum = -1;
+				while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+				{
+					sector_t *sec = &sectors[secnum];
+					sec->floorheight += rowoffset << FRACBITS;
+					P_ChangeSector(sec, false);
+				}
+			}
+			else
+			{
+				// Initiate movement
+				int secnum = -1;
+				while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+				{
+					sector_t *sec = &sectors[secnum];
+					if (sec->specialdata)
+						continue;
+
+					floormove_t *floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
+					P_AddThinker (&floor->thinker);
+					sec->specialdata = floor;
+					floor->thinker.function = T_MoveFloor;
+					floor->type = lowerFloor;
+					floor->crush = false;
+					floor->dontChangeSector = false;
+
+					floor->direction = rowoffset > 0 ? 1 : -1;
+					floor->sector = sec;
+					floor->speed = textureoffset << (FRACBITS - 3); // each unit is 1/8th
+					floor->floordestheight = 
+						(sec->floorheight >> FRACBITS) + rowoffset;
+				}
+			}
+		}
+			break;
+	}
+}
+
+// Only players can trigger linedef executors... this is going to come back to bite me, isn't it?
+void P_LinedefExecute(player_t *player, sector_t *caller)
+{
+
+	if (player->playerstate != PST_LIVE)
+		return;
+
+	// Find linedef with this tag that is an executor linedef.
+	int liStart = -1;
+	VINT li;
+	while ((li = P_FindNextLineWithTag(caller->tag, &liStart)) != -1)
+	{
+		line_t *line = &lines[li];
+		if (!(ldflags[li] & ML_HAS_SPECIAL_OR_TAG))
+			continue;
+
+		uint8_t special = P_GetLineSpecial(line);
+
+		// Ten options for linedef execution. (Conversion: v2.2 special - 70)
+		if (special < 230
+			|| special > 239)
+			continue;
+
+//		CONS_Printf("P_LinedefExecute: l: %d tag %d\n", li, caller->tag);
+
+		if (special == 230 // Continuous
+//			|| special == 231 // Each Time
+			|| special == 232) // Once
+		{
+			// Traverse the linedefs, finding other linedefs that belong to the same sector
+			sector_t *ctrlSector = LD_FRONTSECTOR(line);
+			line_t *ld;
+			int16_t start = -1;
+			while ((start = P_FindNextSectorLine(ctrlSector, start)) >= 0)
+			{
+				line_t *ld = &lines[start];
+				P_ProcessLineSpecial(ld, player->mo, caller);
+			}
+		}
+
+		if (special == 232) // Only execute once
+			ldflags[li] &= ~ML_HAS_SPECIAL_OR_TAG;
+	}
+}
+
 /*
 ===============================================================================
 =
@@ -451,7 +568,7 @@ typedef struct
 
 void P_PlayerInSpecialSector (player_t *player)
 {
-	const sector_t	*sector = SS_SECTOR(player->mo->isubsector);
+	sector_t	*sector = SS_SECTOR(player->mo->isubsector);
 		
 	switch (sector->special)
 	{
@@ -463,6 +580,14 @@ void P_PlayerInSpecialSector (player_t *player)
 		case 2:
 			if (player->mo->z <= sector->floorheight && !sector->specialdata)
 				P_DoPlayerExit(player);
+			break;
+		case 64: // Linedef Executor: entered a sector
+			P_LinedefExecute(player, sector);
+			break;
+		case 80: // Linedef Executor: on floor touch
+			if (player->mo->z <= sector->floorheight
+				|| player->mo->z + (player->mo->theight << FRACBITS) >= sector->ceilingheight)
+				P_LinedefExecute(player, sector);
 			break;
 			
 		default:

@@ -190,7 +190,7 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 #define ELEVATORSPEED (FRACUNIT / 4)
 void T_MoveFloor(floormove_t *floor)
 {
-	result_e	res;
+	result_e	res = ok;
 
 	if (floor->crush)
 	{
@@ -233,6 +233,11 @@ void T_MoveFloor(floormove_t *floor)
 	{
 		res = T_MovePlane(floor->sector,floor->speed,
 				floor->floordestheight << FRACBITS,floor->crush,0,floor->direction);
+	}
+	else if (floor->type == lowerFloor)
+	{
+		res = T_MovePlane(floor->sector,floor->speed,
+				floor->floordestheight << FRACBITS,true,0,floor->direction);
 	}
 
 	if (res == pastdest)
