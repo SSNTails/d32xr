@@ -36,22 +36,19 @@ drawcol_t drawspritecol;
 #endif
 
 // Classic Sonic fade
-const short md_palette_fade_table[32] =
+const short md_palette_fade_table[22] =
 {
 	// Black
 	0x000,
 
 	// Fade in blue
-	0x200, 0x400, 0x400, 0x600, 0x800,
-	0x800, 0xA00, 0xC00, 0xC00, 0xE00,
+	0x200, 0x400, 0x600, 0x800, 0xA00, 0xC00, 0xE00,
 
 	// Fade in green with blue already at max brightness
-	0xE20, 0xE20, 0xE40, 0xE60, 0xE60,
-	0xE80, 0xEA0, 0xEA0, 0xEC0, 0xEE0, 0xEE0,
+	0xE20, 0xE40, 0xE60, 0xE80, 0xEA0, 0xEC0, 0xEE0,
 
 	// Fade in red with blue and green already at max brightness
-	0xEE2, 0xEE4, 0xEE4, 0xEE6, 0xEE8,
-	0xEE8, 0xEEA, 0xEEC, 0xEEC, 0xEEE
+	0xEE2, 0xEE4, 0xEE6, 0xEE8, 0xEEA, 0xEEC, 0xEEE
 };
 
 /*===================================== */
@@ -1100,6 +1097,11 @@ void R_FadePalette(const uint8_t *in, int idx, uint8_t *out)
 	I_SetPalette(out);
 }
 
+void R_FadeMDPaletteFromBlack(int i)
+{
+	Mars_FadeMDPaletteFromBlack(md_palette_fade_table[i]);
+}
+
 /*============================================================================= */
 
 #ifndef MARS
@@ -1236,30 +1238,46 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 				// Set the fade degree to black.
 				vd.fixedcolormap = HWLIGHT(0);	// 32X VDP
 				#ifdef MDSKY
-				if (leveltime == 0 && sky_md_layer) {
-					Mars_FadeMDPaletteFromBlack(0);	// MD VDP
+				if (leveltime == 0) {
+					if (sky_md_layer) {
+						Mars_FadeMDPaletteFromBlack(0);	// MD VDP
+					}
+					if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+						copper_table_brightness = -31;
+						effects_flags |= EFFECTS_COPPER_REFRESH;
+					}
 				}
 				#endif
 			}
 			else {
 				// Set the fade degree based on leveltime.
-				vd.fixedcolormap = HWLIGHT((leveltime-30)*8);	// 32X VDP
+				int interval = leveltime-30;
+				vd.fixedcolormap = HWLIGHT(interval << 3);	// 32X VDP
 				#ifdef MDSKY
 				if (sky_md_layer) {
-					Mars_FadeMDPaletteFromBlack(md_palette_fade_table[leveltime-30]);	// MD VDP
+					Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
 				}
 				#endif
+				if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+					copper_table_brightness = -31 + interval;
+					effects_flags |= EFFECTS_COPPER_REFRESH;
+				}
 			}
 		}
 		else if (fadetime > 0)
 		{
 			// Set the fade degree based on leveltime.
 //			vd.fixedcolormap = HWLIGHT((TICRATE-fadetime)*8);	// 32X VDP
+			int interval = TICRATE-(fadetime*3);
 			#ifdef MDSKY
 			if (sky_md_layer) {
-				Mars_FadeMDPaletteFromBlack(md_palette_fade_table[TICRATE-(fadetime*3)]);	// MD VDP
+				Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
 			}
 			#endif
+			if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+				copper_table_brightness = -31 + interval;
+				effects_flags |= EFFECTS_COPPER_REFRESH;
+			}
 		}
 	}
 
@@ -1353,7 +1371,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	else if (gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END
 		&& gametic < 15)
 	{
-		palette = 5 - (gametic / 3);
+		palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4 - (gametic / 3);
 		if (palette < 0)
 			palette = 0;
 
@@ -1362,15 +1380,23 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 			Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
 		}
 		#endif
+		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+			copper_table_brightness = 31 - (gametic << 1);
+			effects_flags |= EFFECTS_COPPER_REFRESH;
+		}
 	}
 	else if (leveltime < 15 && gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
-		palette = 5 - (leveltime / 3);
+		palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4 - (leveltime / 3);
 
 		#ifdef MDSKY
 		if (sky_md_layer) {
 			Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
 		}
 		#endif
+		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+			copper_table_brightness = 31 - (leveltime << 1);
+			effects_flags |= EFFECTS_COPPER_REFRESH;
+		}
 	}
 	else if (player->whiteFlash)
 		palette = player->whiteFlash + 1;
@@ -1382,8 +1408,13 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 
 	if (gametic <= 1 && !IsTitleScreen())
 	{
-		curpalette = palette = 10;
+		curpalette = palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4;
+		Mars_FadeMDPaletteFromBlack(0);
 		I_SetPalette(dc_playpals);
+		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+			copper_table_brightness = -31;
+			effects_flags |= EFFECTS_COPPER_REFRESH;
+		}
 	}
 	
 	if (palette != curpalette) {

@@ -1719,7 +1719,7 @@ load_md_palettes:
         move.l  (sp)+,a1
         move.l  (sp)+,a0
 
-        move.w  #0,0xA15120         /* done */
+        |move.w  #0,0xA15120         /* done */
 
         bra     main_loop
 
@@ -2356,8 +2356,6 @@ scroll_md_sky:
 
 
 fade_md_palette:
-        |move.w  #0x2700,sr          /* disable ints */
-
         move.l  a0,-(sp)
         move.l  a1,-(sp)
         move.l  a3,-(sp)
@@ -2441,8 +2439,6 @@ update_color:
         move.l  (sp)+,a0
 
         move.w  #0,0xA15120         /* done */
-
-        move.w  #0x2000,sr          /* enable ints */
 
         bra     main_loop
 

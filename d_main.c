@@ -422,6 +422,9 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 			int timeleft = (gameinfo.titleTime >> 1) - leveltime;
 			if (timeleft <= 0) {
 				R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+				Mars_FadeMDPaletteFromBlack(0);
+				copper_table_brightness = -31;
+				effects_flags |= EFFECTS_COPPER_REFRESH;
 				exit = ga_titleexpired;
 				break;
 			}
@@ -429,6 +432,9 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 				int palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + (5 - timeleft);
 				//int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + ((5 - timeleft) << 2);
 				R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
+				R_FadeMDPaletteFromBlack(timeleft << 2);
+				copper_table_brightness = -31 + (timeleft * 6);
+				effects_flags |= EFFECTS_COPPER_REFRESH;
 			}
 			// Rotate on the title screen.
 			ticbuttons[consoleplayer] = buttons = 0;
@@ -553,10 +559,16 @@ int TIC_LevelSelect (void)
 		if (fadetime < 21) {
 			int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20 - fadetime;
 			R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
+			R_FadeMDPaletteFromBlack(fadetime);
+			copper_table_brightness = -31 + fadetime + (fadetime >> 1);
+			effects_flags |= EFFECTS_COPPER_REFRESH;
 			fadetime++;
 		}
 		else {
 			I_SetPalette(dc_playpals);
+			Mars_FadeMDPaletteFromBlack(0xEEE);
+			copper_table_brightness = 0;
+			effects_flags |= EFFECTS_COPPER_REFRESH;
 			SetTransition(TransitionType_None);
 		}
 	}
@@ -564,10 +576,16 @@ int TIC_LevelSelect (void)
 		if (fadetime < 21) {
 			int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + fadetime;
 			R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
+			R_FadeMDPaletteFromBlack(21 - fadetime);
+			copper_table_brightness = 0 - fadetime - (fadetime >> 1);
+			effects_flags |= EFFECTS_COPPER_REFRESH;
 			fadetime++;
 		}
 		else {
 			R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+			Mars_FadeMDPaletteFromBlack(0);
+			copper_table_brightness = -31;
+			effects_flags |= EFFECTS_COPPER_REFRESH;
 			exit = ga_startnew;
 		}
 	}
@@ -620,6 +638,8 @@ int TIC_LevelSelect (void)
 			{
 				R_SetupMDPalettes("MENU", 0);
 			}
+
+			Mars_FadeMDPaletteFromBlack(0xEEE);
 
 			copper_table_selection &= 0x10;
 
@@ -694,6 +714,9 @@ void STOP_LevelSelect (void)
 {
 	// Set to totally black
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+	Mars_FadeMDPaletteFromBlack(0);
+	copper_table_brightness = -31;
+	effects_flags |= EFFECTS_COPPER_REFRESH;
 
 	Z_Free(lvlsel_pic);
 
@@ -731,9 +754,7 @@ void ClearCopper()
 
 void DRAW_LevelSelect (void)
 {
-	Mars_FadeMDPaletteFromBlack(0xEEE);
-
-	Mars_SetScrollPositions(0, 0, 0, screenCount >> 1, 0, 0, 0, 0);
+	Mars_SetScrollPositions(0, screenCount >> 1, 0, 0);
 
 	int arrow_offset = ((screenCount>>2) & 7) * (((screenCount>>2) & 0x8) == 0);
 	if (arrow_offset > 3) {

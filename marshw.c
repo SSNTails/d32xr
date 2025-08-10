@@ -667,6 +667,7 @@ void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size)
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x1B01+i;
 	}
+	//while (MARS_SYS_COMM0);
 }
 
 #ifdef MDSKY
@@ -699,8 +700,9 @@ void Mars_ScrollMDSky(short scroll_x, short scroll_y_base, short scroll_y_offset
 }
 
 void Mars_SetScrollPositions(
-		short scroll_b_top_x, short scroll_b_top_y, short scroll_b_bottom_x, short scroll_b_bottom_y,
-		short scroll_a_top_x, short scroll_a_top_y, short scroll_a_bottom_x, short scroll_a_bottom_y)
+		short scroll_b_top_y, short scroll_b_bottom_y, short scroll_a_top_y, short scroll_a_bottom_y)
+//		short scroll_b_top_x, short scroll_b_top_y, short scroll_b_bottom_x, short scroll_b_bottom_y,
+//		short scroll_a_top_x, short scroll_a_top_y, short scroll_a_bottom_x, short scroll_a_bottom_y)
 {
 	while (MARS_SYS_COMM0);
 	MARS_SYS_COMM2 = scroll_b_top_y;
@@ -837,40 +839,75 @@ void pri_vbi_handler(void)
 	{
 		unsigned short *buffer = copper_buffer;
 
-		if (copper_table_brightness != 0) {
+		if (copper_table_brightness < 0) {
+			// Copy a darker version of the selected source table into the copper buffer
 			unsigned short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
 
 			for (int y=0; y < 224; y++) {
 				int prev_rgb = *table++;
 				int buffer_rgb;
+				int next_color;
+				int prev_color;
+				int degree = -copper_table_brightness;
+
+				// Red cross-fade
+				prev_color = prev_rgb & 0x1F;
+				buffer_rgb = (prev_color - ((prev_color * degree) / 31));
+				if (buffer_rgb < 0) buffer_rgb = 0;
+				if (buffer_rgb > 31) buffer_rgb = 31;
+
+				// Green cross-fade
+				prev_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				next_color = (prev_color - ((prev_color * degree) / 31));
+				if (next_color < 0) next_color = 0;
+				if (next_color > 31) next_color = 31;
+				buffer_rgb |= (next_color << 5);
+
+				// Blue cross-fade
+				prev_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				next_color = (prev_color - ((prev_color * degree) / 31));
+				if (next_color < 0) next_color = 0;
+				if (next_color > 31) next_color = 31;
+				buffer_rgb |= (next_color << 10);
+
+				// Copy the new color to the copper buffer.
+				*buffer++ = buffer_rgb;
+			}
+		}
+		else if (copper_table_brightness > 0) {
+			// Copy a brighter version of the selected source table into the copper buffer
+			unsigned short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+
+			for (int y=0; y < 224; y++) {
+				int prev_rgb = *table++;
+				int buffer_rgb;
+				int next_color;
 				int prev_color;
 				int degree = copper_table_brightness;
 
 				// Red cross-fade
 				prev_color = prev_rgb & 0x1F;
-				if (copper_table_brightness >= prev_color) {
-					buffer_rgb = (prev_color + (((copper_table_brightness - prev_color) * degree) >> 5));
-				} else {
-					buffer_rgb = (prev_color - (((prev_color - copper_table_brightness) * degree) >> 5));
-				}
+				buffer_rgb = (prev_color + (((31 - prev_color) * degree) / 31));
+				if (buffer_rgb < 0) buffer_rgb = 0;
+				if (buffer_rgb > 31) buffer_rgb = 31;
 
 				// Green cross-fade
 				prev_rgb >>= 5;
 				prev_color = prev_rgb & 0x1F;
-				if (copper_table_brightness >= prev_color) {
-					buffer_rgb |= ((prev_color + (((copper_table_brightness - prev_color) * degree) >> 5)) << 5);
-				} else {
-					buffer_rgb |= ((prev_color - (((prev_color - copper_table_brightness) * degree) >> 5)) << 5);
-				}
+				next_color = (prev_color + (((31 - prev_color) * degree) / 31));
+				if (next_color < 0) next_color = 0;
+				if (next_color > 31) next_color = 31;
+				buffer_rgb |= (next_color << 5);
 
 				// Blue cross-fade
 				prev_rgb >>= 5;
 				prev_color = prev_rgb & 0x1F;
-				if (copper_table_brightness >= prev_color) {
-					buffer_rgb |= ((prev_color + (((copper_table_brightness - prev_color) * degree) >> 5)) << 10);
-				} else {
-					buffer_rgb |= ((prev_color - (((prev_color - copper_table_brightness) * degree) >> 5)) << 10);
-				}
+				next_color = (prev_color + (((31 - prev_color) * degree) / 31));
+				if (next_color < 0) next_color = 0;
+				if (next_color > 31) next_color = 31;
+				buffer_rgb |= (next_color << 10);
 
 				// Copy the new color to the copper buffer.
 				*buffer++ = buffer_rgb;

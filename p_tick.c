@@ -650,6 +650,10 @@ gameaction_t PlayDemo()
 	if (rec_end_time - rec_current_time <= 30) {
 		int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + (((30 - (rec_end_time - rec_current_time)) * 2) / 3);
 		R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
+		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+			copper_table_brightness = -31 + (rec_end_time - rec_current_time);
+			effects_flags |= EFFECTS_COPPER_REFRESH;
+		}
 		if (exit == ga_nothing) {
 			exit = ga_demoending;
 		}
