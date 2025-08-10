@@ -1409,6 +1409,12 @@ void P_MovePlayer(player_t *player)
 					S_StartSound(player->mo, sfx_s3k_43);
 				}
 			}
+
+			if (player->homingTimer > 0)
+			{
+				player->homingTimer = 0;
+				S_StartSound(player->mo, sfx_ngskid);
+			}
 		}
 	}
 	else
