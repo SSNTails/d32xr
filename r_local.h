@@ -509,6 +509,8 @@ extern void R_FadePalette(const uint8_t *in, int idx, uint8_t *out);
 #define PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK	0x06
 #define PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK			0x81
 
+void R_FadeMDPaletteFromBlack(int i);
+
 #ifdef MARS
 #define R_CheckPixels(lumpnum) (void *)(W_POINTLUMPNUM(lumpnum))
 
