@@ -685,6 +685,20 @@ x |= (((uint32_t)(y)) & 0xffff); \
 
 typedef struct
 {
+//	visplane_t *plane;
+	fixed_t height;
+	fixed_t f_pos; // F for Front sector
+	fixed_t b_pos; // B for Back sector
+	fixed_t f_frac, f_step;
+	fixed_t b_frac, b_step;
+	unsigned short f_clip[SCREENWIDTH];
+	unsigned short c_clip[SCREENWIDTH];
+	int16_t ctrlSector;
+	int16_t mark;
+} planemgr_t;
+
+typedef struct
+{
 	fixed_t 	floorheight, floornewheight, ceilnewheight;
 	fixed_t    fofInfo;
 } viswallextra_t;

@@ -336,6 +336,8 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
          {
             const sector_t *fofsec = &sectors[front_sector->fofsec];
             segl->fofSector = front_sector->fofsec;
+            *fofInfo = front_sector->fofsec;
+            SETUPPER16(*fofInfo, front_sector->fofsec);
 
             segl->fof_picnum = 0xff;
             if (fofsec->ceilingheight < vd.viewz)
@@ -343,8 +345,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                // Top of FOF is visible
                actionbits |= AC_FOFCEILING;
                segl->fof_picnum = fofsec->ceilingpic;
-               *fofInfo = fofsec->ceilingheight;
-                            
+               
                // fof_picnum is just a junk value if AC_FOFCEILING or AC_FOFFLOOR isn't set.
             }
             else if (fofsec->floorheight > vd.viewz)
@@ -352,7 +353,6 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                // Bottom of FOF is visible
                actionbits |= AC_FOFFLOOR;
                segl->fof_picnum = fofsec->floorpic;
-               *fofInfo = fofsec->floorheight;
             }
          }
 #endif
@@ -398,6 +398,10 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
          {
             const sector_t *fofsec = &sectors[back_sector->fofsec];
             segl->fofSector = back_sector->fofsec;
+            *fofInfo = front_sector->fofsec;
+            SETUPPER16(*fofInfo, back_sector->fofsec);
+
+            actionbits |= AC_FOFSIDE; // this line has a FOF on one or both sides
 
             if (front_sector->fofsec < 0 && !(ldflags[fofsec->specline] & ML_BLOCKMONSTERS))
             {
@@ -413,8 +417,6 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                   fof_texturemid = 0;
                   segl->fof_texturenum = (uint8_t)-1;
                }
-
-               actionbits |= AC_FOFSIDE; // set bottom and top masks
             }
 //            segl->fof_bottomheight = fofsec->floorheight - vd.viewz;
 //            segl->fof_topheight = fofsec->ceilingheight - vd.viewz;
@@ -431,7 +433,6 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                // Top of FOF is visible
 //               actionbits |= AC_FOFCEILING;
                segl->fof_picnum = fofsec->ceilingpic;
-               *fofInfo = fofsec->ceilingheight - vd.viewz;
                                   
                // fof_picnum is just a junk value if AC_FOFCEILING or AC_FOFFLOOR isn't set.
             }
@@ -440,7 +441,6 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                // Bottom of FOF is visible
 //               actionbits |= AC_FOFFLOOR;
                segl->fof_picnum = fofsec->floorpic;
-               *fofInfo = fofsec->floorheight - vd.viewz;
             }
          }
          if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
@@ -453,7 +453,6 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                // Rendering the ceiling
                actionbits |= AC_FOFCEILING;
                segl->fof_picnum = fofsec->ceilingpic;
-               *fofInfo = fofsec->ceilingheight - vd.viewz;
 
                // fof_picnum is just a junk value if AC_FOFCEILING or AC_FOFFLOOR isn't set.
             }
@@ -461,13 +460,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             {
                actionbits |= AC_FOFFLOOR;
                segl->fof_picnum = fofsec->floorpic;
-               *fofInfo = fofsec->floorheight - vd.viewz;
             }
-/*
-            if (b_floorheight > fofsec->ceilingheight - vd.viewz)
-               *fofInfo = b_floorheight;
-            if (b_ceilingheight < fofsec->floorheight - vd.viewz)
-               *fofInfo = b_ceilingheight;*/
          }
 #endif
 

@@ -568,7 +568,7 @@ static void R_PreDrawPlanes(void)
         {
             vd.gsortedvisplanes = (int *)vd.viswallextras;
 
-            Mars_R_SplitPlanes();
+//            Mars_R_SplitPlanes();
 
             Mars_R_SortPlanes();
         }
