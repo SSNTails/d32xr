@@ -1726,13 +1726,14 @@ load_md_palettes:
 
 
 load_md_sky:
-        move.l  #224,test_end      /* TESTING */
+        |move.l  #224,test_end      /* TESTING */
         move.w  #0x2700,sr          /* disable ints */
 
         move.l  a0,-(sp)
         move.l  a1,-(sp)
         move.l  a2,-(sp)
         move.l  a3,-(sp)
+        move.l  a4,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
         move.l  d2,-(sp)
@@ -1751,7 +1752,7 @@ load_md_sky:
 
 
         /* Load metadata */
-        bset.l  #0,(test_values+20)      /* TESTING */
+        |bset.l  #0,(test_values+20)      /* TESTING */
         bsr     get_lump_source_and_size
         lea     0xC00004,a0
         move.l  lump_ptr,d0
@@ -1761,10 +1762,33 @@ load_md_sky:
 
         move.w  #0x8C00, d0
         or.b    (a2)+,d0
-        cmp.b   #2,legacy_emulator      /* Check for Gens */
+        cmpi.b  #2,legacy_emulator      /* Check for Gens */
         bne.s   0f
         or.b    #0x0081,d0              /* Force Gens to use H40 */
 0:
+        cmpi.b  #0,legacy_emulator      /* Check for a legacy emulator */
+        bne.s   4f
+        move.w  #0x8F02,(a0)
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        moveq   #0,d2
+        btst.b  #0,d0                   /* Which screen resolution will be used? */
+        bne.s   2f
+
+        move.l  #0x11111111,d2          /* Left-border sprite pixels */
+        move.l  #0x48000000,(a0)        /* Write VRAM address 0x0800 */
+        lea     h32_left_edge_sprites,a3
+        move.w  #13,d1
+1:
+        move.l  (a3)+,(a1)              /* Copy eight pixels from the source */
+        dbra    d1,1b
+2:
+        move.l  #0x4A000000,(a0)        /* Write VRAM address 0x0A00 */
+        move.w  #31,d1
+3:
+        move.l  d2,(a1)                 /* Create left-border tiles, or erase them */
+        dbra    d1,3b
+4:
         move.w  d0,(a0) /* reg 12 */
 
         move.w  #0x9000, d0
@@ -1812,8 +1836,8 @@ load_md_sky:
 
 
         /* Load pattern name table B1 */
-        move.l  #0,(test_values+0)
-        bset.l  #0,(test_values+0)      /* TESTING */
+        |move.l  #0,(test_values+0)
+        |bset.l  #0,(test_values+0)      /* TESTING */
         bsr     decompress_lump
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -1824,7 +1848,7 @@ load_md_sky:
         bgt.s   1f
 
         | Scroll B is either 256 or 512 pixels wide
-        bset.l  #1,(test_values+0)      /* TESTING */
+        |bset.l  #1,(test_values+0)      /* TESTING */
         move.l  #0x60000003,(a0)        /* Set destination offset to pattern name table B1 at position 0x0 */
         move.b  #0x30,scroll_a_address_register_values
         move.l  #0x07070707,scroll_b_address_register_values
@@ -1840,7 +1864,7 @@ load_md_sky:
         bra.w   9f
 1:
         | Scroll B is 1024 pixels wide
-        bset.l  #2,(test_values+0)      /* TESTING */
+        |bset.l  #2,(test_values+0)      /* TESTING */
         move.l  #0x40000002,(a0)
         move.l  #0x18181818,scroll_a_address_register_values
         move.l  #0x07060504,scroll_b_address_register_values
@@ -1849,14 +1873,13 @@ load_md_sky:
         move.l  #0x40000003,write_scroll_b_table_3
         move.l  #0x60000003,write_scroll_b_table_4
 
-        move.l  a4,-(sp)
         move.l  a5,-(sp)
         lea     decomp_buffer+0x1000,a3
         lea     decomp_buffer+0x2000,a4
         lea     decomp_buffer+0x3000,a5
 
         | Table B1 (1/2 panel configuration)
-        bset.l  #3,(test_values+0)      /* TESTING */
+        |bset.l  #3,(test_values+0)      /* TESTING */
         move.w  #63,d0
 1:
         move.w  #31,d1
@@ -1873,7 +1896,7 @@ load_md_sky:
         suba    #0x1000,a3
 
         | Table B2 (3/2 panel configuration)
-        bset.l  #4,(test_values+0)      /* TESTING */
+        |bset.l  #4,(test_values+0)      /* TESTING */
         move.w  #63,d0
 1:
         move.w  #31,d1
@@ -1890,7 +1913,7 @@ load_md_sky:
         suba    #0x1000,a4
 
         | Table B3 (3/4 panel configuration)
-        bset.l  #5,(test_values+0)      /* TESTING */
+        |bset.l  #5,(test_values+0)      /* TESTING */
         move.w  #63,d0
 1:
         move.w  #31,d1
@@ -1907,7 +1930,7 @@ load_md_sky:
         suba    #0x1000,a5
 
         | Table B4 (1/4 panel configuration)
-        bset.l  #6,(test_values+0)      /* TESTING */
+        |bset.l  #6,(test_values+0)      /* TESTING */
         move.w  #63,d0
 1:
         move.w  #31,d1
@@ -1920,14 +1943,13 @@ load_md_sky:
         dbra    d2,0b
         dbra    d0,1b
 
-        move.l  (sp)+,a4
         move.l  (sp)+,a5
 9:
 
 
         /* Load pattern name table A1 */
-        move.l  #0,(test_values+4)
-        bset.l  #0,(test_values+4)      /* TESTING */
+        |move.l  #0,(test_values+4)
+        |bset.l  #0,(test_values+4)      /* TESTING */
         bsr     decompress_lump
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -1941,7 +1963,7 @@ load_md_sky:
 
         | Scroll A is either 256 or 512 pixels wide
         | Scroll B is either 256 or 512 pixels wide
-        bset.l  #1,(test_values+4)      /* TESTING */
+        |bset.l  #1,(test_values+4)      /* TESTING */
         move.l  #0x40000003,(a0)        /* Set destination offset to pattern name table A1 at position 0x0 */
         move.l  #0x30303030,scroll_a_address_register_values
         move.l  #0x40000003,write_scroll_a_table_1
@@ -1952,7 +1974,7 @@ load_md_sky:
 0:
         | Scroll A is either 256 or 512 pixels wide
         | Scroll B is 1024 pixels wide
-        bset.l  #2,(test_values+4)      /* TESTING */
+        |bset.l  #2,(test_values+4)      /* TESTING */
         move.l  #0x60000001,(a0)
         move.l  #0x18181818,scroll_a_address_register_values
         move.l  #0x60000001,write_scroll_a_table_1
@@ -1962,7 +1984,7 @@ load_md_sky:
         bra.w   2f
 1:
         | Scroll A is 1024 pixels wide
-        bset.l  #3,(test_values+4)      /* TESTING */
+        |bset.l  #3,(test_values+4)      /* TESTING */
         move.l  #0x60000001,(a0)
         move.l  #0x30282018,scroll_a_address_register_values
         move.l  #0x60000001,write_scroll_a_table_1
@@ -1970,14 +1992,13 @@ load_md_sky:
         move.l  #0x60000002,write_scroll_a_table_3
         move.l  #0x40000003,write_scroll_a_table_4
 
-        move.l  a4,-(sp)
         move.l  a5,-(sp)
         lea     decomp_buffer+0x1000,a3
         lea     decomp_buffer+0x2000,a4
         lea     decomp_buffer+0x3000,a5
 
         | Table A1 (1/2 panel configuration)
-        bset.l  #4,(test_values+4)      /* TESTING */
+        |bset.l  #4,(test_values+4)      /* TESTING */
         move.w  #63,d0
 1:
         move.w  #31,d1
@@ -1994,7 +2015,7 @@ load_md_sky:
         suba    #0x1000,a3
 
         | Table A2 (3/2 panel configuration)
-        bset.l  #5,(test_values+4)      /* TESTING */
+        |bset.l  #5,(test_values+4)      /* TESTING */
         move.w  #63,d0
 1:
         move.w  #31,d1
@@ -2011,7 +2032,7 @@ load_md_sky:
         suba    #0x1000,a4
 
         | Table A3 (3/4 panel configuration)
-        bset.l  #6,(test_values+4)      /* TESTING */
+        |bset.l  #6,(test_values+4)      /* TESTING */
         move.w  #63,d0
 1:
         move.w  #31,d1
@@ -2028,7 +2049,7 @@ load_md_sky:
         suba    #0x1000,a5
 
         | Table A4 (1/4 panel configuration)
-        bset.l  #7,(test_values+4)      /* TESTING */
+        |bset.l  #7,(test_values+4)      /* TESTING */
         move.w  #63,d0
 1:
         move.w  #31,d1
@@ -2044,7 +2065,6 @@ load_md_sky:
         suba    #0x1000,a2
         suba    #0x1000,a5
 
-        move.l  (sp)+,a4
         move.l  (sp)+,a5
         bra.s   9f
 2:
@@ -2124,7 +2144,7 @@ load_md_sky:
 
 
         /* Load palettes */
-        bset.l  #0,(test_values+8)      /* TESTING */
+        |bset.l  #0,(test_values+8)      /* TESTING */
         bsr     get_lump_source_and_size
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -2135,17 +2155,19 @@ load_md_sky:
         addi.l  #0x880000,d0
         move.l  d0,a2
         lea     base_palette_1,a3
-        move.l  lump_size,d1
-        lsr.l   #1,d1
-        sub.l   #1,d1
+        move.w  #47,d1
+        move.w  (a2),d0
 2:
         move.w  (a2)+,(a3)+             /* Save color to DRAM */
         move.w  #0,(a1)                 /* Set color to black in CRAM */
         |add.l   #0x40000,a1            /* Advance the destination cursor */
         dbra    d1,2b
 
+        move.w  d0,(a3)+                /* Set color 48 to match color 0 */
+        move.w  d0,(a3)+                /* Set color 49 to match color 0 */
+
         /* Load patterns */
-        bset.l  #0,(test_values+12)      /* TESTING */
+        |bset.l  #0,(test_values+12)      /* TESTING */
         bsr     decompress_lump
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -2162,6 +2184,7 @@ load_md_sky:
         move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
+        move.l  (sp)+,a4
         move.l  (sp)+,a3
         move.l  (sp)+,a2
         move.l  (sp)+,a1
@@ -3581,12 +3604,21 @@ write_horizontal_scroll_table:
 write_sprite_attribute_table:
         dc.l    0x48000000      /* Default VRAM write to address 0x0800 */
 
-test_start:
-        dc.l    0x08257368
-test_values:
-        .space  128
-test_end:
-        dc.l    0x08257368
+h32_left_edge_sprites:
+        dc.w    0x0080, 0x0301, 0xE050, 0x007B
+        dc.w    0x00A0, 0x0302, 0xE050, 0x007B
+        dc.w    0x00C0, 0x0303, 0xE050, 0x007B
+        dc.w    0x00E0, 0x0304, 0xE050, 0x007B
+        dc.w    0x0100, 0x0305, 0xE050, 0x007B
+        dc.w    0x0120, 0x0306, 0xE050, 0x007B
+        dc.w    0x0140, 0x0300, 0xE050, 0x007B
+
+|test_start:
+|        dc.l    0x08257368
+|test_values:
+|        .space  128
+|test_end:
+|        dc.l    0x08257368
 
 
 base_palette_1:
