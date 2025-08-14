@@ -399,7 +399,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             const sector_t *fofsec = &sectors[back_sector->fofsec];
             segl->fofSector = back_sector->fofsec;
 
-            if (front_sector->fofsec < 0 && !(ldflags[fofsec->specline] & ML_BLOCKMONSTERS))
+            if (front_sector->fofsec < 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS) && !(back_sector->flags & SF_FOF_SWAPHEIGHTS))
             {
                const line_t *fofline = &lines[fofsec->specline];
                fof_texturemid = fofsec->ceilingheight - vd.viewz;
