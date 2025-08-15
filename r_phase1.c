@@ -340,12 +340,12 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             if (frontFOF->ceilingheight < vd.viewz)
             {
                // Top of FOF is visible
-               actionbits |= AC_FOFCEILING;
+               actionbits |= AC_FOFTOP;
             }
             else if (frontFOF->floorheight > vd.viewz)
             {
                // Bottom of FOF is visible
-               actionbits |= AC_FOFFLOOR;
+               actionbits |= AC_FOFBOTTOM;
             }
          }
 #endif
@@ -415,18 +415,18 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                }
             }
          }
-         if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
+         else if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
          {
             const sector_t *frontFOF = &sectors[front_sector->fofsec];
             *fofInfo = front_sector->fofsec;
             if (frontFOF->ceilingheight < vd.viewz)
             {
                // Rendering the ceiling
-               actionbits |= AC_FOFCEILING;
+               actionbits |= AC_FOFTOP;
             }
             else if (frontFOF->floorheight > vd.viewz)
             {
-               actionbits |= AC_FOFFLOOR;
+               actionbits |= AC_FOFBOTTOM;
             }
          }
 #endif

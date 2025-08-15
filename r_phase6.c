@@ -699,7 +699,7 @@ void Mars_Sec_R_SegCommands(void)
             texture_t *tex = &textures[segl->fof_texturenum];
             Mars_ClearCacheLines(tex->data, (sizeof(tex->data)+31)/16);
         }
-        if (segl->actionbits & (AC_FOFFLOOR|AC_FOFCEILING))
+        if (segl->actionbits & (AC_FOFBOTTOM|AC_FOFTOP))
         {
             flattex_t *flat = &flatpixels[segl->fof_picnum];
             Mars_ClearCacheLines(flat->data, (sizeof(flat->data)+31)/16);

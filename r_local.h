@@ -587,8 +587,8 @@ void R_PostTexCacheFrame(r_texcache_t* c);
 #define	AC_MIDTEXTURE		2048
 #define	AC_ADDFLOORSKY		4096
 #define AC_FOFSIDE          8192
-#define AC_FOFFLOOR         16384
-#define AC_FOFCEILING       32768
+#define AC_FOFBOTTOM        16384
+#define AC_FOFTOP           32768
 
 typedef struct
 {

@@ -542,7 +542,6 @@ void P_LinedefExecute(player_t *player, sector_t *caller)
 		{
 			// Traverse the linedefs, finding other linedefs that belong to the same sector
 			sector_t *ctrlSector = LD_FRONTSECTOR(line);
-			line_t *ld;
 			int16_t start = -1;
 			while ((start = P_FindNextSectorLine(ctrlSector, start)) >= 0)
 			{

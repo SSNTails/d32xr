@@ -1611,7 +1611,9 @@ visplane_t* R_FindPlaneFOF(fixed_t height,
 			&& flatandlight == check->flatandlight
 			&& check->offs == offs)
 		{
-			if (/*(check->flags & VPFLAGS_DIDSEG) || */MARKEDOPEN(check->open[start]))
+			// NOTE: Not checking MARKEDOPEN here probably causes some problems.
+			// We just don't know what yet.
+//			if (MARKEDOPEN(check->open[start]))
 			{
 				// found a plane, so adjust bounds and return it
 				if (start < check->minx)
