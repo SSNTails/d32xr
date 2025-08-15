@@ -1760,7 +1760,7 @@ load_md_sky:
         addi.l  #0x880002,d0    /* Plus 2 to skip the 32X thru color and dummy bytes */
         move.l  d0,a2
 
-        move.w  #0x8C00, d0
+        move.w  #0x8C00,d0
         or.b    (a2)+,d0
         cmpi.b  #2,legacy_emulator      /* Check for Gens */
         bne.s   0f
@@ -1789,7 +1789,8 @@ load_md_sky:
         move.l  d2,(a1)                 /* Create left-border tiles, or erase them */
         dbra    d1,3b
 4:
-        move.w  d0,(a0) /* reg 12 */
+        |move.w  d0,(a0) /* reg 12 */
+        move.w  d0,register_write_queue     /* Set register 12 during VBlank */
 
         move.w  #0x9000, d0
         or.b    (a2)+,d0
@@ -2180,6 +2181,11 @@ load_md_sky:
 3:
         move.w  (a2)+,(a1)              /* Copy eight pixels from the source */
         dbra    d1,3b
+
+        move.w  register_write_queue,d0
+        move.w  #0,register_write_queue
+        move.w  d0,(a0) /* reg 12 */
+        |move.w  d0,register_write_queue     /* Set register 12 during VBlank */
 
         move.l  (sp)+,d2
         move.l  (sp)+,d1
