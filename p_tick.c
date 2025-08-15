@@ -363,6 +363,24 @@ int P_Ticker (void)
 //		CONS_Printf("DebugCounter: %d", debugCounter);
 #endif
 
+#ifdef KIOSK_MODE
+		if ((players[0].pflags & PF_CONTROLDISABLED)) {
+			kiosk_timeout_count = 0;
+		}
+		else if (players[0].buttons == 0) {
+			kiosk_timeout_count++;
+			if (kiosk_timeout_count >= KIOSK_TIMEOUT) {
+				kiosk_timeout_count = 0;
+				gameaction = ga_backtotitle;
+//				exit = ga_backtotitle;
+				break;
+			}
+		}
+		else {
+			kiosk_timeout_count = 0;
+		}
+#endif
+
 		leveltime++;
 
 		if (skipCount == 0)

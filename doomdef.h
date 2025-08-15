@@ -119,6 +119,11 @@ void D_isort(int* a, int len) __attribute__((nonnull)) ATTR_DATA_CACHE_ALIGN;
 #define	FRACUNIT		(1<<FRACBITS)
 typedef int fixed_t;
 
+#ifdef KIOSK_MODE
+	#define KIOSK_TIMEOUT				(TICRATE*30)
+	#define KIOSK_LEVELSELECT_TIMEOUT	(60*20)
+#endif
+
 #ifdef MARS
 //#define THINKERS_30HZ
 #endif
@@ -183,6 +188,9 @@ typedef enum
 	ga_demoending,
 } gameaction_t;
 
+#ifdef KIOSK_MODE
+extern uint16_t kiosk_timeout_count;
+#endif
 
 /* */
 /* library replacements */

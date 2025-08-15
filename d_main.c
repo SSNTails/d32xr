@@ -317,6 +317,10 @@ int		ticbuttons[MAXPLAYERS];
 int		oldticbuttons[MAXPLAYERS];
 int		ticrealbuttons, oldticrealbuttons;
 
+#ifdef KIOSK_MODE
+uint16_t kiosk_timeout_count;
+#endif
+
 extern	VINT	lasttics;
 
 consistencymobj_t	emptymobj;
@@ -361,6 +365,10 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 	lasttics = 0;
 	last_frt_count = 0;
 	total_frt_count = 0;
+
+#ifdef KIOSK_MODE
+	kiosk_timeout_count = 0;
+#endif
 
 	ticbuttons[0] = ticbuttons[1] = oldticbuttons[0] = oldticbuttons[1] = 0;
 
@@ -546,12 +554,19 @@ int TIC_LevelSelect (void)
 
 	screenCount++;
 
-	if (gameaction == ga_nothing
-			&& ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
-			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B))))
-	{
-		fadetime = 0;
-		SetTransition(TransitionType_Leaving);
+	if (gameaction == ga_nothing && !IsTransitionType(TransitionType_Leaving)) {
+		if ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
+			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B)))
+		{
+			fadetime = 0;
+			SetTransition(TransitionType_Leaving);
+		}
+#ifdef KIOSK_MODE
+		else if (screenCount >= KIOSK_LEVELSELECT_TIMEOUT) {
+			fadetime = 0;
+			SetTransition(TransitionType_Leaving);
+		}
+#endif
 	}
 
 	if (IsTransitionType(TransitionType_Entering)) {
@@ -849,6 +864,25 @@ void DRAW_LevelSelect (void)
 		DrawJagobj(chevblkd_pic, -0x20 + chev_offset, 0);
 		DrawJagobj(chevblku_pic, 0x140 - chev_offset, 224-16);
 	}
+
+#ifdef KIOSK_MODE
+	// Clear countdown digits
+	background = I_FrameBuffer() + (((320*184) + 280) >> 1);
+
+	for (int y=184; y < 184+12; y++) {
+		for (int x=0; x < (16>>3); x++) {
+			// Write 8 thru pixels
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+		}
+
+		background += (304>>1);
+	}
+
+	V_DrawValueLeft(&hudNumberFont, 280, 184, (KIOSK_LEVELSELECT_TIMEOUT/60) - (screenCount/60));
+#endif
 }
 
 /*============================================================================= */
