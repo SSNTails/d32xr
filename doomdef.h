@@ -188,6 +188,9 @@ typedef enum
 	ga_demoending,
 } gameaction_t;
 
+#ifdef KIOSK_MODE
+extern uint16_t kiosk_timeout_count;
+#endif
 
 /* */
 /* library replacements */

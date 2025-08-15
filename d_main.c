@@ -425,26 +425,6 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		ticbuttons[consoleplayer] = buttons;
 		ticrealbuttons = buttons;
 
-#ifdef KIOSK_MODE
-		if (IsLevel()) {
-			if ((players[0].pflags & PF_CONTROLDISABLED)) {
-				kiosk_timeout_count = 0;
-			}
-			else if (players[0].buttons == 0) {
-				kiosk_timeout_count++;
-				if (kiosk_timeout_count >= KIOSK_TIMEOUT) {
-					kiosk_timeout_count = 0;
-					gameaction = ga_backtotitle;
-					exit = ga_backtotitle;
-					break;
-				}
-			}
-			else {
-				kiosk_timeout_count = 0;
-			}
-		}
-#endif
-
 		if (IsTitleScreen()) {
 			int timeleft = (gameinfo.titleTime >> 1) - leveltime;
 			if (timeleft <= 0) {
