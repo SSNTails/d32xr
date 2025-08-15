@@ -202,7 +202,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    static sector_t ftempsec;
    static sector_t btempsec;
    #ifdef FLOOR_OVER_FLOOR
-   segl->fofSector = -1;
+   segl->fofSector = *fofInfo = -1; // fofSector is back sector FOF, fofInfo is front sector FOF
    #endif
 
    front_sector = R_FakeFlat(front_sector, &ftempsec, false);
@@ -334,25 +334,18 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 #ifdef FLOOR_OVER_FLOOR
          if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
          {
-            const sector_t *fofsec = &sectors[front_sector->fofsec];
-            segl->fofSector = front_sector->fofsec;
+            const sector_t *frontFOF = &sectors[front_sector->fofsec];
+            *fofInfo = front_sector->fofsec;
 
-            segl->fof_picnum = 0xff;
-            if (fofsec->ceilingheight < vd.viewz)
+            if (frontFOF->ceilingheight < vd.viewz)
             {
                // Top of FOF is visible
                actionbits |= AC_FOFCEILING;
-               segl->fof_picnum = fofsec->ceilingpic;
-               *fofInfo = fofsec->ceilingheight;
-                            
-               // fof_picnum is just a junk value if AC_FOFCEILING or AC_FOFFLOOR isn't set.
             }
-            else if (fofsec->floorheight > vd.viewz)
+            else if (frontFOF->floorheight > vd.viewz)
             {
                // Bottom of FOF is visible
                actionbits |= AC_FOFFLOOR;
-               segl->fof_picnum = fofsec->floorpic;
-               *fofInfo = fofsec->floorheight;
             }
          }
 #endif
@@ -396,78 +389,45 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 #ifdef FLOOR_OVER_FLOOR
          if (back_sector->fofsec >= 0 && !(back_sector->flags & SF_FOF_SWAPHEIGHTS))
          {
-            const sector_t *fofsec = &sectors[back_sector->fofsec];
+            const sector_t *backFOF = &sectors[back_sector->fofsec];
             segl->fofSector = back_sector->fofsec;
+            *fofInfo = front_sector->fofsec;
+            actionbits |= AC_FOFSIDE; // Means the backsector has a FOF
 
-            if (front_sector->fofsec < 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS) && !(back_sector->flags & SF_FOF_SWAPHEIGHTS))
+            if (backFOF->ceilingheight < vd.viewz)
+               segl->fof_picnum = backFOF->ceilingpic;
+            else if (backFOF->floorheight > vd.viewz)
+               segl->fof_picnum = backFOF->floorpic;
+
+            if (front_sector->fofsec < 0)
             {
-               const line_t *fofline = &lines[fofsec->specline];
-               fof_texturemid = fofsec->ceilingheight - vd.viewz;
+               const line_t *fofline = &lines[backFOF->specline];
+               fof_texturemid = backFOF->ceilingheight - vd.viewz;
                segl->fof_texturenum = texturetranslation[SIDETEX(&sides[fofline->sidenum[0]])->midtexture];
 //               fof_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
 #ifdef WALLDRAW2X
                fof_texturemid >>= 1;
 #endif
-               if (fofsec->ceilingheight <= front_sector->floorheight || fofsec->floorheight >= front_sector->ceilingheight)
+               if (backFOF->ceilingheight <= front_sector->floorheight || backFOF->floorheight >= front_sector->ceilingheight)
                {
                   fof_texturemid = 0;
                   segl->fof_texturenum = (uint8_t)-1;
                }
-
-               actionbits |= AC_FOFSIDE; // set bottom and top masks
-            }
-//            segl->fof_bottomheight = fofsec->floorheight - vd.viewz;
-//            segl->fof_topheight = fofsec->ceilingheight - vd.viewz;
-/*const fixed_t rf_ceilingheight = rbsp->curfsector->ceilingheight - vd.viewz;
-               const fixed_t rb_ceilingheight = rbsp->curbsector->ceilingheight - vd.viewz;
-               if(rb_ceilingheight > rf_ceilingheight)
-                  fof_texturemid = rf_ceilingheight;
-               else
-                  fof_texturemid = rb_ceilingheight;*/
-
-            segl->fof_picnum = 0xff;
-            if (fofsec->ceilingheight < vd.viewz)
-            {
-               // Top of FOF is visible
-//               actionbits |= AC_FOFCEILING;
-               segl->fof_picnum = fofsec->ceilingpic;
-               *fofInfo = fofsec->ceilingheight - vd.viewz;
-                                  
-               // fof_picnum is just a junk value if AC_FOFCEILING or AC_FOFFLOOR isn't set.
-            }
-            else if (fofsec->floorheight > vd.viewz)
-            {
-               // Bottom of FOF is visible
-//               actionbits |= AC_FOFFLOOR;
-               segl->fof_picnum = fofsec->floorpic;
-               *fofInfo = fofsec->floorheight - vd.viewz;
             }
          }
          if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
          {
-            const sector_t *fofsec = &sectors[front_sector->fofsec];
-            segl->fofSector = front_sector->fofsec;
-            segl->fof_picnum = 0xff;
-            if (fofsec->ceilingheight < vd.viewz)
+            const sector_t *frontFOF = &sectors[front_sector->fofsec];
+            *fofInfo = front_sector->fofsec;
+            if (frontFOF->ceilingheight < vd.viewz)
             {
                // Rendering the ceiling
                actionbits |= AC_FOFCEILING;
-               segl->fof_picnum = fofsec->ceilingpic;
-               *fofInfo = fofsec->ceilingheight - vd.viewz;
-
-               // fof_picnum is just a junk value if AC_FOFCEILING or AC_FOFFLOOR isn't set.
             }
-            else if (fofsec->floorheight > vd.viewz)
+            else if (frontFOF->floorheight > vd.viewz)
             {
                actionbits |= AC_FOFFLOOR;
-               segl->fof_picnum = fofsec->floorpic;
-               *fofInfo = fofsec->floorheight - vd.viewz;
             }
-/*
-            if (b_floorheight > fofsec->ceilingheight - vd.viewz)
-               *fofInfo = b_floorheight;
-            if (b_ceilingheight < fofsec->floorheight - vd.viewz)
-               *fofInfo = b_ceilingheight;*/
          }
 #endif
 

@@ -620,13 +620,13 @@ typedef struct
 
 	VINT 	m_texturenum;
 	uint8_t     fof_texturenum; // wall texture for FOF
-	uint8_t     fof_picnum; // floor or ceiling pic for FOF
+	uint8_t     fof_picnum; // floor or ceiling pic for backsector FOF
 	uint16_t     tb_texturenum; // t_texturenum top word, b_texturenum bottom word
 
 	uint16_t     floorceilpicnum; // ceilingpicnum top word, floorpicnum bottom word (just like a ceiling and floor!)
 
 #ifdef FLOOR_OVER_FLOOR
-	int16_t     fofSector;
+	int16_t     fofSector; // backsector FOF
 #else
 	uint16_t	newmiplevels; // 0 is lower, 1 is upper
 #endif
