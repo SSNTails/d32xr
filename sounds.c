@@ -104,7 +104,9 @@ const char * const S_sfxnames[NUMSFX] =
   "drclap1",
   "drhit3",
   "drtmbrn1",
-  "drchime1"
+  "drchime1",
+  "drtmpni1",
+  "drtmpni2",
 };
 
 const unsigned char drumsfxmap[] =
@@ -133,6 +135,8 @@ const unsigned char drumsfxmap[] =
   sfx_drhit3,   // 21
   sfx_drtmbrn1, // 22
   sfx_drchime1, // 23
+  sfx_drtmpni1, // 24
+  sfx_drtmpni2, // 25
 };
 
 #ifdef MARS
@@ -191,6 +195,8 @@ sfxinfo_t S_sfx[NUMSFX] =
   SOUND( false, 64 ),
   SOUND( false, 64 ),
   SOUND( false, 100 ), // sfx_s3k_64
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
   SOUND( false, 64 ),
   SOUND( false, 64 ),
   SOUND( false, 64 ),
