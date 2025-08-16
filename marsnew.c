@@ -122,11 +122,21 @@ int Mars_ConvGamepadButtons(int ctrl)
 			newc |= BT_SPIN; //configuration[controltype][2];
 
 		if (ctrl & SEGA_CTRL_X)
-			newc |= BT_CAMLEFT;
+		{
+			if (invertCamera)
+				newc |= BT_CAMLEFT;
+			else
+				newc |= BT_CAMRIGHT;
+		}
 		if (ctrl & SEGA_CTRL_Y)
 			newc |= BT_GASPEDAL;
 		if (ctrl & SEGA_CTRL_Z)
-			newc |= BT_CAMRIGHT;
+		{
+			if (invertCamera)
+				newc |= BT_CAMRIGHT;
+			else
+				newc |= BT_CAMLEFT;
+		}
 	}
 
 	return newc;

@@ -4,6 +4,8 @@ camera_t camera;
 //#define NOCLIPCAMERA
 #define CAM_PHYS_HEIGHT (12 << FRACBITS)
 
+boolean invertCamera = false;
+
 boolean PM_CheckPosition(pmovework_t *mw);
 
 static boolean P_CameraTryMove2(ptrymove_t *tm, boolean checkposonly)

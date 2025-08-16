@@ -2,6 +2,7 @@
 
 #include "doomdef.h"
 #include "p_local.h"
+#include "p_camera.h"
 #include "st_main.h"
 #include "v_font.h"
 #ifdef MARS
@@ -22,6 +23,7 @@ typedef enum
 	mi_game, 
 	mi_audio,
 	mi_video,
+	mi_controls,
 	mi_help,
 
 	mi_soundvol,
@@ -94,7 +96,6 @@ typedef enum
 	ms_game,
 	ms_audio,
 	ms_video,
-	ms_controls,
 	ms_help,
 
 	NUMMENUSCREENS
@@ -149,15 +150,14 @@ void O_Init (void)
 	menuitem[mi_video].x = ITEMX;
 	menuitem[mi_video].y = STARTY+ITEMSPACE*2;
 	menuitem[mi_video].screen = ms_video;
-/*
-	menuitem[mi_controls].name = "Controls";
+
+	menuitem[mi_controls].name = "CAMERA";
 	menuitem[mi_controls].x = ITEMX;
 	menuitem[mi_controls].y = STARTY+ITEMSPACE*3;
-	menuitem[mi_controls].screen = ms_controls;
-*/
+
 	menuitem[mi_help].name = "HELP / ABOUT";
 	menuitem[mi_help].x = ITEMX;
-	menuitem[mi_help].y = STARTY+ITEMSPACE*3;
+	menuitem[mi_help].y = STARTY+ITEMSPACE*4;
 	menuitem[mi_help].screen = ms_help;
 
 	menuitem[mi_soundvol].name = "Sfx volume";
@@ -222,10 +222,6 @@ void O_Init (void)
 	menuscreen[ms_video].name = "VIDEO";
 	menuscreen[ms_video].firstitem = mi_anamorphic;
 	menuscreen[ms_video].numitems = mi_anamorphic - mi_anamorphic + 1;
-
-	menuscreen[ms_controls].name = "CONTROLS";
-	menuscreen[ms_controls].firstitem = mi_controltype;
-	menuscreen[ms_controls].numitems = mi_strafebtns - mi_controltype + 1;
 
 	menuscreen[ms_help].name = "HELP / ABOUT";
 	menuscreen[ms_help].firstitem = 0;
@@ -433,6 +429,9 @@ void O_Control (player_t *player)
 					anamorphicview = slider->curval;
 					R_SetViewportSize(viewportNum);
 					break;
+				case mi_controls:
+					invertCamera = !invertCamera;
+					break;
 				default:
 					break;
 
@@ -513,8 +512,27 @@ void O_Control (player_t *player)
 					S_SetSoundDriver(o_sfxdriver);
 				}
 			}
+			else if (screenpos == ms_main)
+			{
+				if (buttons & BT_RIGHT)
+				{
+					switch (itemno) {
+					case mi_controls:
+						invertCamera = !invertCamera;
+						break;
+					}
+				}
 
-			if (screenpos == ms_video)
+				if (buttons & BT_LEFT)
+				{
+					switch (itemno) {
+					case mi_controls:
+						invertCamera = !invertCamera;
+						break;
+					}
+				}
+			}
+			else if (screenpos == ms_video)
 			{
 				int oldanamorphicview = anamorphicview;
 
@@ -685,5 +703,10 @@ void O_Drawer (void)
 
 	if (screenpos == ms_help)
 		O_DrawHelp(80);
+
+	if (screenpos == ms_main)
+	{
+		V_DrawStringLeft(&menuFont, menuitem[mi_controls].x + 72, menuitem[mi_controls].y, invertCamera ? "INVERTED" : "NORMAL");
+	}
 }
 
