@@ -252,14 +252,25 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
       rowoffset >>= 4; // sign extend
       fixed_t textop, texbottom;
 
+      fixed_t texfloor, texceiling;
+      if (front->ceilingheight < back->ceilingheight)
+         texceiling = front->ceilingheight;
+      else
+         texceiling = back->ceilingheight;
+
+      if (front->floorheight > back->floorheight)
+         texfloor = front->floorheight;
+      else
+         texfloor = back->floorheight;
+
       if (lineflags & ML_DONTPEGBOTTOM)
       {
-         texbottom = openbottom + ((int)rowoffset << (FRACBITS));
+         texbottom = texfloor + ((int)rowoffset << (FRACBITS));
          textop = texbottom + texheight;
       }
       else
       {
-         textop = opentop + ((int)rowoffset << (FRACBITS));
+         textop = texceiling + ((int)rowoffset << (FRACBITS));
          texbottom = textop - texheight;
       }
 
