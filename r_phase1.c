@@ -706,15 +706,33 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
       const sector_t *fofsec = &sectors[sec->fofsec];
 
-      if (vd.underwater)
+      if (sec->heightsec < 0) // Standard midpoint version
       {
-         tempsec->ceilingheight = fofsec->floorheight;
-         tempsec->ceilingpic = fofsec->floorpic;      
+         const fixed_t midpoint = fofsec->floorheight + (fofsec->ceilingheight - fofsec->floorheight)/2;
+
+         if (vd.viewz <= midpoint)
+         {
+            tempsec->ceilingheight = fofsec->floorheight;
+            tempsec->ceilingpic = fofsec->floorpic;      
+         }
+         else if (vd.viewz > midpoint)
+         {
+            tempsec->floorheight = fofsec->ceilingheight;
+            tempsec->floorpic = fofsec->ceilingpic;
+         }
       }
-      else
+      else // This one flips depending on water status
       {
-         tempsec->floorheight = fofsec->ceilingheight;
-         tempsec->floorpic = fofsec->ceilingpic;
+         if (vd.underwater)
+         {
+            tempsec->ceilingheight = fofsec->floorheight;
+            tempsec->ceilingpic = fofsec->floorpic;      
+         }
+         else
+         {
+            tempsec->floorheight = fofsec->ceilingheight;
+            tempsec->floorpic = fofsec->ceilingpic;
+         }
       }
 
       sec = tempsec;
