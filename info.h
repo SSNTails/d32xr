@@ -915,6 +915,7 @@ typedef struct {
 	uint16_t	activesound;
 	VINT		flags;
 	VINT		flags2;
+	void		(*thinker)();
 } mobjinfo_t;
 
 extern const mobjinfo_t mobjinfo[NUMMOBJTYPES];

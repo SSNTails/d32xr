@@ -49,7 +49,6 @@ static boolean PB_CheckLine(line_t* ld, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_CrossCheck(line_t* ld, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_CheckPosition(pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_TryMove(pmovetest_t *mt, mobj_t* mo, fixed_t tryx, fixed_t tryy) ATTR_DATA_CACHE_ALIGN;
-void P_MobjThinker(mobj_t* mobj) ATTR_DATA_CACHE_ALIGN;
 
 // P_FloorzAtPos
 // Returns the floorz of the XYZ position
@@ -835,223 +834,24 @@ static boolean P_DrownNumbersThink(mobj_t *mobj)
    return true;
 }
 
-__attribute((noinline))
-boolean P_MobjSpecificActions(mobj_t *mobj)
+boolean B_Movement(mobj_t *mobj)
 {
-   switch(mobj->type)
-      {
-         case MT_FLINGRING:
-            mobj->threshold--;
-            if (mobj->threshold < 3*TICRATE && (gametic & 1))
-               mobj->flags2 |= MF2_DONTDRAW;
-            else
-               mobj->flags2 &= ~MF2_DONTDRAW;
+   // momentum movement
+   if(mobj->momx || mobj->momy)
+      P_XYMovement(mobj);
 
-            if (mobj->threshold == 0)
-            {
-               mobj->latecall = LC_REMOVE_MOBJ;
-               return false;
-            }
-            break;
-         case MT_RING_ICON:
-         case MT_ATTRACT_ICON:
-         case MT_FORCE_ICON:
-         case MT_ARMAGEDDON_ICON:
-         case MT_WHIRLWIND_ICON:
-         case MT_ELEMENTAL_ICON:
-         case MT_SNEAKERS_ICON:
-         case MT_INVULN_ICON:
-         case MT_1UP_ICON:
-            if (mobj->z < mobj->floorz + (mobjinfo[mobj->type].damage << FRACBITS))
-               mobj->momz = mobjinfo[mobj->type].speed;
-            else
-               mobj->momz = 0;
-            break;
-         case MT_ARMAGEDDON_ORB:
-         case MT_ATTRACT_ORB:
-         case MT_ELEMENTAL_ORB:
-         case MT_FORCE_ORB:
-         case MT_WHIRLWIND_ORB:
-            {
-               player_t *player = &players[mobj->target->player - 1];
+   // removed or has a special action to perform?
+   if(mobj->latecall)
+      return mobj->latecall;
 
-               if (player->powers[pw_invulnerability])
-                  mobj->flags2 |= MF2_DONTDRAW;
-               else
-                  mobj->flags2 &= ~MF2_DONTDRAW;
+   if(mobj->z != mobj->floorz || mobj->momz)
+      P_ZMovement(mobj);
 
-               if (mobj->type == MT_FORCE_ORB)
-               {
-                  if (player->shield == SH_FORCE1 && mobj->state == S_FORCA1)
-                     P_SetMobjState(mobj, S_FORCB1);
-                  else if (!(player->shield == SH_FORCE1 || player->shield == SH_FORCE2))
-                  {
-                     mobj->latecall = LC_REMOVE_MOBJ;
-                     return false;
-                  }
-               }
-               else
-               {
-                   if (mobj->type == MT_ELEMENTAL_ORB)
-                   {
-                       if ((player->pflags & PF_ELEMENTALBOUNCE) && player->mo->momz < 0)
-                         P_SetMobjState(mobj, S_ELEMDOWN);
-                   }
-                  
-                   if (player->shield != mobjinfo[mobj->type].painchance)
-                   {
-                       mobj->latecall = LC_REMOVE_MOBJ;
-                       return false;
-                   }
-               }
-
-               mobj->z = mobj->target->z;
-               P_SetThingPositionConditionally(mobj, mobj->target->x, mobj->target->y, mobj->target->isubsector);
-            }
-            break;
-         case MT_GOOP:
-         case MT_GHOST:
-         case MT_EGGMOBILE_TARGET:
-            if (mobj->reactiontime)
-            {
-               mobj->reactiontime--;
-               if (mobj->reactiontime == 0)
-               {
-                  if (mobj->type == MT_EGGMOBILE_TARGET)
-                  {
-                     for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
-                     {
-                        if (node->target == mobj)
-                           node->target = NULL;
-                     }
-                  }
-
-                  mobj->latecall = LC_REMOVE_MOBJ;
-                  return false;
-               }
-            }
-            break;
-         case MT_EGGMOBILE:
-            P_Boss1Thinker(mobj);
-            break;
-         case MT_EGGMOBILE_MECH:
-         case MT_EGGMOBILE2_MECH:
-            mobj->angle = mobj->target->angle;
-            P_UnsetThingPosition(mobj);
-            mobj->x = mobj->target->x;
-            mobj->y = mobj->target->y;
-            mobj->z = mobj->target->z;
-            P_SetThingPosition(mobj);
-            if (mobj->target->flags2 & MF2_FRET)
-               mobj->flags2 |= MF2_FRET;
-            else
-               mobj->flags2 &= ~MF2_FRET;
-            break;
-         case MT_EGGMOBILE2:
-            P_Boss2Thinker(mobj);
-            break;
-         case MT_JETFUME1:
-            if (!P_JetFume1Think(mobj))
-               return false;
-            break;
-         case MT_ATTRACTRING:
-            if (mobj->target->health <= 0)
-            {
-               mobj_t *flingring = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_FLINGRING);
-               flingring->momx = mobj->momx;
-               flingring->momy = mobj->momy;
-               flingring->momz = mobj->momz;
-               flingring->threshold = 8*TICRATE;
-               mobj->latecall = LC_REMOVE_MOBJ;
-               return false;
-            }
-            else
-               P_Attract(mobj, mobj->target);
-            break;
-         case MT_DROWNNUMBERS:
-            if (!P_DrownNumbersThink(mobj))
-               return false;
-            break;
-         case MT_EGGTRAP:
-            if (mobj->movecount > 0)
-            {
-               mobj->movecount++;
-               if (mobj->movecount > 2*TICRATE)
-                  mobj->movecount = 0;
-
-               if (!(mobj->movecount & 3))
-               {
-                  fixed_t radius = 48*FRACUNIT + ((P_Random() & 63)*FRACUNIT);
-
-                  mobj->angle += P_Random() * ANGLE_1;
-                  for (int i = -1; i < 2; i += 2)
-                  {
-                     const mobjtype_t flickies[4] = { MT_FLICKY_01, MT_FLICKY_02, MT_FLICKY_03, MT_FLICKY_12 };
-                     mobjtype_t chosen = flickies[P_Random() % 4];
-
-                     if (i == -1)
-                        chosen = MT_EXPLODE;
-
-                     fixed_t z = sectors[subsectors[mobj->isubsector].isector].floorheight - 80*FRACUNIT;
-                     z += (P_Random() & 31) << FRACBITS;
-
-                     mobj_t *flicky = P_SpawnMobj(
-                        mobj->x + P_ReturnThrustX(mobj->angle, i * radius),
-                        mobj->y + P_ReturnThrustY(mobj->angle, i * radius),
-                        z,
-                        chosen);
-
-                     if (chosen != MT_EXPLODE)
-                        flicky->target = players[consoleplayer].mo;
-                  }
-                  S_StartSound(mobj, sfx_s3k_3d);
-            }
-         }
-            break;
-         default:
-            break;
-      }
-
-      return true;
+   return mobj->latecall;
 }
 
-//
-// Perform main thinking logic for a single mobj per tic.
-//
-// Never, EVER call this for MF_RINGMOBJ
-//
-void P_MobjThinker(mobj_t *mobj)
+void B_StateCycle(mobj_t *mobj)
 {
-   if (!(mobj->flags & MF_STATIC))
-   {
-      // momentum movement
-      if(mobj->momx || mobj->momy)
-         P_XYMovement(mobj);
-
-      // removed or has a special action to perform?
-      if(mobj->latecall)
-         return;
-
-      if(mobj->z != mobj->floorz || mobj->momz)
-         P_ZMovement(mobj);
-
-      // removed or has a special action to perform?
-      if(mobj->latecall)
-         return;
-
-      if (!P_MobjSpecificActions(mobj))
-         return;
-   }
-   else
-   {
-      switch(mobj->type)
-      {
-         case MT_SCORE:
-            mobj->z += mobjinfo[mobj->type].speed;
-               break;
-      }
-   }
-
    // cycle through states
    if (mobj->tics >= 0)
    {
@@ -1061,6 +861,229 @@ void P_MobjThinker(mobj_t *mobj)
        if (!mobj->tics)
            P_SetMobjState(mobj, states[mobj->state].nextstate);
    }
+}
+
+void B_Default(mobj_t *mobj)
+{
+   if (B_Movement(mobj))
+      return; // removed or has a special action to perform?
+
+   B_StateCycle(mobj);
+}
+
+void B_Null(mobj_t *mobj)
+{
+}
+
+void B_FlingRing(mobj_t *mobj)
+{
+   mobj->threshold--;
+   if (mobj->threshold < 3*TICRATE && (gametic & 1))
+      mobj->flags2 |= MF2_DONTDRAW;
+   else
+      mobj->flags2 &= ~MF2_DONTDRAW;
+
+   if (mobj->threshold == 0)
+   {
+      mobj->latecall = LC_REMOVE_MOBJ;
+      return;
+   }
+
+   B_Default(mobj);
+}
+
+void B_MonitorIcon(mobj_t *mobj)
+{
+   if (mobj->z < mobj->floorz + (mobjinfo[mobj->type].damage << FRACBITS))
+      mobj->z += mobjinfo[mobj->type].speed;
+
+   B_StateCycle(mobj);
+}
+
+void B_ShieldOrb(mobj_t *mobj)
+{
+   player_t *player = &players[mobj->target->player - 1];
+
+   if (player->powers[pw_invulnerability])
+   {
+      mobj->flags2 |= MF2_DONTDRAW;
+      return;
+   }
+
+   mobj->flags2 &= ~MF2_DONTDRAW;
+
+   if (mobj->type == MT_FORCE_ORB)
+   {
+      if (player->shield == SH_FORCE1 && mobj->state == S_FORCA1)
+         P_SetMobjState(mobj, S_FORCB1);
+      else if (!(player->shield == SH_FORCE1 || player->shield == SH_FORCE2))
+      {
+         mobj->latecall = LC_REMOVE_MOBJ;
+         return;
+      }
+   }
+   else
+   {
+         if (mobj->type == MT_ELEMENTAL_ORB)
+         {
+            if ((player->pflags & PF_ELEMENTALBOUNCE) && player->mo->momz < 0)
+               P_SetMobjState(mobj, S_ELEMDOWN);
+         }
+                  
+         if (player->shield != mobjinfo[mobj->type].painchance)
+         {
+            mobj->latecall = LC_REMOVE_MOBJ;
+            return;
+         }
+   }
+
+   mobj->z = mobj->target->z;
+   P_SetThingPositionConditionally(mobj, mobj->target->x, mobj->target->y, mobj->target->isubsector);
+
+   B_StateCycle(mobj);
+}
+
+void B_EggmobileTarget(mobj_t *mobj)
+{
+   if (mobj->reactiontime)
+   {
+      mobj->reactiontime--;
+      if (mobj->reactiontime == 0)
+      {
+         for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+         {
+            if (node->target == mobj)
+               node->target = NULL;
+         }
+
+         mobj->latecall = LC_REMOVE_MOBJ;
+         return;
+      }
+   }
+
+   B_Default(mobj);
+}
+
+void B_GhostFade(mobj_t *mobj)
+{
+   if (mobj->reactiontime)
+   {
+      if (--mobj->reactiontime == 0)
+      {
+         mobj->latecall = LC_REMOVE_MOBJ;
+         return;
+      }
+   }
+   
+   // A ghost might move, or animate
+   B_Default(mobj);
+}
+
+void B_Boss1Thinker(mobj_t *mobj)
+{
+   if (B_Movement(mobj))
+      return;
+
+   P_Boss1Thinker(mobj);
+   B_StateCycle(mobj);
+}
+
+void B_EggmobileMech(mobj_t *mobj)
+{
+   mobj->angle = mobj->target->angle;
+   P_UnsetThingPosition(mobj);
+   mobj->x = mobj->target->x;
+   mobj->y = mobj->target->y;
+   mobj->z = mobj->target->z;
+   P_SetThingPosition(mobj);
+   if (mobj->target->flags2 & MF2_FRET)
+      mobj->flags2 |= MF2_FRET;
+   else
+      mobj->flags2 &= ~MF2_FRET;
+
+   // Don't think this needs state cycle, either!
+}
+
+void B_Boss2Thinker(mobj_t *mobj)
+{
+   if (B_Movement(mobj))
+      return;
+
+   P_Boss2Thinker(mobj);
+   B_StateCycle(mobj);
+}
+
+void B_JetFume(mobj_t *mobj)
+{
+   P_JetFume1Think(mobj);
+}
+
+void B_AttractRing(mobj_t *mobj)
+{
+   B_StateCycle(mobj);
+   B_Movement(mobj);
+   
+   if (mobj->target->health <= 0)
+   {
+      mobj_t *flingring = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_FLINGRING);
+      flingring->momx = mobj->momx;
+      flingring->momy = mobj->momy;
+      flingring->momz = mobj->momz;
+      flingring->threshold = 8*TICRATE;
+      mobj->latecall = LC_REMOVE_MOBJ;
+      return;
+   }
+   else
+      P_Attract(mobj, mobj->target);
+}
+
+void B_DrownNumbers(mobj_t *mobj)
+{
+   P_DrownNumbersThink(mobj);
+}
+
+void B_EggTrap(mobj_t *mobj)
+{
+   if (mobj->movecount > 0)
+   {
+      mobj->movecount++;
+      if (mobj->movecount > 2*TICRATE)
+         mobj->movecount = 0;
+
+      if (!(mobj->movecount & 3))
+      {
+         fixed_t radius = 48*FRACUNIT + ((P_Random() & 63)*FRACUNIT);
+
+         mobj->angle += P_Random() * ANGLE_1;
+         for (int i = -1; i < 2; i += 2)
+         {
+            const mobjtype_t flickies[4] = { MT_FLICKY_01, MT_FLICKY_02, MT_FLICKY_03, MT_FLICKY_12 };
+            mobjtype_t chosen = flickies[P_Random() % 4];
+
+            if (i == -1)
+               chosen = MT_EXPLODE;
+
+            fixed_t z = sectors[subsectors[mobj->isubsector].isector].floorheight - 80*FRACUNIT;
+            z += (P_Random() & 31) << FRACBITS;
+
+            mobj_t *flicky = P_SpawnMobj(
+               mobj->x + P_ReturnThrustX(mobj->angle, i * radius),
+               mobj->y + P_ReturnThrustY(mobj->angle, i * radius),
+               z,
+               chosen);
+
+            if (chosen != MT_EXPLODE)
+               flicky->target = players[consoleplayer].mo;
+         }
+         S_StartSound(mobj, sfx_s3k_3d);
+      }
+   }
+}
+
+void B_MT_Score(mobj_t *mobj)
+{
+   mobj->z += mobjinfo[mobj->type].speed;
+   B_StateCycle(mobj);
 }
 
 void P_AnimateScenery(int8_t numframes)
@@ -1102,12 +1125,6 @@ void P_RunMobjBase2(void)
     for (mo = mobjhead.next; mo != (void*)&mobjhead; mo = next)
     {
       next = mo->next;	// in case mo is removed this time
-/*
-         if (mo->flags & MF_RINGMOBJ) // rings or scenery (they don't think, they don't uniquely animate)
-            continue;
-*/
-      if (mo->player)
-         continue;
 
 #ifdef MARS
       // clear cache for mobj flags following the sight check as 
@@ -1115,7 +1132,7 @@ void P_RunMobjBase2(void)
       if (mo->tics == 1)
          Mars_ClearCacheLine(&mo->flags);
 #endif
-      P_MobjThinker(mo);
+      mobjinfo[mo->type].thinker(mo);
 
       if (!(mo->flags & MF_STATIC) && mo->latecall != LC_NONE)
       {

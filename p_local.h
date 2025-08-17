@@ -146,7 +146,6 @@ mobj_t *P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
 void 	P_RemoveMobj (mobj_t *th);
 void	P_FreeMobj(mobj_t* mobj);
 boolean	P_SetMobjState (mobj_t *mobj, statenum_t state) ATTR_DATA_CACHE_ALIGN;
-void 	P_MobjThinker (mobj_t *mobj);
 void 	P_PreSpawnMobjs(int count, int staticcount, int ringcount, int scenerycount);
 
 mobj_t *P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type);
