@@ -1116,6 +1116,7 @@ typedef struct
 	int16_t mminlength;
 	int16_t mwidth;
 	int16_t tag; // for debugging
+	int16_t msublinks; // # of links from the inside to subtract
 
 	boolean sound;
 	boolean swinging;
@@ -1138,11 +1139,9 @@ void P_SSNMaceRotate(swingmace_t *sm)
 
 	if (sm->swinging)
 	{
-
 		angle_t swingmag = FixedMul(finecosine(curPos), (sm->mspeed * sm->mspeed * sm->mspeed) << FRACBITS);
 		angle_t fa = swingmag >> ANGLETOFINESHIFT;
 //		CONS_Printf("fa: %d", fa);
-
 		curPos = fa;
 	}
 
@@ -1181,25 +1180,36 @@ void P_SSNMaceRotate(swingmace_t *sm)
 
 //	CONS_Printf("%d, %d, %d", rotVec.x, rotVec.y, rotVec.z);
 
-	ringmobj_t *link = sm->macechain.chain;
-	fixed_t distAccum = 0;
-	for (int i = 0; i < sm->macechain.numchain; link++, i++)
+	int16_t msublinks = sm->msublinks;
+	int16_t mnumchain = sm->macechain.numchain;
+	fixed_t dist = 0;
+	while (msublinks > 0)
 	{
-		distAccum += sm->macechain.interval;
+		dist += sm->macechain.interval;
+		msublinks--;
+	}
 
+	ringmobj_t *link = sm->macechain.chain;
+	int count = 0;
+	while (count < mnumchain)
+	{
+		fixed_t distAccum = dist + sm->macechain.interval * count;
 		//		P_UnsetThingPosition((mobj_t*)link);
 		link->x = sm->macechain.x + ((rotVec.x * distAccum) >> FRACBITS);
 		link->y = sm->macechain.y + ((rotVec.z * distAccum) >> FRACBITS);
 		link->z = sm->macechain.z + ((rotVec.y * distAccum) >> FRACBITS);
 		link->z -= (mobjinfo[link->type].height >> FRACBITS) >> 2;
 //		P_SetThingPosition((mobj_t*)link);
+		link++;
+		count++;
 	}
 
-	distAccum += mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS;
+	dist += sm->macechain.interval * (count-1);
+	dist += mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS;
 	P_UnsetThingPosition(sm->macechain.maceball);
-	sm->macechain.maceball->x = (sm->macechain.x << FRACBITS) + (rotVec.x * distAccum);
-	sm->macechain.maceball->y = (sm->macechain.y << FRACBITS) + (rotVec.z * distAccum);
-	sm->macechain.maceball->z = (sm->macechain.z << FRACBITS) + (rotVec.y * distAccum);
+	sm->macechain.maceball->x = (sm->macechain.x << FRACBITS) + (rotVec.x * dist);
+	sm->macechain.maceball->y = (sm->macechain.y << FRACBITS) + (rotVec.z * dist);
+	sm->macechain.maceball->z = (sm->macechain.z << FRACBITS) + (rotVec.y * dist);
 	sm->macechain.maceball->z -= (sm->macechain.maceball->theight << FRACBITS) >> 1;
 	sm->macechain.maceball->floorz = sm->macechain.maceball->z;
 	sm->macechain.maceball->ceilingz = sm->macechain.maceball->z + (sm->macechain.maceball->theight << FRACBITS);
@@ -1244,7 +1254,7 @@ void P_AddMaceChain(mapthing_t *point, vector3_t *axis, vector3_t *rotation, VIN
 {
 	// First, determine the # of items in the chain
 	VINT mlength = D_abs(args[0]);
-	VINT msublinks = args[7];
+	VINT msublinks = args[7]; // chain links to remove from the inside
 //	VINT mminlength = D_max(0, D_min(mlength - 1, msublinks));
 
 	swingmace_t *sm = cursorMace;
@@ -1259,6 +1269,7 @@ sm->mwidth = D_max(0, args[2]);
 sm->mspeed = D_abs(args[3] << 4);
 sm->mphase = args[4] % 360;
 //sm->mnumnospokes = args[6];
+sm->msublinks = args[7];
 sm->mminlength = D_max(0, D_min(mlength - 1, args[7]));
 sm->tag = point->angle;
 
@@ -1330,11 +1341,11 @@ sm->tag = point->angle;
 
 	while (count < mlength)
 	{
-		const fixed_t dist = (sm->macechain.interval << FRACBITS) * (count + 1);
+		const fixed_t distAccum = dist + ((sm->macechain.interval << FRACBITS) * count);
 
-		const fixed_t spawnX = x + FixedMul(dist, sm->nv.x);
-		const fixed_t spawnY = y + FixedMul(dist, sm->nv.y);
-		const fixed_t spawnZ = (z - (mobjinfo[chainlink].height >> 2)) + FixedMul(dist, sm->nv.z);
+		const fixed_t spawnX = x + FixedMul(distAccum, sm->nv.x);
+		const fixed_t spawnY = y + FixedMul(distAccum, sm->nv.y);
+		const fixed_t spawnZ = (z - (mobjinfo[chainlink].height >> 2)) + FixedMul(distAccum, sm->nv.z);
 
 		ringmobj_t *link = (ringmobj_t*)P_SpawnMobj(spawnX, spawnY, spawnZ, chainlink);
 		if (first)

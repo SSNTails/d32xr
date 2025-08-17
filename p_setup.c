@@ -356,9 +356,8 @@ static void P_SetupMace(mapthing_t *mthing)
 	args[1] = mthing->type >> 12;
 	args[3] = D_abs(v1->y - v2->y);
 	args[4] = textureoffset;
-	args[7] = -rowoffset;
-
-	if (args[7] < 0) // Compatiblity
+	args[7] = frontsector->lightlevel; // number of links to subtract from the inside.
+	if (args[7] < 0)
 		args[7] = 0;
 
 	if (line->sidenum[1] > 0)
