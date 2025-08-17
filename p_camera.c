@@ -237,11 +237,13 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	// If dead, camera is twice as close
 	if (!(mo->flags2 & MF2_SHOOTABLE))
 		dist >>= 1;
-   else if (player->exiting)
-   {
-      dist *= 3; // Even farther away when exiting
-      camspeed >>= 2;
-   }
+    else if (player->exiting)
+    {
+        dist *= 3; // Even farther away when exiting
+        camspeed >>= 2;
+    }
+    else if (player->pflags & PF_MACESPIN)
+		dist = (dist << 1) - (dist >> 1); // * 1.5
 
 	// Destination XY
 	x = mo->x - FixedMul(finecosine((angle>>ANGLETOFINESHIFT) & FINEMASK), dist);

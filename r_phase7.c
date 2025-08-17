@@ -420,7 +420,7 @@ static void R_DrawPlanes2(int isFOF)
             light = ((unsigned)pl->flatandlight>>8);
             lpl.lightmax = HWLIGHT((unsigned)((light) & 0xff));
 #else
-            light = ((unsigned)pl->flatandlight>>16);
+            light = ((unsigned)pl->flatandlight>>8);
             lpl.lightmax = (light) & 0xff;
 
 #ifdef MARS
