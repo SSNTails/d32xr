@@ -432,6 +432,7 @@ typedef enum
 #define PF_DROWNED 4096
 #define PF_ELEMENTALBOUNCE 8192
 #define PF_CONTROLDISABLED 16384
+#define PF_MACESPIN 32768
 
 boolean P_IsObjectOnGround(mobj_t *mo);
 int8_t P_MobjFlip(mobj_t *mo);

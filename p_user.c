@@ -108,6 +108,7 @@ void P_ResetPlayer(player_t *player)
 	player->pflags &= ~PF_JUMPED;
 	player->pflags &= ~PF_THOKKED;
 	player->pflags &= ~PF_ELEMENTALBOUNCE;
+	player->pflags &= ~PF_MACESPIN;
 	player->homingTimer = 0;
 	player->onconveyor = 0;
 	player->cmomx = player->cmomy = 0;
@@ -244,7 +245,8 @@ void P_PlayerXYMovement(mobj_t *mo)
 {
 	player_t *player = &players[mo->player - 1];
 
-	P_PlayerMove(mo);
+	if (!(player->pflags & PF_MACESPIN))
+		P_PlayerMove(mo);
 
 	fixed_t speed = P_AproxDistance(REALMOMX(player), REALMOMY(player));
 	const angle_t speedDir = R_PointToAngle2(0, 0, REALMOMX(player), REALMOMY(player));
@@ -309,6 +311,9 @@ void P_PlayerZMovement(mobj_t *mo)
 {
 	player_t *player = &players[mo->player - 1];
 	const fixed_t gravity = (player->pflags & PF_VERTICALFLIP) ? -GRAVITY : GRAVITY;
+
+	if (player->pflags & PF_MACESPIN)
+		return;
 
 	/* */
 	/* adjust height */
@@ -920,25 +925,34 @@ static void P_DoJumpStuff(player_t *player)
 
 	if (buttons & BT_JUMP)
 	{
-		if (!(player->pflags & PF_JUMPDOWN) && player->mo->state != S_PLAY_PAIN && P_IsObjectOnGround(player->mo) && !P_IsReeling(player))
+		if (!(player->pflags & PF_JUMPDOWN))
 		{
-			P_DoJump(player);
-			player->pflags &= ~PF_THOKKED;
-			player->pflags &= ~PF_ELEMENTALBOUNCE;
-		}
-		else if (!(player->pflags & PF_JUMPDOWN) && (player->pflags & PF_JUMPED) && !(player->pflags & PF_THOKKED))
-		{
-			// Find a nearby enemy.
-			if (P_LookForTarget(player))
+			if (player->pflags & PF_MACESPIN)
 			{
-				player->homingTimer = 2*TICRATE * 2;
-				S_StartSound(player->mo, sfx_thok);
-				player->pflags &= ~PF_SPINNING;
-				player->pflags &= ~PF_STARTDASH;
-				player->pflags |= PF_THOKKED;
+				player->mo->target = NULL;
+				player->powers[pw_flashing] = TICRATE >> 2;
+				player->pflags &= ~PF_MACESPIN;
 			}
-			else
-				S_StartSound(player->mo, sfx_ngskid);
+			else if (player->mo->state != S_PLAY_PAIN && P_IsObjectOnGround(player->mo) && !P_IsReeling(player))
+			{
+				P_DoJump(player);
+				player->pflags &= ~PF_THOKKED;
+				player->pflags &= ~PF_ELEMENTALBOUNCE;
+			}
+			else if ((player->pflags & PF_JUMPED) && !(player->pflags & PF_THOKKED))
+			{
+				// Find a nearby enemy.
+				if (P_LookForTarget(player))
+				{
+					player->homingTimer = 2*TICRATE * 2;
+					S_StartSound(player->mo, sfx_thok);
+					player->pflags &= ~PF_SPINNING;
+					player->pflags &= ~PF_STARTDASH;
+					player->pflags |= PF_THOKKED;
+				}
+				else
+					S_StartSound(player->mo, sfx_ngskid);
+			}
 		}
 
 		player->pflags |= PF_JUMPDOWN;

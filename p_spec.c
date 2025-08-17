@@ -1214,6 +1214,31 @@ void P_SSNMaceRotate(swingmace_t *sm)
 	sm->macechain.maceball->floorz = sm->macechain.maceball->z;
 	sm->macechain.maceball->ceilingz = sm->macechain.maceball->z + (sm->macechain.maceball->theight << FRACBITS);
 	P_SetThingPosition(sm->macechain.maceball);
+
+	// Is a player attached?
+	for (count = 0; count < MAXPLAYERS; count++)
+	{
+		if (!playeringame[count])
+			continue;
+
+		const player_t *player = &players[count];
+
+		if (player->pflags & PF_MACESPIN)
+		{
+			vector3_t newPos;
+			newPos.x = (sm->macechain.x << FRACBITS) + (rotVec.x * dist);
+			newPos.y = (sm->macechain.y << FRACBITS) + (rotVec.z * dist);
+			newPos.z = (sm->macechain.z << FRACBITS) + (rotVec.y * dist) - (P_GetPlayerSpinHeight() >> 1) - (P_GetPlayerSpinHeight() >> 2);
+			player->mo->momx = (newPos.x - player->mo->x) ;
+			player->mo->momy = (newPos.y - player->mo->y) << 1;
+			player->mo->momz = (newPos.z - player->mo->z) << 1;
+			P_UnsetThingPosition(player->mo);
+			player->mo->x = newPos.x;
+			player->mo->y = newPos.y;
+			player->mo->z = newPos.z;
+			P_SetThingPosition(player->mo);
+		}
+	}
 }
 
 void T_SwingMace(swingmace_t *sm)
