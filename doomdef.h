@@ -260,8 +260,6 @@ typedef struct mobj_s
 
 	fixed_t			x, y, z;
 
-	// RING OBJECTS END HERE
-
 	/* info for drawing */
 	angle_t			angle;
 
