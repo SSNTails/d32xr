@@ -1223,7 +1223,8 @@ void P_SSNMaceRotate(swingmace_t *sm)
 
 		const player_t *player = &players[count];
 
-		if (player->pflags & PF_MACESPIN)
+		if ((player->pflags & PF_MACESPIN)
+			&& player->mo->target == sm->macechain.maceball)
 		{
 			vector3_t newPos;
 			newPos.x = (sm->macechain.x << FRACBITS) + (rotVec.x * dist);

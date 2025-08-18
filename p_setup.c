@@ -360,7 +360,7 @@ static void P_SetupMace(mapthing_t *mthing)
 	if (args[7] < 0)
 		args[7] = 0;
 
-	if (line->sidenum[1] > 0)
+	if (line->sidenum[1] >= 0)
 	{
 		const sector_t *backsector = &sectors[sides[line->sidenum[1]].sector];
 		VINT backtextureoffset = sides[line->sidenum[1]].textureoffset & 0xfff;
