@@ -2756,15 +2756,15 @@ bump_fm:
         tst.w   fm_idx
         beq.s   999f
 
-        move.w  sr,-(sp)
-        move.w  #0x2700,sr          /* disable ints */
+        |move.w  sr,-(sp)
+        |move.w  #0x2700,sr          /* disable ints */
         tst.b   REQ_ACT.w
         bmi.b   99f                 /* sram locked */
         bne.b   0f                  /* Z80 requesting action */
         tst.w   preread_cnt
         bne.b   0f                  /* buffer preread pending */
 99:
-        move.w  (sp)+,sr            /* restore int level */
+        |move.w  (sp)+,sr            /* restore int level */
 999:
         rts
 
@@ -2922,7 +2922,7 @@ play_drum_sound:
         move.w  #0x0000,0xA11100    /* Z80 deassert bus request */
 9:
         movem.l (sp)+,d0-d7/a0-a6
-        move.w  (sp)+,sr            /* restore int level */
+        |move.w  (sp)+,sr            /* restore int level */
         rts
 
 
