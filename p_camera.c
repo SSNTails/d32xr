@@ -288,10 +288,13 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	thiscam->momy = FixedMul(y - thiscam->y, camspeed);
 	thiscam->momz = FixedMul(z - thiscam->z, camspeed);
 
-   if (player->buttons & BT_CAMLEFT)
-      P_ThrustValues(thiscam->angle - ANG90, -16*FRACUNIT, &thiscam->momx, &thiscam->momy);
-   if (player->buttons & BT_CAMRIGHT)
-      P_ThrustValues(thiscam->angle - ANG90, 16*FRACUNIT, &thiscam->momx, &thiscam->momy);
+   if ((player->buttons & BT_CAMLEFT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_LEFT))
+      P_ThrustValues(thiscam->angle - ANG90, -16*FRACUNIT * (invertCamera ? 1 : -1), &thiscam->momx, &thiscam->momy);
+   if ((player->buttons & BT_CAMRIGHT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_RIGHT))
+      P_ThrustValues(thiscam->angle - ANG90, 16*FRACUNIT * (invertCamera ? 1 : -1), &thiscam->momx, &thiscam->momy);
+
+   if (player->pflags & PF_MACESPIN)
+		player->mo->angle = thiscam->angle;
 
    if (!(mo->flags2 & MF2_SHOOTABLE))
       thiscam->momx = thiscam->momy = thiscam->momz = 0;
