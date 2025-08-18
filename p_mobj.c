@@ -864,13 +864,16 @@ void P_MobjCheckWater(mobj_t *mo)
 				}
 
 				// skipping stone!
-				if (!(player->pflags & PF_JUMPED) && player->speed/2 > D_abs(mo->momz)
+				if (!(player->pflags & PF_JUMPED) && player->speed > (D_abs(mo->momz) << 1)
 					&& (player->pflags & PF_SPINNING) && mo->z + mobjinfo[MT_PLAYER].height - mo->momz > watertop)
 				{
 					mo->momz = -mo->momz/2;
 
 					if (mo->momz > 6*FRACUNIT)
 						mo->momz = 6*FRACUNIT;
+
+					mo->momx -= mo->momx >> 2;
+					mo->momy -= mo->momy >> 2;
 				}
 
 				int bubbleCount = D_abs(mo->momz >> FRACBITS);
