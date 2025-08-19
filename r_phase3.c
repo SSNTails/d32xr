@@ -28,6 +28,17 @@ static void R_PrepMobj(mobj_t *thing)
    VINT          lump;
    int        flip;
    const int doubleWide = (thing->flags2 & MF2_NARROWGFX) ? 2 : 1; // Sprites have half the horizontal resolution (like scenery)
+   const sector_t *sec = SS_SECTOR(thing->isubsector);
+
+   // TODO: This is not technically correct, but is a quick way to remove some draw-through
+   if (sec == vd.viewsector && sec->fofsec >= 0)
+   {
+      const sector_t *fofsec = &sectors[sec->fofsec];
+
+      if ((vd.viewz > fofsec->floorheight && thing->z < fofsec->floorheight)
+         || (vd.viewz < fofsec->ceilingheight && thing->z >= fofsec->ceilingheight))
+         return;
+   }
 
    // transform origin relative to viewpoint
    tr_x = thing->x - vd.viewx;
@@ -110,7 +121,6 @@ static void R_PrepMobj(mobj_t *thing)
    // killough 3/27/98: exclude things totally separated
    // from the viewer, by either water or fake ceilings
    // killough 4/11/98: improve sprite clipping for underwater/fake ceilings
-   const sector_t *sec = SS_SECTOR(thing->isubsector);
    const VINT heightsec = sec->heightsec;
    if (heightsec >= 0 && vd.heightsec)   // only clip things which are in special sectors
       {
@@ -302,6 +312,14 @@ static void R_PrepRing(ringmobj_t *thing, int scenery)
    
          if ((vd.underwater) != (localgzt < thingHeight))
             return;
+   }
+   // TODO: This is not technically correct, but is a quick way to remove some draw-through
+   if (sec == vd.viewsector && sec->fofsec >= 0)
+   {
+      const sector_t *fofsec = &sectors[sec->fofsec];
+      if ((vd.viewz > fofsec->floorheight && thingz < fofsec->floorheight)
+         || (vd.viewz < fofsec->ceilingheight && thingz >= fofsec->ceilingheight))
+         return;
    }
 
    // get a new vissprite

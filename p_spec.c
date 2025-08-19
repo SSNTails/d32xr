@@ -1448,6 +1448,7 @@ void P_SpawnSpecials (void)
 			break;
 		}
 		case 100: // 'FOF' sector
+		case 170: // Crumbling (respawn)
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)

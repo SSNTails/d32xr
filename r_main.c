@@ -1159,6 +1159,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.lightlevel = vd.viewsector->lightlevel;
 		vd.aimingangle = thiscam->aiming;
 		vd.heightsec = NULL;
+		vd.fofsec = NULL;
 		vd.underwater = false;
 
 		if (vd.viewsector->heightsec >= 0)
@@ -1179,6 +1180,8 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 					waterpal = 11;
 			}
 		}
+		if (vd.viewsector->fofsec >= 0)
+			vd.fofsec = &sectors[vd.viewsector->fofsec];
 	}
 	else
 	{
@@ -1189,9 +1192,13 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.aimingangle = 0;
 		vd.viewsector = SS_SECTOR(player->mo->isubsector);
 		vd.heightsec = NULL;
+		vd.fofsec = NULL;
 
 		if (vd.viewsector->heightsec >= 0)
 			vd.heightsec = &sectors[vd.viewsector->heightsec];
+
+		if (vd.viewsector->fofsec >= 0)
+			vd.fofsec = &sectors[vd.viewsector->fofsec];
 			
 		vd.lightlevel = vd.viewsector->lightlevel;
 	}

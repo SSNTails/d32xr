@@ -767,6 +767,7 @@ __attribute__((aligned(16)))
 	angle_t		viewangle,aimingangle;
 	sector_t 	*viewsector;
 	sector_t    *heightsec;
+	sector_t    *fofsec;
 	fixed_t		viewcos, viewsin;
 	player_t	*viewplayer;
 	boolean     underwater;
