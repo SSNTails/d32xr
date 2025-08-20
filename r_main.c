@@ -979,6 +979,7 @@ static void R_ColorShiftPalette(const uint8_t *in, int idx, uint8_t *out)
 		{ 0x80, 0x80, 0x80,  1,  2 }, // 12 - Pause
 		{ 0xB7, 0xB7, 0xB7,  1,  2 }, // 13 - THZ water
 		{ 0x3F, 0x2F, 0x17,  6,  8 }, // 14 - CEZ water
+		{ 0x17, 0x88, 0x88,  1,  2 }, // 15 - DSZ water
 	};
 
 	static const uint8_t classic_palette_shifts[][4] = {
@@ -1176,6 +1177,8 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 					waterpal = 13;
 				else if (gamemapinfo.mapNumber == 10 || gamemapinfo.mapNumber == 11)
 					waterpal = 14;
+				else if (gamemapinfo.mapNumber == 7)
+					waterpal = 15;
 				else
 					waterpal = 11;
 			}
