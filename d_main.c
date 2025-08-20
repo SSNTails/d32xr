@@ -10,6 +10,15 @@
 
 #include <string.h>
 
+#ifdef SKYDEBUG
+uint8_t load_sky_lump_scroll_a = 0;
+uint8_t load_sky_lump_scroll_b = 0;
+uint8_t load_sky_lump_copper = 0;
+uint8_t load_sky_lump_metadata = 0;
+uint8_t load_sky_lump_palette = 0;
+uint8_t load_sky_lump_tiles = 0;
+#endif
+
 boolean		splitscreen = false;
 VINT		controltype = 0;		/* determine settings for BT_* */
 
@@ -416,6 +425,47 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		oldticrealbuttons = ticrealbuttons;
 
 		buttons = I_ReadControls();
+
+#ifdef SKYDEBUG
+		if (!gamepaused && oldticrealbuttons == BT_MODE && buttons & BT_MODE) {
+			if (buttons & BT_A) {
+				load_sky_lump_scroll_a++;
+				if (load_sky_lump_scroll_a > 6) {
+					load_sky_lump_scroll_a = 0;
+				}
+			}
+			if (buttons & BT_B) {
+				load_sky_lump_scroll_b++;
+				if (load_sky_lump_scroll_b > 6) {
+					load_sky_lump_scroll_b = 0;
+				}
+			}
+			if (buttons & BT_C) {
+				load_sky_lump_copper++;
+				if (load_sky_lump_copper > 6) {
+					load_sky_lump_copper = 0;
+				}
+			}
+			if (buttons & BT_X) {
+				load_sky_lump_palette++;
+				if (load_sky_lump_palette > 6) {
+					load_sky_lump_palette = 0;
+				}
+			}
+			if (buttons & BT_Y) {
+				load_sky_lump_tiles++;
+				if (load_sky_lump_tiles > 6) {
+					load_sky_lump_tiles = 0;
+				}
+			}
+			if (buttons & BT_Z) {
+				load_sky_lump_metadata++;
+				if (load_sky_lump_metadata > 6) {
+					load_sky_lump_metadata = 0;
+				}
+			}
+		}
+#endif
 
 		if (IsDemoModeType(DemoMode_Playback) && buttons & BT_START) {
 			exit = ga_exitdemo;

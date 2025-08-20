@@ -287,6 +287,21 @@ static void ST_Drawer_ (stbar_t* sb)
 	return;
 #endif
 
+#ifdef SKYDEBUG
+	V_DrawStringRightWithColormap(&menuFont, 280, 32, "SCROLL A:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 44, "SCROLL B:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 56, "COPPER:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 76, "PALETTE:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 88, "TILES:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 100, "METADATA:", YELLOWTEXTCOLORMAP);
+	V_DrawValueLeft(&menuFont, 288, 32, load_sky_lump_scroll_a);
+	V_DrawValueLeft(&menuFont, 288, 44, load_sky_lump_scroll_b);
+	V_DrawValueLeft(&menuFont, 288, 56, load_sky_lump_copper);
+	V_DrawValueLeft(&menuFont, 288, 76, load_sky_lump_palette);
+	V_DrawValueLeft(&menuFont, 288, 88, load_sky_lump_tiles);
+	V_DrawValueLeft(&menuFont, 288, 100, load_sky_lump_metadata);
+#endif
+
 	if (gametic < 96 && !(gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)) {
 		ST_DrawTitleCard();
 	}
