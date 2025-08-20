@@ -2157,7 +2157,16 @@ load_md_sky:
         move.l  d0,a2
         lea     base_palette_1,a3
         move.w  #47,d1
-        move.w  (a2),d0
+        cmpi.b  #0,legacy_emulator      /* Check for legacy emulator */
+        bne.s   1f
+
+        moveq   #0,d0
+        move.w  d0,(a3)+                /* Use black for the background (hardware H32-safe) */
+        addq    #2,a2
+        subq    #1,d1
+        bra.s   2f
+1:
+        move.w  (a2),d0                 /* Use background color from palette lump (best for legacy emulators) */
 2:
         move.w  (a2)+,(a3)+             /* Save color to DRAM */
         move.w  #0,(a1)                 /* Set color to black in CRAM */
