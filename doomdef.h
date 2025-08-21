@@ -94,6 +94,15 @@ typedef unsigned short inpixel_t;
 #define	NULL	0
 #endif
 
+#ifdef SKYDEBUG
+extern uint8_t load_sky_lump_scroll_a;
+extern uint8_t load_sky_lump_scroll_b;
+extern uint8_t load_sky_lump_copper;
+extern uint8_t load_sky_lump_metadata;
+extern uint8_t load_sky_lump_palette;
+extern uint8_t load_sky_lump_tiles;
+#endif
+
 int D_vsnprintf(char *str, size_t nmax, const char *format, va_list ap) __attribute__((nonnull));
 int D_snprintf(char *buf, size_t nsize, const char *fmt, ...) __attribute__((nonnull));
 void D_printf (char *str, ...) __attribute__((nonnull));

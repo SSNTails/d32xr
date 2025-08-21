@@ -535,7 +535,19 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 
 	char lumpname[9];
 
+#ifdef SKYDEBUG
+	char altname[] = { 'S', 'K', 'Y', '0', '\0' };
+
+	if (load_sky_lump_metadata > 0) {
+		altname[3] = '0' + load_sky_lump_metadata;
+		D_snprintf(lumpname, 8, "%sC%d", altname, copper_lump);
+	}
+	else {
+		D_snprintf(lumpname, 8, "%sC%d", name, copper_lump);
+	}
+#else
 	D_snprintf(lumpname, 8, "%sC%d", name, copper_lump);
+#endif
 	lump = W_CheckNumForName(lumpname);
 	if (lump == -1) {
 		return -1;
@@ -631,7 +643,19 @@ void R_SetupMDSky(const char *name, int palettes_lump)
 
 	char lumpname[9];
 
+#ifdef SKYDEBUG
+	char altname[] = { 'S', 'K', 'Y', '0', '\0' };
+
+	if (load_sky_lump_metadata > 0) {
+		altname[3] = '0' + load_sky_lump_metadata;
+		D_snprintf(lumpname, 8, "%sMD", altname);
+	}
+	else {
+		D_snprintf(lumpname, 8, "%sMD", name);
+	}
+#else
 	D_snprintf(lumpname, 8, "%sMD", name);
+#endif
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		// This map uses an MD sky.
@@ -645,7 +669,17 @@ void R_SetupMDSky(const char *name, int palettes_lump)
 		return;
 	}
 
+#ifdef SKYDEBUG
+	if (load_sky_lump_scroll_a > 0) {
+		altname[3] = '0' + load_sky_lump_scroll_a;
+		D_snprintf(lumpname, 8, "%sA", altname);
+	}
+	else {
+		D_snprintf(lumpname, 8, "%sA", name);
+	}
+#else
 	D_snprintf(lumpname, 8, "%sA", name);
+#endif
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_names_a_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -655,7 +689,17 @@ void R_SetupMDSky(const char *name, int palettes_lump)
 		return;
 	}
 
+#ifdef SKYDEBUG
+	if (load_sky_lump_scroll_b > 0) {
+		altname[3] = '0' + load_sky_lump_scroll_b;
+		D_snprintf(lumpname, 8, "%sB", altname);
+	}
+	else {
+		D_snprintf(lumpname, 8, "%sB", name);
+	}
+#else
 	D_snprintf(lumpname, 8, "%sB", name);
+#endif
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_names_b_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -665,7 +709,17 @@ void R_SetupMDSky(const char *name, int palettes_lump)
 		return;
 	}
 
+#ifdef SKYDEBUG
+	if (load_sky_lump_palette > 0) {
+		altname[3] = '0' + load_sky_lump_palette;
+		D_snprintf(lumpname, 8, "%sP%d", altname, palettes_lump);
+	}
+	else {
+		D_snprintf(lumpname, 8, "%sP%d", name, palettes_lump);
+	}
+#else
 	D_snprintf(lumpname, 8, "%sP%d", name, palettes_lump);
+#endif
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_palettes_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
@@ -675,7 +729,17 @@ void R_SetupMDSky(const char *name, int palettes_lump)
 		return;
 	}
 
+#ifdef SKYDEBUG
+	if (load_sky_lump_tiles > 0) {
+		altname[3] = '0' + load_sky_lump_tiles;
+		D_snprintf(lumpname, 8, "%sTIL", altname);
+	}
+	else {
+		D_snprintf(lumpname, 8, "%sTIL", name);
+	}
+#else
 	D_snprintf(lumpname, 8, "%sTIL", name);
+#endif
 	lump = W_CheckNumForName(lumpname);
 	if (lump != -1) {
 		sky_tiles_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
