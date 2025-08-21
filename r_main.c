@@ -538,8 +538,8 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 #ifdef SKYDEBUG
 	char altname[] = { 'S', 'K', 'Y', '0', '\0' };
 
-	if (load_sky_lump_metadata > 0) {
-		altname[3] = '0' + load_sky_lump_metadata;
+	if (load_sky_lump_copper > 0) {
+		altname[3] = '0' + load_sky_lump_copper;
 		D_snprintf(lumpname, 8, "%sC%d", altname, copper_lump);
 	}
 	else {
