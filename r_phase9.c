@@ -146,6 +146,16 @@ static void R_UpdateCache(void)
             }
         }
       }
+
+      if (wall->fof_picnum >= 0)
+      {
+        flattex_t *flat = &flatpixels[wall->fof_picnum];
+        for (i = minplanemip; i <= maxplanemip; i++) {
+            if (!R_TouchIfInTexCache(&r_texcache, flat->data[i]) && (bestmips[i] < 0)) {
+                bestmips[i] = numtextures+wall->fof_picnum;
+            }
+        }
+      }
    }
 
    for (i = 0; i < MIPLEVELS; i++) {
