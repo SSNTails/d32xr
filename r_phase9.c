@@ -147,7 +147,7 @@ static void R_UpdateCache(void)
         }
       }
 
-      if (wall->fof_picnum >= 0)
+      if (wall->fof_picnum != (uint8_t)-1)
       {
         flattex_t *flat = &flatpixels[wall->fof_picnum];
         for (i = minplanemip; i <= maxplanemip; i++) {
