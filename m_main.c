@@ -92,6 +92,8 @@ static char fistCounter = 5;
 static char sBlinkCounter = 110;
 static char tBlinkCounter = 25;
 static char kBlinkCounter = 76;
+static VINT titleTicker = 0;
+static VINT titleSmallTicker = 0;
 
 static VINT	cursorframe;
 static VINT cursordelay;
@@ -125,6 +127,8 @@ void M_Start2 (boolean startup_)
 
 	startup = startup_;
 	m_doom = NULL;
+	titleTicker = 0;
+	titleSmallTicker = 0;
 	if (startup)
 	{
 		i = W_CheckNumForName("M_TITLE");
@@ -408,9 +412,13 @@ int M_Ticker (void)
 
 /* animate skull */
 	if (gametic & 1)
-	{
+		titleTicker++;
+
+	if (titleTicker & 1)
 		cursorframe++;
-	}
+
+	if (cursorframe & 1)
+		titleSmallTicker++;
 
 	M_UpdateSaveInfo();
 
@@ -695,32 +703,31 @@ void M_Drawer (void)
 		DrawJagobj(m_doom, logoPos, 16);
 		y_offset = m_doom->height + 24 - STARTY;
 
-		DrawJagobj(m_hand[cursorframe % NUMHANDFRAMES], 160 + 3, 16 + 32);
+		DrawJagobj(m_hand[titleSmallTicker % NUMHANDFRAMES], 160 + 3, 16 + 32);
 
-		DrawJagobj(m_tailwag[cursorframe % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
+		DrawJagobj(m_tailwag[titleSmallTicker % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
 
-		if (gametic & 1)
+		if (titleTicker & 1)
 		{
-			fistCounter--;
+			sBlinkCounter--;
+			if (sBlinkCounter <= -NUMSBLINKFRAMES)
+				sBlinkCounter = M_Random() & 127;
+			tBlinkCounter--;
+			if (tBlinkCounter <= -NUMTBLINKFRAMES)
+				tBlinkCounter = M_Random() & 127;
+			kBlinkCounter--;
+			if (kBlinkCounter <= -NUMKBLINKFRAMES)
+				kBlinkCounter = M_Random() & 127;
 
+			fistCounter--;
 			if (fistCounter <= -NUMKFISTFRAMES)
-				fistCounter = 15 + (M_Random() & 7);
+				fistCounter = 15 + (M_Random() & 15);
 		}
 
 		if (fistCounter < 0)
 			DrawJagobj(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
 		else
 			DrawJagobj(m_kfist[0], logoPos + 188, 16 + 43);
-
-		sBlinkCounter--;
-		if (sBlinkCounter <= -NUMSBLINKFRAMES)
-			sBlinkCounter = M_Random() & 127;
-		tBlinkCounter--;
-		if (tBlinkCounter <= -NUMTBLINKFRAMES)
-			tBlinkCounter = M_Random() & 127;
-		kBlinkCounter--;
-		if (kBlinkCounter <= -NUMKBLINKFRAMES)
-			kBlinkCounter = M_Random() & 127;
 
 		if (sBlinkCounter < 0)
 			DrawJagobj(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27);
