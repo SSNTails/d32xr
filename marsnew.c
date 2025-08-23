@@ -692,11 +692,6 @@ void I_Update(void)
 	static VINT framenum = 0;
 	const int refreshHZ = Mars_RefreshHZ();
 
-	if (ticsperframe < MINTICSPERFRAME)
-		ticsperframe = MINTICSPERFRAME;
-	else if (ticsperframe > MAXTICSPERFRAME)
-		ticsperframe = MAXTICSPERFRAME;
-
 	if (optionsMenuOn)
 		if ((ticrealbuttons & BT_MODE) && !(oldticrealbuttons & BT_MODE))
 		{
@@ -722,7 +717,7 @@ void I_Update(void)
 	/* */
 	/* wait until on the third tic after last display */
 	/* */
-	const int ticwait = (IsTitleScreen() ? 2 : ticsperframe); // run title screen at 30 fps
+	const int ticwait = 2; // Run EVERYTHING at 30 fps
 
 	// Adjust sky position.
 	unsigned short scroll_y_base = gamemapinfo.skyOffsetY;
@@ -771,10 +766,12 @@ void I_Update(void)
 		ticcount = I_GetTime();
 	} while (ticcount - lastticcount < ticwait);
 
+	// What the heck does all this do?
 	lasttics = ticcount - lastticcount;
 	lastticcount = ticcount;
 	if (lasttics > 99) lasttics = 99;
 
+	// This too...
 	framenum++;
 	if (ticcount > prevsecticcount + refreshHZ) {
 		fpscount = (framenum * refreshHZ) / (ticcount - prevsecticcount);

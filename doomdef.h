@@ -1414,10 +1414,6 @@ extern	VINT		vblsinframe;			/* range from 4 to 8 */
 
 #define MAX_FRAME_SKIP		3
 
-#define MINTICSPERFRAME		1
-#define MAXTICSPERFRAME		4
-extern	VINT	ticsperframe;		/* 2 - 4 */
-
 typedef enum
 {
 	DEBUGMODE_NONE,

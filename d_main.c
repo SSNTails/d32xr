@@ -30,8 +30,6 @@ boolean		h40_sky = false;
 VINT			gamevbls;		/* may not really be vbls in multiplayer */
 VINT			vblsinframe;		/* range from ticrate to ticrate*2 */
 
-VINT		ticsperframe = MINTICSPERFRAME;
-
 VINT		maxlevel;			/* highest level selectable in menu (1-25) */
 jagobj_t	*backgroundpic;
 

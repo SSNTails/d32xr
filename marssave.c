@@ -217,7 +217,6 @@ static void ReadOptions(void)
 	controltype = so.controltype;
 	viewportNum = so.viewport;
 	musictype = so.musictype;
-	ticsperframe = MINTICSPERFRAME;
 	anamorphicview = so.anamorphic;
 	sfxdriver = so.sfxdriver;
 }
@@ -238,7 +237,6 @@ void ReadEEProm(void)
 	musicvolume = 64;
 	viewportNum = R_DefaultViewportSize();
 	musictype = mustype_fm;
-	ticsperframe = MINTICSPERFRAME;
 	anamorphicview = 0;
 	sfxdriver = 0;
 
