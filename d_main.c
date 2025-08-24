@@ -725,11 +725,7 @@ int TIC_LevelSelect (void)
 
 void START_LevelSelect (void)
 {
-	for (int i = 0; i < 2; i++)
-	{
-		I_FillFrameBuffer(COLOR_THRU);
-		UpdateBuffer();
-	}
+	DoubleBufferSetup();	// Clear frame buffers to black.
 
 	screenCount = 0;
 
@@ -737,14 +733,18 @@ void START_LevelSelect (void)
 
 	startmap = 1;
 
-	UpdateBuffer();
-
 	I_SetPalette(dc_playpals);
 
 	R_InitColormap();
 
 	R_SetupBackground("MENU", 1, 1);
 	R_SetupCopperTable("MENU", 1, 1);
+
+	// Set to totally black
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+	Mars_FadeMDPaletteFromBlack(0);
+	copper_table_brightness = -31;
+	effects_flags |= EFFECTS_COPPER_REFRESH;
 
 	SetTransition(TransitionType_Entering);
 
@@ -766,6 +766,12 @@ void START_LevelSelect (void)
 	
 	char buf[512];
 	G_FindMapinfo(G_LumpNumForMapNum(1), &selected_map_info, buf);
+
+	for (int i = 0; i < 2; i++)
+	{
+		I_FillFrameBuffer(COLOR_THRU);
+		UpdateBuffer();
+	}
 }
 
 #ifdef MEMDEBUG
@@ -774,11 +780,7 @@ boolean debugStop = false;
 
 void STOP_LevelSelect (void)
 {
-	// Set to totally black
-	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
-	Mars_FadeMDPaletteFromBlack(0);
-	copper_table_brightness = -31;
-	effects_flags |= EFFECTS_COPPER_REFRESH;
+	DoubleBufferSetup();	// Clear frame buffers to black.
 
 	Z_Free(lvlsel_pic);
 
@@ -826,8 +828,8 @@ void DRAW_LevelSelect (void)
 	// Clear left arrow
 	pixel_t* background = I_FrameBuffer() + (((320*112) + ((320-16)>>1)-96-4) >> 1);
 
-	for (int y=112; y < 112+29; y++) {
-		for (int x=0; x < (32>>3); x++) {
+	for (int y=0; y < 29; y++) {
+		for (int x=0; x < (24>>3); x++) {
 			// Write 8 thru pixels
 			*background++ = COLOR_THRU_2;
 			*background++ = COLOR_THRU_2;
@@ -835,14 +837,14 @@ void DRAW_LevelSelect (void)
 			*background++ = COLOR_THRU_2;
 		}
 
-		background += (288>>1);
+		background += (296>>1);
 	}
 
 	// Clear right arrow
-	background = I_FrameBuffer() + (((320*112) + ((320-16)>>1)+96) >> 1);
+	background = I_FrameBuffer() + (((320*112) + ((320-16)>>1)+96-4) >> 1);
 
-	for (int y=112; y < 112+29; y++) {
-		for (int x=0; x < (32>>3); x++) {
+	for (int y=0; y < 29; y++) {
+		for (int x=0; x < (24>>3); x++) {
 			// Write 8 thru pixels
 			*background++ = COLOR_THRU_2;
 			*background++ = COLOR_THRU_2;
@@ -850,13 +852,13 @@ void DRAW_LevelSelect (void)
 			*background++ = COLOR_THRU_2;
 		}
 
-		background += (288>>1);
+		background += (296>>1);
 	}
 
 	// Clear level name text
 	background = I_FrameBuffer() + (((320*160) + ((320>>1)-64)) >> 1);
 
-	for (int y=160; y < 160+20; y++) {
+	for (int y=0; y < 20; y++) {
 		for (int x=0; x < (128>>3); x++) {
 			// Write 8 thru pixels
 			*background++ = COLOR_THRU_2;
@@ -891,16 +893,16 @@ void DRAW_LevelSelect (void)
 	}
 
 	// Draw black lines
-	DrawLine(82, 58, 160, 0x1F, false);
-	DrawLine(82, 193, 160, 0x1F, false);
-	DrawLine(82, 59, 134, 0x1F, true);
-	DrawLine(241, 59, 134, 0x1F, true);
+	DrawLine(86, 58, 152, 0x1F, false);
+	DrawLine(86, 193, 152, 0x1F, false);
+	DrawLine(86, 59, 134, 0x1F, true);
+	DrawLine(237, 59, 134, 0x1F, true);
 
 	// Draw red lines
-	DrawLine(80, 56, 160, 0x23, false);
-	DrawLine(80, 191, 160, 0x23, false);
-	DrawLine(80, 57, 134, 0x23, true);
-	DrawLine(239, 57, 134, 0x23, true);
+	DrawLine(84, 56, 152, 0x23, false);
+	DrawLine(84, 191, 152, 0x23, false);
+	DrawLine(84, 57, 134, 0x23, true);
+	DrawLine(235, 57, 134, 0x23, true);
 
 	// Draw chevrons
 	int chev_offset = (screenCount & 0x1F);
@@ -917,7 +919,7 @@ void DRAW_LevelSelect (void)
 	// Clear countdown digits
 	background = I_FrameBuffer() + (((320*184) + 280) >> 1);
 
-	for (int y=184; y < 184+12; y++) {
+	for (int y=0; y < 12; y++) {
 		for (int x=0; x < (16>>3); x++) {
 			// Write 8 thru pixels
 			*background++ = COLOR_THRU_2;
@@ -1476,7 +1478,7 @@ D_printf ("DM_Main\n");
 			M_Start();
 			SetTitleScreen();
 			exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-			M_Stop();
+			//M_Stop();
 
 			switch (exit) {
 				case ga_startnew:
