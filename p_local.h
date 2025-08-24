@@ -117,6 +117,9 @@ extern VINT numringmobjs;
 extern VINT numstaticmobjs;
 extern VINT numregmobjs;
 
+extern VINT scenerymobjcount;
+extern VINT ringmobjcount;
+
 extern sectorBBox_t sectorBBoxes;
 
 extern	int			activethinkers;	/* debug count */

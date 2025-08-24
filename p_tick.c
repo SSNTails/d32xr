@@ -51,6 +51,9 @@ VINT numringmobjs = 0;
 VINT numstaticmobjs = 0;
 VINT numregmobjs = 0;
 
+VINT scenerymobjcount = 0;
+VINT ringmobjcount = 0;
+
 //int			activethinkers;	/* debug count */
 //int			activemobjs;	/* debug count */
 

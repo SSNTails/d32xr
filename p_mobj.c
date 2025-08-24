@@ -271,6 +271,9 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	{
 		if (info->flags & MF_NOBLOCKMAP) // It's scenery
 		{
+			if (numscenerymobjs >= scenerymobjcount)
+				I_Error("No more slots available for a scenery mobj.");
+				
 			scenerymobj_t *scenerymobj = &scenerymobjlist[numscenerymobjs];
 			scenerymobj->type = type;
 			scenerymobj->x = x >> FRACBITS;
@@ -286,6 +289,9 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		}
 		else // It's a ring
 		{
+			if (numringmobjs >= ringmobjcount)
+				I_Error("No more slots available for a ring mobj.");
+
 			ringmobj_t *ringmobj = &ringmobjlist[numringmobjs];
 			ringmobj->type = type;
 			ringmobj->x = x >> FRACBITS;
@@ -386,6 +392,9 @@ int thingmem = 0;
 */
 void P_PreSpawnMobjs(int count, int staticcount, int ringcount, int scenerycount)
 {
+	ringmobjcount = ringcount;
+	scenerymobjcount = scenerycount;
+
 	thingmem = count * sizeof(mobj_t) + staticcount * static_mobj_size + ringcount * sizeof(ringmobj_t) + scenerycount * sizeof(scenerymobj_t);
 
 	if (scenerycount > 0)

@@ -298,18 +298,15 @@ static short P_GetMaceLinkCount(mapthing_t *mthing)
 	if (!line)
 		return 0;
 
+	if (line->sidenum[1] < 0) // Must be an old unconverted one
+		return 0;
+
 	const mapvertex_t *v1 = &vertexes[line->v1];
 	const mapvertex_t *v2 = &vertexes[line->v2];
 
-	VINT rowoffset = (sides[line->sidenum[0]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[0]].rowoffset << 4);
-    rowoffset >>= 4; // sign extend
-	VINT subtract = -rowoffset;
-
-	if (subtract < 0) // Compatibility
-		subtract = 0;
-
-	VINT mlength = D_abs(v1->x - v2->x);
-	return mlength - subtract; // # of links
+	sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
+	VINT mlength = D_abs(v1->x - v2->x) - frontsector->lightlevel;
+	return mlength; // # of links
 }
 
 static void P_SetupMace(mapthing_t *mthing)
@@ -332,11 +329,14 @@ static void P_SetupMace(mapthing_t *mthing)
 	if (!line)
 		return;
 
+	if (line->sidenum[1] < 0) // Must be an old unconverted one
+		return;
+
 	D_memset(args, 0, sizeof(args));
 
 	vector3_t axis, rotation;
 
-	const sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
+	sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
 	const mapvertex_t *v1 = &vertexes[line->v1];
 	const mapvertex_t *v2 = &vertexes[line->v2];
 //	const VINT angle = frontsector->ceilingheight >> FRACBITS;
@@ -362,7 +362,7 @@ static void P_SetupMace(mapthing_t *mthing)
 
 	if (line->sidenum[1] >= 0)
 	{
-		const sector_t *backsector = &sectors[sides[line->sidenum[1]].sector];
+		sector_t *backsector = &sectors[sides[line->sidenum[1]].sector];
 		VINT backtextureoffset = sides[line->sidenum[1]].textureoffset & 0xfff;
 		backtextureoffset <<= 4; // sign extend
 		backtextureoffset >>= 4; // sign extend
@@ -373,6 +373,7 @@ static void P_SetupMace(mapthing_t *mthing)
 		args[2] = backrowoffset;
 		args[5] = backsector->floorheight >> FRACBITS;
 		args[6] = backtextureoffset;
+		args[9] = backsector->lightlevel << 1; // Swing speed
 
 		rotation.x = backtextureoffset;
 		rotation.y = backrowoffset;
@@ -395,6 +396,9 @@ static void P_SetupMace(mapthing_t *mthing)
 		args[8] |= TMM_CLIP;
 	if (ldflags[line-lines] & ML_UNUSED2_WRAPMIDTEX)
 		args[8] |= TMM_ALWAYSTHINK;
+
+//	if (tag == 120)
+//		args[8] |= TMM_ALWAYSTHINK;
 
 	// Whew! We gathered all of the info. Let's do something with it, now.
 	P_AddMaceChain(mthing, &axis, &rotation, args);
@@ -447,10 +451,13 @@ void P_LoadThings (int lump)
 		{
 			int maceLinkCount = P_GetMaceLinkCount(mt);
 
-			// Determine the # of objects that will be spawned
-			numthingsreal++; // End of chain (ball)
-			numringthings += maceLinkCount; // links
-			numMaces++;
+			if (maceLinkCount > 0)
+			{
+				// Determine the # of objects that will be spawned
+				numthingsreal++; // End of chain (ball)
+				numringthings += maceLinkCount; // links
+				numMaces++;
+			}
 		}
 		else
 		{

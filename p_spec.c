@@ -1117,9 +1117,9 @@ typedef struct
 	int16_t mwidth;
 	int16_t tag; // for debugging
 	int16_t msublinks; // # of links from the inside to subtract
+	int16_t swingSpeed;
 
 	boolean sound;
-	boolean swinging;
 
 	// new idea
 	vector3_t nv; // Normalized vector
@@ -1137,9 +1137,9 @@ void P_SSNMaceRotate(swingmace_t *sm)
 	vector4_t axis;
 	vector4_t rotationDir;
 
-	if (sm->swinging)
+	if (sm->swingSpeed)
 	{
-		angle_t swingmag = FixedMul(finecosine(curPos), (sm->mspeed * sm->mspeed * sm->mspeed) << FRACBITS);
+		angle_t swingmag = FixedMul(finecosine(curPos), sm->swingSpeed << FRACBITS);
 		angle_t fa = swingmag >> ANGLETOFINESHIFT;
 //		CONS_Printf("fa: %d", fa);
 		curPos = fa;
@@ -1268,6 +1268,12 @@ void T_SwingMace(swingmace_t *sm)
 static swingmace_t *cursorMace = NULL;
 void P_PreallocateMaces(int numMaces)
 {
+	if (numMaces <= 0)
+	{
+		cursorMace = NULL;
+		return;
+	}
+
 	size_t allocSize = sizeof(swingmace_t) * numMaces;
 	cursorMace = Z_Malloc(allocSize, PU_LEVSPEC);
 	D_memset(cursorMace, 0, allocSize);
@@ -1299,7 +1305,10 @@ sm->msublinks = args[7];
 sm->mminlength = D_max(0, D_min(mlength - 1, args[7]));
 sm->tag = point->angle;
 
-	sm->swinging = (args[8] & TMM_SWING);
+	if (args[8] & TMM_SWING)
+	{
+		sm->swingSpeed = args[9] << 8;
+	}
 
 	fixed_t x = point->x << FRACBITS;
 	fixed_t y = point->y << FRACBITS;
@@ -1397,6 +1406,12 @@ sm->tag = point->angle;
 	sm->rotation.x = rotation->x;
 	sm->rotation.y = rotation->y;
 	sm->rotation.z = rotation->z;
+/*
+	if (sm->tag == 137 || sm->tag == 138)
+	{
+		I_Error("%d, %d, %d\n%d, %d, %d\n%d, %d, %d\n%d, %d, %d", sm->nv.x, sm->nv.y, sm->nv.z, sm->rotation.x, sm->rotation.y, sm->rotation.z,
+		sm->nv.x << 9, sm->nv.y << 9, sm->nv.z << 9, sm->rotation.x << 9, sm->rotation.y << 9, sm->rotation.z << 9);
+	}*/
 }
 
 VINT		numlineanimspecials = 0;
