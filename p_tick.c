@@ -896,7 +896,7 @@ void P_Start (void)
 
 void P_Stop (void)
 {
-	if (!IsTitleScreen() {
+	if (!IsTitleScreen()) {
 		S_StopSong();
 	}
 
