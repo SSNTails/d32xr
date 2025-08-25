@@ -27,6 +27,7 @@
 #include "doomdef.h"
 #include "marshw.h"
 #include "r_local.h"
+#include "v_font.h"
 
 static volatile uint16_t mars_activescreen = 0;
 
@@ -811,10 +812,34 @@ void Mars_Finish(void)
 	while (MARS_SYS_COMM0 != 0);
 }
 
+#ifdef CPUDEBUG
+void pri_vbi_debug(void)
+{
+	// TODO: Put all debugger logic here!
+
+	//DoubleBufferSetup();
+
+	//V_DrawValueLeft(&menuFont, 32, 64, cpu_debug_pr);
+
+	//Mars_FlipFrameBuffers(false);
+
+	//while(true);
+}
+#endif
+
 void pri_vbi_handler(void)
 {
 	mars_vblank_count++;
 	mars_hblank_count = 0;
+
+#ifdef CPUDEBUG
+	if (cpu_debug_pr) {
+		// TODO: This logic should be in the pri_vbi_debug() function!
+		R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK), dc_cshift_playpals);
+		V_DrawValueLeft(&menuFont, 32, 128, cpu_debug_pr);
+		Mars_FlipFrameBuffers(true);
+	}
+#endif
 
 	if (mars_newpalette)
 	{

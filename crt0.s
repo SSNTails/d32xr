@@ -557,6 +557,35 @@ pri_v_irq:
         jsr     @r0
         nop
 
+
+        ! CPU debugger
+        mov     #0,r1
+        mov     r1,r2
+        mov.l   pvi_cpu_pulse_timeout,r3
+        mov.b   @r3,r2
+        cmp/eq  r1,r2
+        bt      2f
+
+        mov.l   pvi_cpu_pulse_count,r0
+        mov.b   @r0,r1
+        add     #1,r1
+
+        cmp/hs  r2,r1
+        bf      1f
+
+        sts     pr,r2
+        mov.l   pvi_cpu_debug_pr,r3
+        mov.l   r2,@r3
+
+        ! Run the debug handler
+        mov.l   pvbi_debug_ptr,r3
+        jsr     @r3
+        nop
+1:
+        mov.b   r1,@r0
+2:
+
+
         ! restore registers
         lds.l   @r15+,macl
         lds.l   @r15+,mach
@@ -576,6 +605,17 @@ pvbi_handler_ptr:
         .long   _pri_vbi_handler
 pvi_sh2_frtctl:
         .long   0xfffffe10
+
+pvi_cpu_pulse_count:
+        .long   _cpu_pulse_count
+pvi_cpu_pulse_timeout:
+        .long   _cpu_pulse_timeout
+
+pvi_cpu_debug_pr:
+        .long   _cpu_debug_pr
+
+pvbi_debug_ptr:
+        .long   _pri_vbi_debug
 
 pvi_int_mask_no_hint:
         .short  0xFB

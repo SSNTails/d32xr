@@ -103,6 +103,13 @@ extern uint8_t load_sky_lump_palette;
 extern uint8_t load_sky_lump_tiles;
 #endif
 
+#ifdef CPUDEBUG
+extern uint8_t cpu_pulse_count;
+extern uint8_t cpu_pulse_timeout;
+
+extern uint32_t cpu_debug_pr;
+#endif
+
 int D_vsnprintf(char *str, size_t nmax, const char *format, va_list ap) __attribute__((nonnull));
 int D_snprintf(char *buf, size_t nsize, const char *fmt, ...) __attribute__((nonnull));
 void D_printf (char *str, ...) __attribute__((nonnull));

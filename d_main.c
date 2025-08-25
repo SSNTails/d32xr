@@ -19,6 +19,13 @@ uint8_t load_sky_lump_palette = 0;
 uint8_t load_sky_lump_tiles = 0;
 #endif
 
+#ifdef CPUDEBUG
+uint8_t cpu_pulse_count = 0;
+uint8_t cpu_pulse_timeout = 0;
+
+uint32_t cpu_debug_pr = 0;
+#endif
+
 boolean		splitscreen = false;
 VINT		controltype = 0;		/* determine settings for BT_* */
 
@@ -414,6 +421,10 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 			accum_time = 1;
 			total_frt_count = 0;
 		}
+
+#ifdef CPUDEBUG
+		cpu_pulse_count = 0;
+#endif
 
 		/* */
 		/* get buttons for next tic */
@@ -1473,6 +1484,9 @@ D_printf ("DM_Main\n");
 			// Title intro
 			G_InitNew (TITLE_MAP_NUMBER, gt_single, false);
 			MiniLoop (START_Title, STOP_Title, TIC_Abortable, DRAW_Title, UpdateBuffer);
+#ifdef CPUDEBUG
+			cpu_pulse_timeout = 240;	// 4 seconds
+#endif
 
 			// Title with menu
 			M_Start();

@@ -896,6 +896,10 @@ void P_Start (void)
 
 void P_Stop (void)
 {
+	if (!IsTitleScreen() {
+		S_StopSong();
+	}
+
 	DoubleBufferSetup();	// Clear frame buffers to black.
 	M_Stop();
 	ClearCopper();
