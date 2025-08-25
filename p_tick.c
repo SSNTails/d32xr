@@ -865,6 +865,8 @@ void P_Drawer (void)
 
 void P_Start (void)
 {
+	DoubleBufferSetup();
+
 	/* load a level */
 	G_DoLoadLevel();
 
@@ -889,11 +891,16 @@ void P_Start (void)
 		}
 	}
 
-	clearscreen = 2;
+	//clearscreen = 2;
 }
 
 void P_Stop (void)
 {
+	if (!IsTitleScreen()) {
+		S_StopSong();
+	}
+
+	DoubleBufferSetup();	// Clear frame buffers to black.
 	M_Stop();
 	ClearCopper();
 	Z_FreeTags (mainzone);

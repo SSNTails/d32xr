@@ -1836,6 +1836,55 @@ load_md_sky:
 
 
 
+        /* Load palettes */
+        |bset.l  #0,(test_values+8)      /* TESTING */
+        bsr     get_lump_source_and_size
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.w  #0x8F02,(a0)
+        move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
+        move.l  lump_ptr,d0
+        andi.l  #0x7FFFF,d0
+        addi.l  #0x880000,d0
+        move.l  d0,a2
+        lea     base_palette_1,a3
+        move.w  #47,d1
+        cmpi.b  #0,legacy_emulator      /* Check for legacy emulator */
+        bne.s   1f
+
+        moveq   #0,d0
+        move.w  d0,(a3)+                /* Use black for the background (hardware H32-safe) */
+        addq    #2,a2
+        subq    #1,d1
+        bra.s   2f
+1:
+        move.w  (a2),d0                 /* Use background color from palette lump (best for legacy emulators) */
+2:
+        move.w  (a2)+,(a3)+             /* Save color to DRAM */
+        move.w  #0,(a1)                 /* Set color to black in CRAM */
+        |add.l   #0x40000,a1            /* Advance the destination cursor */
+        dbra    d1,2b
+
+        move.w  d0,(a3)+                /* Set color 48 to match color 0 */
+        move.w  d0,(a3)+                /* Set color 49 to match color 0 */
+
+        /* Load patterns */
+        |bset.l  #0,(test_values+12)      /* TESTING */
+        bsr     decompress_lump
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.w  #0x8F02,(a0)
+        move.l  #0x4A800000,(a0)        /* Write VRAM address 0x0A80 */
+        lea     decomp_buffer,a2
+        move.l  lump_size,d1
+        lsr.l   #1,d1
+        sub.l   #1,d1
+3:
+        move.w  (a2)+,(a1)              /* Copy eight pixels from the source */
+        dbra    d1,3b
+
+
+
         /* Load pattern name table B1 */
         |move.l  #0,(test_values+0)
         |bset.l  #0,(test_values+0)      /* TESTING */
@@ -2075,62 +2124,6 @@ load_md_sky:
         move.w  (a2)+,(a1)              /* Write 0 to pattern name table A1 at position 0x0 */
         dbra    d1,0b
 9:
-
-
-|        move.w  #0x0000,d2              /* Initial Horizontal Scroll Table address (0x0000 >> 10) */
-|
-|
-|        /* Load pattern name table B2 */
-|        bsr     decompress_lump
-|        tst.l   lump_size
-|        beq.s   9f                      /* Skip loading pattern name table B2 since the lump doesn't exist */
-|        subq.b  #8,d2
-|        move.b  #0x05,d1
-|        move.b  d1,scroll_b_address_register_values_2
-|        lea     0xC00004,a0
-|        lea     0xC00000,a1
-|        move.w  #0x8F02,(a0)
-|        move.l  #0x60000002,(a0)        /* Set destination offset to pattern name table B2 at position 0x0 */
-|        lea     decomp_buffer,a2
-|        move.l  lump_size,d1
-|        lsr.l   #1,d1
-|        sub.l   #1,d1
-|0:
-|        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B2 at position 0x0 */
-|        dbra    d1,0b
-|9:
-|
-|
-|        /* Load pattern name table A2 */
-|        bsr     decompress_lump
-|        tst.l   lump_size
-|        beq.s   9f                      /* Skip loading pattern name table A2 since the lump doesn't exist */
-|        subq.b  #8,d2
-|        lea     0xC00004,a0
-|        lea     0xC00000,a1
-|        move.w  #0x8F02,(a0)
-|
-|        cmpi.b  #7,scroll_b_address_register_values_2
-|        beq.b   0f
-|        move.b  #0x20,d1
-|        move.l  #0x40000002,(a0)        /* Set destination offset to pattern name table A2 at position 0x0 */
-|        bra.s   1f
-|0:
-|        move.b  #0x28,d1
-|        move.l  #0x60000002,(a0)        /* Set destination offset to pattern name table A2 at position 0x0 */
-|1:
-|        move.b  d1,scroll_a_address_register_values_2
-|        lea     decomp_buffer,a2
-|        move.l  lump_size,d1
-|        lsr.l   #1,d1
-|        sub.l   #1,d1
-|0:
-|        move.w  (a2)+,(a1)              /* Write 0 to pattern name table A2 at position 0x0 */
-|        dbra    d1,0b
-|9:
-
-
-
         lea     0xC00004,a0
         lea     0xC00000,a1
 
@@ -2143,58 +2136,6 @@ load_md_sky:
         move.w  d0,(a0) /* reg 4 = Name Tbl B */
 
 
-
-        /* Load palettes */
-        |bset.l  #0,(test_values+8)      /* TESTING */
-        bsr     get_lump_source_and_size
-        lea     0xC00004,a0
-        lea     0xC00000,a1
-        move.w  #0x8F02,(a0)
-        move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
-        move.l  lump_ptr,d0
-        andi.l  #0x7FFFF,d0
-        addi.l  #0x880000,d0
-        move.l  d0,a2
-        lea     base_palette_1,a3
-        move.w  #47,d1
-        cmpi.b  #0,legacy_emulator      /* Check for legacy emulator */
-        bne.s   1f
-
-        moveq   #0,d0
-        move.w  d0,(a3)+                /* Use black for the background (hardware H32-safe) */
-        addq    #2,a2
-        subq    #1,d1
-        bra.s   2f
-1:
-        move.w  (a2),d0                 /* Use background color from palette lump (best for legacy emulators) */
-2:
-        move.w  (a2)+,(a3)+             /* Save color to DRAM */
-        move.w  #0,(a1)                 /* Set color to black in CRAM */
-        |add.l   #0x40000,a1            /* Advance the destination cursor */
-        dbra    d1,2b
-
-        move.w  d0,(a3)+                /* Set color 48 to match color 0 */
-        move.w  d0,(a3)+                /* Set color 49 to match color 0 */
-
-        /* Load patterns */
-        |bset.l  #0,(test_values+12)      /* TESTING */
-        bsr     decompress_lump
-        lea     0xC00004,a0
-        lea     0xC00000,a1
-        move.w  #0x8F02,(a0)
-        move.l  #0x4A800000,(a0)        /* Write VRAM address 0x0A80 */
-        lea     decomp_buffer,a2
-        move.l  lump_size,d1
-        lsr.l   #1,d1
-        sub.l   #1,d1
-3:
-        move.w  (a2)+,(a1)              /* Copy eight pixels from the source */
-        dbra    d1,3b
-
-        move.w  register_write_queue,d0
-        move.w  #0,register_write_queue
-        move.w  d0,(a0) /* reg 12 */
-        |move.w  d0,register_write_queue     /* Set register 12 during VBlank */
 
         move.l  (sp)+,d2
         move.l  (sp)+,d1

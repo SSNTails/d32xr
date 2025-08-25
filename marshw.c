@@ -27,6 +27,7 @@
 #include "doomdef.h"
 #include "marshw.h"
 #include "r_local.h"
+#include "v_font.h"
 
 static volatile uint16_t mars_activescreen = 0;
 
@@ -747,30 +748,6 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	}
 
 
-	// Load pattern name table B
-
-	s[0] = (uintptr_t)sky_names_b_size>>16, s[1] = (uintptr_t)sky_names_b_size&0xffff;
-	s[2] = ((uintptr_t)sky_names_b_ptr >>16), s[3] = (uintptr_t)sky_names_b_ptr &0xffff;
-
-	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
-		MARS_SYS_COMM2 = s[i];
-		MARS_SYS_COMM0 = 0x0F01+i;
-	}
-
-
-	// Load pattern name table A
-
-	s[0] = (uintptr_t)sky_names_a_size>>16, s[1] = (uintptr_t)sky_names_a_size&0xffff;
-	s[2] = ((uintptr_t)sky_names_a_ptr >>16), s[3] = (uintptr_t)sky_names_a_ptr &0xffff;
-
-	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
-		MARS_SYS_COMM2 = s[i];
-		MARS_SYS_COMM0 = 0x0F01+i;
-	}
-
-
 	// Load palettes
 
 	s[0] = (uintptr_t)sky_palettes_size>>16, s[1] = (uintptr_t)sky_palettes_size&0xffff;
@@ -787,6 +764,30 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 
 	s[0] = (uintptr_t)sky_tiles_size>>16, s[1] = (uintptr_t)sky_tiles_size&0xffff;
 	s[2] = ((uintptr_t)sky_tiles_ptr >>16), s[3] = (uintptr_t)sky_tiles_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM0);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x0F01+i;
+	}
+
+
+	// Load pattern name table B
+
+	s[0] = (uintptr_t)sky_names_b_size>>16, s[1] = (uintptr_t)sky_names_b_size&0xffff;
+	s[2] = ((uintptr_t)sky_names_b_ptr >>16), s[3] = (uintptr_t)sky_names_b_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM0);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x0F01+i;
+	}
+
+
+	// Load pattern name table A
+
+	s[0] = (uintptr_t)sky_names_a_size>>16, s[1] = (uintptr_t)sky_names_a_size&0xffff;
+	s[2] = ((uintptr_t)sky_names_a_ptr >>16), s[3] = (uintptr_t)sky_names_a_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
 		while (MARS_SYS_COMM0);
@@ -811,10 +812,34 @@ void Mars_Finish(void)
 	while (MARS_SYS_COMM0 != 0);
 }
 
+#ifdef CPUDEBUG
+void pri_vbi_debug(void)
+{
+	// TODO: Put all debugger logic here!
+
+	//DoubleBufferSetup();
+
+	//V_DrawValueLeft(&menuFont, 32, 64, cpu_debug_pr);
+
+	//Mars_FlipFrameBuffers(false);
+
+	//while(true);
+}
+#endif
+
 void pri_vbi_handler(void)
 {
 	mars_vblank_count++;
 	mars_hblank_count = 0;
+
+#ifdef CPUDEBUG
+	if (cpu_debug_pr) {
+		// TODO: This logic should be in the pri_vbi_debug() function!
+		R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK), dc_cshift_playpals);
+		V_DrawValueLeft(&menuFont, 32, 128, cpu_debug_pr);
+		Mars_FlipFrameBuffers(true);
+	}
+#endif
 
 	if (mars_newpalette)
 	{
