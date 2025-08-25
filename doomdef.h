@@ -104,8 +104,8 @@ extern uint8_t load_sky_lump_tiles;
 #endif
 
 #ifdef CPUDEBUG
-extern uint8_t cpu_pulse_count;
-extern uint8_t cpu_pulse_timeout;
+extern uint16_t cpu_pulse_count;
+extern uint16_t cpu_pulse_timeout;
 
 extern uint32_t cpu_debug_pr;
 #endif

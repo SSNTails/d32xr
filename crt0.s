@@ -562,12 +562,12 @@ pri_v_irq:
         mov     #0,r1
         mov     r1,r2
         mov.l   pvi_cpu_pulse_timeout,r3
-        mov.b   @r3,r2
+        mov.w   @r3,r2
         cmp/eq  r1,r2
         bt      2f
 
         mov.l   pvi_cpu_pulse_count,r0
-        mov.b   @r0,r1
+        mov.w   @r0,r1
         add     #1,r1
 
         cmp/hs  r2,r1

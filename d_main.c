@@ -20,8 +20,8 @@ uint8_t load_sky_lump_tiles = 0;
 #endif
 
 #ifdef CPUDEBUG
-uint8_t cpu_pulse_count = 0;
-uint8_t cpu_pulse_timeout = 0;
+uint16_t cpu_pulse_count = 0;
+uint16_t cpu_pulse_timeout = 0;
 
 uint32_t cpu_debug_pr = 0;
 #endif
@@ -1485,7 +1485,7 @@ D_printf ("DM_Main\n");
 			G_InitNew (TITLE_MAP_NUMBER, gt_single, false);
 			MiniLoop (START_Title, STOP_Title, TIC_Abortable, DRAW_Title, UpdateBuffer);
 #ifdef CPUDEBUG
-			cpu_pulse_timeout = 240;	// 4 seconds
+			cpu_pulse_timeout = 300;	// 5 seconds
 #endif
 
 			// Title with menu
