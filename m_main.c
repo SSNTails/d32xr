@@ -688,7 +688,10 @@ void M_Drawer (void)
 
 	if (IsTitleScreen() && gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
 		// Fill the area above the viewport with the sky color.
-		DrawFillRect(0, 0, 320, 44, gamemapinfo.skyTopColor);
+		if (titleTicker < 2)
+			DrawFillRect(0, 0, 320, 44, gamemapinfo.skyTopColor);
+		else
+			DrawFillRect(0, 44-26, 320, 26, gamemapinfo.skyTopColor);
 		
 		if (scrpos == ms_gametype) {
 			// Don't display sub-menus on the title screen.
