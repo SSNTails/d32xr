@@ -829,73 +829,107 @@ static void P_DoJump(player_t *player)
 	S_StartSound(player->mo, sfx_s3k_62);
 }
 
-boolean P_LookForTarget(player_t *player)
+#define HOMING_DIST (512*FRACUNIT)
+
+typedef struct
 {
-	const fixed_t targetMaxDist = 512*FRACUNIT;
-	const angle_t oldAngle = player->mo->angle;
-	mobj_t *node;
-	mobj_t *best = NULL;
-	fixed_t bestDist = D_MAXINT;
+	player_t *player;
+	mobj_t *closest;
+	fixed_t closestDist;
+} homingFinder_t;
 
-	for (node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
-    {
-		if (node->type == MT_PLAYER)
-			continue;
+boolean PIT_LookForTarget(mobj_t *thing, homingFinder_t *hf)
+{
+	const player_t *player = hf->player;
 
-		if (node->flags & MF_STATIC)
-		{
-			if (!(node->type >= MT_YELLOWSPRING && node->type <= MT_REDHORIZ)
-				&& !(node->flags2 & MF2_SHOOTABLE))
-				continue;
-		}
-		else
-		{
-			// Enemies and springs only (for now)
-			if (!((node->flags2 & MF2_ENEMY) || (node->flags2 & MF2_SHOOTABLE)))
-				continue;
+	if (thing->type == MT_PLAYER)
+		return true;
 
-			// Ignore fretting bosses
-			if (node->flags2 & MF2_FRET)
-				continue;
-
-			if (node->health <= 0)
-				continue; // dead
-		}
-
-		if (node->z > player->mo->z + (player->mo->theight << FRACBITS))
-			continue;
-
-		fixed_t dist = P_AproxDistance3D(node->x - player->mo->x, node->y - player->mo->y, node->z - player->mo->z);
-
-		if (dist > targetMaxDist)
-			continue;
-
-		if (dist > bestDist)
-			continue;
-
-		// Well, it's the closest, but is it in front of us?
-		angle_t ang = R_PointToAngle2(player->mo->x, player->mo->y, node->x, node->y) - player->mo->angle;
-
-		if (ang > ANG90 && ang < ANG270)
-			continue;
-
-		player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, node->x, node->y);
-
-//		if (!P_CheckSight(player->mo, node))
-//			continue; // Can't see it
-
-		best = node;
-		bestDist = dist;
-    }
-
-	if (!best)
+	if (thing->flags & MF_STATIC)
 	{
-		player->mo->angle = oldAngle;
-		return false;
+		if (!(thing->type >= MT_YELLOWSPRING && thing->type <= MT_REDHORIZ)
+			&& !(thing->flags2 & MF2_SHOOTABLE))
+			return true;
+	}
+	else
+	{
+		// Enemies and springs only (for now)
+		if (!((thing->flags2 & MF2_ENEMY) || (thing->flags2 & MF2_SHOOTABLE)))
+			return true;
+
+		// Ignore fretting bosses
+		if (thing->flags2 & MF2_FRET)
+			return true;
+
+		if (thing->health <= 0)
+			return true; // dead
 	}
 
-	player->mo->target = best;
+	if (thing->z > player->mo->z + (player->mo->theight << FRACBITS))
+		return true;
+
+	const fixed_t dist = P_AproxDistance3D(thing->x - player->mo->x, thing->y - player->mo->y, thing->z - player->mo->z);
+
+	if (dist < hf->closestDist)
+	{
+		// Well, it's the closest, but is it in front of us?
+		angle_t ang = R_PointToAngle2(player->mo->x, player->mo->y, thing->x, thing->y) - player->mo->angle;
+
+		if (ang > ANG90 && ang < ANG270)
+			return true;
+
+		hf->closest = thing;
+		hf->closestDist = dist;
+	}
 	return true;
+}
+
+boolean P_LookForTarget(player_t *player)
+{
+	const fixed_t		dist = HOMING_DIST;
+	const mobj_t *spot = player->mo;
+	int			x,y, xl, xh, yl, yh;
+	
+	yh = spot->y + dist - bmaporgy;
+	yl = spot->y - dist - bmaporgy;
+	xh = spot->x + dist - bmaporgx;
+	xl = spot->x - dist - bmaporgx;
+
+	if(xl < 0)
+		xl = 0;
+	if(yl < 0)
+		yl = 0;
+	if(yh < 0)
+		return false;
+	if(xh < 0)
+		return false;
+
+    xl = (unsigned)xl >> MAPBLOCKSHIFT;
+    xh = (unsigned)xh >> MAPBLOCKSHIFT;
+    yl = (unsigned)yl >> MAPBLOCKSHIFT;
+    yh = (unsigned)yh >> MAPBLOCKSHIFT;
+
+   if(xh >= bmapwidth)
+      xh = bmapwidth - 1;
+   if(yh >= bmapheight)
+      yh = bmapheight - 1;
+
+	homingFinder_t hf;
+	hf.player = player;
+	hf.closest = NULL;
+	hf.closestDist = HOMING_DIST;
+	
+	for (y=yl ; y<=yh ; y++)
+		for (x=xl ; x<=xh ; x++)
+			P_BlockThingsIterator(x, y, (blockthingsiter_t)PIT_LookForTarget, &hf);
+
+	if (hf.closest)
+	{
+		player->mo->target = hf.closest;
+		return true;
+	}
+
+	return false;
 }
 
 static void P_HomingAttack(mobj_t *source, mobj_t *dest)
