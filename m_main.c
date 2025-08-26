@@ -686,13 +686,7 @@ void M_Drawer (void)
 	mainitem_t* items = &mainitem[menuscr->firstitem];
 	int y, y_offset = 0;
 
-	if (IsTitleScreen() && gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
-		// Fill the area above the viewport with the sky color.
-		if (titleTicker < 2)
-			DrawFillRect(0, 0, 320, 44, gamemapinfo.skyTopColor);
-		else
-			DrawFillRect(0, 44-26, 320, 26, gamemapinfo.skyTopColor);
-		
+	if (IsTitleScreen() && gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {		
 		if (scrpos == ms_gametype) {
 			// Don't display sub-menus on the title screen.
 			return;
@@ -703,6 +697,13 @@ void M_Drawer (void)
 	if (m_doom && (scrpos == ms_main || scrpos == ms_gametype))
 	{
 		VINT logoPos = 160 - (m_doom->width / 2);
+
+		// Fill the area above the viewport with the sky color.
+		if (titleTicker < 2)
+			DrawFillRect(0, 0, 320, 44, gamemapinfo.skyTopColor);
+		else
+			DrawFillRect(logoPos + 6, 18, 60, 26, gamemapinfo.skyTopColor);
+
 		DrawJagobj(m_doom, logoPos, 16);
 		y_offset = m_doom->height + 24 - STARTY;
 
