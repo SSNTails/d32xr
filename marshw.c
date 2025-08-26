@@ -836,6 +836,7 @@ void pri_vbi_handler(void)
 	if (cpu_debug_pr) {
 		// TODO: This logic should be in the pri_vbi_debug() function!
 		R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK), dc_cshift_playpals);
+		I_FillFrameBuffer(0x1C);
 		V_DrawValueLeft(&menuFont, 32, 128, cpu_debug_pr);
 		Mars_FlipFrameBuffers(true);
 	}
