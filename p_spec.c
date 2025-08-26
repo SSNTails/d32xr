@@ -1190,12 +1190,7 @@ void P_SSNMaceRotate(swingmace_t *sm)
 
 	int16_t msublinks = sm->msublinks;
 	int16_t mnumchain = sm->macechain.numchain;
-	fixed_t dist = 0;
-	while (msublinks > 0)
-	{
-		dist += sm->macechain.interval;
-		msublinks--;
-	}
+	fixed_t dist = sm->macechain.interval * msublinks;
 
 	ringmobj_t *link = sm->macechain.chain;
 	int count = 0;
@@ -1294,7 +1289,6 @@ void P_AddMaceChain(mapthing_t *point, vector3_t *axis, vector3_t *rotation, VIN
 {
 	// First, determine the # of items in the chain
 	VINT mlength = D_abs(args[0]);
-	VINT msublinks = args[7]; // chain links to remove from the inside
 //	VINT mminlength = D_max(0, D_min(mlength - 1, msublinks));
 
 	swingmace_t *sm = cursorMace;
@@ -1309,7 +1303,10 @@ sm->mlength = D_abs(args[0]);
 sm->mspeed = D_abs(args[3] << 4);
 //sm->mphase = args[4] % 360;
 //sm->mnumnospokes = args[6];
-sm->msublinks = args[7];
+sm->msublinks = args[7]; // chain links to remove from the inside
+if (sm->msublinks > sm->mlength)
+	sm->msublinks = sm->mlength;
+
 //sm->mminlength = D_max(0, D_min(mlength - 1, args[7]));
 //sm->tag = point->angle;
 
@@ -1371,17 +1368,13 @@ sm->msublinks = args[7];
 	fixed_t dist = mobjinfo[chainlink].radius;
 	sm->macechain.interval = (dist >> FRACBITS) << 1;
 
-	while (msublinks > 0)
-	{
-		dist += sm->macechain.interval << FRACBITS;
-		msublinks--;
-		mlength--;
-	}
+	dist = (sm->macechain.interval * sm->msublinks) << FRACBITS;
+	mlength -= sm->msublinks;
 
+	sm->macechain.chain = NULL;
 	sm->macechain.numchain = 0;
 	boolean first = true;
 	VINT count = 0;
-
 	while (count < mlength)
 	{
 		const fixed_t distAccum = dist + ((sm->macechain.interval << FRACBITS) * count);

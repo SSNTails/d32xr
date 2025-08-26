@@ -305,8 +305,13 @@ static short P_GetMaceLinkCount(mapthing_t *mthing)
 	const mapvertex_t *v2 = &vertexes[line->v2];
 
 	sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
-	VINT mlength = D_abs(v1->x - v2->x) - frontsector->lightlevel;
-	return mlength; // # of links
+	VINT mlength = D_abs(v1->x - v2->x);
+
+	VINT msublinks = frontsector->lightlevel; // number of links to subtract from the inside.
+	if (msublinks > mlength)
+		msublinks = mlength;
+
+	return mlength - msublinks; // # of links
 }
 
 static void P_SetupMace(mapthing_t *mthing)
@@ -357,8 +362,6 @@ static void P_SetupMace(mapthing_t *mthing)
 	args[3] = D_abs(v1->y - v2->y);
 	args[4] = textureoffset;
 	args[7] = frontsector->lightlevel; // number of links to subtract from the inside.
-	if (args[7] < 0)
-		args[7] = 0;
 
 	if (line->sidenum[1] >= 0)
 	{
@@ -449,15 +452,14 @@ void P_LoadThings (int lump)
 	{
 		if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
 		{
+			// Determine the # of objects that will be spawned
 			int maceLinkCount = P_GetMaceLinkCount(mt);
 
 			if (maceLinkCount > 0)
-			{
-				// Determine the # of objects that will be spawned
-				numthingsreal++; // End of chain (ball)
 				numringthings += maceLinkCount; // links
-				numMaces++;
-			}
+
+			numthingsreal++; // End of chain (ball)
+			numMaces++;
 		}
 		else
 		{
