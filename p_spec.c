@@ -580,12 +580,20 @@ void P_PlayerInSpecialSector (player_t *player)
 			if (player->mo->z <= sector->floorheight && !sector->specialdata)
 				P_DoPlayerExit(player);
 			break;
+		case 4: // Damage (electrical)
+			if (player->mo->z <= sector->floorheight)
+				P_DamageMobj(player->mo, NULL, NULL, 1);
+			break;
+		case 6:
+			if (player->mo->z <= sector->floorheight)
+				P_DamageMobj(player->mo, NULL, NULL, 10000);
+			break;
 		case 64: // Linedef Executor: entered a sector
 			P_LinedefExecute(player, sector);
 			break;
 		case 80: // Linedef Executor: on floor touch
 			if (player->mo->z <= sector->floorheight
-				|| player->mo->z + (player->mo->theight << FRACBITS) >= sector->ceilingheight)
+				|| ((player->pflags & PF_VERTICALFLIP) && player->mo->z + (player->mo->theight << FRACBITS) >= sector->ceilingheight))
 				P_LinedefExecute(player, sector);
 			break;
 			

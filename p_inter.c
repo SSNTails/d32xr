@@ -619,6 +619,7 @@ void P_BlackOw(player_t *player)
 			players[i].whiteFlash = 4;
 	}
 
+	// TODO: Use blockmap!
 	for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
     {
 		if ((node->flags2 & MF2_ENEMY) && P_AproxDistance(node->x - player->mo->x, node->y - player->mo->y) < 1536*FRACUNIT)
