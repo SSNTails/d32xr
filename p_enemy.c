@@ -861,7 +861,7 @@ void P_DoBossVictory(mobj_t *mo)
 	// Move the outer
 	floormove_t *floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
 	P_AddThinker (&floor->thinker);
-	outer->specialdata = floor;
+	outer->specialdata = LPTR_TO_SPTR(floor);
 	floor->thinker.function = T_MoveFloor;
 	floor->type = eggCapsuleOuter;
 	floor->crush = false;
@@ -874,7 +874,7 @@ void P_DoBossVictory(mobj_t *mo)
 	// Move the inner
 	floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
 	P_AddThinker (&floor->thinker);
-	inner->specialdata = floor;
+	inner->specialdata = LPTR_TO_SPTR(floor);
 	floor->thinker.function = T_MoveFloor;
 	floor->type = eggCapsuleInner;
 	floor->crush = false;

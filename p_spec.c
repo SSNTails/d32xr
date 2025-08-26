@@ -493,7 +493,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 					floormove_t *floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
 					P_AddThinker (&floor->thinker);
-					sec->specialdata = floor;
+					sec->specialdata = LPTR_TO_SPTR(floor);
 					floor->thinker.function = T_MoveFloor;
 					floor->type = lowerFloor;
 					floor->crush = false;
@@ -1120,10 +1120,10 @@ typedef struct
 	// Old style
 	int16_t mlength;
 	int16_t mspeed;
-	int16_t mphase;
-	int16_t mminlength;
-	int16_t mwidth;
-	int16_t tag; // for debugging
+//	int16_t mphase;
+//	int16_t mminlength;
+//	int16_t mwidth;
+//	int16_t tag; // for debugging
 	int16_t msublinks; // # of links from the inside to subtract
 	int16_t swingSpeed;
 
@@ -1133,7 +1133,7 @@ typedef struct
 	vector3_t nv; // Normalized vector
 	vector3_t rotation;
 
-	VINT args[10];
+//	VINT args[10];
 } swingmace_t;
 
 void P_SSNMaceRotate(swingmace_t *sm)
@@ -1305,13 +1305,13 @@ void P_AddMaceChain(mapthing_t *point, vector3_t *axis, vector3_t *rotation, VIN
 // 1:1 style
 sm->mlength = D_abs(args[0]);
 //sm->mnumspokes = args[1] + 1;
-sm->mwidth = D_max(0, args[2]);
+//sm->mwidth = D_max(0, args[2]);
 sm->mspeed = D_abs(args[3] << 4);
-sm->mphase = args[4] % 360;
+//sm->mphase = args[4] % 360;
 //sm->mnumnospokes = args[6];
 sm->msublinks = args[7];
-sm->mminlength = D_max(0, D_min(mlength - 1, args[7]));
-sm->tag = point->angle;
+//sm->mminlength = D_max(0, D_min(mlength - 1, args[7]));
+//sm->tag = point->angle;
 
 	if (args[8] & TMM_SWING)
 	{

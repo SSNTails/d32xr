@@ -1032,7 +1032,7 @@ void P_DoPlayerExit(player_t *player)
 		
 		floormove_t *floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
 		P_AddThinker (&floor->thinker);
-		inner->specialdata = floor;
+		inner->specialdata = LPTR_TO_SPTR(floor);
 		floor->thinker.function = T_MoveFloor;
 		floor->type = eggCapsuleInnerPop;
 		floor->crush = false;

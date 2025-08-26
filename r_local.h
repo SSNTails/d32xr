@@ -73,7 +73,7 @@ struct line_s;
 typedef	struct
 {
 	fixed_t		floorheight, ceilingheight;
-	void		*specialdata;		/* thinker_t for reversable actions */
+	SPTR        specialdata;		/* thinker_t for reversable actions */
 	VINT		validcount;			/* if == validcount, already checked */
 	uint8_t		floorpic, ceilingpic;	/* if ceilingpic == (uint8_t)-1,draw sky */
 

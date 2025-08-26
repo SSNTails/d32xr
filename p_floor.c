@@ -261,7 +261,7 @@ void T_MoveFloor(floormove_t *floor)
 		}
 		else
 		{
-			floor->sector->specialdata = NULL;
+			floor->sector->specialdata = (SPTR)0;
 			if (floor->direction == 1)
 				switch(floor->type)
 				{
@@ -317,7 +317,7 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 		rtn = 1;
 		floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
 		P_AddThinker (&floor->thinker);
-		sec->specialdata = floor;
+		sec->specialdata = LPTR_TO_SPTR(floor);
 		floor->thinker.function = T_MoveFloor;
 		floor->type = floortype;
 		floor->crush = false;
