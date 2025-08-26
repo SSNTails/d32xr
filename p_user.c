@@ -845,6 +845,9 @@ boolean PIT_LookForTarget(mobj_t *thing, homingFinder_t *hf)
 	if (thing->type == MT_PLAYER)
 		return true;
 
+	if (thing->flags & MF_RINGMOBJ)
+		return true;
+
 	if (thing->flags & MF_STATIC)
 	{
 		if (!(thing->type >= MT_YELLOWSPRING && thing->type <= MT_REDHORIZ)
