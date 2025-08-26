@@ -318,7 +318,7 @@ int P_Ticker (void)
 	ticstart = frtc;
 
 	// Not needed for every tic. At least not unless we're needing synchronicity...
-	if (!(demoplayback || demorecording))
+	if (!(IsDemoModeType(DemoMode_Playback) || IsDemoModeType(DemoMode_Recording)))
 		P_CheckSights();
 
 	P_AnimateScenery((int8_t)accum_time);
@@ -344,7 +344,7 @@ int P_Ticker (void)
 			}
 		}
 
-		if (demoplayback || demorecording)
+		if (IsDemoModeType(DemoMode_Playback) || IsDemoModeType(DemoMode_Recording))
 			P_CheckSights();
 
 		for (playernum = 0, pl = players; playernum < MAXPLAYERS; playernum++, pl++)

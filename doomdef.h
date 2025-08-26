@@ -942,7 +942,6 @@ extern VINT debugCounter;
 
 extern	boolean onscreen_prompt;
 extern	boolean titlescreen;
-extern	boolean	demoplayback, demorecording;
 extern	unsigned char *demo_p, *demobuffer;
 
 extern  fixed_t prev_rec_values[4];

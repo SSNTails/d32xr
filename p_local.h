@@ -90,6 +90,7 @@ fixed_t P_GetPlayerHeight();
 void P_RestoreMusic(player_t *player);
 boolean P_IsReeling(player_t *player);
 void    P_AddPlayerScore(player_t *player, int amount);
+void    P_ResetScore(player_t *player);
 void    P_ResetPlayer(player_t *player);
 void    P_PlayerRingBurst(player_t *player, int damage);
 void    P_GivePlayerRings(player_t *player, int num_rings);
