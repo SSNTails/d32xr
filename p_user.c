@@ -969,6 +969,7 @@ static void P_DoJumpStuff(player_t *player)
 				player->mo->target = NULL;
 				player->powers[pw_flashing] = TICRATE >> 2;
 				player->pflags &= ~PF_MACESPIN;
+				player->pflags |= PF_JUMPED;
 			}
 			else if (player->mo->state != S_PLAY_PAIN && P_IsObjectOnGround(player->mo) && !P_IsReeling(player))
 			{
