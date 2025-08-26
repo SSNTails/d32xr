@@ -317,9 +317,8 @@ int P_Ticker (void)
 	thinkertics = 0;
 	ticstart = frtc;
 
-	// If we don't do this every tic, it seems sight checking is broken.
-	// Is there a way we can do this infrequently? Even every half second would be fine.
-	if (!(gametic & 31))
+	// Not needed for every tic. At least not unless we're needing synchronicity...
+	if (!(demoplayback || demorecording))
 		P_CheckSights();
 
 	P_AnimateScenery((int8_t)accum_time);
@@ -344,6 +343,9 @@ int P_Ticker (void)
 				gameaction = PlayDemo();
 			}
 		}
+
+		if (demoplayback || demorecording)
+			P_CheckSights();
 
 		for (playernum = 0, pl = players; playernum < MAXPLAYERS; playernum++, pl++)
 		{
