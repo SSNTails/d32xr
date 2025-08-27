@@ -354,6 +354,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       {
          // two-sided line
 //         if (st->midtexture > 0)
+         if (D_abs(vd.viewx_t - ((vertexes[li->v1].x+vertexes[li->v2].x)>>1)) < 1024 && D_abs(vd.viewy_t - ((vertexes[li->v1].y+vertexes[li->v2].y)>>1)) < 1024) // Don't draw midtextures when too far away to really matter
          {
             segl->m_texturenum = texturetranslation[st->midtexture];
             if(liflags & ML_DONTPEGBOTTOM)
@@ -383,9 +384,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 #ifdef WALLDRAW2X
             m_texturemid >>= 1;
 #endif
-            // Don't draw midtextures when too far away to really matter
-            if (D_abs(vd.viewx - (vertexes[li->v1].x << FRACBITS)) < 1024*FRACUNIT || D_abs(vd.viewy - (vertexes[li->v1].y << FRACBITS)) < 1024*FRACUNIT)
-               actionbits |= AC_MIDTEXTURE; // set bottom and top masks
+            actionbits |= AC_MIDTEXTURE; // set bottom and top masks
          }
 
 #ifdef FLOOR_OVER_FLOOR
@@ -817,7 +816,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    if ((ldflags[line->linedef] & ML_UNDERWATERONLY) && !vd.underwater)
       return;
 
-   if ((ldflags[line->linedef] & ML_CULLING) && (D_abs(vd.viewx - (v1->x << FRACBITS)) > 2048*FRACUNIT || D_abs(vd.viewy - (v1->y << FRACBITS)) > 2048*FRACUNIT))
+   if ((ldflags[line->linedef] & ML_CULLING) && (D_abs(vd.viewx_t - v1->x) > 2048 || D_abs(vd.viewy_t - v1->y) > 2048))
       return;
 
    x1 = R_ClipToViewEdges(angle1, angle2);

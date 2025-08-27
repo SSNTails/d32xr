@@ -771,6 +771,8 @@ __attribute__((aligned(16)))
 	fixed_t		viewcos, viewsin;
 	player_t	*viewplayer;
 	boolean     underwater;
+	VINT        viewx_t;
+	VINT        viewy_t;
 	VINT		lightlevel;
 	VINT		displayplayer;
 	VINT		fixedcolormap;

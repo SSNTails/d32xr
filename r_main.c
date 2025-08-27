@@ -1291,6 +1291,8 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	centerY = (viewportHeight / 2) + dy;
 	centerYFrac = centerY << FRACBITS;
 
+	vd.viewx_t = vd.viewx >> FRACBITS;
+	vd.viewy_t = vd.viewy >> FRACBITS;
 	vd.displayplayer = displayplayer;
 	vd.fixedcolormap = 0;
 
