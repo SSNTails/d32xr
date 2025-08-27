@@ -383,7 +383,9 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 #ifdef WALLDRAW2X
             m_texturemid >>= 1;
 #endif
-            actionbits |= AC_MIDTEXTURE; // set bottom and top masks
+            // Don't draw midtextures when too far away to really matter
+            if (D_abs(vd.viewx - (vertexes[li->v1].x << FRACBITS)) < 1024*FRACUNIT || D_abs(vd.viewy - (vertexes[li->v1].y << FRACBITS)) < 1024*FRACUNIT)
+               actionbits |= AC_MIDTEXTURE; // set bottom and top masks
          }
 
 #ifdef FLOOR_OVER_FLOOR
