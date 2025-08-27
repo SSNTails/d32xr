@@ -812,7 +812,7 @@ void R_SetTextureData(texture_t *tex, uint8_t *start, int size, boolean skiphead
 
 static boolean IsWavyFlat(byte flatnum)
 {
-    return (flatnum >= 9 && flatnum <= 29); // BWATER/CHEMG/DWATER/RLAVA1
+    return (flatnum >= 9 && flatnum <= 30); // BWATER/CEZWATR/CHEMG/DWATER/RLAVA1
 }
 
 /*
