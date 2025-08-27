@@ -393,7 +393,7 @@ static void P_SetupMace(mapthing_t *mthing)
 		args[8] |= TMM_SWING;
 	if (ldflags[line-lines] & ML_UNDERWATERONLY)
 		args[8] |= TMM_MACELINKS;
-	if (ldflags[line-lines] & ML_UNUSED1_MIDPEG)
+	if (ldflags[line-lines] & ML_CULL_MIDTEXTURE)
 		args[8] |= TMM_CENTERLINK;
 	if (ldflags[line-lines] & ML_MIDTEXTUREBLOCK)
 		args[8] |= TMM_CLIP;
