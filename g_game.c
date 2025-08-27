@@ -107,7 +107,6 @@ void G_DoLoadLevel (void)
 
 		players[i].killcount = players[i].secretcount
 			= players[i].itemcount = 0;
-		players[i].starpostnum = 0;
 		players[i].pflags = 0;
 		players[i].health = 1;
 		players[i].shield = 0;
@@ -257,7 +256,7 @@ void G_PlayerFinishLevel (int player)
 	p = &players[player]; 
 	 
 	D_memset (p->powers, 0, sizeof (p->powers)); 
-	p->whiteFlash = 0; 
+	p->whiteFlash = 0;
 
 	if (netgame == gt_deathmatch)
 		return;
@@ -266,6 +265,8 @@ void G_PlayerFinishLevel (int player)
 
 	if (p->health <= 0)
 		return;
+
+	p->starpostnum = 0;
 
 	P_UpdateResp(p);
 } 
