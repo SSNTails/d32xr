@@ -285,6 +285,11 @@ static boolean PS_RejectCheckSight(mobj_t *t1, mobj_t *t2)
    s1 = subsectors[t1->isubsector].isector;
    s2 = subsectors[t2->isubsector].isector;
 
+   // killough 11/98: shortcut for melee situations
+   // same subsector? obviously visible
+   if (t1->isubsector == t2->isubsector)
+      return true;
+
    if (s1 > s2)
    {
       int t = s2;
@@ -483,6 +488,12 @@ static void P_CheckSights2(void)
          return;
 
       if (!PS_RejectCheckSight(mobj, mobj->target))
+         continue;
+
+      if (mobj->x > mobj->target->x + 2048*FRACUNIT
+         || mobj->x < mobj->target->x - 2048*FRACUNIT
+         || mobj->y > mobj->target->y + 2048*FRACUNIT
+         || mobj->y < mobj->target->y - 2048*FRACUNIT)
          continue;
 
 #ifdef MARS

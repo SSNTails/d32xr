@@ -1112,7 +1112,7 @@ void P_RunMobjBase2(void)
 #ifdef MARS
       // clear cache for mobj flags following the sight check as 
       // the other CPU might have modified the MF_SEETARGET state
-      if (mo->tics == 1)
+      if ((mo->flags2 & MF2_ENEMY) && mo->tics == 1)
          Mars_ClearCacheLine(&mo->flags);
 #endif
       P_MobjThinker(mo);
