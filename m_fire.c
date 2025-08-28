@@ -51,16 +51,6 @@ void I_InitMenuFire(jagobj_t *titlepic)
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4), dc_cshift_playpals);
 
 	intro_titlepic = titlepic;
-
-	if (titlepic != NULL)
-	{
-		const int titlepic_pos_x = (320 - titlepic->width) / 2;
-		for (i = 0; i < 2; i++)
-		{
-			DrawJagobj2(titlepic, titlepic_pos_x, 16, 0, 0, titlepic->width, titlepic->height, I_FrameBuffer());
-			UpdateBuffer();
-		}
-	}
 }
 
 /*

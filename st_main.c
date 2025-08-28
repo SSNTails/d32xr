@@ -280,6 +280,25 @@ static void ST_DrawTitleCard()
 ====================
 */
 
+const fixed_t hud_upscale[5] = {
+//	431440,
+	383502,
+//	340891,
+//	303014,
+	269346,
+//	239418,
+//	212816,
+	189170,
+//	168151,
+//	149468,
+	132860,
+//	118098,
+//	104976,
+	93312,
+//	82944,
+//	73728
+};
+
 static void ST_Drawer_ (stbar_t* sb)
 {
 #ifdef OST_BLACKNESS
@@ -302,7 +321,7 @@ static void ST_Drawer_ (stbar_t* sb)
 	V_DrawValueLeft(&menuFont, 288, 100, load_sky_lump_metadata);
 #endif
 
-	if (gametic < 96 && !(gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)) {
+	if (gametic < 88 && !(gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)) {
 		ST_DrawTitleCard();
 	}
 	else if (gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)
@@ -376,23 +395,34 @@ static void ST_Drawer_ (stbar_t* sb)
 		int worldTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
 		if (worldTime < 0)
 			worldTime = 0;
-		DrawJagobjLump(score, 16, 10+22, NULL, NULL);
-		V_DrawValuePaddedRight(&hudNumberFont, 16 + 120, 10+22, sb->score, 0);
+
 		const int minutes = worldTime/(60*TICRATE);
 		const int seconds = (worldTime/(TICRATE))%60;
-		DrawJagobjLump(time, 16, 26+22, NULL, NULL);
-		V_DrawValuePaddedRight(&hudNumberFont, 72, 26+22, minutes, 0);
-		DrawJagobjLump(timecolon, 72, 26+22, NULL, NULL);
-		V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26+22, seconds, 2);
-		if (sb->rings <= 0 && (gametic / 4 & 1))
-			DrawJagobjLumpWithColormap(rings, 16, 42+22, NULL, NULL, YELLOWTEXTCOLORMAP);
-		else
-			DrawJagobjLump(rings, 16, 42+22, NULL, NULL);
-		V_DrawValuePaddedRight(&hudNumberFont, 96, 42+22, sb->rings, 0);
-		DrawJagobjLump(face, 16, 176, NULL, NULL);
-		V_DrawStringLeftWithColormap(&menuFont, 16 + 20, 176, "SONIC", YELLOWTEXTCOLORMAP);
-		DrawJagobjLump(livex, 16 + 22, 176 + 10, NULL, NULL);
-		V_DrawValuePaddedRight(&menuFont, 16 + 58, 176+8, sb->lives, 0);
+
+		if (gametic < 93) {
+			const int interval = gametic-88;
+			const int offset_x = 16 + ((6-interval) << 3);
+			DrawScaledJagobj(W_POINTLUMPNUM(score), offset_x, 10+22+((6-interval)<<1), hud_upscale[gametic-88], hud_upscale[gametic-88], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(time), offset_x, 26+22+((6-interval)<<2), hud_upscale[gametic-88], hud_upscale[gametic-88], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(rings), offset_x, 42+22+((6-interval)<<3), hud_upscale[gametic-88], hud_upscale[gametic-88], I_OverwriteBuffer());
+		}
+		else {
+			DrawJagobjLump(score, 16, 10+22, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 16 + 120, 10+22, sb->score, 0);
+			DrawJagobjLump(time, 16, 26+22, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 72, 26+22, minutes, 0);
+			DrawJagobjLump(timecolon, 72, 26+22, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26+22, seconds, 2);
+			if (sb->rings <= 0 && (gametic / 4 & 1))
+				DrawJagobjLumpWithColormap(rings, 16, 42+22, NULL, NULL, YELLOWTEXTCOLORMAP);
+			else
+				DrawJagobjLump(rings, 16, 42+22, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 96, 42+22, sb->rings, 0);
+			DrawJagobjLump(face, 16, 176, NULL, NULL);
+			V_DrawStringLeftWithColormap(&menuFont, 16 + 20, 176, "SONIC", YELLOWTEXTCOLORMAP);
+			DrawJagobjLump(livex, 16 + 22, 176 + 10, NULL, NULL);
+			V_DrawValuePaddedRight(&menuFont, 16 + 58, 176+8, sb->lives, 0);
+		}
 #endif
 	}
 

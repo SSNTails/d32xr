@@ -1355,6 +1355,8 @@ void DrawJagobjWithColormap(jagobj_t* jo, int x, int y,
 	int src_x, int src_y, int src_w, int src_h, pixel_t *fb, int colormap);
 void DrawJagobj2(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h, pixel_t* fb);
+void DrawScaledJagobj(jagobj_t* jo, int x, int y, 
+	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb);
 void DrawFillRect(int x, int y, int w, int h, int c);
 void DrawLine(int x, int y, int length, int c, boolean vertical);
 void UpdateBuffer (void);
