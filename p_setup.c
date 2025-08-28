@@ -920,9 +920,6 @@ void P_Init (void)
 	anims = Z_Malloc(sizeof(*anims) * MAXANIMS, PU_STATIC);
 	linespeciallist = Z_Malloc(sizeof(*linespeciallist) * MAXLINEANIMS, PU_STATIC);
 
-	activeplats = Z_Malloc(sizeof(*activeplats) * MAXPLATS, PU_STATIC);
-	activeceilings = Z_Malloc(sizeof(*activeceilings) * MAXCEILINGS, PU_STATIC);
-
 	P_InitPicAnims ();
 #ifndef MARS
 	pausepic = W_CacheLumpName ("PAUSED",PU_STATIC);

@@ -181,14 +181,8 @@ typedef struct
 #define	PLATSPEED	(FRACUNIT*THINKERS_TICS)
 #define	MAXPLATS	16
 
-extern	plat_t	**activeplats/*[MAXPLATS]*/;
-
 void	T_PlatRaise(plat_t	*plat);
 int		EV_DoPlat(line_t *line,plattype_e type,int amount);
-void	P_AddActivePlat(plat_t *plat);
-void	P_RemoveActivePlat(plat_t *plat);
-void	EV_StopPlat(line_t *line);
-void	P_ActivateInStasis(int tag);
 
 /*
 ===============================================================================
@@ -284,10 +278,7 @@ extern	ceiling_t	**activeceilings/*[MAXCEILINGS]*/;
 
 int		EV_DoCeiling (line_t *line, ceiling_e  type);
 void	T_MoveCeiling (ceiling_t *ceiling);
-void	P_AddActiveCeiling(ceiling_t *c);
-void	P_RemoveActiveCeiling(ceiling_t *c);
 int		EV_CeilingCrushStop(line_t	*line);
-void	P_ActivateInStasisCeiling(line_t *line);
 
 /*
 ===============================================================================

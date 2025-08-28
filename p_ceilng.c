@@ -9,8 +9,6 @@
 /*================================================================== */
 /*================================================================== */
 
-ceiling_t	**activeceilings/*[MAXCEILINGS]*/ = NULL;
-
 /*================================================================== */
 /* */
 /*	T_MoveCeiling */
@@ -41,7 +39,6 @@ void T_MoveCeiling (ceiling_t *ceiling)
 				switch(ceiling->type)
 				{
 					case raiseToHighest:
-						P_RemoveActiveCeiling(ceiling);
 						break;
 					case silentCrushAndRaise:
 					case fastCrushAndRaise:
@@ -76,7 +73,6 @@ void T_MoveCeiling (ceiling_t *ceiling)
 						break;
 					case lowerAndCrush:
 					case lowerToFloor:
-						P_RemoveActiveCeiling(ceiling);
 						break;
 					default:
 						break;
@@ -111,19 +107,6 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 	
 	secnum = -1;
 	rtn = 0;
-	
-	/* */
-	/*	Reactivate in-stasis ceilings...for certain types. */
-	/* */
-	switch(type)
-	{
-		case silentCrushAndRaise:
-		case fastCrushAndRaise:
-		case crushAndRaise:
-			P_ActivateInStasisCeiling(line);
-		default:
-			break;
-	}
 	
 	uint8_t tag = P_GetLineTag(line);
 	while ((secnum = P_FindSectorFromLineTagNum(tag,secnum)) >= 0)
@@ -170,63 +153,8 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 		
 		ceiling->tag = sec->tag;
 		ceiling->type = type;
-		P_AddActiveCeiling(ceiling);
 	}
 	return rtn;
-}
-
-/*================================================================== */
-/* */
-/*		Add an active ceiling */
-/* */
-/*================================================================== */
-void P_AddActiveCeiling(ceiling_t *c)
-{
-	int		i;
-	for (i = 0; i < MAXCEILINGS;i++)
-		if (activeceilings[i] == NULL)
-		{
-			activeceilings[i] = c;
-			return;
-		}
-}
-
-/*================================================================== */
-/* */
-/*		Remove a ceiling's thinker */
-/* */
-/*================================================================== */
-void P_RemoveActiveCeiling(ceiling_t *c)
-{
-	int		i;
-	
-	for (i = 0;i < MAXCEILINGS;i++)
-		if (activeceilings[i] == c)
-		{
-			activeceilings[i]->sector->specialdata = (SPTR)0;
-			P_RemoveThinker (&activeceilings[i]->thinker);
-			activeceilings[i] = NULL;
-			break;
-		}
-}
-
-/*================================================================== */
-/* */
-/*		Restart a ceiling that's in-stasis */
-/* */
-/*================================================================== */
-void P_ActivateInStasisCeiling(line_t *line)
-{
-	int	i;
-	uint8_t tag = P_GetLineTag(line);
-	
-	for (i = 0;i < MAXCEILINGS;i++)
-		if (activeceilings[i] && (activeceilings[i]->tag == tag) &&
-			(activeceilings[i]->direction == 0))
-		{
-			activeceilings[i]->direction = activeceilings[i]->olddirection;
-			activeceilings[i]->thinker.function = T_MoveCeiling;
-		}
 }
 
 /*================================================================== */

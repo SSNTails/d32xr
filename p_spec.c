@@ -1555,10 +1555,4 @@ void P_SpawnSpecials (void)
 
 	if (effects_flags & EFFECTS_COPPER_ENABLED)
 		P_InitLightning();
-
-	/* */
-	/*	Init other misc stuff */
-	/* */
-	D_memset(activeceilings, 0, sizeof(*activeceilings)*MAXCEILINGS);
-	D_memset(activeplats, 0, sizeof(*activeplats)*MAXCEILINGS);
 }
