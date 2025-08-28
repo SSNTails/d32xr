@@ -842,18 +842,20 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
       // When both ceilings are skies, consider them always "open" to prevent HOM
       solid = false;
    }
-   else
+   else if (backsector->ceilingheight <= frontsector->floorheight ||
+       backsector->floorheight >= frontsector->ceilingheight)
    {
-      if (backsector->ceilingheight == frontsector->ceilingheight &&
+       solid = true;
+   }
+   else if (backsector->ceilingheight == frontsector->ceilingheight &&
         backsector->floorheight == frontsector->floorheight)
-      {
-        // reject empty lines used for triggers and special events
-        if (!(backsector->fofsec || frontsector->fofsec) &&
-           *(int16_t *)&backsector->floorpic == *(int16_t *)&frontsector->floorpic && // compares both floorpic and ceilingpic
-           *(int8_t *)&backsector->lightlevel == *(int8_t *)&frontsector->lightlevel && // hack to get rid of the extu.w on SH-2
-            SIDETEX(sidedef)->midtexture == 0)
-           return;
-      }
+   {
+      // reject empty lines used for triggers and special events
+      if (!(backsector->fofsec || frontsector->fofsec) &&
+         *(int16_t *)&backsector->floorpic == *(int16_t *)&frontsector->floorpic && // compares both floorpic and ceilingpic
+         *(int8_t *)&backsector->lightlevel == *(int8_t *)&frontsector->lightlevel && // hack to get rid of the extu.w on SH-2
+         SIDETEX(sidedef)->midtexture == 0)
+         return;
    }
 
    rbsp->curline = line;
