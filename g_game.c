@@ -640,7 +640,7 @@ startnew:
 			continue;			/* skip intermission */
 		}
 
-		if (token && emeralds < 127) // Got a token, and missing at least one emerald
+		if (token && emeralds < 63)//127) // Got a token, and missing at least one emerald // TODO: Restore this for all 7 stages
 		{
 			if (gamemapinfo.mapNumber < SSTAGE_START || gamemapinfo.mapNumber > SSTAGE_END)
 				returnspecstagemapl = gamemapinfo.next; // Save the 'next' regular stage to go to
