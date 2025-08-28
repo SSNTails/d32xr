@@ -329,7 +329,14 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
         {
             int top, bottom;
 
-            if (segl->actionbits & AC_ADDSKY) {
+            if (segl->actionbits & (AC_ADDSKY|AC_ADDFLOORSKY))
+            {
+                top = ceilingclipx;
+                bottom = floorclipx;
+                if (top < bottom)
+                    R_Draw32XSky(top, bottom, x, draw32xsky, drawmdsky);
+            }
+            else if (segl->actionbits & AC_ADDSKY) {
                 top = ceilingclipx;
                 bottom = FixedMul(scale2, ceilingheight)>>FRACBITS;
                 bottom = centerY - bottom;
@@ -339,8 +346,7 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
                 if (top < bottom)
                     R_Draw32XSky(top, bottom, x, draw32xsky, drawmdsky);
             }
-
-            if (segl->actionbits & AC_ADDFLOORSKY) {
+            else if (segl->actionbits & AC_ADDFLOORSKY) {
                 bottom = floorclipx;
                 top = FixedMul(scale2, floorheight)>>FRACBITS;
                 top = centerY - top;
