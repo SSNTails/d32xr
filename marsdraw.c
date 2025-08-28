@@ -950,6 +950,112 @@ void EraseBlock(int x, int y, int width, int height)
 {
 }
 
+void DrawScaledJagobj(jagobj_t* jo, int x, int y, 
+	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb)
+{
+	int		srcx, srcy;
+	int		width, height, flags, index;
+	fixed_t	total_scaled_w, total_scaled_h;
+	int		rowsize;
+	fixed_t	inc_x, inc_y;
+	byte	*dest, *source;
+
+	rowsize = BIGSHORT(jo->width);
+	width = BIGSHORT(jo->width);
+	height = BIGSHORT(jo->height);
+	flags = BIGSHORT(jo->flags);
+	index = BIGSHORT(jo->index);
+
+	/*
+	if (src_w > 0)
+		width = src_w;
+	else if (src_w < 0)
+		width += src_w;
+
+	if (src_h > 0)
+		height = src_h;
+	else if (src_h < 0)
+		height += src_h;
+	*/
+
+	srcx = 0;
+	srcy = 0;
+
+	if (x < 0)
+	{
+		width += x;
+		srcx = -x;
+		x = 0;
+	}
+	//srcx += src_x;
+
+	if (y < 0)
+	{
+		srcy = -y;
+		height += y;
+		y = 0;
+	}
+	//srcy += src_y;
+
+	if (x + width > 320)
+		width = 320 - x;
+	if (y + height > mars_framebuffer_height)
+		height = mars_framebuffer_height - y;
+
+	if (width < 1 || height < 1)
+		return;
+
+	total_scaled_w = FixedMul((width << 16), ratio_w) >> 17;
+	total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
+
+	ratio_w = FixedDiv(FRACUNIT, ratio_w);
+	ratio_h = FixedDiv(FRACUNIT, ratio_h);
+
+	inc_x = 0;
+	inc_y = 0;
+
+	dest = (byte*)fb + y * 320 + x;
+	source = jo->data + srcx + srcy * rowsize;
+
+	//if ((x & 1) == 0 && (width & 1) == 0 && (rowsize & 1) == 0)
+	{
+		pixel_t* dest2 = (pixel_t*)dest;
+
+		uint8_t* source2 = (pixel_t*)source;
+		uint8_t* source3 = (pixel_t*)source;
+
+		for (; total_scaled_h; total_scaled_h--)
+		{
+			for (int n = total_scaled_w; n > 0; n--)
+			{
+				pixel_t word = (*source2) << 8;
+
+				inc_x += ratio_w;
+				source2 += (inc_x >> 16);
+				inc_x &= 0xFFFF;
+
+				word |= (*source2);
+				*dest2++ = word;
+
+				inc_x += ratio_w;
+				source2 += (inc_x >> 16);
+				inc_x &= 0xFFFF;
+			}
+
+			dest2 += (160 - total_scaled_w);
+
+			inc_y += ratio_h;
+			source3 += (width * (inc_y >> 16));
+			source2 = source3;
+			inc_y &= 0xFFFF;
+
+			inc_x = 0;
+		}
+
+		return;
+	}
+}
+
 void DrawJagobj2(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h, pixel_t *fb)
 {
