@@ -887,10 +887,8 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
          backceiling = backsector->ceilingheight;
          backfloor = backsector->floorheight;
       }
-
-      if (backceiling <= frontfloor || backfloor >= frontceiling)
-         solid = true;
-      else if (backsector->ceilingheight == frontsector->ceilingheight &&
+      
+      if (backsector->ceilingheight == frontsector->ceilingheight &&
         backsector->floorheight == frontsector->floorheight)
       {
         // reject empty lines used for triggers and special events
