@@ -458,7 +458,7 @@ void P_LoadThings (int lump)
 			if (maceLinkCount > 0)
 				numringthings += maceLinkCount; // links
 
-			numthingsreal++; // End of chain (ball)
+			numringthings++; // End of chain (ball)
 			numMaces++;
 		}
 		else

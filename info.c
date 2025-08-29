@@ -2663,7 +2663,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		0,      // mass
 		1,              // damage
 		sfx_s3k_c9, // activesound
-		MF_NOGRAVITY, // flags
+		MF_NOGRAVITY|MF_STATIC|MF_SPECIAL|MF_RINGMOBJ, // flags
 		0          // flags2
 	},
 
@@ -2689,7 +2689,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		0,      // mass
 		1,              // damage
 		sfx_s3k_c9, // activesound
-		MF_NOGRAVITY, // flags
+		MF_NOGRAVITY|MF_STATIC|MF_SPECIAL|MF_RINGMOBJ, // flags
 		0         // flags2
 	},
 	{            // MT_SMALLGRABCHAIN
@@ -2714,7 +2714,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		100,              // mass
 		1,                // damage
 		sfx_None,         // activesound
-		MF_SPECIAL|MF_NOGRAVITY, // flags
+		MF_NOGRAVITY|MF_STATIC|MF_SPECIAL|MF_RINGMOBJ, // flags
 		0            // flags2
 	},
 
@@ -2740,7 +2740,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		100,            // mass
 		1,              // damage
 		sfx_None,       // activesound
-		MF_SPECIAL|MF_NOGRAVITY, // flags
+		MF_NOGRAVITY|MF_STATIC|MF_SPECIAL|MF_RINGMOBJ, // flags
 		0          // flags2
 	},
 	{           // MT_STALAGMITE0

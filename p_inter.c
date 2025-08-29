@@ -248,6 +248,33 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 				P_DamageMobj(toucher, special, special, 1);
 			return;
 		}
+		else if (special->type == MT_SMALLMACE || special->type == MT_BIGMACE)
+		{
+			P_DamageMobj(toucher, special, special, 1);
+			return;
+		}
+		else if (!(player->pflags & PF_MACESPIN) && (special->type == MT_SMALLGRABCHAIN
+			|| special->type == MT_BIGGRABCHAIN))
+		{
+			if (P_MobjFlip(toucher) * toucher->momz > 0) // Only activates when falling downward or on a surface
+				return;
+
+			if (player->powers[pw_flashing])
+				return;
+
+			P_ResetPlayer(player);
+
+			S_StartSound(toucher, sfx_s3k_3c);
+			P_SetMobjState(toucher, S_PLAY_ATK1);
+
+			// disable controls shortly
+			player->justSprung = TICRATE >> 2;
+			player->pflags |= PF_MACESPIN;
+
+			toucher->target = special;
+
+			return;
+		}
 		
 		P_RemoveMobj (special);
 
@@ -383,29 +410,6 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 	if (special->type == MT_STARPOST)
 	{
 		P_TouchStarPost(special, player);
-		return;
-	}
-
-	if (!(player->pflags & PF_MACESPIN) && (special->type == MT_SMALLGRABCHAIN
-		|| special->type == MT_BIGGRABCHAIN))
-	{
-		if (P_MobjFlip(toucher) * toucher->momz > 0) // Only activates when falling downward or on a surface
-			return;
-
-		if (player->powers[pw_flashing])
-			return;
-
-		P_ResetPlayer(player);
-
-		S_StartSound(toucher, sfx_s3k_3c);
-		P_SetMobjState(toucher, S_PLAY_ATK1);
-
-		// disable controls shortly
-		player->justSprung = TICRATE >> 2;
-		player->pflags |= PF_MACESPIN;
-
-		toucher->target = special;
-
 		return;
 	}
 

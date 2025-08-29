@@ -1107,7 +1107,7 @@ typedef struct
 {
 	VINT x, y, z;
 	ringmobj_t *chain; // First item in the chain list.
-	mobj_t *maceball;
+	ringmobj_t *maceball;
 	VINT numchain;
 	VINT interval; // The diameter (in FRACUNITs) to space out the links
 } macechain_t;
@@ -1209,14 +1209,12 @@ void P_SSNMaceRotate(swingmace_t *sm)
 
 	dist += sm->macechain.interval * (count-1);
 	dist += mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS;
-	P_UnsetThingPosition(sm->macechain.maceball);
-	sm->macechain.maceball->x = (sm->macechain.x << FRACBITS) + (rotVec.x * dist);
-	sm->macechain.maceball->y = (sm->macechain.y << FRACBITS) + (rotVec.z * dist);
-	sm->macechain.maceball->z = (sm->macechain.z << FRACBITS) + (rotVec.y * dist);
-	sm->macechain.maceball->z -= (sm->macechain.maceball->theight << FRACBITS) >> 1;
-	sm->macechain.maceball->floorz = sm->macechain.maceball->z;
-	sm->macechain.maceball->ceilingz = sm->macechain.maceball->z + (sm->macechain.maceball->theight << FRACBITS);
-	P_SetThingPosition(sm->macechain.maceball);
+	P_UnsetThingPosition((mobj_t*)sm->macechain.maceball);
+	sm->macechain.maceball->x = sm->macechain.x + ((rotVec.x * dist) >> FRACBITS);
+	sm->macechain.maceball->y = sm->macechain.y + ((rotVec.z * dist) >> FRACBITS);
+	sm->macechain.maceball->z = sm->macechain.z + ((rotVec.y * dist) >> FRACBITS);
+	sm->macechain.maceball->z -= (mobjinfo[sm->macechain.maceball->type].height >> FRACBITS) >> 1;
+	P_SetThingPosition2((mobj_t*)sm->macechain.maceball, R_PointInSubsector2(sm->macechain.maceball->x << FRACBITS, sm->macechain.maceball->y << FRACBITS));
 
 	// Is a player attached?
 	for (count = 0; count < MAXPLAYERS; count++)
@@ -1227,7 +1225,7 @@ void P_SSNMaceRotate(swingmace_t *sm)
 		const player_t *player = &players[count];
 
 		if ((player->pflags & PF_MACESPIN)
-			&& player->mo->target == sm->macechain.maceball)
+			&& player->mo->target == (mobj_t*)sm->macechain.maceball)
 		{
 			vector3_t newPos;
 			newPos.x = (sm->macechain.x << FRACBITS) + (rotVec.x * dist);
@@ -1399,7 +1397,7 @@ if (sm->msublinks > sm->mlength)
 	const fixed_t spawnX = x + FixedMul(dist, sm->nv.x);
 	const fixed_t spawnY = y + FixedMul(dist, sm->nv.y);
 	const fixed_t spawnZ = (z - (mobjinfo[macetype].height >> 1)) + FixedMul(dist, sm->nv.z);
-	sm->macechain.maceball = P_SpawnMobj(spawnX, spawnY, spawnZ, macetype);
+	sm->macechain.maceball = (ringmobj_t*)P_SpawnMobj(spawnX, spawnY, spawnZ, macetype);
 
 	sm->nv.x = axis->x;
 	sm->nv.y = axis->y;

@@ -443,17 +443,13 @@ static void P_UnlinkBlockmap(mobj_t *thing)
 			blockx = thing->x - bmaporgx;
 			blocky = thing->y - bmaporgy;
 		}
+		
 		if (blockx >= 0 && blocky >= 0)
 		{
-			blockx = thing->x - bmaporgx;
-			blocky = thing->y - bmaporgy;
-			if (blockx >= 0 && blocky >= 0)
-			{
-				blockx = (unsigned)blockx >> MAPBLOCKSHIFT;
-				blocky = (unsigned)blocky >> MAPBLOCKSHIFT;
-				if (blockx < bmapwidth && blocky <bmapheight)
-					blocklinks[blocky*bmapwidth+blockx] = thing->bnext;
-			}
+			blockx = (unsigned)blockx >> MAPBLOCKSHIFT;
+			blocky = (unsigned)blocky >> MAPBLOCKSHIFT;
+			if (blockx < bmapwidth && blocky <bmapheight)
+				blocklinks[blocky*bmapwidth+blockx] = thing->bnext;
 		}
 	}
 }
