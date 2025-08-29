@@ -831,9 +831,10 @@ void P_Drawer (void)
 		R_RenderPlayerView(consoleplayer ^ 1);
 	}
 
-	ST_Drawer();
-
+	// Gotta wait for the other CPU to finish drawing before we start drawing the HUD overtop.
 	Mars_R_SecWait();
+
+	ST_Drawer();
 
 	if (IsTitleScreen())
 		M_Drawer();	// Show title emblem and menus.
