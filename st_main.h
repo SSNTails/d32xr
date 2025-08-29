@@ -6,9 +6,6 @@ typedef struct
 	VINT    rings;
 	VINT    lives;
 
-	VINT    msgTics;
-	char    msg[128];
-
 	boolean intermission;
 } stbar_t;
 

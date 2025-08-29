@@ -450,6 +450,9 @@ static void ST_Drawer_ (stbar_t* sb)
 #endif
 }
 
+static char consoleMsg[128];
+static VINT consoleMsgTics = 0;
+
 void CONS_Printf(char *msg, ...) 
 {
 	if (stbar)
@@ -457,10 +460,10 @@ void CONS_Printf(char *msg, ...)
 		va_list ap;
 
 		va_start(ap, msg);
-		D_vsnprintf(stbar->msg, sizeof(stbar->msg), msg, ap);
+		D_vsnprintf(consoleMsg, sizeof(consoleMsg), msg, ap);
 		va_end(ap);
 
-		stbar->msgTics = 4 * TICRATE;
+		consoleMsgTics = 4 * TICRATE;
 	}
 } 
 
@@ -493,10 +496,10 @@ void ST_Drawer(void)
 		p++;
 	}
 
-	if (stbar->msgTics)
+	if (consoleMsgTics)
 	{
-		V_DrawStringLeft(&menuFont, 0, 24, stbar->msg);
-		stbar->msgTics--;
+		V_DrawStringLeft(&menuFont, 0, 24, consoleMsg);
+		consoleMsgTics--;
 	}
 }
 

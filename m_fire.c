@@ -44,8 +44,6 @@ static int titlepic_start;
 */ 
 void I_InitMenuFire(jagobj_t *titlepic)
 {
-	int i;
-
 	titlepic_start = I_GetTime();
 
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4), dc_cshift_playpals);
