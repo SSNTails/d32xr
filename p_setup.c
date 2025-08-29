@@ -871,10 +871,10 @@ D_printf ("P_SetupLevel(%i)\n",lumpnum);
 
 	P_GroupLines();
 
-	P_LoadThings (lumpnum+ML_THINGS);
-
 /* set up world state */
 	P_SpawnSpecials ();
+	P_LoadThings (lumpnum+ML_THINGS);
+
 	ST_InitEveryLevel ();
 	
 /*I_Error("free memory: 0x%x\n", Z_FreeMemory(mainzone)); */

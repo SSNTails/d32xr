@@ -376,8 +376,11 @@ mobj_t *P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		mobj->z = mobj->floorz;
 	else if (z == ONCEILINGZ)
 		mobj->z = mobj->ceilingz - info->height;
-	else 
+	else
 		mobj->z = z;
+
+	mobj->floorz = FloorZAtPos(sec, mobj->z, info->height);
+	mobj->ceilingz = CeilingZAtPos(sec, mobj->z, info->height);
 	
 	return mobj;
 }
