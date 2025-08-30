@@ -1122,14 +1122,14 @@ typedef struct
 
 void T_RaiseSector (raise_t *raise)
 {
-	boolean playeronme = false;
+	player_t *playerOnMe = NULL;
 
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i])
 			continue;
 
-		const player_t *player = &players[i];
+		player_t *player = &players[i];
 
 		// First the easy case
 		for (int k = 0; k < raise->numsectors; k++)
@@ -1137,7 +1137,7 @@ void T_RaiseSector (raise_t *raise)
 			if (subsectors[player->mo->isubsector].isector == raise->sectors[k]
 				&& player->mo->z == raise->sector->ceilingheight)
 			{
-				playeronme = true;
+				playerOnMe = player;
 				goto playerIsOnMe;
 			}
 		}
@@ -1150,7 +1150,7 @@ void T_RaiseSector (raise_t *raise)
 				{
 					if (player->mo->z == raise->sector->ceilingheight)
 					{
-						playeronme = true;
+						playerOnMe = player;
 						goto playerIsOnMe;
 					}
 				}
@@ -1161,7 +1161,7 @@ void T_RaiseSector (raise_t *raise)
 playerIsOnMe:
 ; // Keep the compiler happy
 	// Player is standing on the FOF
-	VINT direction = playeronme ? 1 : -1;
+	VINT direction = playerOnMe ? 1 : -1;
 	fixed_t ceilingdestination = direction > 0 ? raise->ceilingtop << FRACBITS : raise->ceilingbottom << FRACBITS;
 	fixed_t floordestination = ceilingdestination - (raise->sector->ceilingheight - raise->sector->floorheight);
 
@@ -1174,7 +1174,7 @@ playerIsOnMe:
 	}
 
 	fixed_t origspeed = raise->basespeed << FRACBITS;
-	if (!playeronme)
+	if (!playerOnMe)
 		origspeed >>= 1;
 
 	// Speed up as you get closer to the middle, then slow down again
@@ -1190,6 +1190,12 @@ playerIsOnMe:
 
 	if (res == ok || res == pastdest)
 		T_MovePlane(raise->sector, speed, floordestination, true, 0, direction);
+
+	if (playerOnMe)
+		playerOnMe->mo->z = playerOnMe->mo->floorz = raise->sector->ceilingheight;
+
+	for (int k = 0; k < raise->numsectors; k++)
+		P_ChangeSector(&sectors[raise->sectors[k]], true);
 }
 
 static void P_AddRaiseThinker(sector_t *fofSector, line_t *fofLine)

@@ -41,9 +41,8 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 							flag = P_ChangeSector(sector,false);
 							if (flag == true)
 							{
-								sector->floorheight =lastpos;
+								sector->floorheight = lastpos;
 								P_ChangeSector(sector,false);
-								/*return crushed; */
 							}
 						}
 						return pastdest;
@@ -60,7 +59,6 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 							{
 								sector->floorheight = lastpos;
 								P_ChangeSector(sector,false);
-								return crushed;
 							}
 						}
 					}
@@ -78,7 +76,6 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 							{
 								sector->floorheight = lastpos;
 								P_ChangeSector(sector,false);
-								/*return crushed; */
 							}
 						}
 						return pastdest;
@@ -94,7 +91,6 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 							{
 								sector->floorheight = lastpos;
 								P_ChangeSector(sector,false);
-								return crushed;
 							}
 						}
 					}
@@ -117,7 +113,6 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 							{
 								sector->ceilingheight = lastpos;
 								P_ChangeSector(sector,false);
-								/*return crushed; */
 							}
 						}
 						return pastdest;
@@ -134,7 +129,6 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 							{
 								sector->ceilingheight = lastpos;
 								P_ChangeSector(sector,false);
-								return crushed;
 							}
 						}
 					}
@@ -152,7 +146,6 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 							{
 								sector->ceilingheight = lastpos;
 								P_ChangeSector(sector,false);
-								/*return crushed; */
 							}
 						}
 						return pastdest;
@@ -164,14 +157,11 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 						if (changeSector)
 						{
 							flag = P_ChangeSector(sector,false);
-							#if 0
 							if (flag == true)
 							{
 								sector->ceilingheight = lastpos;
-								P_ChangeSector(sector,crush);
-								return crushed;
+								P_ChangeSector(sector,false);
 							}
-							#endif
 						}
 					}
 					break;
