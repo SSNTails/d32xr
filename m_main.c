@@ -411,14 +411,18 @@ int M_Ticker (void)
 		return ga_startnew;
 
 /* animate skull */
-	if (gametic & 1)
+//	if (gametic & 1)
 		titleTicker++;
 
 	if (titleTicker & 1)
+	{
+		titleSmallTicker++;
+	}
 		cursorframe++;
 
-	if (cursorframe & 1)
-		titleSmallTicker++;
+// For 30fps
+//	if (cursorframe & 1)
+//		titleSmallTicker++;
 
 	M_UpdateSaveInfo();
 
@@ -699,10 +703,10 @@ void M_Drawer (void)
 		VINT logoPos = 160 - (m_doom->width / 2);
 
 		// Fill the area above the viewport with the sky color.
-		if (titleTicker < 2)
+//		if (titleTicker < 2)
 			DrawFillRect(0, 0, 320, 44, gamemapinfo.skyTopColor);
-		else
-			DrawFillRect(logoPos + 6, 18, 60, 26, gamemapinfo.skyTopColor);
+//		else
+//			DrawFillRect(logoPos + 6, 18, 60, 26, gamemapinfo.skyTopColor);
 
 		DrawJagobj(m_doom, logoPos, 16);
 		y_offset = m_doom->height + 24 - STARTY;
@@ -750,6 +754,7 @@ void M_Drawer (void)
 
 	if (scrpos == ms_help)
 	{
+		DrawFillRect(0, 0, 320, 44, gamemapinfo.skyTopColor);
 		O_DrawHelp(80);
 		return;
 	}
