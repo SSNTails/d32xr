@@ -343,7 +343,7 @@ typedef enum
 } result_e;
 
 result_e	T_MovePlane(sector_t *sector,fixed_t speed,
-			fixed_t dest,boolean crush,int floorOrCeiling,int direction);
+			fixed_t dest,boolean changeSector,int floorOrCeiling,int direction);
 
 int		EV_DoFloor(line_t *line,floor_e floortype);
 int		EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag);

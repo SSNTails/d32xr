@@ -1105,6 +1105,123 @@ static void P_StartScrollTex(line_t *line)
 
 typedef struct
 {
+	thinker_t thinker;
+	sector_t *sector;
+	fixed_t extraspeed; //For dynamically sinking platform
+	int16_t tag;
+	int16_t ceilingbottom;
+	int16_t ceilingtop;
+	int16_t basespeed;
+
+	int16_t *sectors;
+	int16_t numsectors;
+
+	uint8_t shaketimer; //For dynamically sinking platform
+	uint8_t flags;
+} raise_t;
+
+void T_RaiseSector (raise_t *raise)
+{
+	boolean playeronme = false;
+
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		const player_t *player = &players[i];
+
+		// First the easy case
+		for (int k = 0; k < raise->numsectors; k++)
+		{
+			if (subsectors[player->mo->isubsector].isector == raise->sectors[k]
+				&& player->mo->z == raise->sector->ceilingheight)
+			{
+				playeronme = true;
+				goto playerIsOnMe;
+			}
+		}
+
+		for (int j = 0; j < player->num_touching_sectors; j++)
+		{
+			for (int k = 0; k < raise->numsectors; k++)
+			{
+				if (player->touching_sectorlist[j] == raise->sectors[k])
+				{
+					if (player->mo->z == raise->sector->ceilingheight)
+					{
+						playeronme = true;
+						goto playerIsOnMe;
+					}
+				}
+			}
+		}
+	}
+
+playerIsOnMe:
+; // Keep the compiler happy
+	// Player is standing on the FOF
+	VINT direction = playeronme ? 1 : -1;
+	fixed_t ceilingdestination = direction > 0 ? raise->ceilingtop << FRACBITS : raise->ceilingbottom << FRACBITS;
+	fixed_t floordestination = ceilingdestination - (raise->sector->ceilingheight - raise->sector->floorheight);
+
+	if ((direction > 0 && raise->sector->ceilingheight >= ceilingdestination)
+		|| (direction < 0 && raise->sector->ceilingheight <= ceilingdestination))
+	{
+		raise->sector->floorheight = floordestination;
+		raise->sector->ceilingheight = ceilingdestination;
+		return;
+	}
+
+	fixed_t origspeed = raise->basespeed << FRACBITS;
+	if (!playeronme)
+		origspeed >>= 1;
+
+	// Speed up as you get closer to the middle, then slow down again
+	fixed_t distToNearestEndpoint = D_min(raise->sector->ceilingheight - (raise->ceilingbottom << FRACBITS), (raise->ceilingtop << FRACBITS) - raise->sector->ceilingheight);
+	fixed_t speed = FixedMul(origspeed, FixedDiv(distToNearestEndpoint, (raise->ceilingtop - raise->ceilingbottom) << (FRACBITS-5)));
+
+	if (speed <= origspeed >> 4)
+		speed = origspeed >> 4;
+	else if (speed > origspeed)
+		speed = origspeed;
+
+	result_e res = T_MovePlane(raise->sector, speed, ceilingdestination, true, 1, direction);
+
+	if (res == ok || res == pastdest)
+		T_MovePlane(raise->sector, speed, floordestination, true, 0, direction);
+}
+
+static void P_AddRaiseThinker(sector_t *fofSector, line_t *fofLine)
+{
+	mapvertex_t *v1 = &vertexes[fofLine->v1];
+	mapvertex_t *v2 = &vertexes[fofLine->v2];
+	int16_t numTaggedSectors = 0;
+
+	for (int s = -1; (s = P_FindSectorFromLineTag(fofLine,s)) >= 0;)
+		numTaggedSectors++;
+
+	if (numTaggedSectors <= 0)
+		return; // Gotta have target sectors...
+
+	raise_t *raise = Z_Malloc (sizeof(*raise)+(sizeof(int16_t)*numTaggedSectors), PU_LEVSPEC);
+	P_AddThinker(&raise->thinker);
+	raise->thinker.function = T_RaiseSector;
+
+	raise->tag = P_GetLineTag(fofLine);
+	raise->sector = fofSector;
+	raise->ceilingtop = P_FindHighestCeilingSurrounding(fofSector) >> FRACBITS;
+	raise->ceilingbottom = P_FindLowestCeilingSurrounding(fofSector) >> FRACBITS;
+	raise->basespeed = P_AproxDistance(v2->x - v1->x, v2->y - v1->y) >> 2;
+	raise->sectors = (int16_t*)((uint8_t*)raise + sizeof(*raise));
+	raise->numsectors = 0;
+
+	for (int s = -1; (s = P_FindSectorFromLineTag(fofLine,s)) >= 0;)
+		raise->sectors[raise->numsectors++] = s;
+}
+
+typedef struct
+{
 	VINT x, y, z;
 	ringmobj_t *chain; // First item in the chain list.
 	ringmobj_t *maceball;
@@ -1485,7 +1602,7 @@ void P_SpawnSpecials (void)
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
 				sectors[s].fofsec = sec;
-				sectors[sec].specline = sec;
+				sectors[sec].specline = i;
 				sectors[s].flags |= SF_FOF_INVISIBLE_TANGIBLE;
 			}
 			break;
@@ -1509,10 +1626,11 @@ void P_SpawnSpecials (void)
 			VINT sec = sides[*lines[i].sidenum].sector;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
+				sectors[s].fofsec = sec;
 				sectors[s].flags |= SF_CRUMBLE;
 				sectors[s].flags |= SF_FLOATBOB;
 				sectors[s].flags |= SF_RESPAWN;
-				sectors[sec].specline = sec;
+				sectors[sec].specline = i;
 			}
 
 			break;
@@ -1522,11 +1640,26 @@ void P_SpawnSpecials (void)
 			VINT sec = sides[*lines[i].sidenum].sector;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
+				sectors[s].fofsec = sec;
 				sectors[s].flags |= SF_CRUMBLE;
 				sectors[s].flags |= SF_FLOATBOB;
-				sectors[sec].specline = sec;
+				sectors[sec].specline = i;
 			}
 
+			break;
+		}
+		case 190: // Rising Platform
+		{
+			VINT sec = sides[lines[i].sidenum[0]].sector;
+			sector_t *fofSector = &sectors[sec];
+
+			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
+			{
+				sectors[s].fofsec = sec;
+				sectors[sec].specline = i;
+			}
+
+			P_AddRaiseThinker(fofSector, &lines[i]);
 			break;
 		}
 		case 249: // Scroll line texture by tagged sector floor (X) and ceiling (Y)
