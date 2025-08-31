@@ -790,7 +790,7 @@ int G_PlayPositionDemoPtr (unsigned char *demo)
 void G_RecordInputDemo (void)
 {
 	startmap = REC_INPUT_DEMO;
-	demo_p = demobuffer = Z_Malloc (0x100, PU_STATIC);	// More than enough for a 30 second demo.
+	demo_p = demobuffer = Z_Malloc (0x200, PU_STATIC);	// More than enough for a 60 second demo.
 	
 	*demo_p++ = 'I';
 	*demo_p++ = 'D';

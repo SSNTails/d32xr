@@ -135,8 +135,10 @@ void D_isort(int* a, int len) __attribute__((nonnull)) ATTR_DATA_CACHE_ALIGN;
 #define	FRACUNIT		(1<<FRACBITS)
 typedef int fixed_t;
 
+#define REC_DEMO_TIMEOUT	(30*TICRATE)	// Stop recording after 30 seconds
+
 #ifdef KIOSK_MODE
-	#define KIOSK_TIMEOUT				(TICRATE*30)
+	#define KIOSK_TIMEOUT				(30*TICRATE)
 	#define KIOSK_LEVELSELECT_TIMEOUT	(60*20)
 #endif
 

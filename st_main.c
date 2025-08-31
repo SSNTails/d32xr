@@ -427,6 +427,13 @@ static void ST_Drawer_ (stbar_t* sb)
 	}
 
 #ifndef HIDE_HUD
+
+#if defined(REC_INPUT_DEMO) || defined(REC_POS_DEMO)
+	if (IsDemoModeType(DemoMode_Recording)) {
+		V_DrawStringRightWithColormap(&menuFont, 320 - 16, 192, "RECORDING", YELLOWTEXTCOLORMAP);
+	}
+#endif
+
 	if (sb->lives == 0 && sb->deadTimer > 3*TICRATE)
 	{
 		int gameStartX = -85;

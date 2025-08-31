@@ -344,7 +344,7 @@ int P_Ticker (void)
 			}
 		}
 
-		if (IsDemoModeType(DemoMode_Playback) || IsDemoModeType(DemoMode_Recording))
+		if (IsDemo())
 			P_CheckSights();
 
 		for (playernum = 0, pl = players; playernum < MAXPLAYERS; playernum++, pl++)
@@ -506,18 +506,18 @@ gameaction_t RecordDemo()
 #endif
 
 #ifdef REC_INPUT_DEMO
-	if ((short)demo_p - (short)demobuffer >= (0x100 - 1)) {
+	if ((short)demo_p - (short)demobuffer >= (0x200 - 1)) {
 		// The demo recording buffer has been filled up. End the recording.
-		if (demobuffer[0xFE] == 0xFF) {
+		if (demobuffer[0x1FE] == 0xFF) {
 			// This byte is a count of 255. Set it to zero so the demo can be ended.
-			demobuffer[0xFE] = 0;
+			demobuffer[0x1FE] = 0;
 		}
-		demobuffer[0xFF] = 0x80;
+		demobuffer[0x1FF] = 0x80;
 		*((short *)&demobuffer[6]) = leveltime - rec_start_time;
 		SetDemoMode(DemoMode_None);
 	}
-	else if (leveltime - rec_start_time >= (30*TICRATE) || buttons & BT_START) {
-		// The demo has been recording for 30 seconds, or START was pressed. End the recording.
+	else if (leveltime - rec_start_time >= REC_DEMO_TIMEOUT || players[0].buttons & BT_START) {
+		// The demo timeout period has been reached, or START was pressed. End the recording.
 		demo_p += 1;
 		*demo_p++ = 0x80;
 		*((short *)&demobuffer[6]) = leveltime - rec_start_time;
@@ -527,11 +527,11 @@ gameaction_t RecordDemo()
 		if (!(players[0].pflags & PF_CONTROLDISABLED)) {
 			// Start recording!
 			rec_start_time = leveltime;
-			*demo_p++ = buttons;
+			*demo_p++ = players[0].buttons;
 			*demo_p = 1;
 		}
 	}
-	else if (rec_prev_buttons == (buttons & 0xFF)) {
+	else if (rec_prev_buttons == (players[0].buttons & 0xFF)) {
 		// Same button combination as last frame. Increase the count.
 		*demo_p += 1;
 		if (*demo_p == 255) {
@@ -543,11 +543,11 @@ gameaction_t RecordDemo()
 	else {
 		// New button combination. Record the buttons with a count of 1.
 		demo_p += 1;
-		*demo_p++ = buttons;
+		*demo_p++ = players[0].buttons;
 		*demo_p = 1;
 	}
 
-	rec_prev_buttons = buttons;
+	rec_prev_buttons = players[0].buttons;
 #endif
 
 	return ga_nothing;

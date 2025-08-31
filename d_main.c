@@ -1437,7 +1437,7 @@ D_printf("G_Init\n");
 
 D_printf ("DM_Main\n");
 
-#ifdef REC_INPUT_DEMO
+#ifdef PLAY_INPUT_DEMO
 	while(1) {
 		RunInputDemo("DEMO1");
 	}
