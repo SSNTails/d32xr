@@ -605,6 +605,11 @@ static jagobj_t *arrowl_pic = NULL;
 static jagobj_t *arrowr_pic = NULL;
 static jagobj_t *chevblku_pic = NULL;
 static jagobj_t *chevblkd_pic = NULL;
+
+#ifdef KIOSK_MODE
+static jagobj_t *sttnum_pic[6] = { NULL, NULL, NULL, NULL, NULL, NULL };
+#endif
+
 static VINT lvlsel_lump = -1;
 
 int TIC_LevelSelect (void)
@@ -770,6 +775,15 @@ void START_LevelSelect (void)
 	chevblku_pic = W_CacheLumpName("CHEVBLKU", PU_STATIC);
 	chevblkd_pic = W_CacheLumpName("CHEVBLKD", PU_STATIC);
 
+#ifdef KIOSK_MODE
+	sttnum_pic[0] = W_CacheLumpName("STTNUM0", PU_STATIC);
+	sttnum_pic[1] = W_CacheLumpName("STTNUM1", PU_STATIC);
+	sttnum_pic[2] = W_CacheLumpName("STTNUM2", PU_STATIC);
+	sttnum_pic[3] = W_CacheLumpName("STTNUM3", PU_STATIC);
+	sttnum_pic[4] = W_CacheLumpName("STTNUM4", PU_STATIC);
+	sttnum_pic[5] = W_CacheLumpName("STTNUM5", PU_STATIC);
+#endif
+
 	if (gamemapinfo.data)
 		Z_Free(gamemapinfo.data);
 	gamemapinfo.data = NULL;
@@ -802,6 +816,11 @@ void STOP_LevelSelect (void)
 	Z_Free(arrowr_pic);
 	Z_Free(chevblku_pic);
 	Z_Free(chevblkd_pic);
+
+#ifdef KIOSK_MODE
+	for (int i = 0; i < 6; i++)
+		Z_Free(sttnum_pic[i]);
+#endif
 
 	ClearCopper();
 }
@@ -928,10 +947,10 @@ void DRAW_LevelSelect (void)
 
 #ifdef KIOSK_MODE
 	// Clear countdown digits
-	background = I_FrameBuffer() + (((320*184) + 280) >> 1);
+	background = I_FrameBuffer() + (((320*177) + 272) >> 1);
 
-	for (int y=0; y < 12; y++) {
-		for (int x=0; x < (16>>3); x++) {
+	for (int y=0; y < 31; y++) {
+		for (int x=0; x < (24>>3); x++) {
 			// Write 8 thru pixels
 			*background++ = COLOR_THRU_2;
 			*background++ = COLOR_THRU_2;
@@ -939,10 +958,25 @@ void DRAW_LevelSelect (void)
 			*background++ = COLOR_THRU_2;
 		}
 
-		background += (304>>1);
+		background += (296>>1);
 	}
 
-	V_DrawValueLeft(&hudNumberFont, 280, 184, (KIOSK_LEVELSELECT_TIMEOUT/60) - (screenCount/60));
+	int countdown = (KIOSK_LEVELSELECT_TIMEOUT/60) - (screenCount/60);
+	if (countdown > 5) {
+		V_DrawValueLeft(&hudNumberFont, 280, 184, (KIOSK_LEVELSELECT_TIMEOUT/60) - (screenCount/60));
+	}
+	else {
+		int size_index = (((screenCount<<4) / 15) & 63);
+		fixed_t size_scale = FRACUNIT + (2048 * (63 - size_index));
+		DrawScaledJagobj(
+				sttnum_pic[countdown],
+				280-8+(size_index>>2)-(size_index>>3),
+				184-7+(size_index>>3),
+				size_scale,
+				size_scale,
+				I_OverwriteBuffer());
+		//DrawJagobj(sttnum_pic[countdown], 280, 184);
+	}
 #endif
 }
 
