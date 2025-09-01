@@ -14,10 +14,7 @@ typedef struct
 
 creditcard_t creditCards[] = {
 	{"C_STJR",   "SONIC ROBO BLAST",     "32X",              "STAFF", "" },
-	{"C_WSQUID", "TRACKING",                "Wessquiid",         "Title Theme\nGreenflower 1 & 2\nSpeed Shoes\nMost Others", "x.com/@wessquiid\nwessquiid.carrd.co" },
-	{"C_NQUITE", "TRACKING",                "NotQuiteHere",      "Special Stage",       "x.com/NotQuiteHereTSM" },
-	{"C_CRYPTK", "TRACKING",                "Cryptik",          "Boss Theme\nMiscellaneous",        "x.com/@LunarCryptik\nyoutube.com/c\n/LunarCryptik" },
-	{"C_JOYTAY", "TRACKING",                "John \"Joy\" Tay", "Credits Theme",                          "x.com/@johntayjinf\nyoutube.com\n/@johntayjinf" },
+	{NULL, "TRACKING",                NULL,         "Cryptik\nWessquiid\nNerreave\nNotQuiteHere\nJoy Tay\nJustKam", "" },
 	{"C_SAXMAN", "PROGRAMMING",          "Saxman",           "MegaDrive & 32X\nAssembler\nAdditional tooling", "rumble.com/user\n/ymtx81z" },
 	{"C_SSN",    "PROGRAMMING",          "SSNTails",         "Project Lead\nGameplay\nEngine Enhancements\nAdditional Art",            "x.com/@SSNTails\nyoutube.com\n/@ssntails" },
 	{"C_VIC",    "SPECIAL THANKS",       "Viciious",         "Doom 32X:\nResurrection\nDoom CD32X:\nFusion",             "x.com/vluchitz" },
@@ -32,6 +29,8 @@ creditcard_t creditCards[] = {
 static VINT cardPFP = 0;
 static VINT cardTimer = 0;
 static VINT curCard = 0;
+
+static VINT trackerCards[6];
 
 static void F_DrawBackground(void)
 {
@@ -71,6 +70,13 @@ static boolean F_NextCard()
 
 void F_Start (void)
 {
+	trackerCards[0] = W_GetNumForName("C_TRACK1");
+	trackerCards[1] = W_GetNumForName("C_TRACK2");
+	trackerCards[2] = W_GetNumForName("C_TRACK3");
+	trackerCards[3] = W_GetNumForName("C_TRACK4");
+	trackerCards[4] = W_GetNumForName("C_TRACK5");
+	trackerCards[5] = W_GetNumForName("C_TRACK6");
+
 	S_StartSong(gameinfo.victoryMus, 1, cdtrack_end);
 
 	// Set this to black, prep for fade-in.
@@ -154,6 +160,19 @@ void F_Drawer (void)
 		V_DrawStringCenter(&creditFont, 160, 112-8-24, card->title); // SONIC ROBO BLAST
 		V_DrawStringCenter(&creditFont, 160, 112-8, card->name); // 32X
 		V_DrawStringCenter(&creditFont, 160, 112-8+16+8, card->didWhat); // STAFF
+	}
+	else if (curCard == 1)
+	{
+		V_DrawStringCenter(&creditFont, 160, 32, card->title);
+
+		DrawJagobjLump(trackerCards[0], 24, 64, NULL, NULL);
+		DrawJagobjLump(trackerCards[1], 24+48, 64, NULL, NULL);
+		DrawJagobjLump(trackerCards[2], 24+48+48, 64, NULL, NULL);
+		DrawJagobjLump(trackerCards[3], 24, 64+48, NULL, NULL);
+		DrawJagobjLump(trackerCards[4], 24+48, 64+48, NULL, NULL);
+		DrawJagobjLump(trackerCards[5], 24+48+48, 64+48, NULL, NULL);
+
+		V_DrawStringLeft(&menuFont, 160+8, 64, card->didWhat);
 	}
 	else
 	{
