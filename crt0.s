@@ -105,7 +105,7 @@
 
 ! Standard Mars Header at 0x3C0
 
-        .ascii  "SRB32X v0.1a    "      /* module name */
+        .ascii  "SRB32X v0.2rwx  "      /* module name */
         .long   0x00000000              /* version */
         .long   __text_end-0x02000000   /* Source (in ROM) */
         .long   0x00000000              /* Destination (in SDRAM) */

@@ -118,12 +118,15 @@ static VINT displaymapnum;
 static boolean startup;
 VINT	uchar;
 
+static VINT rwx_logo;
+
 void M_Start2 (boolean startup_)
 {
 	int i;
 
 /* cache all needed graphics	 */
 	m_skull1lump = W_CheckNumForName("M_CURSOR");
+	rwx_logo = W_GetNumForName("RWX");
 
 	startup = startup_;
 	m_doom = NULL;
@@ -615,7 +618,7 @@ int M_Ticker (void)
 							playermap = 1;
 
 #ifdef SHOW_DISCLAIMER
-						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
+						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || gamemapnumbers[playermap-1] == 7 || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
 						{
 							if (++playermap == gamemapcount + 1)
 								playermap = 1;
@@ -627,7 +630,7 @@ int M_Ticker (void)
 						if(--playermap == 0)
 							playermap = gamemapcount;
 #ifdef SHOW_DISCLAIMER
-						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
+						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || gamemapnumbers[playermap-1] == 7 || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
 						{
 							if(--playermap == 0)
 								playermap = gamemapcount;
@@ -746,6 +749,8 @@ void M_Drawer (void)
 		if (kBlinkCounter < 0)
 			DrawJagobj(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37);
 	}
+
+	DrawJagobjLump(rwx_logo, (320-144-8), 224-8-32, NULL, NULL);
 
 /* erase old skulls */
 #ifndef MARS

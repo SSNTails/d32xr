@@ -14,12 +14,12 @@ typedef struct
 
 creditcard_t creditCards[] = {
 	{"C_STJR",   "SONIC ROBO BLAST",     "32X",              "STAFF", "" },
-	{NULL, "TRACKING",                NULL,         "Cryptik\nWessquiid\nNerreave\nNotQuiteHere\nJoy Tay\nJustKam", "" },
+	{NULL, "TRACKING",                NULL,         "Cryptik\n\nWessquiid\n\nNerreave\n\nNotQuiteHere\n\nJoy Tay\n\nJustKam", "" },
 	{"C_SAXMAN", "PROGRAMMING",          "Saxman",           "MegaDrive & 32X\nAssembler\nAdditional tooling", "rumble.com/user\n/ymtx81z" },
 	{"C_SSN",    "PROGRAMMING",          "SSNTails",         "Project Lead\nGameplay\nEngine Enhancements\nAdditional Art",            "x.com/@SSNTails\nyoutube.com\n/@ssntails" },
 	{"C_VIC",    "SPECIAL THANKS",       "Viciious",         "Doom 32X:\nResurrection\nDoom CD32X:\nFusion",             "x.com/vluchitz" },
-	{"C_MITTEN", "SPECIAL THANKS",       "Mittens",          "Mapping support",                     "youtube.com\n/@Mittens0407\ntwitch.tv\n/mittens0407" },
-	{"C_STJR",   "BASED ON THE WORK BY", "Sonic Team Jr.",   "www.srb2.org",                        "Shout-outs to:\nAlice Alacroix\nMotor Roach\nNev3r\nGuyWithThePie\nAnd so many more!" },
+	{"C_THANKS", "SPECIAL THANKS",       NULL,          "Mittens\n\nChilly Willy\n\nTmEE",                     "" },
+	{"C_STJR",   "BASED ON THE WORK BY", "Sonic Team Jr.",   "www.srb2.org",                        "Shout-outs to:\nAlice Alacroix\nMotor Roach\nNev3r\nGuyWithThePie\nToaster\nAnd so many more!" },
 	{NULL,       "THANKS FOR PLAYING!", "", "", "" },
 	{NULL, NULL, NULL, NULL, NULL },
 };
