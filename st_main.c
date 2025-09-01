@@ -428,6 +428,18 @@ static void ST_Drawer_ (stbar_t* sb)
 
 #ifndef HIDE_HUD
 
+#ifdef SHOW_COORDINATES
+	V_DrawValueLeft(&menuFont, 320-112, 32, (players[0].mo->x >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-112, 40, (players[0].mo->y >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-112, 48, (players[0].mo->z >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-112, 56, (players[0].mo->angle >> 16) & 0xFFFF);
+
+	V_DrawValueLeft(&menuFont, 320-64, 32, (camera.x >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-64, 40, (camera.y >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-64, 48, (camera.z >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-64, 56, (camera.angle >> 16) & 0xFFFF);
+#endif
+
 #if defined(REC_INPUT_DEMO) || defined(REC_POS_DEMO)
 	if (IsDemoModeType(DemoMode_Recording)) {
 		V_DrawStringRightWithColormap(&menuFont, 320 - 16, 192, "RECORDING", YELLOWTEXTCOLORMAP);

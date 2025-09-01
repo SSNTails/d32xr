@@ -721,7 +721,7 @@ void I_Update(void)
 
 	// Adjust sky position.
 	unsigned short scroll_y_base = gamemapinfo.skyOffsetY;
-	unsigned short scroll_y_offset = (vd.viewz >> 16);
+	signed short scroll_y_offset = (vd.viewz >> 16);
 	unsigned short scroll_y_pan = (vd.aimingangle >> 22);
 
 	if (IsLevel()) {
