@@ -277,16 +277,20 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
         lightcoef = lseg->lightcoef, lightsub = lseg->lightsub;
 #endif
 
-    const int start = segl->start;
-    const int stop = segl->stop;
+    const int start = segl->start * 2;
+    const int stop = segl->stop * 2;
     int x;
     unsigned miplevel = 0;
 
     drawtex_t *tex;
 
-    uint16_t *segcolmask = ((segl->actionbits & AC_MIDTEXTURE) || (segl->actionbits & AC_FOFSIDE)) ? segl->clipbounds + (stop - start + 1) : NULL;
+    char *restrict csegcolmask = ((segl->actionbits & AC_MIDTEXTURE) || (segl->actionbits & AC_FOFSIDE)) ? (char *)(segl->clipbounds + 1) + (stop - start) : NULL;
 
-    for (x = start; x <= stop; x++)
+    char *restrict cclipbounds = (char*)clipbounds;
+    char *restrict cxtoviewangle = (char*)xtoviewangle;
+
+    x = start;
+    do
     {
        fixed_t r;
        int floorclipx, ceilingclipx;
@@ -314,7 +318,7 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
         //
         // get ceilingclipx and floorclipx from clipbounds
         //
-        ceilingclipx = clipbounds[x];
+        ceilingclipx = *(uint16_t *)&cclipbounds[x];
         floorclipx = ceilingclipx & 0x00ff;
         ceilingclipx = (unsigned)ceilingclipx >> 8;
 
@@ -337,7 +341,7 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
                     bottom = floorclipx;
 
                 if (top < bottom)
-                    R_Draw32XSky(top, bottom, x, draw32xsky, drawmdsky);
+                    R_Draw32XSky(top, bottom, x/2, draw32xsky, drawmdsky);
             }
             if (segl->actionbits & AC_ADDFLOORSKY) {
                 bottom = floorclipx;
@@ -347,7 +351,7 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
                     top = ceilingclipx;
 
                 if (top < bottom)
-                    R_Draw32XSky(top, bottom, x, draw32xsky, drawmdsky);
+                    R_Draw32XSky(top, bottom, x/2, draw32xsky, drawmdsky);
             }
         }
 
@@ -369,13 +373,14 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
 #endif
 
         // calculate texture offset
-        r = finetangent((centerangle + (xtoviewangle[x]<<FRACBITS)) >> ANGLETOFINESHIFT);
+        r = finetangent((centerangle + (*(uint16_t *)&cxtoviewangle[x]<<FRACBITS)) >> ANGLETOFINESHIFT);
         r = FixedMul(distance, r);
 
         colnum = (offset - r) >> FRACBITS;
+        colnum &= 0xff;
 
-        if (segcolmask)
-            segcolmask[x] = texturelight | (colnum & 0xff);
+        if (csegcolmask)
+            *(uint16_t *)&csegcolmask[x] = texturelight | colnum;
 
 #ifdef MARS
 #ifdef WALLDRAW2X
@@ -406,8 +411,8 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
 #endif
 
         for (tex = lseg->first; tex < lseg->last; tex++)
-            R_DrawTexture(x, iscale, colnum, scale2, floorclipx, ceilingclipx, texturelight, tex, miplevel);
-    }
+            R_DrawTexture(x/2, iscale, colnum, scale2, floorclipx, ceilingclipx, texturelight, tex, miplevel);
+    } while (++x, ++x <= stop);
 }
 
 static void R_LockSeg(void)
@@ -450,7 +455,8 @@ static void R_SetupDrawTexture(drawtex_t *drawtex, texture_t *tex,
 
     mipwidth = width;
     mipheight = height;
-    for (j = 0; j <= drawtex->maxmip; j++)
+    j = 0;
+    do
     {
         drawmip_t *mip = &drawtex->mip[j];
 
@@ -472,11 +478,10 @@ static void R_SetupDrawTexture(drawtex_t *drawtex, texture_t *tex,
         mip->numdecals = tex->decals & 0x3;
         if (mip->numdecals && R_InTexCache(&r_texcache, mip->data)) {
             mip->numdecals = 0;
-            continue;
         }
         mip->decals = &decals[tex->decals >> 2];
 #endif
-    }
+    } while (++j <= drawtex->maxmip);
 }
 
 void R_SegCommands(void)
