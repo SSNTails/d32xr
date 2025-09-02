@@ -607,7 +607,14 @@ static jagobj_t *chevblku_pic = NULL;
 static jagobj_t *chevblkd_pic = NULL;
 
 #ifdef KIOSK_MODE
-static jagobj_t *sttnum_pic[6] = { NULL, NULL, NULL, NULL, NULL, NULL };
+static jagobj_t *sttnum_pic[5] = { NULL, NULL, NULL, NULL, NULL };
+#endif
+
+#ifdef SHOW_DISCLAIMER
+	#define SELECTABLE_MAP_COUNT	6
+	const int8_t selectable_maps[SELECTABLE_MAP_COUNT] = {0, 1, 2, 3, 4, 6};
+#else
+	#define SELECTABLE_MAP_COUNT	gamemapcount
 #endif
 
 static VINT lvlsel_lump = -1;
@@ -673,18 +680,22 @@ int TIC_LevelSelect (void)
 		if (ticrealbuttons & BT_LEFT && !(oldticrealbuttons & BT_LEFT)) {
 			selected_map -= 1;
 			if (selected_map < 0) {
-				selected_map = gamemapcount-1;
+				selected_map = SELECTABLE_MAP_COUNT-1;
 			}
 		}
 		else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
 			selected_map += 1;
-			if (selected_map == gamemapcount) {
+			if (selected_map == SELECTABLE_MAP_COUNT) {
 				selected_map = 0;
 			}
 		}
 
 		if (selected_map != prev_selected_map) {
+#ifdef SHOW_DISCLAIMER
+			startmap = gamemapnumbers[selectable_maps[selected_map]];
+#else
 			startmap = gamemapnumbers[selected_map];
+#endif
 
 			char lvlsel_name[9] = { 'L','V','L','S','E','L','0','0','\0' };
 
@@ -776,12 +787,11 @@ void START_LevelSelect (void)
 	chevblkd_pic = W_CacheLumpName("CHEVBLKD", PU_STATIC);
 
 #ifdef KIOSK_MODE
-	sttnum_pic[0] = W_CacheLumpName("STTNUM0", PU_STATIC);
-	sttnum_pic[1] = W_CacheLumpName("STTNUM1", PU_STATIC);
-	sttnum_pic[2] = W_CacheLumpName("STTNUM2", PU_STATIC);
-	sttnum_pic[3] = W_CacheLumpName("STTNUM3", PU_STATIC);
-	sttnum_pic[4] = W_CacheLumpName("STTNUM4", PU_STATIC);
-	sttnum_pic[5] = W_CacheLumpName("STTNUM5", PU_STATIC);
+	sttnum_pic[0] = W_CacheLumpName("STTNUM1", PU_STATIC);
+	sttnum_pic[1] = W_CacheLumpName("STTNUM2", PU_STATIC);
+	sttnum_pic[2] = W_CacheLumpName("STTNUM3", PU_STATIC);
+	sttnum_pic[3] = W_CacheLumpName("STTNUM4", PU_STATIC);
+	sttnum_pic[4] = W_CacheLumpName("STTNUM5", PU_STATIC);
 #endif
 
 	if (gamemapinfo.data)
@@ -818,7 +828,7 @@ void STOP_LevelSelect (void)
 	Z_Free(chevblkd_pic);
 
 #ifdef KIOSK_MODE
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < 5; i++)
 		Z_Free(sttnum_pic[i]);
 #endif
 
@@ -965,17 +975,16 @@ void DRAW_LevelSelect (void)
 	if (countdown > 5) {
 		V_DrawValueLeft(&hudNumberFont, 280, 184, (KIOSK_LEVELSELECT_TIMEOUT/60) - (screenCount/60));
 	}
-	else {
+	else if (countdown > 0) {
 		int size_index = (((screenCount<<4) / 15) & 63);
 		fixed_t size_scale = FRACUNIT + (2048 * (63 - size_index));
 		DrawScaledJagobj(
-				sttnum_pic[countdown],
+				sttnum_pic[countdown-1],
 				280-8+(size_index>>2)-(size_index>>3),
 				184-7+(size_index>>3),
 				size_scale,
 				size_scale,
 				I_OverwriteBuffer());
-		//DrawJagobj(sttnum_pic[countdown], 280, 184);
 	}
 #endif
 }
