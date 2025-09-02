@@ -115,7 +115,11 @@ int Mars_ConvGamepadButtons(int ctrl)
 	else
 	{
 		if (ctrl & SEGA_CTRL_A)
+#ifdef SHOW_DISCLAIMER
+			newc |= BT_SPIN; //configuration[controltype][0];
+#else
 			newc |= BT_FLIP; //configuration[controltype][0];
+#endif
 		if (ctrl & SEGA_CTRL_B)
 			newc |= BT_JUMP; //configuration[controltype][1];
 		if (ctrl & SEGA_CTRL_C)
