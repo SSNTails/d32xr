@@ -33,7 +33,11 @@ typedef struct localplane_s
     fixed_t basexscale, baseyscale;
 
 #ifdef MARS
+#ifdef FLATMIPS
     inpixel_t* ds_source[MIPLEVELS];
+#else
+    inpixel_t* ds_source[1];
+#endif
 #else
     pixel_t* ds_source[MIPLEVELS];
 #endif
@@ -126,7 +130,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     yfrac *= flatpixels[flatnum].size;
 #endif
 
-#if MIPLEVELS > 1
+#if MIPLEVELS > 1 && FLATMIPS
     if (miplevel > 0) {
         unsigned m = miplevel;
         do {

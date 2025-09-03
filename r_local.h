@@ -150,7 +150,7 @@ typedef struct
 	uint16_t 	encbbox[2]; 		/* encoded bounding box for each child */
 } node_t;
 
-#define MIPLEVELS 1
+#define MIPLEVELS 4
 
 #ifdef USE_DECALS
 typedef struct
@@ -189,7 +189,11 @@ typedef struct
 	VINT size;
 	VINT wavy;
 #ifdef MARS
+#if FLATMIPS
 	inpixel_t 	*data[MIPLEVELS];
+#else
+	inpixel_t   *data[1];
+#endif
 #else
 	pixel_t		*data[MIPLEVELS];			/* cached data to draw from */
 #endif
@@ -627,7 +631,9 @@ typedef struct
 
 #ifdef FLOOR_OVER_FLOOR
 	int16_t     fofSector; // backsector FOF
-#else
+#endif
+
+#if MIPLEVELS > 1
 	uint16_t	newmiplevels; // 0 is lower, 1 is upper
 #endif
 
@@ -689,7 +695,7 @@ typedef struct
 	fixed_t    fofInfo;
 } viswallextra_t;
 
-#define	MAXWALLCMDS		136
+#define	MAXWALLCMDS		130
 
 /* A vissprite_t is a thing that will be drawn during a refresh */
 typedef struct vissprite_s

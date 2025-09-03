@@ -29,7 +29,7 @@ static void R_UpdateCache(void)
    maxplanemip = 0;
    for (wall = vd.viswalls; wall < vd.lastwallcmd; wall++)
    {
-#ifdef FLOOR_OVER_FLOOR
+#if MIPLEVELS <= 1
       int minmip = 0, maxmip = 0;
 #else
       int minmip = LOWER8(wall->newmiplevels), maxmip = UPPER8(wall->newmiplevels);

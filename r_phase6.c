@@ -639,7 +639,7 @@ void R_SegCommands(void)
         else
 #endif
         {
-#ifndef FLOOR_OVER_FLOOR
+#if MIPLEVELS > 1
             segl->newmiplevels = 0;
 #endif
         }

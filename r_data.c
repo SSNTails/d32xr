@@ -261,25 +261,6 @@ void R_InitTextures (void)
 		}
 	}
 
-	/* textures can't have more mip levels than their respective decals */
-	texture = textures;
-	for (i = 0; i < numtextures; i++, texture++)
-	{
-		if (texture->mipcount <= 1)
-			continue;
-		if (texture->decals == 0)
-			continue;
-
-		int i, numdecals = texture->decals & 0x3;
-		int firstdecal = texture->decals >> 2;
-		for (i = 0; i < numdecals; i++) {
-			texdecal_t *decal = &decals[firstdecal + i];
-			texture_t *texture2 = &textures[decal->texturenum];
-			if (texture->mipcount > texture2->mipcount)
-				texture->mipcount = texture2->mipcount;
-		}
-	}
-
 	texture = textures;
 	for (i = 0; i < numtextures; i++, texture++)
 	{

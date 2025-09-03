@@ -190,9 +190,9 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
    {
       uint8_t *patch = texture->data[0];
 
-      for(; x <= stopx; x++)
+      do
       {
-         int light          = maskedcol[x] & OPENMARK;
+         int light          = maskedcol[x];
          int colnum         = maskedcol[x] & widthmask;
 
    #ifdef WALLDRAW2X
@@ -204,6 +204,8 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
 
          if (light == OPENMARK)
             continue;
+
+         light &= OPENMARK;
          maskedcol[x] = OPENMARK;
 
    #ifdef MARS
@@ -253,7 +255,6 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
             int top    = sprtop;
             int bottom = texture->height * spryscale + top;
             int dataofs = colnum * texture->height;
-            int count;
             fixed_t frac;
             int temp = FRACUNIT-1;
 
@@ -282,14 +283,9 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
                top = topclip;
             }
 
-            // calc count
-            count = bottom - top + 1;
-            if(count <= 0)
-               continue;
-
             drawcol(x, top, bottom, light, frac, iscale, patch + dataofs, texture->height);
          }
-      }
+      } while (++x <= stopx);
    }
    else
    {
@@ -302,9 +298,9 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
       patch     = W_POINTLUMPNUM(texture->lumpnum);
       pixels    = /*W_POINTLUMPNUM(texture->lumpnum+1)*/texture->data[0];
 
-      for(; x <= stopx; x++)
+      do
       {
-         int light          = maskedcol[x] & OPENMARK;
+         int light          = maskedcol[x];
          int colnum         = maskedcol[x] & widthmask;
 
    #ifdef WALLDRAW2X
@@ -316,6 +312,8 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
 
          if (light == OPENMARK)
             continue;
+
+         light &= OPENMARK;
          maskedcol[x] = OPENMARK;
 
    #ifdef MARS
@@ -369,7 +367,6 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
             int bottom = column->length   * spryscale + top;
             byte *dataofsofs = columnptr + offsetof(column_t, dataofs);
             int dataofs = (dataofsofs[0] << 8) | dataofsofs[1];
-            int count;
             fixed_t frac;
             int temp = FRACUNIT-1;
 
@@ -398,14 +395,9 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
                top = topclip;
             }
 
-            // calc count
-            count = bottom - top + 1;
-            if(count <= 0)
-               continue;
-
             drawcol(x, top, bottom, light, frac, iscale, pixels + BIGSHORT(dataofs), 128);
          }
-      }
+      } while (++x <= stopx);
    }
 }
 
@@ -484,10 +476,13 @@ void R_DrawVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
    }
 #endif
 
+   if (x >= stopx)
+      return;
+
    if (verticalFlip)
    {
       // TODO: Properly clip sprite
-      for(; x < stopx; x++, xfrac += fracstep)
+      do
       {
          byte *columnptr  = ((byte *)patch + BIGSHORT(patch->columnofs[xfrac>>FRACBITS]));
 
@@ -508,6 +503,8 @@ void R_DrawVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
          int bottomclip   = (spropening[x] & 0xff) - 1;
    #endif
 
+         xfrac += fracstep;
+
          // column loop
          // a post record has four bytes: topdelta length pixelofs*2
          for(; *columnptr != 0xff; columnptr += sizeof(column_t))
@@ -517,7 +514,6 @@ void R_DrawVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
             int bottom = column->length   * spryscale + top;
             byte *dataofsofs = columnptr + offsetof(column_t, dataofs);
             int dataofs = (dataofsofs[0] << 8) | dataofsofs[1];
-            int count;
             fixed_t frac;
 
             top += (FRACUNIT - 1);
@@ -538,19 +534,14 @@ void R_DrawVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
                top = topclip;
             }
 
-            // calc count
-            count = bottom - top + 1;
-            if(count <= 0)
-               continue;
-
             // CALICO: invoke column drawer
             dcol(x, top, bottom, light, frac, iscale, pixels + BIGSHORT(dataofs), 128);
          }
-      }
+      } while (++x < stopx);
    }
    else
    {
-      for(; x < stopx; x++, xfrac += fracstep)
+      do
       {
          byte *columnptr  = ((byte *)patch + BIGSHORT(patch->columnofs[xfrac>>FRACBITS]));
 
@@ -571,6 +562,8 @@ void R_DrawVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
          int bottomclip   = (spropening[x] & 0xff) - 1;
    #endif
 
+         xfrac += fracstep;
+
          // column loop
          // a post record has four bytes: topdelta length pixelofs*2
          for(; *columnptr != 0xff; columnptr += sizeof(column_t))
@@ -580,7 +573,6 @@ void R_DrawVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
             int bottom = column->length   * spryscale + top;
             byte *dataofsofs = columnptr + offsetof(column_t, dataofs);
             int dataofs = (dataofsofs[0] << 8) | dataofsofs[1];
-            int count;
             fixed_t frac;
             int temp = FRACUNIT-1;
 
@@ -609,15 +601,10 @@ void R_DrawVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
                top = topclip;
             }
 
-            // calc count
-            count = bottom - top + 1;
-            if(count <= 0)
-               continue;
-
             // CALICO: invoke column drawer
             dcol(x, top, bottom, light, frac, iscale, pixels + BIGSHORT(dataofs), 128);
          }
-      }
+      } while (++x < stopx);
    }
 }
 
