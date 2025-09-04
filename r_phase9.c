@@ -32,7 +32,7 @@ static void R_UpdateCache(void)
 #if MIPLEVELS <= 1
       int minmip = 0, maxmip = 0;
 #else
-      int minmip = LOWER8(wall->newmiplevels), maxmip = UPPER8(wall->newmiplevels);
+      int minmip = wall->newmiplevels & 0xf, maxmip = wall->newmiplevels >> 4;
 #endif
       if (wall->realstart > wall->realstop)
         continue;

@@ -633,8 +633,8 @@ void R_SegCommands(void)
         {
             if (lseg.maxmip >= MIPLEVELS)
                 lseg.maxmip = MIPLEVELS-1;
-            SETLOWER8(segl->newmiplevels, lseg.minmip);
-            SETUPPER8(segl->newmiplevels, lseg.maxmip);
+
+            segl->newmiplevels = (lseg.maxmip << 4) + lseg.minmip;
         }
         else
 #endif

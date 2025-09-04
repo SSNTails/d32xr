@@ -238,7 +238,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       else
           SETUPPER8(segl->floorceilpicnum, (uint8_t)-1);
 
-      segl->m_texturenum = -1;
+      segl->m_texturenum = (uint8_t)-1;
       segl->fof_texturenum = (uint8_t)-1;
 
       if (!back_sector)
@@ -354,7 +354,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       {
          // two-sided line
 //         if (st->midtexture > 0)
-         if (D_abs(vd.viewx_t - ((vertexes[li->v1].x+vertexes[li->v2].x)>>1)) < ((liflags & ML_CULL_MIDTEXTURE) ? 768 : 1536) && D_abs(vd.viewy_t - ((vertexes[li->v1].y+vertexes[li->v2].y)>>1)) < ((liflags & ML_CULL_MIDTEXTURE) ? 768 : 1536)) // Don't draw midtextures when too far away to really matter
+         if (st->midtexture > 0 && D_abs(vd.viewx_t - ((vertexes[li->v1].x+vertexes[li->v2].x)>>1)) < ((liflags & ML_CULL_MIDTEXTURE) ? 768 : 1536) && D_abs(vd.viewy_t - ((vertexes[li->v1].y+vertexes[li->v2].y)>>1)) < ((liflags & ML_CULL_MIDTEXTURE) ? 768 : 1536)) // Don't draw midtextures when too far away to really matter
          {
             segl->m_texturenum = texturetranslation[st->midtexture];
             if(liflags & ML_DONTPEGBOTTOM)
