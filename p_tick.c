@@ -793,7 +793,19 @@ void P_Drawer (void)
 	if (!optionsMenuOn && o_wasactive)
 		clearscreen = 2;
 
-	if (distortion_action == DISTORTION_REMOVE) {
+	if (distortion_action == DISTORTION_NORMALIZE_H40) {
+		// The other frame buffer has already been normalized.
+		// Now normalize the current frame buffer.
+		RemoveDistortionFilters();
+		distortion_action = DISTORTION_NONE;
+	}
+	else if (distortion_action == DISTORTION_NORMALIZE_H32) {
+		// The other frame buffer has already been normalized.
+		// Now normalize the current frame buffer.
+		RemoveDistortionFilters();
+		distortion_action = DISTORTION_NONE;
+	}
+	else if (distortion_action == DISTORTION_REMOVE) {
 		// The other frame buffer has already been normalized.
 		// Now normalize the current frame buffer.
 		RemoveDistortionFilters();

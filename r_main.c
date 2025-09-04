@@ -752,6 +752,15 @@ void R_SetupMDSky(const char *name, int palettes_lump)
 	// Get the thru-pixel color from the metadata.
 	mars_thru_rgb_reference = sky_metadata_ptr[0];
 	h40_sky = (sky_metadata_ptr[2] & 0x81);	// false = H32 mode; true = H40 mode
+
+	if (h40_sky) {
+		RemoveDistortionFilters();
+		distortion_action = DISTORTION_NORMALIZE_H40; // Necessary to normalize the next frame buffer.
+	}
+	else {
+		RemoveDistortionFilters();
+		distortion_action = DISTORTION_NORMALIZE_H32; // Necessary to normalize the next frame buffer.
+	}
 	
 
 	Mars_LoadMDSky(sky_metadata_ptr,

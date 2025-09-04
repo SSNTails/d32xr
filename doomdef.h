@@ -1445,6 +1445,8 @@ typedef enum
 	DISTORTION_NONE,
 	DISTORTION_ADD,
 	DISTORTION_REMOVE,
+	DISTORTION_NORMALIZE_H32,
+	DISTORTION_NORMALIZE_H40
 } distortion_e;
 extern VINT distortion_action;
 extern VINT initmathtables;
