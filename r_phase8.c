@@ -171,11 +171,6 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
    if (texturenum == 0)
       return;
 
-   if (x <= seg->start && seg->start <= stopx)
-      seg->start = stopx + 1;
-   if (stopx >= seg->stop && seg->stop <= x)
-      seg->stop = x - 1;
-
    spropening = seg->clipbounds;
    maskedcol  = seg->clipbounds + (seg->realstop - seg->realstart + 1);
 
