@@ -1336,12 +1336,12 @@ void RemoveDistortionFilters()
 	effects_flags &= (~EFFECTS_DISTORTION_ENABLED);
 
 	uint16_t *lines = Mars_FrameBufferLines();
-	short pixel_offset = (512/2) + ((h40_sky&1)^1);
+	short pixel_offset = (512/2) + ((~h40_sky)&1);
 
 	for (int i=0; i < 224; i++) {
 		lines[i] = pixel_offset;
 		pixel_offset += (320/2);
 	}
 
-	MARS_VDP_SCRSHFT = 0;
+	MARS_VDP_SCRSHFT = ((~h40_sky)&1);
 }

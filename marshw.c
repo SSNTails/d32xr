@@ -109,7 +109,7 @@ void Mars_InitLineTable(void)
 	}
 
 	for (j = 0; j < mars_framebuffer_height; j++)
-		lines[offset+j] = j * 320 / 2 + 0x100;
+		lines[offset+j] = (j * 320 / 2 + 0x100) + ((~h40_sky)&1);
 
 	blank = j * 320 / 2;
 
