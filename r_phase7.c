@@ -362,8 +362,8 @@ static void R_DrawPlanes2(int isFOF)
     lpl.angle = vd.viewangle;
     angle = (lpl.angle - ANG90) >> ANGLETOFINESHIFT;
 
-    lpl.basexscale = FixedDiv(finecosine(angle), centerXFrac);
-    lpl.baseyscale = -FixedDiv(finesine(angle), centerXFrac);
+    lpl.basexscale = FixedDiv(finecosine(angle), centerXViewportFrac);
+    lpl.baseyscale = -FixedDiv(finesine(angle), centerXViewportFrac);
 #ifdef MARS
     fixed_t baseyscale = lpl.baseyscale;
 #endif

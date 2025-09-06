@@ -819,7 +819,7 @@ void P_Drawer (void)
 	if (clearscreen > 0) {
 		I_ResetLineTable();
 
-		if ((viewportWidth == 160 && lowResMode) || viewportWidth == 320)
+		if ((viewportWidth == 120 && lowResMode) || viewportWidth == 320)
 			DrawTiledLetterbox();
 		else
 			DrawTiledBackground();

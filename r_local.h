@@ -9,6 +9,7 @@ extern int16_t viewportWidth, viewportHeight;
 extern int16_t centerX, centerY;
 extern boolean lowResMode;
 extern fixed_t centerXFrac, centerYFrac;
+extern fixed_t centerXViewportFrac, centerYViewportFrac;
 extern fixed_t stretch;
 extern fixed_t stretchX;
 

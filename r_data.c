@@ -489,7 +489,7 @@ void R_InitMathTables(void)
 	// Calc focallength
 	//  so FIELDOFVIEW angles covers viewportWidth.
 
-	focalLength = FixedDiv(centerXFrac, finetangent(FINEANGLES / 4 + FIELDOFVIEW / 2));
+	focalLength = FixedDiv(centerXViewportFrac, finetangent(FINEANGLES / 4 + FIELDOFVIEW / 2));
 	for (i = 0; i < FINEANGLES / 2; i++)
 	{
 		fixed_t t;
@@ -502,7 +502,7 @@ void R_InitMathTables(void)
 		}
 		else {
 			t = FixedMul(finetangent(i), focalLength);
-			t = (centerXFrac - t + FRACUNIT - 1) >> FRACBITS;
+			t = (centerXViewportFrac - t + FRACUNIT - 1) >> FRACBITS;
 			if (t < -1) {
 				t = -1;
 			}
