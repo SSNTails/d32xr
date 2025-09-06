@@ -350,7 +350,8 @@ void R_SetViewportSize(int num)
 		//stretch = ((FRACUNIT * 16 * height) / 180 * 22) / width;
 		stretch = ((FRACUNIT * 16 * 180) / 180 * 22) / 160;
 	}
-	stretchX = stretch * centerX;
+	//stretchX = stretch * centerX;
+	stretchX = stretch * (160 >> 1);
 
 	initmathtables = 2;
 	clearscreen = 2;
