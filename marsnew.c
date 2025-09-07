@@ -529,9 +529,9 @@ int I_ViewportYPos(void)
 	if (splitscreen)
 		return (fbh - viewportHeight) / 2;
 
-	if (viewportWidth < 120)
+	if (viewportWidth < (VIEWPORT_WIDTH>>1))
 		return (fbh - jo_stbar_height - viewportHeight) / 2;
-	if ((viewportWidth == 120 && lowResMode) || viewportWidth == 320)
+	if ((viewportWidth == (VIEWPORT_WIDTH>>1) && lowResMode) || viewportWidth == 320)
 		return (fbh - jo_stbar_height - viewportHeight);
 	return (fbh - jo_stbar_height - viewportHeight) / 2;
 }
