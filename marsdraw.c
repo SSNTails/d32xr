@@ -890,6 +890,7 @@ void ClearViewportOverdraw(void)
 {
 	pixel_t *framebuffer = I_FrameBuffer();
 
+#if (VIEWPORT_OVERDRAW_AREA & 0xF) == 0
 	const int overdraw_width = (320 - VIEWPORT_WIDTH) >> 4;
 	for (int y=0; y < 224; y++) {
 		for (int x=0; x < overdraw_width; x++) {
@@ -908,6 +909,22 @@ void ClearViewportOverdraw(void)
 			*framebuffer++ = 0x1F1F;
 		}
 	}
+#else
+	const int overdraw_width = (320 - VIEWPORT_WIDTH) >> 3;
+	for (int y=0; y < 224; y++) {
+		for (int x=0; x < overdraw_width; x++) {
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+		}
+
+		framebuffer += (VIEWPORT_WIDTH >> 1);
+
+		for (int x=0; x < overdraw_width; x++) {
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+		}
+	}
+#endif
 }
 
 /*
