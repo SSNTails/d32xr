@@ -536,7 +536,7 @@ void R_InitMathTables(void)
 	}
 
 	// Make the yslope table for floor and ceiling textures
-	stretchWidth = viewportWidth / 2 * stretch;
+	stretchWidth = (SCREENWIDTH/2) / 2 * stretch;
 	for (i = 0; i < viewportHeight * 4; i++)
 	{
 		fixed_t y = ((i - viewportHeight*2) << FRACBITS) + FRACUNIT / 2;

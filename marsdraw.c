@@ -886,6 +886,30 @@ void DrawTiledLetterbox(void)
 	}
 }
 
+void ClearViewportOverdraw(void)
+{
+	pixel_t *framebuffer = I_FrameBuffer();
+
+	const int overdraw_width = (320 - VIEWPORT_WIDTH) >> 4;
+	for (int y=0; y < 224; y++) {
+		for (int x=0; x < overdraw_width; x++) {
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+		}
+
+		framebuffer += (VIEWPORT_WIDTH >> 1);
+
+		for (int x=0; x < overdraw_width; x++) {
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+		}
+	}
+}
+
 /*
 =============
 =

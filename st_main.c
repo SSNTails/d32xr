@@ -270,6 +270,7 @@ static void ST_DrawTitleCard()
 		V_DrawStringLeft(&titleFont, 160 - ((gametic - 80) << 5), 124, "Zone");
 	}
 #endif
+	clearscreen = 2;
 }
 
 /*
@@ -517,7 +518,7 @@ void ST_Drawer(void)
 
 	if (consoleMsgTics)
 	{
-		V_DrawStringLeft(&menuFont, 0, 24, consoleMsg);
+		V_DrawStringLeft(&menuFont, 8, 24, consoleMsg);
 		consoleMsgTics--;
 	}
 }

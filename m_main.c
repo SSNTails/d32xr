@@ -707,7 +707,7 @@ void M_Drawer (void)
 
 		// Fill the area above the viewport with the sky color.
 //		if (titleTicker < 2)
-			DrawFillRect(0, 0, 320, 44, gamemapinfo.skyTopColor);
+			DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH) >> 1, 0, VIEWPORT_WIDTH, 44, gamemapinfo.skyTopColor);
 //		else
 //			DrawFillRect(logoPos + 6, 18, 60, 26, gamemapinfo.skyTopColor);
 
@@ -759,7 +759,7 @@ void M_Drawer (void)
 
 	if (scrpos == ms_help)
 	{
-		DrawFillRect(0, 0, 320, 44, gamemapinfo.skyTopColor);
+		DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH) >> 1, 0, VIEWPORT_WIDTH, 44, gamemapinfo.skyTopColor);
 		O_DrawHelp(80);
 		return;
 	}

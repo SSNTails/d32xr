@@ -25,7 +25,7 @@ extern fixed_t stretchX;
 
 #define	FIELDOFVIEW			2048   /* fineangles in the SCREENWIDTH wide window */
 
-#define VIEWPORT_WIDTH		160
+#define VIEWPORT_WIDTH		(320-16)
 
 /* */
 /* lighting constants */
