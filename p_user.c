@@ -846,7 +846,31 @@ boolean PIT_LookForTarget(mobj_t *thing, homingFinder_t *hf)
 		return true;
 
 	if (thing->flags & MF_RINGMOBJ)
+	{
+		if (thing->type == MT_BIGGRABCHAIN || thing->type == MT_SMALLGRABCHAIN)
+		{
+			ringmobj_t *macePoint = (ringmobj_t*)thing;
+
+			if ((macePoint->z << FRACBITS) > player->mo->z + (player->mo->theight << FRACBITS))
+				return true;
+
+			const fixed_t dist = P_AproxDistance3D((macePoint->x << FRACBITS) - player->mo->x, (macePoint->y << FRACBITS) - player->mo->y, (macePoint->z << FRACBITS) - player->mo->z);
+
+			if (dist < hf->closestDist)
+			{
+				// Well, it's the closest, but is it in front of us?
+				angle_t ang = R_PointToAngle2(player->mo->x, player->mo->y, macePoint->x << FRACBITS, macePoint->y << FRACBITS) - player->mo->angle;
+
+				if (ang > ANG90 && ang < ANG270)
+					return true;
+
+				hf->closest = thing;
+				hf->closestDist = dist;
+			}
+		}
+
 		return true;
+	}
 
 	if (thing->flags & MF_STATIC)
 	{
@@ -937,8 +961,31 @@ boolean P_LookForTarget(player_t *player)
 
 static void P_HomingAttack(mobj_t *source, mobj_t *dest)
 {
+	const fixed_t ns = 30*FRACUNIT;
+
 	if (!dest)
 		return;
+
+	if (dest->flags & MF_RINGMOBJ)
+	{
+		ringmobj_t *macePoint = (ringmobj_t*)dest;
+		const fixed_t destx = macePoint->x<<FRACBITS;
+		const fixed_t desty = macePoint->y<<FRACBITS;
+		const fixed_t destz = macePoint->z<<FRACBITS;
+
+		source->angle = R_PointToAngle2(source->x, source->y, destx, desty);
+
+		fixed_t dist = P_AproxDistance3D(destx - source->x, desty - source->y, destz - source->z);
+
+		if (dist < 1) // Don't divide by zero
+			dist = 1;
+
+		source->momx = FixedMul(FixedDiv(destx - source->x, dist), ns);
+		source->momy = FixedMul(FixedDiv(desty - source->y, dist), ns);
+		source->momz = FixedMul(FixedDiv(destz - source->z, dist), ns);
+
+		return;
+	}
 
 	if (dest->health <= 0)
 		return;
@@ -950,7 +997,6 @@ static void P_HomingAttack(mobj_t *source, mobj_t *dest)
 	if (dist < 1) // Don't divide by zero
 		dist = 1;
 
-	const fixed_t ns = 30*FRACUNIT;
 	source->momx = FixedMul(FixedDiv(dest->x - source->x, dist), ns);
 	source->momy = FixedMul(FixedDiv(dest->y - source->y, dist), ns);
 	source->momz = FixedMul(FixedDiv(dest->z - source->z, dist), ns);
