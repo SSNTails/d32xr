@@ -888,10 +888,10 @@ void DrawTiledLetterbox(void)
 
 void ClearViewportOverdraw(void)
 {
-	pixel_t *framebuffer = I_FrameBuffer();
+	pixel_t *framebuffer = I_OverwriteBuffer();
 
 #if (VIEWPORT_OVERDRAW_AREA & 0xF) == 0
-	const int overdraw_width = (320 - VIEWPORT_WIDTH) >> 4;
+	const int overdraw_width = VIEWPORT_OVERDRAW_AREA >> 4;
 	for (int y=0; y < 224; y++) {
 		for (int x=0; x < overdraw_width; x++) {
 			*framebuffer++ = 0x1F1F;
@@ -900,7 +900,7 @@ void ClearViewportOverdraw(void)
 			*framebuffer++ = 0x1F1F;
 		}
 
-		framebuffer += (VIEWPORT_WIDTH >> 1);
+		framebuffer += ((SCREENWIDTH >> 1) - (((VIEWPORT_OVERDRAW_AREA + 2) >> 1) & 0x1FE));
 
 		for (int x=0; x < overdraw_width; x++) {
 			*framebuffer++ = 0x1F1F;
@@ -909,15 +909,15 @@ void ClearViewportOverdraw(void)
 			*framebuffer++ = 0x1F1F;
 		}
 	}
-#else
-	const int overdraw_width = (320 - VIEWPORT_WIDTH) >> 3;
+#elif (VIEWPORT_OVERDRAW_AREA & 0x7) == 0
+	const int overdraw_width = VIEWPORT_OVERDRAW_AREA >> 3;
 	for (int y=0; y < 224; y++) {
 		for (int x=0; x < overdraw_width; x++) {
 			*framebuffer++ = 0x1F1F;
 			*framebuffer++ = 0x1F1F;
 		}
 
-		framebuffer += (VIEWPORT_WIDTH >> 1);
+		framebuffer += ((SCREENWIDTH >> 1) - (((VIEWPORT_OVERDRAW_AREA + 2) >> 1) & 0x1FE));
 
 		for (int x=0; x < overdraw_width; x++) {
 			*framebuffer++ = 0x1F1F;
@@ -1342,7 +1342,7 @@ const int8_t water_filter[128] =
 void ApplyHorizontalDistortionFilter(int filter_offset)
 {
 	uint16_t *lines = Mars_FrameBufferLines();
-	short pixel_offset = (512/2);
+	short pixel_offset = (512/2) + ((~h40_sky)&1);
 
 	for (int i=0; i < 7; i++) {
 		distortion_line_bit_shift[i] = 0;

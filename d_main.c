@@ -802,6 +802,8 @@ void START_LevelSelect (void)
 	char buf[512];
 	G_FindMapinfo(G_LumpNumForMapNum(1), &selected_map_info, buf);
 
+	clearscreen = 2;
+
 	for (int i = 0; i < 2; i++)
 	{
 		I_FillFrameBuffer(COLOR_THRU);
@@ -858,6 +860,11 @@ void ClearCopper()
 
 void DRAW_LevelSelect (void)
 {
+	if (clearscreen > 0) {
+		I_ResetLineTable();
+		clearscreen--;
+	}
+
 	Mars_SetScrollPositions(0, screenCount >> 1, 0, 0);
 
 	int arrow_offset = ((screenCount>>2) & 7) * (((screenCount>>2) & 0x8) == 0);

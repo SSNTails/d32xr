@@ -123,6 +123,8 @@ void Mars_InitLineTable(void)
 	// make sure blank line is clear
 	for (j = blank; j < (blank + 160); j++)
 		lines[j] = 0;
+	
+	MARS_VDP_SCRSHFT = ((~h40_sky)&1);
 }
 
 void Mars_SetBrightness(int16_t brightness)

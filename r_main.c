@@ -348,7 +348,7 @@ void R_SetViewportSize(int num)
 		/* proper screen size would be 160*100, stretched to 224 is 2.2 scale */
 		//stretch = (fixed_t)((160.0f / width) * ((float)height / 180.0f) * 2.2f * FRACUNIT);
 		//stretch = ((FRACUNIT * 16 * height) / 180 * 22) / width;
-		stretch = ((FRACUNIT * 16 * 180) / 180 * 22) / 160;
+		stretch = ((FRACUNIT * 16 * 180) / 180 * 20) / 160;
 	}
 	//stretchX = stretch * centerX;
 	stretchX = stretch * (160 >> 1);
