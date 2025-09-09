@@ -502,7 +502,7 @@ void R_InitMathTables(void)
 		}
 		else {
 			t = FixedMul(finetangent(i), focalLength);
-			t = (centerXFrac - t + FRACUNIT - 1) >> FRACBITS;
+			t = (centerXViewportFrac - t + FRACUNIT - 1) >> FRACBITS;
 			if (t < -1) {
 				t = -1;
 			}
@@ -536,7 +536,7 @@ void R_InitMathTables(void)
 	}
 
 	// Make the yslope table for floor and ceiling textures
-	stretchWidth = viewportWidth / 2 * stretch;
+	stretchWidth = (SCREENWIDTH/2) / 2 * stretch;
 	for (i = 0; i < viewportHeight * 4; i++)
 	{
 		fixed_t y = ((i - viewportHeight*2) << FRACBITS) + FRACUNIT / 2;

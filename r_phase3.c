@@ -95,7 +95,7 @@ static void R_PrepMobj(mobj_t *thing)
    else
       tx -= offset;
 
-   x1 = (centerXFrac + FixedMul(tx, xscale)) >> FRACBITS;
+   x1 = (centerXViewportFrac + FixedMul(tx, xscale)) >> FRACBITS;
 
    // off the right side?
    if (x1 > viewportWidth)
@@ -103,7 +103,7 @@ static void R_PrepMobj(mobj_t *thing)
 
    tx += (fixed_t)((BIGSHORT(patch->width)*doubleWide) << FRACBITS);
 
-   x2 = ((centerXFrac + FixedMul(tx, xscale)) >> FRACBITS) - 1;
+   x2 = ((centerXViewportFrac + FixedMul(tx, xscale)) >> FRACBITS) - 1;
 
    // off the left side
    if (x2 < 0)
@@ -272,7 +272,7 @@ static void R_PrepRing(ringmobj_t *thing, int scenery)
       tx -= offset;
 #endif
 
-   x1 = (centerXFrac + FixedMul(tx, xscale)) >> FRACBITS;
+   x1 = (centerXViewportFrac + FixedMul(tx, xscale)) >> FRACBITS;
 
    // off the right side?
    if (x1 > viewportWidth)
@@ -284,7 +284,7 @@ static void R_PrepRing(ringmobj_t *thing, int scenery)
    tx += ((fixed_t)BIGSHORT(patch->width) << FRACBITS);
 #endif
 
-   x2 = ((centerXFrac + FixedMul(tx, xscale)) >> FRACBITS) - 1;
+   x2 = ((centerXViewportFrac + FixedMul(tx, xscale)) >> FRACBITS) - 1;
 
    // off the left side
    if (x2 < 0)

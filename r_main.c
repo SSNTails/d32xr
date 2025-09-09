@@ -13,6 +13,7 @@ extern volatile uint8_t legacy_emulator;
 int16_t viewportWidth, viewportHeight;
 int16_t centerX, centerY;
 fixed_t centerXFrac, centerYFrac;
+fixed_t centerXViewportFrac, centerYViewportFrac;
 fixed_t stretch;
 fixed_t stretchX;
 
@@ -295,7 +296,8 @@ VINT R_PointInSubsector2 (fixed_t x, fixed_t y)
 
 const VINT viewports[][2][3] = {
 	{ { 128, 144, true  }, {  80, 100, true  } },
-	{ { 160, 180, true  }, {  80, 144, true  } },
+	//{ { 160, 180, true  }, {  80, 144, true  } },
+	{ { (VIEWPORT_WIDTH>>1), 180, true  }, {  80, 144, true  } },
 	{ { 256, 144, false }, { 160, 128, false } },
 	{ { 320, 180, false }, { 160, 144, false } },
 };
@@ -331,8 +333,11 @@ void R_SetViewportSize(int num)
 	centerX = viewportWidth >> 1;
 	centerY = viewportHeight >> 1;
 
-	centerXFrac = centerX * FRACUNIT;
-	centerYFrac = centerY * FRACUNIT;
+	centerXFrac = (160 >> 1) * FRACUNIT;
+	centerYFrac = (180 >> 1) * FRACUNIT;
+
+	centerXViewportFrac = centerX * FRACUNIT;
+	centerYViewportFrac = centerY * FRACUNIT;
 
 	if (anamorphicview)
 	{
@@ -342,9 +347,11 @@ void R_SetViewportSize(int num)
 	{
 		/* proper screen size would be 160*100, stretched to 224 is 2.2 scale */
 		//stretch = (fixed_t)((160.0f / width) * ((float)height / 180.0f) * 2.2f * FRACUNIT);
-		stretch = ((FRACUNIT * 16 * height) / 180 * 22) / width;
+		//stretch = ((FRACUNIT * 16 * height) / 180 * 22) / width;
+		stretch = ((FRACUNIT * 16 * 180) / 180 * 20) / 160;
 	}
-	stretchX = stretch * centerX;
+	//stretchX = stretch * centerX;
+	stretchX = stretch * (160 >> 1);
 
 	initmathtables = 2;
 	clearscreen = 2;
@@ -434,7 +441,7 @@ int R_DefaultViewportSize(void)
 	for (i = 0; i < numViewports; i++)
 	{
 		const VINT* vp = viewports[i][0];
-		if (vp[0] == 160 && vp[2] == true)
+		if (vp[0] == (VIEWPORT_WIDTH>>1) && vp[2] == true)
 			return i;
 	}
 
@@ -752,6 +759,15 @@ void R_SetupMDSky(const char *name, int palettes_lump)
 	// Get the thru-pixel color from the metadata.
 	mars_thru_rgb_reference = sky_metadata_ptr[0];
 	h40_sky = (sky_metadata_ptr[2] & 0x81);	// false = H32 mode; true = H40 mode
+
+	if (h40_sky) {
+		distortion_action = DISTORTION_NORMALIZE_H40; // Necessary to normalize the next frame buffer.
+		RemoveDistortionFilters();
+	}
+	else {
+		distortion_action = DISTORTION_NORMALIZE_H32; // Necessary to normalize the next frame buffer.
+		RemoveDistortionFilters();
+	}
 	
 
 	Mars_LoadMDSky(sky_metadata_ptr,
@@ -1289,7 +1305,8 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 
 	yslope = &yslopetab[(3*viewportHeight/2) - dy];
 	centerY = (viewportHeight / 2) + dy;
-	centerYFrac = centerY << FRACBITS;
+	centerYFrac = (180 >> 1) << FRACBITS;
+	centerYViewportFrac = centerY << FRACBITS;
 
 	vd.viewx_t = vd.viewx >> FRACBITS;
 	vd.viewy_t = vd.viewy >> FRACBITS;

@@ -109,7 +109,7 @@ void Mars_InitLineTable(void)
 	}
 
 	for (j = 0; j < mars_framebuffer_height; j++)
-		lines[offset+j] = j * 320 / 2 + 0x100;
+		lines[offset+j] = (j * 320 / 2 + 0x100) + ((~h40_sky)&1);
 
 	blank = j * 320 / 2;
 
@@ -123,6 +123,8 @@ void Mars_InitLineTable(void)
 	// make sure blank line is clear
 	for (j = blank; j < (blank + 160); j++)
 		lines[j] = 0;
+	
+	MARS_VDP_SCRSHFT = ((~h40_sky)&1);
 }
 
 void Mars_SetBrightness(int16_t brightness)

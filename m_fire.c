@@ -49,6 +49,8 @@ void I_InitMenuFire(jagobj_t *titlepic)
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4), dc_cshift_playpals);
 
 	intro_titlepic = titlepic;
+
+	clearscreen = 2;
 }
 
 /*
@@ -72,6 +74,12 @@ void I_StopMenuFire(void)
 */
 void I_DrawMenuFire(void)
 {
+	if (clearscreen > 0) {
+		I_ResetLineTable();
+		I_ClearFrameBuffer();
+		clearscreen--;
+	}
+
 	const int y = 16;
 	jagobj_t* titlepic = intro_titlepic;
 

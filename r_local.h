@@ -9,6 +9,7 @@ extern int16_t viewportWidth, viewportHeight;
 extern int16_t centerX, centerY;
 extern boolean lowResMode;
 extern fixed_t centerXFrac, centerYFrac;
+extern fixed_t centerXViewportFrac, centerYViewportFrac;
 extern fixed_t stretch;
 extern fixed_t stretchX;
 
@@ -23,6 +24,9 @@ extern fixed_t stretchX;
 #define	MINZ				(FRACUNIT*4)
 
 #define	FIELDOFVIEW			2048   /* fineangles in the SCREENWIDTH wide window */
+
+#define VIEWPORT_OVERDRAW_AREA		8	// This must be a multiple of 8.
+#define VIEWPORT_WIDTH				(SCREENWIDTH - VIEWPORT_OVERDRAW_AREA)
 
 /* */
 /* lighting constants */

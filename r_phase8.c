@@ -91,7 +91,7 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
       fixed_t sprtop, iscale;
 
       sprtop = FixedMul(seg->fof_texturemid, spryscale);
-      sprtop = centerYFrac - sprtop;
+      sprtop = centerYViewportFrac - sprtop;
 
 #ifdef MARS
 #ifdef WALLDRAW2X
@@ -220,7 +220,7 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
          fixed_t sprtop, iscale;
 
          sprtop = FixedMul(seg->m_texturemid, spryscale);
-         sprtop = centerYFrac - sprtop;
+         sprtop = centerYViewportFrac - sprtop;
 
    #ifdef MARS
    #ifdef WALLDRAW2X
@@ -329,7 +329,7 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
          fixed_t sprtop, iscale;
 
          sprtop = FixedMul(seg->m_texturemid, spryscale);
-         sprtop = centerYFrac - sprtop;
+         sprtop = centerYViewportFrac - sprtop;
 
    #ifdef MARS
    #ifdef WALLDRAW2X
@@ -432,7 +432,7 @@ void R_DrawVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
 #endif
 
    sprtop = FixedMul(vis->texturemid, spryscale);
-   sprtop = centerYFrac - sprtop;
+   sprtop = centerYViewportFrac - sprtop;
 
    // blitter iinc
    light    = vis->colormap;
@@ -766,7 +766,7 @@ void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
       const fixed_t gz = gzt - (vis->patchheight << FRACBITS);
 
       if ((mh = sectors[vis->heightsec].ceilingheight) > gz &&
-          (h = centerYFrac - FixedMul(mh-=vd.viewz, vis->yscale)) >= 0 &&
+          (h = centerYViewportFrac - FixedMul(mh-=vd.viewz, vis->yscale)) >= 0 &&
           (h >>= FRACBITS) < viewportHeight)
       {
         if (mh <= 0 || (vd.heightsec && !vd.underwater))

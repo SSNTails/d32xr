@@ -13,6 +13,7 @@ uint8_t		lightning_count;
 boolean		gamepaused;
 jagobj_t	*pausepic;
 char		clearscreen = 0;
+char		clear_h32_borders = 0;
 VINT        distortion_action = DISTORTION_NONE;
 
 #if defined(PLAY_POS_DEMO) || defined(REC_POS_DEMO)
@@ -793,7 +794,19 @@ void P_Drawer (void)
 	if (!optionsMenuOn && o_wasactive)
 		clearscreen = 2;
 
-	if (distortion_action == DISTORTION_REMOVE) {
+	if (distortion_action == DISTORTION_NORMALIZE_H40) {
+		// The other frame buffer has already been normalized.
+		// Now normalize the current frame buffer.
+		RemoveDistortionFilters();
+		distortion_action = DISTORTION_NONE;
+	}
+	else if (distortion_action == DISTORTION_NORMALIZE_H32) {
+		// The other frame buffer has already been normalized.
+		// Now normalize the current frame buffer.
+		RemoveDistortionFilters();
+		distortion_action = DISTORTION_NONE;
+	}
+	else if (distortion_action == DISTORTION_REMOVE) {
 		// The other frame buffer has already been normalized.
 		// Now normalize the current frame buffer.
 		RemoveDistortionFilters();
@@ -807,14 +820,22 @@ void P_Drawer (void)
 	if (clearscreen > 0) {
 		I_ResetLineTable();
 
-		if ((viewportWidth == 160 && lowResMode) || viewportWidth == 320)
-			DrawTiledLetterbox();
-		else
-			DrawTiledBackground();
+		//if ((viewportWidth == (VIEWPORT_WIDTH>>1) && lowResMode) || viewportWidth == 320)
+		//	DrawTiledLetterbox();
+		//else
+		//	DrawTiledBackground();
+
+		DrawTiledLetterbox();
+		ClearViewportOverdraw();
 		
 		if (clearscreen == 2 || optionsMenuOn)
 			ST_ForceDraw();
 		clearscreen--;
+	}
+
+	if (clear_h32_borders > 0) {
+		ClearViewportOverdraw();
+		clear_h32_borders--;
 	}
 
 	if (initmathtables)
