@@ -750,7 +750,7 @@ void M_Drawer (void)
 			DrawJagobj(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37);
 	}
 
-	DrawJagobjLump(rwx_logo, (320-144-8), 224-8-32, NULL, NULL);
+	DrawJagobjLump(rwx_logo, (320-144-12), 224-8-32, NULL, NULL);
 
 /* erase old skulls */
 #ifndef MARS
