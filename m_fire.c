@@ -76,6 +76,7 @@ void I_DrawMenuFire(void)
 {
 	if (clearscreen > 0) {
 		I_ResetLineTable();
+		I_ClearFrameBuffer();
 		clearscreen--;
 	}
 

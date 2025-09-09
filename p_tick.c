@@ -13,6 +13,7 @@ uint8_t		lightning_count;
 boolean		gamepaused;
 jagobj_t	*pausepic;
 char		clearscreen = 0;
+char		clear_h32_borders = 0;
 VINT        distortion_action = DISTORTION_NONE;
 
 #if defined(PLAY_POS_DEMO) || defined(REC_POS_DEMO)
@@ -830,6 +831,11 @@ void P_Drawer (void)
 		if (clearscreen == 2 || optionsMenuOn)
 			ST_ForceDraw();
 		clearscreen--;
+	}
+
+	if (clear_h32_borders > 0) {
+		ClearViewportOverdraw();
+		clear_h32_borders--;
 	}
 
 	if (initmathtables)

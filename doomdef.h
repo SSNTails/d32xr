@@ -1439,6 +1439,7 @@ typedef enum
 
 extern VINT debugmode;
 extern char clearscreen;
+extern char clear_h32_borders;
 
 typedef enum
 {
