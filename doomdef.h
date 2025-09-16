@@ -138,7 +138,7 @@ typedef int fixed_t;
 #define REC_DEMO_TIMEOUT	(30*TICRATE)	// Stop recording after 30 seconds
 
 #ifdef KIOSK_MODE
-	#define KIOSK_TIMEOUT				(60*TICRATE)
+	#define KIOSK_TIMEOUT				(30*TICRATE)
 	#define KIOSK_LEVELSELECT_TIMEOUT	(20*(2*TICRATE))
 #endif
 

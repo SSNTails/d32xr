@@ -17,7 +17,7 @@ CCFLAGS += -D__32X__ -DMARS
 CCFLAGS += -DMDSKY
 #CCFLAGS += -DREC_POS_DEMO
 #CCFLAGS += -DPLAY_POS_DEMO
-#CCFLAGS += -DREC_INPUT_DEMO=1
+#CCFLAGS += -DREC_INPUT_DEMO=10
 #CCFLAGS += -DPLAY_INPUT_DEMO
 CCFLAGS += -DHIGH_DETAIL_SPRITES
 CCFLAGS += -DFLATDRAW2X
@@ -33,12 +33,13 @@ CCFLAGS += -DCPUDEBUG
 #CCFLAGS += -DOST_BLURNESS
 #CCFLAGS += -DHIDE_HUD
 #CCFLAGS += -DHIDE_PLAYER
-CCFLAGS += -DKIOSK_MODE
+#CCFLAGS += -DKIOSK_MODE
 CCFLAGS += -DSHOW_COMPATIBILITY_PROMPT
-CCFLAGS += -DSHOW_DISCLAIMER
+#CCFLAGS += -DSHOW_DISCLAIMER
 #CCFLAGS += -DBENCHMARK
 LDFLAGS = -T mars-ssf.ld -Wl,-Map=output.map -nostdlib -Wl,--gc-sections,--sort-section=alignment --specs=nosys.specs
 ASFLAGS = --big
+ASFLAGS += --defsym WADBASE=$(BINSIZE)
 
 MARSHWCFLAGS := $(CCFLAGS)
 MARSHWCFLAGS += -O1 -fno-lto
@@ -140,9 +141,23 @@ $(TARGET).32x: $(TARGET).elf
 	rm -f temp3.bin
 	cat temp.bin $(WAD) >>temp3.bin
 	$(DD) if=temp3.bin of=$@ bs=512K conv=sync
+	rm -f temp.bin temp2.bin temp3.bin
 
-$(TARGET).elf: $(OBJS)
+$(TARGET).elf: realbinsize
+	$(AS) $(ASFLAGS) $(INCPATH) wadbase.s -o wadbase.o
 	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(TARGET).elf
+
+realbinsize: temp.bin
+	$(eval override FILESIZE=$(shell stat -L -c %s temp.bin))
+	$(eval override BINSIZE=$(shell expr $(FILESIZE) / 256))
+
+temp.bin: $(TARGET)_tmp.elf
+	$(OBJC) -O binary $< temp2.bin
+	$(DD) if=temp2.bin of=temp.bin bs=256 conv=sync
+	rm -f temp2.bin $(TARGET)_tmp.elf
+
+$(TARGET)_tmp.elf: $(OBJS)
+	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(TARGET)_tmp.elf
 
 crt0.o: crt0.s m68k.bin
 
@@ -161,3 +176,5 @@ marshw.o: marshw.c
 clean:
 	make clean -C src-md
 	$(RM) *.o mr8k.bin $(TARGET).32x $(TARGET).elf output.map temp.bin temp2.bin
+
+.PHONY: realbinsize

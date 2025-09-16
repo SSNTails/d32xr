@@ -88,6 +88,7 @@ inline void decode(unsigned char* input, unsigned char* output)
 ====================
 */
 
+/*
 void W_Init (void)
 {
 	int				infotableofs;
@@ -114,8 +115,8 @@ void W_Init (void)
 		I_Error ("Wad file not found.\n");
 	}
 }
+*/
 
-/*
 void W_Init (void)
 {
 	int				infotableofs;
@@ -130,7 +131,6 @@ void W_Init (void)
 	infotableofs = BIGLONG(((wadinfo_t*)wadfileptr)->infotableofs);
 	lumpinfo = (lumpinfo_t *) (wadfileptr + infotableofs);
 }
-*/
 
 
 /*
