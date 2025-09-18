@@ -350,10 +350,45 @@ read_long:
 do_main:
 | make sure save ram is disabled
         move.w  #0x2700,sr          /* disable ints */
+
+        clr_rv
+
+        move.l  0x1070,d1
+        move.l  0x2070,d2
+        move.l  0x3070,d3
+        
         set_rv
 
-setup_horizontal_interrupt:
-        move.l  #horizontal_blank,0x70  /* Stay within RAM */
+        lea     0,a1            /* dummy address */
+        move.l  0x1070,d4
+        add.w   (a1)+,d0        /* dummy instruction */
+        move.l  0x2070,d5
+        add.w   (a1)+,d0        /* dummy instruction */
+        move.l  0x3070,d6
+        add.w   (a1)+,d0        /* dummy instruction */
+
+        | NOTE:
+        | We could compare these ROM addresses for emulator compatibility.
+        | On hardware, these ROM addresses aren't read correctly when RV=1.
+        | The value read will instead be the next word (two bytes) that
+        | immediately follow the instruction, thus the inclusion of dummy
+        | instructions. To aquire the correct checksum, these instructions
+        | MUST match the instructions used in the word accumulation loop.
+
+        | Add ROM values as seen when RV=0
+        add.l   d1,d3
+        add.l   d2,d3
+        move.l  d3,d0
+        swap    d0
+        add.w   d3,d0
+
+        | Subtract ROM values as seen when RV=1
+        add.l   d4,d6
+        add.l   d5,d6
+        move.l  d6,d1
+        swap    d1
+        add.w   d6,d1
+        sub.w   d1,d0
 
 calculate_checksum:
         move.w  0x18E,d5
@@ -362,8 +397,6 @@ calculate_checksum:
 
         lea     0x200,a1            /* skip the ROM header */
         move.w  #0xFFBF,d1          /* read 512 bytes less for the first bank */
-
-        moveq   #0,d0               /* initialize the word accumulator */
 
         move.w  0x1A4,d2            /* get the upper word of the ROM size */
         lsr.w   #3,d2               /* last bank */
@@ -421,6 +454,10 @@ checksum_fail_lock:
         bra.s   checksum_fail_lock  /* forever loop */
 
 checksum_pass:
+
+setup_horizontal_interrupt:
+        move.l  #horizontal_blank,0x70  /* Stay within RAM */
+
 | check flash cart status
         cmpi.w  #2,megasd_ok
         beq.b   1f
