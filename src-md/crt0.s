@@ -350,62 +350,26 @@ read_long:
 do_main:
 | make sure save ram is disabled
         move.w  #0x2700,sr          /* disable ints */
-
         clr_rv
 
-        move.l  0x1070,d1
-        move.l  0x2070,d2
-        move.l  0x3070,d3
-        
-        set_rv
-
-        lea     0,a1            /* dummy address */
-        move.l  0x1070,d4
-        add.w   (a1)+,d0        /* dummy instruction */
-        move.l  0x2070,d5
-        add.w   (a1)+,d0        /* dummy instruction */
-        move.l  0x3070,d6
-        add.w   (a1)+,d0        /* dummy instruction */
-
-        | NOTE:
-        | We could compare these ROM addresses for emulator compatibility.
-        | On hardware, these ROM addresses aren't read correctly when RV=1.
-        | The value read will instead be the next word (two bytes) that
-        | immediately follow the instruction, thus the inclusion of dummy
-        | instructions. To aquire the correct checksum, these instructions
-        | MUST match the instructions used in the word accumulation loop.
-
-        | Add ROM values as seen when RV=0
-        add.l   d1,d3
-        add.l   d2,d3
-        move.l  d3,d0
-        swap    d0
-        add.w   d3,d0
-
-        | Subtract ROM values as seen when RV=1
-        add.l   d4,d6
-        add.l   d5,d6
-        move.l  d6,d1
-        swap    d1
-        add.w   d6,d1
-        sub.w   d1,d0
-
 calculate_checksum:
-        move.w  0x18E,d5
+        move.w  0x88018E,d5
         cmpi.w  #0,d5               /* should we skip the checksum routine? */
         beq.w   checksum_pass
 
-        lea     0x200,a1            /* skip the ROM header */
+        lea     0x880200,a1         /* skip the ROM header */
         move.w  #0xFFBF,d1          /* read 512 bytes less for the first bank */
 
-        move.w  0x1A4,d2            /* get the upper word of the ROM size */
+        moveq   #0,d0               /* initialize the word accumulator */
+
+        move.w  0x8801A4,d2         /* get the upper word of the ROM size */
         lsr.w   #3,d2               /* last bank */
         move.w  d2,d3
         cmpi.w  #8,d2
         blo.s   0f
         move.b  #7,d2
 
-| Handle the first 4MB of ROM
+| Handle the first page (512KB) of ROM with RV=0 to avoid hardware bugs with ROM reads.
 0:
         add.w   (a1)+,d0
         add.w   (a1)+,d0
@@ -414,7 +378,20 @@ calculate_checksum:
         dbra    d1,0b
 
         move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
-        dbra    d2,0b
+        subq    #1,d2
+        set_rv
+        lea     0x80000,a1          /* start at the second page with remapped memory */
+
+| Handle the next seven pages (3.5MB) of ROM with RV=1
+1:
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        dbra    d1,1b
+
+        move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
+        dbra    d2,1b
 
         cmpi.b  #8,d3               /* are there fewer than 8 banks total? */
         blo.b   checksum_validation
@@ -424,20 +401,20 @@ calculate_checksum:
         sub.b   #8,d2               /* skip the first 8 banks */
 
         lea     0xA130FD,a0         /* switch banks on offset 0x300000 */
-1:
+2:
         lea     0x300000,a1         /* go back to the start of the bank */
         move.b  d3,d4
         sub.b   d2,d4
         move.b  d4,(a0)             /* point to the next bank */
-2:
+3:
         add.w   (a1)+,d0
         add.w   (a1)+,d0
         add.w   (a1)+,d0
         add.w   (a1)+,d0
-        dbra    d1,2b
+        dbra    d1,3b
 
         move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
-        dbra    d2,1b
+        dbra    d2,2b
 
         move.b  #6,(a0)             /* reset bank */
 
