@@ -52,6 +52,7 @@ int16_t worldbbox[4];
 #define LOADFLAGS_NODES 8
 #define LOADFLAGS_SEGS 16
 #define LOADFLAGS_LINEDEFS 32
+#define LOADFLAGS_SUBSECTORS 64
 
 /*
 =================
@@ -109,31 +110,19 @@ void P_LoadSegs (int lump)
 
 void P_LoadSubsectors (int lump)
 {
-	byte			*data;
-	int				i;
-	mapsubsector_t	*ms;
-	subsector_t		*ss;
-
 	numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
-	subsectors = Z_Malloc ((numsubsectors+1)*sizeof(subsector_t),PU_LEVEL);
-	data = I_TempBuffer ();
-	W_ReadLump (lump,data);
 
-	ms = (mapsubsector_t *)data;
-	D_memset (subsectors,0, numsubsectors*sizeof(subsector_t));
-	ss = subsectors;
-	for (i=0 ; i<numsubsectors ; i++, ss++, ms++)
+	if (gamemapinfo.loadFlags & LOADFLAGS_SUBSECTORS)
 	{
-		// The segments are already stored in sub sector order,
-		// so the number of segments in sub sector n is actually
-		// just subsector[n+1].firstseg - subsector[n].firsteg
-		ss->firstline = LITTLESHORT(ms->firstseg);
+		subsectors = Z_Malloc ((numsubsectors)*sizeof(subsector_t) + 16,PU_LEVEL);
+		subsectors = (void*)(((uintptr_t)subsectors + 15) & ~15); // aline on cacheline boundary
+		W_ReadLump(lump, subsectors);
 	}
+	else
+		subsectors = (subsector_t*)W_POINTLUMPNUM(lump);
 
-	// Go one over so the query will be faster
-	ss->firstline = numsegs;
+	numsubsectors--;
 }
-
 
 /*
 =================
@@ -768,6 +757,7 @@ void P_GroupLines (void)
 //	line_t		*li;
 
 /* look up sector number for each subsector */
+/*
 	ss = subsectors;
 	for (i=0 ; i<numsubsectors ; i++, ss++)
 	{
@@ -778,7 +768,7 @@ void P_GroupLines (void)
 		linedef = &lines[seg->linedef];
 		sidedef = &sides[linedef->sidenum[seg->sideoffset & 1]];
 		ss->isector = sidedef->sector;
-	}
+	}*/
 /*
 // count number of lines in each sector
 	li = lines;
