@@ -352,10 +352,11 @@ do_main:
         move.w  #0x2700,sr          /* disable ints */
         clr_rv
 
+.ifdef CHECKSUM
 calculate_checksum:
         move.w  0x88018E,d5
-        cmpi.w  #0,d5               /* should we skip the checksum routine? */
-        beq.w   checksum_pass
+        |cmpi.w  #0,d5               /* should we skip the checksum routine? */
+        |beq.w   checksum_pass
 
         lea     0x880200,a1         /* skip the ROM header */
         move.w  #0xFFBF,d1          /* read 512 bytes less for the first bank */
@@ -431,6 +432,10 @@ checksum_fail_lock:
         bra.s   checksum_fail_lock  /* forever loop */
 
 checksum_pass:
+
+.else
+        set_rv
+.endif
 
 setup_horizontal_interrupt:
         move.l  #horizontal_blank,0x70  /* Stay within RAM */
