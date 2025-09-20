@@ -142,6 +142,7 @@ $(TARGET).32x: $(TARGET).elf
 	cat temp.bin $(WAD) >>temp3.bin
 	$(DD) if=temp3.bin of=$@ bs=512K conv=sync
 	rm -f temp.bin temp2.bin temp3.bin
+	romhdrfx -d $(TARGET).32x
 
 $(TARGET).elf: realbinsize
 	$(AS) $(ASFLAGS) $(INCPATH) wadbase.s -o wadbase.o

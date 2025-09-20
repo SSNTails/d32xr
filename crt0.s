@@ -35,7 +35,7 @@
         .ascii  "Sonic Robo Blast"
         .ascii  " 32X            "
         .ascii  "                "
-        .ascii  "GM 20230824-00"
+        .ascii  "GM 00000000-00"        /* Serial (insert date) */
         .word   0x0000                  /* Checksum */
         .ascii  "J6CM            "
         .long   0x00000000,0x003FFFFF   /* ROM start, end */
