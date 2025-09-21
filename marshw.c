@@ -32,7 +32,11 @@
 static volatile uint16_t mars_activescreen = 0;
 
 static char mars_gamepadport[MARS_MAX_CONTROLLERS];
-static volatile uint16_t mars_controlval[2];
+
+static volatile uint16_t current_buttons[2];
+static volatile uint16_t next_buttons_pressed[2];
+static volatile uint16_t next_buttons_released[2];
+static volatile uint16_t previous_buttons[2];
 
 volatile uint8_t legacy_emulator = 0;
 
@@ -610,12 +614,15 @@ void Mars_DetectInputDevices(void)
 		int val = MARS_SYS_COMM2;
 		if (val == 0xF000)
 		{
-			mars_controlval[i] = 0;
+			next_buttons_pressed[i] = 0;
+			next_buttons_released[i] = 0;
+			previous_buttons[i] = 0;
 		}
 		else
 		{
 			mars_gamepadport[i] = i;
-			mars_controlval[i] |= val;
+			next_buttons_pressed[i] |= (val & (~previous_buttons[i]));
+			next_buttons_released[i] |= ((~val) & previous_buttons[i]);
 		}
 
 		MARS_SYS_COMM0 = ++ctrl_wait;
@@ -642,8 +649,13 @@ int Mars_ReadController(int ctrl)
 	if (port < 0)
 		return -1;
 
-	val = mars_controlval[port];
-	mars_controlval[port] = 0;
+	val = (next_buttons_pressed[port] & (~previous_buttons[port]))
+		| ((~next_buttons_released[port]) & previous_buttons[port]);
+
+	next_buttons_pressed[port] = 0;
+	next_buttons_released[port] = 0;
+	previous_buttons[port] = val;
+
 	return val;
 }
 
