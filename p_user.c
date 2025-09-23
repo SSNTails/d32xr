@@ -1690,6 +1690,21 @@ static void P_CheckUnderwaterAndSpaceTimer(player_t *player)
 extern int ticphase;
 void P_RingMagnet(mobj_t *spot);
 
+
+// Belongs in p_polyobj.c, which doesn't exist yet...
+static void RotateVertex(fixed_t polyCenterX, fixed_t polyCenterY, mapvertex_t *v, angle_t ang)
+{
+	vertex_t tmp;
+	tmp.x = v->x << FRACBITS;
+	tmp.y = v->y << FRACBITS;
+
+	tmp.x -= polyCenterX;
+	tmp.y -= polyCenterY;
+
+	v->x = (FixedMul(tmp.x, finecosine(ang)) - FixedMul(tmp.y, finesine(ang)) + polyCenterX) >> FRACBITS;
+	v->y = (FixedMul(tmp.x, finesine(ang)) + FixedMul(tmp.y, finecosine(ang)) + polyCenterY) >> FRACBITS;
+}
+
 void P_PlayerThink(player_t *player)
 {
 	ticphase = 20;
