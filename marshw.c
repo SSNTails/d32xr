@@ -883,7 +883,8 @@ void pri_vbi_handler(void)
 			// Copy a darker version of the selected source table into the copper buffer
 			unsigned short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
 
-			for (int y=0; y < 224; y++) {
+			int total_lines = (IsTitleScreen() ? 120 : 224);
+			for (int y=0; y < total_lines; y++) {
 				int prev_rgb = *table++;
 				int buffer_rgb;
 				int next_color;
@@ -920,7 +921,8 @@ void pri_vbi_handler(void)
 			// Copy a brighter version of the selected source table into the copper buffer
 			unsigned short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
 
-			for (int y=0; y < 224; y++) {
+			int total_lines = (IsTitleScreen() ? 120 : 224);
+			for (int y=0; y < total_lines; y++) {
 				int prev_rgb = *table++;
 				int buffer_rgb;
 				int next_color;
@@ -959,7 +961,8 @@ void pri_vbi_handler(void)
 			unsigned short *next_table = &copper_source_table[(copper_table_selection>>4)^1][copper_color_index];
 			unsigned short *prev_table = &copper_source_table[copper_table_selection>>4][copper_color_index];
 
-			for (int y=0; y < 224; y++) {
+			int total_lines = (IsTitleScreen() ? 120 : 224);
+			for (int y=0; y < total_lines; y++) {
 				int prev_rgb = *prev_table++;
 				int next_rgb = *next_table++;
 				int buffer_rgb;
@@ -1030,7 +1033,22 @@ void pri_vbi_handler(void)
 			}
 		}
 
-		effects_flags &= (~EFFECTS_COPPER_REFRESH);
+		if (IsTitleScreen()) {
+			unsigned short *table = &copper_source_table
+					[(copper_table_selection>>4)^1][((leveltime-3)+((leveltime-3)<<1)) & 127];
+
+			buffer += (144-120);
+
+			for (int y=0; y < (24>>2); y++) {
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+			}
+		}
+		if (!IsTitleScreen()) {
+			effects_flags &= (~EFFECTS_COPPER_REFRESH);
+		}
 	}
 }
 

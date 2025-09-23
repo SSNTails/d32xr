@@ -972,6 +972,10 @@ void R_SetupBackground(const char *background, int palettes_lump, int copper_lum
 		}
 	}
 
+	if (IsTitleScreen()) {
+		// This must be loaded first so the table height can be overwritten by the copper sky table.
+		R_SetupSkyGradient("32X", 1, 1);
+	}
 	R_SetupSkyGradient(background, copper_lump, 0);
 
 	copper_table_selection = 0;
