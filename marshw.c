@@ -612,14 +612,14 @@ void Mars_DetectInputDevices(void)
 		while (MARS_SYS_COMM0 != ctrl_wait);
 
 		int val = MARS_SYS_COMM2;
-		if (val == 0xF000)
-		{
-			next_buttons_pressed[i] = 0;
-			next_buttons_released[i] = 0;
+
+		next_buttons_pressed[i] = 0;
+		next_buttons_released[i] = 0;
+
+		if (val == 0xF000) {
 			previous_buttons[i] = 0;
 		}
-		else
-		{
+		else {
 			mars_gamepadport[i] = i;
 			next_buttons_pressed[i] |= (val & (~previous_buttons[i]));
 			next_buttons_released[i] |= ((~val) & previous_buttons[i]);
@@ -652,8 +652,8 @@ int Mars_ReadController(int ctrl)
 	val = (next_buttons_pressed[port] & (~previous_buttons[port]))
 		| ((~next_buttons_released[port]) & previous_buttons[port]);
 
-	next_buttons_pressed[port] = 0;
-	next_buttons_released[port] = 0;
+	next_buttons_pressed[port] = (~val);	// Ensure buttons are unchanged if an interrupt is missed.
+	next_buttons_released[port] = val;
 	previous_buttons[port] = val;
 
 	return val;
@@ -1037,7 +1037,7 @@ void pri_vbi_handler(void)
 			unsigned short *table = &copper_source_table
 					[(copper_table_selection>>4)^1][((leveltime-3)+((leveltime-3)<<1)) & 127];
 
-			buffer += (144-120);
+			buffer += (143-120);	// Some emulators will be one raster late, so make this 143 instead of 144.
 
 			for (int y=0; y < (24>>2); y++) {
 				*buffer++ = *table++;
