@@ -238,7 +238,7 @@ init_hardware:
         move.l  #0x00000000,(a1)        /* set background color to black */
 
 | init controllers
-        jsr     chk_ports
+        |jsr     chk_ports
 
 | setup Z80 for FM music
         move.w  #0x0100,0xA11100        /* Z80 assert bus request */
@@ -582,7 +582,7 @@ main_loop_handle_req:
         cmpi.w  #0xF000,d0
         bne.w   main_loop           /* pad in port 2, exit */
 1:
-        bsr     chk_ports
+        |bsr     chk_ports
         bra.w   main_loop
 
 | process request from Master SH2
