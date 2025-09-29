@@ -652,8 +652,8 @@ int Mars_ReadController(int ctrl)
 	val = (next_buttons_pressed[port] & (~previous_buttons[port]))
 		| ((~next_buttons_released[port]) & previous_buttons[port]);
 
-	next_buttons_pressed[port] = (~val);	// Ensure buttons are unchanged if an interrupt is missed.
-	next_buttons_released[port] = val;
+	next_buttons_pressed[port] = 0;
+	next_buttons_released[port] = 0;
 	previous_buttons[port] = val;
 
 	return val;
