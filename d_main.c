@@ -38,7 +38,7 @@ VINT			gamevbls;		/* may not really be vbls in multiplayer */
 VINT			vblsinframe;		/* range from ticrate to ticrate*2 */
 
 VINT		maxlevel;			/* highest level selectable in menu (1-25) */
-jagobj_t	*backgroundpic;
+//jagobj_t	*backgroundpic;
 
 int 		ticstart;
 
@@ -1003,7 +1003,8 @@ int TIC_Compatibility(void)
 {
 	screenCount++;
 
-	if ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))) {
+	// Read directly from the controller. Works better in this function. Don't know why!
+	if ((Mars_ReadController(0) & BT_START)) {
 		return ga_closeprompt;
 	}
 
@@ -1058,8 +1059,8 @@ void DRAW_Compatibility (void)
 	};
 
 	const char *emulators[3] = {
-		"* PicoDrive 2.04",
 		"* Jgenesis 0.10.0",
+		"* PicoDrive 2.04",
 		"* Ares 143",
 	};
 
@@ -1346,7 +1347,7 @@ void START_Title(void)
 		UpdateBuffer();
 	}
 #else
-	backgroundpic = W_POINTLUMPNUM(W_GetNumForName("M_TITLE"));
+	//backgroundpic = W_POINTLUMPNUM(W_GetNumForName("M_TITLE"));
 	DoubleBufferSetup();
 #endif
 

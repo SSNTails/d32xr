@@ -33,7 +33,6 @@ static volatile uint16_t mars_activescreen = 0;
 
 static char mars_gamepadport[MARS_MAX_CONTROLLERS];
 
-static volatile uint16_t current_buttons[2];
 static volatile uint16_t next_buttons_pressed[2];
 static volatile uint16_t next_buttons_released[2];
 static volatile uint16_t previous_buttons[2];

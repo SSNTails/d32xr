@@ -1,10 +1,7 @@
 /* m_main.c -- main menu */
 
 #include "doomdef.h"
-
-#ifdef MDSKY
 #include "marshw.h"
-#endif
 
 #include "v_font.h"
 #include "r_local.h"
@@ -72,7 +69,7 @@ static mainitem_t mainitem[NUMMAINITEMS];
 static mainscreen_t mainscreen[NUMMAINSCREENS];
 
 //static const char* playmodes[NUMMODES] = { "Single", "Coop", "Deathmatch" };
-jagobj_t* m_doom;
+jagobj_t* m_title;
 
 static VINT m_skull1lump;
 static VINT numslump;
@@ -129,13 +126,25 @@ void M_Start2 (boolean startup_)
 	rwx_logo = W_GetNumForName("RWX");
 
 	startup = startup_;
-	m_doom = NULL;
+	m_title = NULL;
 	titleTicker = 0;
 	titleSmallTicker = 0;
 	if (startup)
 	{
 		i = W_CheckNumForName("M_TITLE");
-		m_doom = i != -1 ? W_CacheLumpNum(i, PU_STATIC) : NULL;
+		m_title = i != -1 ? W_CacheLumpNum(i, PU_STATIC) : NULL;
+
+		if (legacy_emulator == LEGACY_EMULATOR_KEGA) {
+			// Kega Fusion doesn't support copper. Use solid orange for the "32X" logo instead.
+			int total_pixels = m_title->width * m_title->height;
+			uint8_t *pixels = m_title->data;
+			for (int i=0; i < total_pixels; i++) {
+				if (*pixels == 0xFF) {
+					*pixels = 0x35;
+				}
+				pixels++;
+			}
+		}
 
 		for (i = 0; i < NUMHANDFRAMES; i++)
 		{
@@ -284,10 +293,10 @@ void M_Stop (void)
 
 /* free all loaded graphics */
 
-	if (m_doom != NULL)
+	if (m_title != NULL)
 	{
-		Z_Free (m_doom);
-		m_doom = NULL;
+		Z_Free (m_title);
+		m_title = NULL;
 	}
 
 	if (startup)
@@ -701,9 +710,9 @@ void M_Drawer (void)
 	}
 
 /* Draw main menu */
-	if (m_doom && (scrpos == ms_main || scrpos == ms_gametype))
+	if (m_title && (scrpos == ms_main || scrpos == ms_gametype))
 	{
-		VINT logoPos = 160 - (m_doom->width / 2);
+		VINT logoPos = 160 - (m_title->width / 2);
 
 		// Fill the area above the viewport with the sky color.
 //		if (titleTicker < 2)
@@ -711,8 +720,8 @@ void M_Drawer (void)
 //		else
 //			DrawFillRect(logoPos + 6, 18, 60, 26, gamemapinfo.skyTopColor);
 
-		DrawJagobj(m_doom, logoPos, 16);
-		y_offset = m_doom->height + 24 - STARTY;
+		DrawJagobj(m_title, logoPos, 16);
+		y_offset = m_title->height + 24 - STARTY;
 
 		DrawJagobj(m_hand[titleSmallTicker % NUMHANDFRAMES], 160 + 3, 16 + 32);
 
