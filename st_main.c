@@ -466,6 +466,10 @@ static void ST_Drawer_ (stbar_t* sb)
 		}
 		DrawJagobjLump(go_game, gameX, 102, NULL, NULL);
 		DrawJagobjLump(go_over, overX, 102, NULL, NULL);
+
+		if (viewportNum == VIEWPORT_H32) {
+			clear_h32_borders = 2;
+		}
 	}
 
 	if (sb->intermission)
