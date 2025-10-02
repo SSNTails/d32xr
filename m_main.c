@@ -414,7 +414,7 @@ int M_Ticker (void)
 	if (screenpos == ms_none)
 	{
 		screenpos = ms_main;
-		S_StartSound(NULL, sfx_None);
+		//S_StartSound(NULL, sfx_None);
 	}
 
 	menuscr = &mainscreen[screenpos];
@@ -471,7 +471,7 @@ int M_Ticker (void)
 			clearscreen = 2;
 			prevsaveslot = -1;
 			saveslot = screenpos == ms_save;
-			S_StartSound(NULL, sfx_None);
+			//S_StartSound(NULL, sfx_None);
 			return ga_nothing;
 		}
 	}
@@ -502,7 +502,7 @@ int M_Ticker (void)
 
 			movecount = 0;
 			clearscreen = 2;
-			S_StartSound(NULL, sfx_None);
+			//S_StartSound(NULL, sfx_None);
 			return 0;
 		}
 		else
@@ -553,7 +553,7 @@ int M_Ticker (void)
 
 		if (screenpos == ms_save)
 		{
-			S_StartSound(NULL, sfx_None);
+			//S_StartSound(NULL, sfx_None);
 			SaveGame(saveslot);
 			prevsaveslot = -1;
 			return ga_died;
