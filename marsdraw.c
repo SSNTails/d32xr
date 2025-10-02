@@ -701,7 +701,7 @@ void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int
 /*
 Draw the text banner on the left side of the screen. Used for the title card.
 */
-void DrawScrollingBanner(short ltzz_lump, int x, int y_shift)
+void DrawScrollingBanner(short ltzz_lump, int x_pos, int y_shift)
 {
 	const jagobj_t *jo = (jagobj_t*)W_POINTLUMPNUM(ltzz_lump);
 	pixel_t *fb = I_OverwriteBuffer();
@@ -709,13 +709,19 @@ void DrawScrollingBanner(short ltzz_lump, int x, int y_shift)
 	const pixel_t *source;
 	const short height = jo->height;
 
-	x &= ~0x01;	// No odd positions allowed!
+	x_pos &= ~0x01;	// No odd positions allowed!
 	short source_offset;
 	if (y_shift >= 0) {
-		source_offset = ((height - (y_shift % height)) << 4) - x;
+		source_offset = ((height - (y_shift % height)) << 4) - x_pos;
 	}
 	else {
-		source_offset = ((-y_shift % height) << 4) - x;
+		source_offset = ((-y_shift % height) << 4) - x_pos;
+	}
+
+	if (viewportNum == VIEWPORT_H32) {
+		source_offset += (VIEWPORT_OVERDRAW_AREA >> 1);
+		dest += ((VIEWPORT_OVERDRAW_AREA >> 1) >> 1);
+		x_pos -= (VIEWPORT_OVERDRAW_AREA >> 1);
 	}
 
 	for (int dest_row=0; dest_row < 224-44; dest_row++)
@@ -725,7 +731,7 @@ void DrawScrollingBanner(short ltzz_lump, int x, int y_shift)
 
 		source = (pixel_t *)(jo->data + source_offset);
 
-		switch(x) {
+		switch(x_pos) {
 			case 0:
 				*dest++ = *source++;
 			case -2:
@@ -744,14 +750,14 @@ void DrawScrollingBanner(short ltzz_lump, int x, int y_shift)
 				*dest = *source;
 		}
 
-		dest += (320 - 16 - x + 2) / 2;
+		dest += (320 - 16 - x_pos + 2) / 2;
 	}
 }
 
 /*
 Draw the chevrons on the left side of the screen. Used for the title card.
 */
-void DrawScrollingChevrons(short chev_lump, int x, int y_shift)
+void DrawScrollingChevrons(short chev_lump, int x_pos, int y_shift)
 {
 	const jagobj_t *jo = (jagobj_t*)W_POINTLUMPNUM(chev_lump);
 	pixel_t *fb = I_OverwriteBuffer();
@@ -759,7 +765,7 @@ void DrawScrollingChevrons(short chev_lump, int x, int y_shift)
 	const pixel_t *source;
 	const short height = 32;
 
-	x &= ~0x01;	// No odd positions allowed!
+	x_pos &= ~0x01;	// No odd positions allowed!
 	short source_offset;
 	if (y_shift >= 0) {
 		source_offset = ((height - (y_shift % height)) * 26);
@@ -768,19 +774,25 @@ void DrawScrollingChevrons(short chev_lump, int x, int y_shift)
 		source_offset = ((-y_shift % height) * 26);
 	}
 
-	if (x < 0) {
-		source_offset -= x;
+	if (x_pos <= 0) {
+		source_offset -= x_pos;
+
+		if (viewportNum == VIEWPORT_H32) {
+			source_offset += (VIEWPORT_OVERDRAW_AREA >> 1);
+			dest += ((VIEWPORT_OVERDRAW_AREA >> 1) >> 1);
+			x_pos -= (VIEWPORT_OVERDRAW_AREA >> 1);
+		}
 	}
-	else if (x > 0) {
-		dest += (x >> 1);
-		x = 0;
+	else if (x_pos > 0) {
+		dest += (x_pos >> 1);
+		x_pos = 0;
 	}
 
 	for (int dest_row=0; dest_row < 224-44; dest_row++)
 	{
 		source = (pixel_t *)(jo->data + source_offset);
 
-		switch(x) {
+		switch(x_pos) {
 			case 0:
 				*dest++ = *source++;
 			case -2:
@@ -809,7 +821,7 @@ void DrawScrollingChevrons(short chev_lump, int x, int y_shift)
 				*dest = *source;
 		}
 
-		dest += (320 - 26 - x + 2) / 2;
+		dest += (320 - 26 - x_pos + 2) / 2;
 
 		source_offset += 26;
 		source_offset %= (height*26);

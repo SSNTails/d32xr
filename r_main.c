@@ -294,12 +294,9 @@ VINT R_PointInSubsector2 (fixed_t x, fixed_t y)
 
 /*============================================================================= */
 
-const VINT viewports[][2][3] = {
-	{ { 128, 144, true  }, {  80, 100, true  } },
-	//{ { 160, 180, true  }, {  80, 144, true  } },
-	{ { (VIEWPORT_WIDTH>>1), 180, true  }, {  80, 144, true  } },
-	{ { 256, 144, false }, { 160, 128, false } },
-	{ { 320, 180, false }, { 160, 144, false } },
+const VINT viewports[][2][3] = {	// [viewport][splitscreen][attribute]
+	{ { (VIEWPORT_WIDTH_H32>>1), 180, true  }, {  (VIEWPORT_WIDTH_H32>>2), 180, true  } },
+	{ { (VIEWPORT_WIDTH_H40>>1), 180, true  }, {  (VIEWPORT_WIDTH_H40>>2), 180, true  } },
 };
 
 VINT viewportNum;
@@ -441,7 +438,7 @@ int R_DefaultViewportSize(void)
 	for (i = 0; i < numViewports; i++)
 	{
 		const VINT* vp = viewports[i][0];
-		if (vp[0] == (VIEWPORT_WIDTH>>1) && vp[2] == true)
+		if (vp[0] == (VIEWPORT_WIDTH_H40>>1) && vp[2] == true)
 			return i;
 	}
 
@@ -462,7 +459,7 @@ D_printf ("R_InitData\n");
 	R_InitData ();
 D_printf ("Done\n");
 
-	R_SetViewportSize(viewportNum);
+	R_SetViewportSize(VIEWPORT_H40);
 
 	framecount = 0;
 	viewplayer = &players[0];
@@ -1011,7 +1008,7 @@ void R_SetupLevel(int gamezonemargin, char *background)
 
 	R_SetupTextureCaches(gamezonemargin);
 
-	R_SetViewportSize(viewportNum);
+	R_SetViewportSize(h40_sky);
 
 #ifdef MARS
 	curpalette = -1;

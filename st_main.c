@@ -270,7 +270,10 @@ static void ST_DrawTitleCard()
 		V_DrawStringLeft(&titleFont, 160 - ((gametic - 80) << 5), 124, "Zone");
 	}
 #endif
-	clear_h32_borders = 2;
+
+	if (viewportNum == VIEWPORT_H32) {
+		clear_h32_borders = 2;
+	}
 }
 
 /*

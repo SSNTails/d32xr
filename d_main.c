@@ -1058,10 +1058,9 @@ void DRAW_Compatibility (void)
 		"alternatives:"
 	};
 
-	const char *emulators[3] = {
+	const char *emulators[2] = {
 		"* Jgenesis 0.10.0",
 		"* PicoDrive 2.04",
-		"* Ares 143",
 	};
 
 	const uint8_t compatibility_color[4] = { 0x70, 0xBC, 0x36, 0x23 };
@@ -1087,7 +1086,7 @@ void DRAW_Compatibility (void)
 				for (int i=0; i < 6; i++) {
 					V_DrawStringCenter(&menuFont, 160, 42+(i*12), kega[i]);
 				}
-				for (int i=0; i < 3; i++) {
+				for (int i=0; i < 2; i++) {
 					V_DrawStringLeft(&menuFont, 100, 132+(i*12), emulators[i]);
 				}
 				break;
@@ -1096,7 +1095,7 @@ void DRAW_Compatibility (void)
 				for (int i=0; i < 4; i++) {
 					V_DrawStringCenter(&menuFont, 160, 42+(i*12), gens[i]);
 				}
-				for (int i=0; i < 3; i++) {
+				for (int i=0; i < 2; i++) {
 					V_DrawStringLeft(&menuFont, 100, 108+(i*12), emulators[i]);
 				}
 				break;
@@ -1105,7 +1104,7 @@ void DRAW_Compatibility (void)
 				for (int i=0; i < 3; i++) {
 					V_DrawStringCenter(&menuFont, 160, 48+(i*12), incompatible[i]);
 				}
-				for (int i=0; i < 3; i++) {
+				for (int i=0; i < 2; i++) {
 					V_DrawStringLeft(&menuFont, 100, 102+(i*12), emulators[i]);
 				}
 		}

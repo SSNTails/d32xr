@@ -826,7 +826,10 @@ void P_Drawer (void)
 		//	DrawTiledBackground();
 
 		DrawTiledLetterbox();
-		ClearViewportOverdraw();
+
+		if (viewportNum == VIEWPORT_H32 && clear_h32_borders == 0) {
+			ClearViewportOverdraw();
+		}
 		
 		if (clearscreen == 2 || optionsMenuOn)
 			ST_ForceDraw();
