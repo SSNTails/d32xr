@@ -436,7 +436,7 @@ int M_Ticker (void)
 //	if (cursorframe & 1)
 //		titleSmallTicker++;
 
-	M_UpdateSaveInfo();
+	//M_UpdateSaveInfo();
 
 	buttons = ticrealbuttons & MENU_BTNMASK;
 	oldbuttons = oldticrealbuttons & MENU_BTNMASK;
@@ -835,7 +835,7 @@ void M_Drawer (void)
 		item = &mainitem[mi_savelist];
 		y = y_offset + item->y;
 
-		M_UpdateSaveInfo();
+		//M_UpdateSaveInfo();
 
 		if (savecount > 0)
 		{

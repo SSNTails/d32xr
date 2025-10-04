@@ -319,7 +319,7 @@ int P_Ticker (void)
 	ticstart = frtc;
 
 	// Not needed for every tic. At least not unless we're needing synchronicity...
-	if (!(IsDemoModeType(DemoMode_Playback) || IsDemoModeType(DemoMode_Recording)))
+	if (!(IsDemo()))
 		P_CheckSights();
 
 	P_AnimateScenery((int8_t)accum_time);

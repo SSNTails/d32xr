@@ -605,7 +605,7 @@ no_cmd:
         dc.w    write_sram - prireqtbl            /* 0x02 */
         dc.w    start_music - prireqtbl           /* 0x03 */
         dc.w    stop_music - prireqtbl            /* 0x04 */
-        dc.w    no_cmd - prireqtbl                /* 0x05 */
+        dc.w    crossfade_md_palette - prireqtbl  /* 0x05 */
         dc.w    read_cdstate - prireqtbl          /* 0x06 */
         dc.w    set_usecd - prireqtbl             /* 0x07 */
         dc.w    set_crsr - prireqtbl              /* 0x08 */
@@ -677,13 +677,14 @@ rd_msd_sram:
         bra.w   exit_rd_sram
 
 rd_med_sram:
+        add.l   d0,d0
         tst.b   everdrive_ok
         bne.b   1f                  /* v1 or v2a MED */
         lea     0x040000,a0         /* use the upper 256K of page 31 */
         sh2_wait
         set_rv
         move.w  #0x801F,0xA130F0    /* map bank 0 to page 31, disable write */
-        move.b  0(a0,d0.l),d1       /* read SRAM */
+        move.b  1(a0,d0.l),d1       /* read SRAM */
         move.w  #0x8000,0xA130F0    /* map bank 0 to page 0, disable write */
         bra.b   exit_rd_sram
 1:
@@ -691,7 +692,7 @@ rd_med_sram:
         sh2_wait
         set_rv
         move.w  #0x801C,0xA130F0    /* map bank 0 to page 28, disable write */
-        move.b  0(a0,d0.l),d1       /* read SRAM */
+        move.b  1(a0,d0.l),d1       /* read SRAM */
         move.w  #0x8000,0xA130F0    /* map bank 0 to page 0, disable write */
 
 exit_rd_sram:
@@ -733,13 +734,14 @@ wr_msd_sram:
         bra.w   exit_wr_sram
 
 wr_med_sram:
+        add.l   d1,d1
         tst.b   everdrive_ok
         bne.b   1f                  /* v1 or v2a MED */
         lea     0x040000,a0         /* use the upper 256K of page 31 */
         sh2_wait
         set_rv
         move.w  #0xA01F,0xA130F0    /* map bank 0 to page 31, enable write */
-        move.b  d0,0(a0,d1.l)       /* write SRAM */
+        move.b  d0,1(a0,d1.l)       /* write SRAM */
         move.w  #0x8000,0xA130F0    /* map bank 0 to page 0, disable write */
         bra.b   exit_wr_sram
 1:
@@ -747,7 +749,7 @@ wr_med_sram:
         sh2_wait
         set_rv
         move.w  #0xA01C,0xA130F0    /* map bank 0 to page 28, enable write */
-        move.b  d0,0(a0,d1.l)       /* write SRAM */
+        move.b  d0,1(a0,d1.l)       /* write SRAM */
         move.w  #0x8000,0xA130F0    /* map bank 0 to page 0, disable write */
 
 exit_wr_sram:
@@ -2353,6 +2355,47 @@ scroll_md_sky:
         bra     main_loop
 
 
+crossfade_md_palette:
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a3,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+        move.l  d3,-(sp)
+        move.l  d4,-(sp)
+
+        /* Fade palette */
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.w  #0x8F02,(a0)
+        move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
+
+        lea     base_palette_1,a3       /* Point A3 to DRAM palette */
+        move.w  0xA15122,d1             /* Get fade degree */
+
+        move.w  #0x40-1,d4              /* Prepare to copy all 64 colors */
+
+
+        | D0 = CRAM value
+        | D1 = Fade value
+
+        | D2 = CRAM color channel
+        | D3 = Fade color channel
+
+        | A1 = CRAM palette
+        | A3 = DRAM palette
+
+crossfade_color:
+        move.w  (a3)+,d0        /* Copy color from DRAM to D0 */
+
+
+        /* FINISH ME!!! */
+
+
+        bra     main_loop
+
+
 fade_md_palette:
         move.l  a0,-(sp)
         move.l  a1,-(sp)
@@ -3594,6 +3637,34 @@ h32_left_edge_sprites:
 |        .space  128
 |test_end:
 |        dc.l    0x08257368
+
+
+crossfade:
+        dc.b	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        dc.b	0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1
+        dc.b	0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2
+        dc.b	0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3
+        dc.b	0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4
+        dc.b	0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5
+        dc.b	0, 0, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5, 6
+        dc.b	0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 7
+        dc.b	0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8
+        dc.b	0, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8
+        dc.b	0, 1, 1, 2, 3, 3, 4, 4, 5, 6, 6, 7, 8, 8, 9, 9
+        dc.b	0, 1, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 8, 9, 10,10
+        dc.b	0, 1, 2, 2, 3, 4, 5, 5, 6, 7, 8, 8, 9, 10,11,11
+        dc.b	0, 1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10,11,11,12
+        dc.b	0, 1, 2, 3, 4, 4, 5, 6, 7, 8, 9, 10,11,11,12,13
+
+
+target_palette_1:
+        .space  32
+target_palette_2:
+        .space  32
+target_palette_3:
+        .space  32
+target_palette_4:
+        .space  32
 
 
 base_palette_1:
