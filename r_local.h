@@ -336,7 +336,7 @@ int		R_DefaultViewportSize(void); // returns the viewport id for fullscreen, low
 void	R_SetDrawMode(void);
 void    R_SetFlatData(int f, uint8_t *start, int size);
 void    R_ResetTextures(void);
-int		R_SetupMDPalettes(const char *name, int palettes_lump);
+int		R_SetupMDPalettes(const char *name, int palettes_lump, int bank, int flags);
 void	R_SetupBackground(const char *background, int palettes_lump, int copper_lump);
 void	R_SetupMDSky(const char *name, int palettes_lump);
 int		R_SetupCopperTable(const char *background, int copper_lump, int table_bank);

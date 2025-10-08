@@ -723,9 +723,9 @@ int TIC_LevelSelect (void)
 			{
 				R_SetupCopperTable("MENU", 0, next_bank);
 			}
-			if (R_SetupMDPalettes("MENU", selected_map_info.zone) == -1)
+			if (R_SetupMDPalettes("MENU", selected_map_info.zone, 1, 0) == -1)
 			{
-				R_SetupMDPalettes("MENU", 0);
+				R_SetupMDPalettes("MENU", 0, 1, 0);
 			}
 
 			Mars_FadeMDPaletteFromBlack(0xEEE);
@@ -734,13 +734,17 @@ int TIC_LevelSelect (void)
 
 			copper_table_selection++;
 
+			Mars_CrossfadeMDPalette(copper_table_selection & 0xF);
+
 			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}
 		else if (copper_table_selection & 0xF) {
 			copper_table_selection++;
+			Mars_CrossfadeMDPalette(copper_table_selection & 0xF);
 
 			if (!(copper_table_selection & 0xF)) {
 				copper_table_selection &= 0x10;
+				Mars_CrossfadeMDPalette(0x10);
 			}
 
 			effects_flags |= EFFECTS_COPPER_REFRESH;

@@ -1713,8 +1713,26 @@ load_md_palettes:
         move.l  a3,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
+        move.l  d2,-(sp)
+        move.l  d3,-(sp)
 
         bsr     get_lump_source_and_size
+1:
+        move.w  0xA15120,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x05,d0
+        bne.b   1b
+        move.b  0xA15122,d2
+        move.b  0xA15123,d3
+        move.w  #0,0xA15120         /* done with lower word */
+
+        btst    #0,d3
+        bne.s   2f
+        lea     bank1_palette_1,a3
+        bra.s   3f
+2:
+        lea     bank2_palette_1,a3
+3:
+
         lea     0xC00004,a0
         lea     0xC00000,a1
         move.w  #0x8F02,(a0)
@@ -1723,16 +1741,21 @@ load_md_palettes:
         andi.l  #0x7FFFF,d0
         addi.l  #0x880000,d0
         move.l  d0,a2
-        lea     base_palette_1,a3
         move.l  lump_size,d1
         lsr.l   #1,d1
         sub.l   #1,d1
-2:
-        move.w  (a2)+,(a3)+             /* Save color to DRAM */
-        move.w  #0,(a1)                 /* Set color to black in CRAM */
-        |add.l   #0x40000,a1            /* Advance the destination cursor */
-        dbra    d1,2b
 
+        btst    #0,d2                   /* Set CRAM to black? */
+        beq.s   5f
+        move.w  d1,d0
+4:
+        move.w  #0,(a1)                 /* Set color to blank in CRAM */
+        dbra    d0,4b
+5:
+        move.w  (a2)+,(a3)+             /* Copy color from ROM to DRAM */
+        dbra    d1,5b
+
+        move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
         move.l  (sp)+,a3
@@ -1868,7 +1891,7 @@ load_md_sky:
         andi.l  #0x7FFFF,d0
         addi.l  #0x880000,d0
         move.l  d0,a2
-        lea     base_palette_1,a3
+        lea     bank1_palette_1,a3
         move.w  #47,d1
         cmpi.b  #0,legacy_emulator      /* Check for legacy emulator */
         bne.s   1f
@@ -2359,11 +2382,16 @@ crossfade_md_palette:
         move.l  a0,-(sp)
         move.l  a1,-(sp)
         move.l  a3,-(sp)
+        move.l  a4,-(sp)
+        move.l  a5,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
         move.l  d2,-(sp)
         move.l  d3,-(sp)
         move.l  d4,-(sp)
+        move.l  d5,-(sp)
+        move.l  d6,-(sp)
+        move.l  d7,-(sp)
 
         /* Fade palette */
         lea     0xC00004,a0
@@ -2371,27 +2399,169 @@ crossfade_md_palette:
         move.w  #0x8F02,(a0)
         move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
 
-        lea     base_palette_1,a3       /* Point A3 to DRAM palette */
-        move.w  0xA15122,d1             /* Get fade degree */
+        lea     bank1_palette_1,a3      /* Point A3 to source palette */
+        lea     bank2_palette_1,a4      /* Point A4 to target palette */
+        move.w  0xA15122,d2             /* Get fade degree */
 
-        move.w  #0x40-1,d4              /* Prepare to copy all 64 colors */
+        btst.b  #4,d2
+        beq.s   2f
+
+        /* Copy bank2 to bank1 and load entire bank into CRAM */
+        moveq   #0x20-1,d0
+0:
+        move.l  (a4)+,(a3)+             /* Copy palette bank2 to bank1 */
+        dbra    d0,0b
+
+        moveq   #0x40-1,d0
+1:
+        move.w  (a3)+,(a1)              /* Load entire bank into CRAM */
+        dbra    d0,1b
+
+        bra.w   crossfade_done
+
+        /* Perform cross fade between bank1 and bank2 */
+2:
+        lea     crossfade_lookup,a5     /* Point A5 to crossfade lookup table */
+        moveq   #0,d4
+        moveq   #0,d5
+        moveq   #0,d6
+
+        move.w  #0x40-1,d7              /* Prepare to copy all 64 colors */
 
 
-        | D0 = CRAM value
-        | D1 = Fade value
+        | D0 = CRAM value (source)
+        | D1 = CRAM value (target)
 
-        | D2 = CRAM color channel
-        | D3 = Fade color channel
+        | D2 = Fade value
+
+        | D3 = CRAM color channel (source)
+        | D4 = CRAM color channel (target) / Color delta
+
+        | D5 = Resulting color
 
         | A1 = CRAM palette
-        | A3 = DRAM palette
+        | A3 = DRAM palette (source)
+        | A4 = DRAM palette (target)
+        | A5 = Crossfade lookup
 
 crossfade_color:
-        move.w  (a3)+,d0        /* Copy color from DRAM to D0 */
+        move.w  (a3)+,d0        /* Copy color from source palette to D0 */
+        move.w  (a4)+,d1        /* Copy color from target palette to D1 */
 
+crossfade_red:
+        /* RED */
+        move.b  d0,d3           /* Get source red */
+        andi.w  #0xE,d3         /* Remove green from this copy */
+        move.b  d1,d4           /* Get target red */
+        andi.w  #0xE,d4         /* Remove green from this copy */
 
-        /* FINISH ME!!! */
+        /* Get total delta */
+        sub.b   d3,d4
+        cmp.b   #0,d4
+        bge.s   3f
+        neg.b   d4
 
+        /* Find interval delta */
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsl.b   #3,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d6    /* Store new red in D6 */
+        bra.s   crossfade_green
+3:
+        /* Find interval delta */
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsl.b   #3,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d5    /* Store new red in D5 */
+
+crossfade_green:
+        /* GREEN */
+        move.w  d0,d3           /* Get source green */
+        andi.w  #0xE0,d3        /* Remove green from this copy */
+        move.w  d1,d4           /* Get target green */
+        andi.w  #0xE0,d4        /* Remove green from this copy */
+
+        /* Get total delta */
+        sub.w   d3,d4
+        cmp.w   #0,d4
+        bge.s   4f
+        neg.w   d4
+
+        /* Find interval delta*/
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsr.w   #1,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d4
+        lsl.w   #4,d4
+        or.w    d4,d6           /* Store new green in D6 */
+        bra.s   crossfade_blue
+4:
+        /* Find interval delta*/
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsr.w   #1,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d4
+        lsl.w   #4,d4
+        or.w    d4,d5           /* Store new green in D5 */
+
+crossfade_blue:
+        /* BLUE */
+        move.w  d0,d3           /* Get source blue */
+        andi.w  #0xE00,d3       /* Remove blue from this copy */
+        move.w  d1,d4           /* Get target blue */
+        andi.w  #0xE00,d4       /* Remove blue from this copy */
+
+        /* Get total delta */
+        sub.w   d3,d4
+        cmp.w   #0,d4
+        bge.s   5f
+        neg.w   d4
+
+        /* Find interval delta */
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsr.w   #5,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d4
+        lsl.w   #8,d4
+        or.w    d4,d6           /* Store new blue in D6 */
+        bra.s   crossfade_update_color
+5:
+        /* Find interval delta */
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsr.w   #5,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d4
+        lsl.w   #8,d4
+        or.w    d4,d5           /* Store new blue in D5 */
+
+crossfade_update_color:
+        add.w   d5,d0
+        sub.w   d6,d0
+        move.w  d0,(a1)         /* Copy new color in D0 to CRAM */
+        dbra    d7,crossfade_color   /* Continue the loop if more colors need to be updated. */
+
+crossfade_done:
+        move.l  (sp)+,d7
+        move.l  (sp)+,d6
+        move.l  (sp)+,d5
+        move.l  (sp)+,d4
+        move.l  (sp)+,d3
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a5
+        move.l  (sp)+,a4
+        move.l  (sp)+,a3
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        move.w  #0,0xA15120         /* done */
 
         bra     main_loop
 
@@ -2412,7 +2582,7 @@ fade_md_palette:
         move.w  #0x8F02,(a0)
         move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
 
-        lea     base_palette_1,a3       /* Point A3 to DRAM palette */
+        lea     bank1_palette_1,a3      /* Point A3 to DRAM palette */
         move.w  0xA15122,d1             /* Get fade degree */
 
         move.w  #0x40-1,d4              /* Prepare to copy all 64 colors */
@@ -3639,41 +3809,34 @@ h32_left_edge_sprites:
 |        dc.l    0x08257368
 
 
-crossfade:
+crossfade_lookup:
         dc.b	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        dc.b	0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1
-        dc.b	0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2
-        dc.b	0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3
-        dc.b	0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4
-        dc.b	0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5
-        dc.b	0, 0, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5, 6
-        dc.b	0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 7
-        dc.b	0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8
-        dc.b	0, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8
-        dc.b	0, 1, 1, 2, 3, 3, 4, 4, 5, 6, 6, 7, 8, 8, 9, 9
-        dc.b	0, 1, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 8, 9, 10,10
-        dc.b	0, 1, 2, 2, 3, 4, 5, 5, 6, 7, 8, 8, 9, 10,11,11
-        dc.b	0, 1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10,11,11,12
-        dc.b	0, 1, 2, 3, 4, 4, 5, 6, 7, 8, 9, 10,11,11,12,13
+        dc.b	0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2
+        dc.b	0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4
+        dc.b	0, 0, 0, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 6, 6
+        dc.b	0, 0, 2, 2, 2, 2, 4, 4, 4, 4, 6, 6, 6, 6, 8, 8
+        dc.b	0, 0, 2, 2, 2, 4, 4, 4, 6, 6, 6, 6, 8, 8, 8, 10
+        dc.b	0, 0, 2, 2, 4, 4, 4, 6, 6, 6, 8, 8, 10,10,10,12
+        dc.b	0, 0, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10,10,12,12,14
 
 
-target_palette_1:
+bank1_palette_1:
         .space  32
-target_palette_2:
+bank1_palette_2:
         .space  32
-target_palette_3:
+bank1_palette_3:
         .space  32
-target_palette_4:
+bank1_palette_4:
         .space  32
 
 
-base_palette_1:
+bank2_palette_1:
         .space  32
-base_palette_2:
+bank2_palette_2:
         .space  32
-base_palette_3:
+bank2_palette_3:
         .space  32
-base_palette_4:
+bank2_palette_4:
         .space  32
 
 FMReset:

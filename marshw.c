@@ -665,7 +665,7 @@ void Mars_WriteMDVDPRegister(int write)
 	MARS_SYS_COMM0 = 0x1C00;
 }
 
-void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size)
+void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size, int bank, int flags)
 {
 	int i;
 
@@ -681,6 +681,12 @@ void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size)
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x1B01+i;
 	}
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2_BYTE = flags;
+	MARS_SYS_COMM3_BYTE = bank;
+	MARS_SYS_COMM0 = 0x1B05;
+
 	//while (MARS_SYS_COMM0);
 }
 
@@ -693,6 +699,13 @@ void Mars_FadeMDPaletteFromBlack(int fade_degree)
 	while (MARS_SYS_COMM0);
 	MARS_SYS_COMM2 = fade_degree;
 	MARS_SYS_COMM0 = 0x1001;
+}
+
+void Mars_CrossfadeMDPalette(int fade_degree)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = fade_degree;
+	MARS_SYS_COMM0 = 0x0501;
 }
 
 void Mars_ScrollMDSky(short scroll_x, short scroll_y_base, short scroll_y_offset, short scroll_y_pan) {

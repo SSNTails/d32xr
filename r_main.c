@@ -495,7 +495,7 @@ VINT CalcFlatSize(int lumplength)
 }
 
 
-int R_SetupMDPalettes(const char *name, int palettes_lump)
+int R_SetupMDPalettes(const char *name, int palettes_lump, int bank, int flags)
 {
 	uint8_t *palettes_ptr;
 	uint32_t palettes_size;
@@ -514,7 +514,7 @@ int R_SetupMDPalettes(const char *name, int palettes_lump)
 		return -1;
 	}
 
-	Mars_LoadMDPalettes(palettes_ptr, palettes_size);
+	Mars_LoadMDPalettes(palettes_ptr, palettes_size, bank, flags);
 
 	return 0;
 }

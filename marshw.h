@@ -136,10 +136,11 @@ int Mars_ROMSize(void);
 
 void Mars_WriteMDVDPRegister(int write);
 
-void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size);
+void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size, int bank, int flags);
 
 #ifdef MDSKY
 void Mars_FadeMDPaletteFromBlack(int fade_degree);
+void Mars_CrossfadeMDPalette(int fade_degree);
 void Mars_ScrollMDSky(short scroll_x, short scroll_y_base, short scroll_y_offset, short scroll_y_pan);
 void Mars_SetScrollPositions(
 		short scroll_b_top_y, short scroll_b_bottom_y, short scroll_a_top_y, short scroll_a_bottom_y);
