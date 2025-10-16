@@ -32,6 +32,7 @@ static short chaos;
 
 static short ltzz_blue_lump, chev_blue_lump, lt_blue_lump;
 static short ltzz_red_lump, chev_red_lump, lt_red_lump;
+static uint16_t titlecard_x_offset;
 
 #ifndef MARS
 byte		*sbartop;
@@ -218,16 +219,24 @@ static void ST_DrawTitleCard()
 	if (gametic < 16) {
 		// Title card moving into the frame.
 
+		if (gametic == 1) {
+			titlecard_x_offset = 160;
+			int width = V_GetStringWidth(&titleFont, gamemapinfo.name);
+			if (width > 186) {
+				titlecard_x_offset += (width - 186); // Move graphics away from the left edge.
+			}
+		}
+
 		DrawScrollingBanner(ltzz_lump, (gametic-16) << 4, gametic << 1);
 
 		DrawScrollingChevrons(chev_lump, 16 + ((gametic-16) << 4), -gametic << 1);
 
 		if (gamemapinfo.act >= 1 && gamemapinfo.act <= 3) {
-			DrawJagobjLump(lt_lump, 160+70-24 + ((16 - gametic) << 5), 100 - ((16 - gametic) << 5), NULL, NULL);
-			V_DrawValueLeft(&titleNumberFont, 160+70 + ((16 - gametic) << 5), 124-4, gamemapinfo.act);
+			DrawJagobjLump(lt_lump, titlecard_x_offset + 70-24 + ((16 - gametic) << 5), 100 - ((16 - gametic) << 5), NULL, NULL);
+			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 70 + ((16 - gametic) << 5), 124-4, gamemapinfo.act);
 		}
-		V_DrawStringRight(&titleFont, 160+68 - ((16 - gametic) << 5), 100, gamemapinfo.name);
-		V_DrawStringLeft(&titleFont, 160 + ((16 - gametic) << 5), 124, "Zone");
+		V_DrawStringRight(&titleFont, titlecard_x_offset + 68 - ((16 - gametic) << 5), 100, gamemapinfo.name);
+		V_DrawStringLeft(&titleFont, titlecard_x_offset + ((16 - gametic) << 5), 124, "Zone");
 	}
 	else
 #ifndef OST_BLACKNESS
@@ -241,12 +250,12 @@ static void ST_DrawTitleCard()
 		DrawScrollingChevrons(chev_lump, 16, -gametic << 1);
 
 		if (gamemapinfo.act >= 1 && gamemapinfo.act <= 3) {
-			DrawJagobjLump(lt_lump, 160+68-24, 100, NULL, NULL);
+			DrawJagobjLump(lt_lump, titlecard_x_offset + 68-24, 100, NULL, NULL);
 
-			V_DrawValueLeft(&titleNumberFont, 160+68, 124-4, gamemapinfo.act);
+			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 68, 124-4, gamemapinfo.act);
 		}
-		V_DrawStringRight(&titleFont, 160+68, 100, gamemapinfo.name);
-		V_DrawStringLeft(&titleFont, 160, 124, "Zone");
+		V_DrawStringRight(&titleFont, titlecard_x_offset + 68, 100, gamemapinfo.name);
+		V_DrawStringLeft(&titleFont, titlecard_x_offset, 124, "Zone");
 	}
 #ifndef OST_BLACKNESS
 	else {
@@ -261,13 +270,13 @@ static void ST_DrawTitleCard()
 			VINT lt_height = lt_y + lt_obj->height > (180+22)
 					? lt_obj->height - ((lt_y + lt_obj->height) - (180+22))
 					: lt_obj->height;
-			DrawJagobj2(lt_obj, 160+68-24 - ((gametic - 80) << 5), lt_y, 0, 0,
+			DrawJagobj2(lt_obj, titlecard_x_offset + 68-24 - ((gametic - 80) << 5), lt_y, 0, 0,
 					lt_obj->width, lt_height, I_OverwriteBuffer());
 			
-			V_DrawValueLeft(&titleNumberFont, 160+68 - ((gametic - 80) << 5), 124-4, gamemapinfo.act);
+			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 68 - ((gametic - 80) << 5), 124-4, gamemapinfo.act);
 		}
-		V_DrawStringRight(&titleFont, 160+68 + ((gametic - 80) << 5), 100, gamemapinfo.name);
-		V_DrawStringLeft(&titleFont, 160 - ((gametic - 80) << 5), 124, "Zone");
+		V_DrawStringRight(&titleFont, titlecard_x_offset + 68 + ((gametic - 80) << 5), 100, gamemapinfo.name);
+		V_DrawStringLeft(&titleFont, titlecard_x_offset - ((gametic - 80) << 5), 124, "Zone");
 	}
 #endif
 
@@ -325,7 +334,7 @@ static void ST_Drawer_ (stbar_t* sb)
 	V_DrawValueLeft(&menuFont, 288, 100, load_sky_lump_metadata);
 #endif
 
-	if (gametic < 88 && !(gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)) {
+	if (gametic <= 88 && !(gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)) {
 		ST_DrawTitleCard();
 	}
 	else if (gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)
@@ -403,12 +412,12 @@ static void ST_Drawer_ (stbar_t* sb)
 		const int minutes = worldTime/(60*TICRATE);
 		const int seconds = (worldTime/(TICRATE))%60;
 
-		if (gametic < 93) {
-			const int interval = gametic-88;
+		if (gametic < 94) {
+			const int interval = gametic-89;
 			const int offset_x = 16 + ((6-interval) << 3);
-			DrawScaledJagobj(W_POINTLUMPNUM(score), offset_x, 10+22+((6-interval)<<1), hud_upscale[gametic-88], hud_upscale[gametic-88], I_OverwriteBuffer());
-			DrawScaledJagobj(W_POINTLUMPNUM(time), offset_x, 26+22+((6-interval)<<2), hud_upscale[gametic-88], hud_upscale[gametic-88], I_OverwriteBuffer());
-			DrawScaledJagobj(W_POINTLUMPNUM(rings), offset_x, 42+22+((6-interval)<<3), hud_upscale[gametic-88], hud_upscale[gametic-88], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(score), offset_x, 10+22+((6-interval)<<1), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(time), offset_x, 26+22+((6-interval)<<2), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(rings), offset_x, 42+22+((6-interval)<<3), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
 		}
 		else {
 			DrawJagobjLump(score, 16, 10+22, NULL, NULL);

@@ -54,6 +54,47 @@ void V_FontInit()
     hudNumberFont.spaceWidthSize = 11;
 }
 
+int V_GetStringWidth(const font_t *font, const char *string)
+{
+    int width = 0;
+    int i,c;
+    byte *lump;
+    jagobj_t *jo;
+
+    if (font->fixedWidth) {
+        for (i = mystrlen(string)-1; i >= 0; i--)
+	    {
+            c = string[i];
+            if (c == 0x20) // Space
+                width += font->spaceWidthSize;
+            else if (c >= font->minChar && c <= font->maxChar)
+		    {
+                width += font->fixedWidthSize;
+            }
+        }
+    }
+    else {
+        for (i = mystrlen(string)-1; i >= 0; i--)
+	    {
+            c = string[i];
+            if (c == 0x20) // Space
+                width += font->spaceWidthSize;
+            else if (c >= font->minChar && c <= font->maxChar)
+		    {
+                int lumpnum = font->lumpStart + (c - font->lumpStartChar);
+                lump = W_POINTLUMPNUM(lumpnum);
+	            if (!(lumpinfo[lumpnum].name[0] & 0x80))
+	            {
+    		        jo = (jagobj_t*)lump;
+		            width += jo->width;
+	            }
+            }
+        }
+    }
+
+    return width;
+}
+
 int V_DrawStringLeftWithColormap(const font_t *font, int x, int y, const char *string, int colormap)
 {
 	int i,c;
