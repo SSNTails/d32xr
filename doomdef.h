@@ -611,9 +611,10 @@ typedef enum
 
 #define GAMEMODE_COMPATIBILITY				0x01
 #define GAMEMODE_DISCLAIMER					0x02
-#define GAMEMODE_TITLESCREEN				0x03
-#define GAMEMODE_LEVELSELECT				0x04
-#define GAMEMODE_CREDITS					0x05
+#define GAMEMODE_TITLEINTRO					0x03
+#define GAMEMODE_TITLESCREEN				0x04
+#define GAMEMODE_LEVELSELECT				0x05
+#define GAMEMODE_CREDITS					0x06
 
 #define GAMEMODE_LEVEL_ACTIVE				0x10
 #define GAMEMODE_LEVEL						0x30
@@ -646,6 +647,8 @@ static inline boolean IsCompatibility()
 	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_COMPATIBILITY; }
 static inline boolean IsDisclaimer()
 	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_DISCLAIMER; }
+static inline boolean IsTitleIntro()
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_TITLEINTRO; }
 static inline boolean IsTitleScreen()
 	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_TITLESCREEN; }
 static inline boolean IsLevelSelect()
@@ -657,6 +660,8 @@ static inline void SetCompatibility()
 	{ gamemode = GAMEMODE_COMPATIBILITY; MD_SetGamemode(gamemode); }
 static inline void SetDisclaimer()
 	{ gamemode = GAMEMODE_DISCLAIMER; MD_SetGamemode(gamemode); }
+static inline void SetTitleIntro()
+	{ gamemode = GAMEMODE_TITLEINTRO; MD_SetGamemode(gamemode); }
 static inline void SetTitleScreen()
 	{ gamemode = GAMEMODE_TITLESCREEN; MD_SetGamemode(gamemode); }
 static inline void SetLevelSelect()
@@ -690,6 +695,12 @@ static inline boolean IsTransitionType(transitiontype_t type)
 
 static inline void SetTransition(transitiontype_t type)
 	{ gamemode = (gamemode & (~GAMEMODE_TRANSITION_TYPE)) | type; MD_SetGamemode(gamemode); }
+
+
+
+extern uint8_t      cheats_enabled;
+
+#define CHEAT_METRICS			0x01
 
 
 

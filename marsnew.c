@@ -697,7 +697,7 @@ void I_Update(void)
 	const int refreshHZ = Mars_RefreshHZ();
 
 	if (optionsMenuOn)
-		if ((ticrealbuttons & BT_MODE) && !(oldticrealbuttons & BT_MODE))
+		if (cheats_enabled & CHEAT_METRICS && (ticrealbuttons & BT_MODE) && !(oldticrealbuttons & BT_MODE))
 		{
 			int prevdebugmode;
 

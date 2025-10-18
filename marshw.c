@@ -829,6 +829,7 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 void MD_SetGamemode(int gamemode)
 {
 	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2_BYTE = gamemode;
 	MARS_SYS_COMM0 = 0x1900;
 	while (MARS_SYS_COMM0);
 }

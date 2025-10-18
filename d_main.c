@@ -26,6 +26,13 @@ uint16_t cpu_pulse_timeout = 0;
 uint32_t cpu_debug_pr = 0;
 #endif
 
+uint8_t cheats_enabled = 0;
+
+uint8_t cheat_metrics_button_index = 0;
+
+#define CHEAT_METRICS_SEQ_LENGTH	5
+const uint8_t cheat_metrics_sequence[CHEAT_METRICS_SEQ_LENGTH] = { BT_UP, BT_DOWN, BT_DOWN, BT_DOWN, BT_UP };
+
 boolean		splitscreen = false;
 VINT		controltype = 0;		/* determine settings for BT_* */
 
@@ -484,7 +491,22 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		ticbuttons[consoleplayer] = buttons;
 		ticrealbuttons = buttons;
 
-		if (IsTitleScreen()) {
+		if (IsTitleIntro()) {
+			if (oldticbuttons[0] == 0) {
+				if (buttons == cheat_metrics_sequence[cheat_metrics_button_index]) {
+					cheat_metrics_button_index += 1;
+					if (cheat_metrics_button_index == CHEAT_METRICS_SEQ_LENGTH) {
+						S_StartSoundId(sfx_s3k_33);
+						cheats_enabled |= CHEAT_METRICS;
+						cheat_metrics_button_index = 0;
+					}
+				}
+				else if (buttons != 0) {
+					cheat_metrics_button_index = 0;
+				}
+			}
+		}
+		else if (IsTitleScreen()) {
 			int timeleft = (gameinfo.titleTime >> 1) - leveltime;
 			if (timeleft <= 0) {
 				R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
@@ -1524,6 +1546,8 @@ D_printf ("DM_Main\n");
 #ifdef SHOW_DISCLAIMER
 	SetDisclaimer();
 	MiniLoop (START_Disclaimer, STOP_Disclaimer, TIC_Disclaimer, DRAW_Disclaimer, UpdateBuffer);
+#else
+	cheats_enabled = CHEAT_METRICS;	// Cheats already active for development builds.
 #endif
 
 	startmap = 1;
@@ -1537,6 +1561,7 @@ D_printf ("DM_Main\n");
 		do {
 			// Title intro
 			G_InitNew (TITLE_MAP_NUMBER, gt_single, false);
+			SetTitleIntro();
 			MiniLoop (START_Title, STOP_Title, TIC_Abortable, DRAW_Title, UpdateBuffer);
 #ifdef CPUDEBUG
 			cpu_pulse_timeout = 300;	// 5 seconds

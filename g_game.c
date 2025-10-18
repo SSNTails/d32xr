@@ -28,11 +28,11 @@ boolean         playeringame[MAXPLAYERS];
 player_t        players[MAXPLAYERS];
 playerresp_t	playersresp[MAXPLAYERS];
 
-VINT             consoleplayer = 0;          /* player taking events and displaying  */
+VINT            consoleplayer = 0;          /* player taking events and displaying  */
 int             gametic;
 int             leveltime;
 VINT            fadetime;
-VINT           totalitems, totalsecret;    /* for intermission  */
+VINT            totalitems, totalsecret;    /* for intermission  */
 uint16_t        emeralds;
 uint16_t        token;
 uint16_t        tokenbits;
