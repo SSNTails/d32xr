@@ -1115,13 +1115,22 @@ void STOP_Compatibility (void)
 
 void DRAW_Compatibility (void)
 {
+	const char *ares[6] = {
+		"This emulator exhibits certain",
+		"undesirable graphical glitches.",
+		"While it should play fine otherwise,",
+		"you may want to consider one of",
+		"these alternatives for the best",
+		"experience:"
+	};
+
 	const char *kega[6] = {
 		"This emulator does not support",
 		"certain features used by this game.",
 		"While we do our best to support it,",
-		"you may want to consider one of",
-		"these alternatives for the best",
-		"experience:"
+		ares[3],	// "you may want to consider one of",
+		ares[4],	// "these alternatives for the best",
+		ares[5]		// "experience:"
 	};
 
 	const char *gens[4] = {
@@ -1142,7 +1151,7 @@ void DRAW_Compatibility (void)
 		"* PicoDrive 2.04",
 	};
 
-	const uint8_t compatibility_color[4] = { 0x70, 0xBC, 0x36, 0x23 };
+	const uint8_t compatibility_color[5] = { 0x70, 0xBC, 0x49, 0x36, 0x23 };
 
 	viewportbuffer = (pixel_t*)I_FrameBuffer();
 
@@ -1161,6 +1170,15 @@ void DRAW_Compatibility (void)
 
 		switch (legacy_emulator)
 		{
+			case LEGACY_EMULATOR_ARES:
+				for (int i=0; i < 6; i++) {
+					V_DrawStringCenter(&menuFont, 160, 42+(i*12), ares[i]);
+				}
+				for (int i=0; i < 2; i++) {
+					V_DrawStringLeft(&menuFont, 100, 132+(i*12), emulators[i]);
+				}
+				break;
+
 			case LEGACY_EMULATOR_KEGA:
 				for (int i=0; i < 6; i++) {
 					V_DrawStringCenter(&menuFont, 160, 42+(i*12), kega[i]);
@@ -1540,7 +1558,9 @@ VINT			startsave = -1;
 boolean 	startsplitscreen = 0;
 
 void D_DoomMain (void) 
-{    
+{
+	effects_flags = EFFECTS_COPPER_ENABLED;	// This allows for testing of dropped interrupts.
+
 D_printf ("C_Init\n");
 	C_Init ();		/* set up object list / etc	  */
 D_printf ("Z_Init\n");
@@ -1550,9 +1570,9 @@ D_printf ("W_Init\n");
 D_printf ("I_Init\n");
 	I_Init (); 
 D_printf ("R_Init\n");
-	R_Init (); 
+	R_Init ();
 D_printf ("P_Init\n");
-	P_Init (); 
+	P_Init ();
 D_printf ("S_Init\n");
 	S_Init ();
 D_printf("ST_Init\n");
@@ -1561,6 +1581,7 @@ D_printf("O_Init\n");
 	O_Init ();
 D_printf("G_Init\n");
 	G_Init();
+	
 
 /*========================================================================== */
 

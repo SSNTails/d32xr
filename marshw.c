@@ -41,6 +41,7 @@ volatile uint8_t legacy_emulator = 0;
 
 volatile unsigned int mars_thru_rgb = 0;
 volatile unsigned int mars_hblank_count = 0;
+volatile unsigned int mars_hblank_count_peak = 0;
 
 volatile unsigned mars_vblank_count = 0;
 volatile unsigned mars_pwdt_ovf_count = 0;
@@ -857,6 +858,15 @@ void pri_vbi_debug(void)
 void pri_vbi_handler(void)
 {
 	mars_vblank_count++;
+
+	// Check for dropped interrupts. There are 225 HINT intervals, some emulators only handle 224.
+	if (mars_vblank_count < 300 && mars_hblank_count_peak > 0 && mars_hblank_count < 224) {
+		if (legacy_emulator == LEGACY_EMULATOR_NONE) {
+			legacy_emulator = LEGACY_EMULATOR_ARES;
+		}
+	}
+
+	mars_hblank_count_peak = mars_hblank_count;
 	mars_hblank_count = 0;
 
 #ifdef CPUDEBUG

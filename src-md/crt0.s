@@ -499,7 +499,7 @@ check_emulator:
         beq.s   main_loop_start
 
         | 128KB VRAM Mode is unsupported by this emulator
-        move.b  #1,legacy_emulator      /* Assume Kega Fusion, but could be Gens */
+        move.b  #2,legacy_emulator      /* Assume Kega Fusion, but could be Gens */
 
         | Check what value is returned from the debug register
         lea     0xC0001C,a0
@@ -508,7 +508,7 @@ check_emulator:
         beq.s   main_loop_start
 
         | The debug register did not return -1
-        move.b  #2,legacy_emulator      /* Emulator determined to be Gens */
+        move.b  #3,legacy_emulator      /* Emulator determined to be Gens */
 
 main_loop_start:
         move.b  legacy_emulator,0xA1512F    /* Allow the SH-2s to see this */
@@ -1806,12 +1806,12 @@ load_md_sky:
 
         move.w  #0x8C00,d0
         or.b    (a2)+,d0
-        cmpi.b  #2,legacy_emulator      /* Check for Gens */
+        cmpi.b  #3,legacy_emulator      /* Check for Gens */
         bne.s   0f
         or.b    #0x0081,d0              /* Force Gens to use H40 */
 0:
-        cmpi.b  #0,legacy_emulator      /* Check for a legacy emulator */
-        bne.s   4f
+        cmpi.b  #1,legacy_emulator      /* Check for a legacy emulator (not Ares) */
+        bgt.s   4f
         move.w  #0x8F02,(a0)
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -1893,8 +1893,8 @@ load_md_sky:
         move.l  d0,a2
         lea     bank1_palette_1,a3
         move.w  #47,d1
-        cmpi.b  #0,legacy_emulator      /* Check for legacy emulator */
-        bne.s   1f
+        cmpi.b  #1,legacy_emulator      /* Check for legacy emulator (not Ares) */
+        bgt.s   1f
 
         moveq   #0,d0
         move.w  d0,(a3)+                /* Use black for the background (hardware H32-safe) */
