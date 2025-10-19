@@ -762,11 +762,13 @@ int TIC_LevelSelect (void)
 		}
 		else if (copper_table_selection & 0xF) {
 			copper_table_selection++;
-			Mars_CrossfadeMDPalette(copper_table_selection & 0xF);
 
 			if (!(copper_table_selection & 0xF)) {
 				copper_table_selection &= 0x10;
 				Mars_CrossfadeMDPalette(0x10);
+			}
+			else {
+				Mars_CrossfadeMDPalette(copper_table_selection & 0xF);
 			}
 
 			effects_flags |= EFFECTS_COPPER_REFRESH;
@@ -960,6 +962,57 @@ void DRAW_LevelSelect (void)
 	// Draw level picture
 	if (lvlsel_lump < 0) {
 		DrawJagobj(lvlsel_static[((screenCount >> 2) % 3)], (320-96)>>1, 72);
+	}
+	else if ((copper_table_selection & 0xF) && (copper_table_selection & 0xF) < 8) {
+		uint16_t size_table[5] = { 2048, 3547, 4096, 3547, 2048 };
+		uint8_t x_offset_table[5] = { 2, 2, 3, 2, 2 };
+		uint8_t y_offset_table[5] = { 1, 2, 2, 2, 1 };
+
+		int size_index = (copper_table_selection & 0xF) - 1;
+		
+		if (size_index < 5) {
+			int x = ((320-96)>>1) - x_offset_table[size_index];
+			int y = 72 - y_offset_table[size_index];
+			fixed_t size_scale = FRACUNIT + size_table[size_index];
+
+			// 98 x 74
+			// 100 x 75
+			// 102 x 76
+			if (size_index >= 3) {
+				background = I_FrameBuffer() + (((320*(72-2)) + ((320-96)>>1)-3) >> 1);
+
+				for (int y=0; y < 76; y++) {
+					for (int x=0; x < (104>>3); x++) {
+						// Write 8 thru pixels
+						*background++ = COLOR_THRU_2;
+						*background++ = COLOR_THRU_2;
+						*background++ = COLOR_THRU_2;
+						*background++ = COLOR_THRU_2;
+					}
+
+					background += (216>>1);
+				}
+			}
+
+			DrawScaledJagobj(lvlsel_pic, x, y, size_scale, size_scale, I_OverwriteBuffer());
+		}
+		else {
+			background = I_FrameBuffer() + (((320*(72-2)) + ((320-96)>>1)-3) >> 1);
+
+			for (int y=0; y < 76; y++) {
+				for (int x=0; x < (104>>3); x++) {
+					// Write 8 thru pixels
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+				}
+
+				background += (216>>1);
+			}
+
+			DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
+		}
 	}
 	else {
 		DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
