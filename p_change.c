@@ -131,8 +131,8 @@ void CalculateSectorBlockBox(sector_t *sector, VINT blockbox[4])
 	block = block >= bmapheight ? bmapheight-1 : block;
 	blockbox[BOXTOP]=block;
 
-	block = (bbox[BOXBOTTOM]-bmaporgy-MAXRADIUS);
-	block = block < 0 ? 0 : (unsigned)block>>MAPBLOCKSHIFT;
+	block = (bbox[BOXBOTTOM]-bmaporgy-MAXRADIUS)>>MAPBLOCKSHIFT;
+	block = block < 0 ? 0 : block;
 	blockbox[BOXBOTTOM]=block;
 
 	block = (unsigned)(bbox[BOXRIGHT]-bmaporgx+MAXRADIUS)>>MAPBLOCKSHIFT;
@@ -140,7 +140,7 @@ void CalculateSectorBlockBox(sector_t *sector, VINT blockbox[4])
 	blockbox[BOXRIGHT]=block;
 
 	block = (bbox[BOXLEFT]-bmaporgx-MAXRADIUS)>>MAPBLOCKSHIFT;
-	block = block < 0 ? 0 : (unsigned)block>>MAPBLOCKSHIFT;
+	block = block < 0 ? 0 : block;
 	blockbox[BOXLEFT]=block;
 }
 
