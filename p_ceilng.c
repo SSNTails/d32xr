@@ -145,7 +145,7 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 				ceiling->speed = CEILSPEED;
 				break;
 			case raiseToHighest:
-				ceiling->topheight = P_FindHighestCeilingSurrounding(sec);
+				ceiling->topheight = P_FindHighestCeilingSurrounding(sec)->ceilingheight;
 				ceiling->direction = 1;
 				ceiling->speed = CEILSPEED;
 				break;

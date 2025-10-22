@@ -60,13 +60,13 @@ void 	P_PlayerInSpecialSector (player_t *player);
 
 sector_t *getSector(int currentSector,int line,int side);
 side_t	*getSide(int currentSector,int line, int side);
-fixed_t	P_FindLowestFloorSurrounding(sector_t *sec);
-fixed_t	P_FindHighestFloorSurrounding(sector_t *sec);
-fixed_t	P_FindNextHighestCeiling(sector_t *sec,int currentheight);
-fixed_t	P_FindNextHighestFloor(sector_t *sec,int currentheight);
-fixed_t	P_FindNextLowestFloor(sector_t *sec,int currentheight);
-fixed_t	P_FindLowestCeilingSurrounding(sector_t *sec);
-fixed_t	P_FindHighestCeilingSurrounding(sector_t *sec);
+sector_t *P_FindLowestFloorSurrounding(sector_t *sec);
+sector_t *P_FindHighestFloorSurrounding(sector_t *sec);
+sector_t *P_FindNextHighestFloor(sector_t *sec, fixed_t currentheight);
+sector_t *P_FindNextLowestFloor(sector_t *sec, fixed_t currentheight);
+sector_t *P_FindNextHighestCeiling(sector_t *sec, fixed_t currentheight);
+sector_t *P_FindLowestCeilingSurrounding(sector_t *sec);
+sector_t *P_FindHighestCeilingSurrounding(sector_t *sec);
 VINT P_FindSectorWithTag(VINT tag, int start);
 int		P_FindSectorFromLineTag(line_t	*line,int start);
 int     P_FindSectorFromLineTagNum(uint8_t tag,int start);
@@ -304,6 +304,7 @@ typedef enum
 	donutRaise,
 	raiseFloor512,
 	floorContinuous,
+	bothContinuous,
 	eggCapsuleOuter,
 	eggCapsuleInner,
 	eggCapsuleOuterPop,
@@ -317,12 +318,15 @@ typedef struct
 	VINT		crush;
 	sector_t	*sector;
 	sector_t    *controlSector;
+	VINT        lowestSector;
+	VINT        highestSector;
 	boolean     dontChangeSector;
 	int			newspecial;
 	VINT		direction;
 	VINT		texture;
 	VINT        floorwasheight;
 	VINT		floordestheight;
+	VINT        ceilDiff;
 	fixed_t     origSpeed;
 	fixed_t		speed;
 } floormove_t;

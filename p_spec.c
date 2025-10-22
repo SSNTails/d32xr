@@ -129,23 +129,26 @@ sector_t *getNextSector(line_t *line,sector_t *sec)
 /*	FIND LOWEST FLOOR HEIGHT IN SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-fixed_t	P_FindLowestFloorSurrounding(sector_t *sec)
+sector_t *P_FindLowestFloorSurrounding(sector_t *sec)
 {
 	VINT			i = -1;
 	line_t		*check;
 	sector_t	*other;
-	fixed_t		floor = sec->floorheight;
+	sector_t *lowest = sec;
 
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
+
 		if (!other)
 			continue;
-		if (other->floorheight < floor)
-			floor = other->floorheight;
+
+		if (other->floorheight < lowest->floorheight)
+			lowest = other;
 	}
-	return floor;
+
+	return lowest;
 }
 
 /*================================================================== */
@@ -153,24 +156,26 @@ fixed_t	P_FindLowestFloorSurrounding(sector_t *sec)
 /*	FIND HIGHEST FLOOR HEIGHT IN SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-fixed_t	P_FindHighestFloorSurrounding(sector_t *sec)
+sector_t *P_FindHighestFloorSurrounding(sector_t *sec)
 {
-	VINT		i = -1;
+	VINT			i = -1;
 	line_t		*check;
 	sector_t	*other;
-	fixed_t		floor = -32000*FRACUNIT;
-	
+	sector_t *highest = sec;
+
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
+
 		if (!other)
-			continue;			
-		if (other->floorheight > floor)
-			floor = other->floorheight;
+			continue;
+
+		if (other->floorheight < highest->floorheight)
+			highest = other;
 	}
 
-	return floor;
+	return highest;
 }
 
 /*================================================================== */
@@ -178,38 +183,40 @@ fixed_t	P_FindHighestFloorSurrounding(sector_t *sec)
 /*	FIND NEXT HIGHEST CEILING IN SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-fixed_t	P_FindNextHighestCeiling(sector_t *sec,int currentheight)
+sector_t *P_FindNextHighestCeiling(sector_t *sec, fixed_t currentheight)
 {
 	VINT		i = -1;
 	int			h = 0;
-	int			min;
+	sector_t    *min;
 	line_t		*check;
 	sector_t	*other;
-	fixed_t		height = currentheight;
-	fixed_t		heightlist[20];		/* 20 adjoining sectors max! */
+	sector_t	*heightlist[20];		/* 20 adjoining sectors max! */
 	
-	heightlist[0] = 0;
+	heightlist[0] = NULL;
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
+
 		if (!other)
 			continue;
-		if (other->ceilingheight > height)
-			heightlist[h++] = other->ceilingheight;
+
+		if (other->ceilingheight > currentheight)
+			heightlist[h++] = other;
+
 		if (h == sizeof(heightlist) / sizeof(heightlist[0]))
 			break;
 	}
 	
 	if (h == 0)
-		return currentheight;
+		return sec;
 
 	/* */
 	/* Find lowest height in list */
 	/* */
 	min = heightlist[0];
 	for (i = 1;i < h;i++)
-		if (heightlist[i] < min)
+		if (heightlist[i]->ceilingheight < min->ceilingheight)
 			min = heightlist[i];
 			
 	return min;
@@ -220,75 +227,79 @@ fixed_t	P_FindNextHighestCeiling(sector_t *sec,int currentheight)
 /*	FIND NEXT HIGHEST FLOOR IN SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-fixed_t	P_FindNextHighestFloor(sector_t *sec,int currentheight)
+sector_t *P_FindNextHighestFloor(sector_t *sec, fixed_t currentheight)
 {
 	VINT		i = -1;
 	int			h = 0;
-	int			min;
+	sector_t    *min;
 	line_t		*check;
 	sector_t	*other;
-	fixed_t		height = currentheight;
-	fixed_t		heightlist[20];		/* 20 adjoining sectors max! */
+	sector_t	*heightlist[20];		/* 20 adjoining sectors max! */
 	
-	heightlist[0] = 0;
+	heightlist[0] = NULL;
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
+
 		if (!other)
 			continue;
-		if (other->floorheight > height)
-			heightlist[h++] = other->floorheight;
+
+		if (other->floorheight > currentheight)
+			heightlist[h++] = other;
+
 		if (h == sizeof(heightlist) / sizeof(heightlist[0]))
 			break;
 	}
 	
 	if (h == 0)
-		return currentheight;
+		return sec;
 
 	/* */
 	/* Find lowest height in list */
 	/* */
 	min = heightlist[0];
 	for (i = 1;i < h;i++)
-		if (heightlist[i] < min)
+		if (heightlist[i]->floorheight < min->floorheight)
 			min = heightlist[i];
 			
 	return min;
 }
 
-fixed_t	P_FindNextLowestFloor(sector_t *sec,int currentheight)
+sector_t *P_FindNextLowestFloor(sector_t *sec, fixed_t currentheight)
 {
-	VINT			i = -1;
+	VINT		i = -1;
 	int			h = 0;
-	int			min;
+	sector_t    *min;
 	line_t		*check;
 	sector_t	*other;
-	fixed_t		height = currentheight;
-	fixed_t		heightlist[20];		/* 20 adjoining sectors max! */
+	sector_t	*heightlist[20];		/* 20 adjoining sectors max! */
 
-	heightlist[0] = 0;
+	heightlist[0] = NULL;
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
+
 		if (!other)
 			continue;
-		if (other->floorheight < height)
-			heightlist[h++] = other->floorheight;
+
+		if (other->floorheight < currentheight)
+			heightlist[h++] = other;
+
 		if (h == sizeof(heightlist) / sizeof(heightlist[0]))
 			break;
 	}
 	
 	if (h == 0)
-		return currentheight;
+		return sec;
 
 	/* */
 	/* Find lowest height in list */
 	/* */
 	min = heightlist[0];
 	for (i = 1;i < h;i++)
-		if (heightlist[i] > min)
+		if (heightlist[i]->floorheight > min->floorheight)
 			min = heightlist[i];
 			
 	return min;
@@ -299,24 +310,26 @@ fixed_t	P_FindNextLowestFloor(sector_t *sec,int currentheight)
 /*	FIND LOWEST CEILING IN THE SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-fixed_t	P_FindLowestCeilingSurrounding(sector_t *sec)
+sector_t *P_FindLowestCeilingSurrounding(sector_t *sec)
 {
 	VINT		i = 0;
 	line_t		*check;
 	sector_t	*other;
-	fixed_t		height = 32000*FRACUNIT;
+	sector_t	*lowest = NULL;
 	
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
+
 		if (!other)
 			continue;
-		if (other->ceilingheight < height)
-			height = other->ceilingheight;
+
+		if (lowest == NULL || other->ceilingheight < lowest->ceilingheight)
+			lowest = other;
 	}
 
-	return height;
+	return lowest;
 }
 
 /*================================================================== */
@@ -324,24 +337,26 @@ fixed_t	P_FindLowestCeilingSurrounding(sector_t *sec)
 /*	FIND HIGHEST CEILING IN THE SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-fixed_t	P_FindHighestCeilingSurrounding(sector_t *sec)
+sector_t *P_FindHighestCeilingSurrounding(sector_t *sec)
 {
 	VINT	i = 0;
 	line_t	*check;
 	sector_t	*other;
-	fixed_t	height = -32000*FRACUNIT;
+	sector_t *highest = NULL;
 	
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
+
 		if (!other)
 			continue;
-		if (other->ceilingheight > height)
-			height = other->ceilingheight;
+
+		if (highest == NULL || other->ceilingheight > highest->ceilingheight)
+			highest = other;
 	}
 
-	return height;
+	return highest;
 }
 
 /*================================================================== */
@@ -353,7 +368,7 @@ fixed_t	P_FindHighestCeilingSurrounding(sector_t *sec)
 VINT P_FindSectorWithTag(VINT tag, int start)
 {
 	int	i;
-	
+
 	for (i=start+1;i<numsectors;i++)
 		if (sectors[i].tag == tag)
 			return i;
@@ -1216,8 +1231,8 @@ static void P_AddRaiseThinker(sector_t *fofSector, line_t *fofLine)
 
 	raise->tag = P_GetLineTag(fofLine);
 	raise->sector = fofSector;
-	raise->ceilingtop = P_FindHighestCeilingSurrounding(fofSector) >> FRACBITS;
-	raise->ceilingbottom = P_FindLowestCeilingSurrounding(fofSector) >> FRACBITS;
+	raise->ceilingtop = P_FindHighestCeilingSurrounding(fofSector)->ceilingheight >> FRACBITS;
+	raise->ceilingbottom = P_FindLowestCeilingSurrounding(fofSector)->ceilingheight >> FRACBITS;
 	raise->basespeed = P_AproxDistance(v2->x - v1->x, v2->y - v1->y) >> 2;
 	raise->sectors = (int16_t*)((uint8_t*)raise + sizeof(*raise));
 	raise->numsectors = 0;
@@ -1569,13 +1584,16 @@ void P_SpawnSpecials (void)
 	{
 		switch (P_GetLineSpecial(&lines[i]))
 		{
-		case 48:	/* EFFECT FIRSTCOL SCROLL+ */
-		case 142:	/* MODERATE VERT SCROLL */
+		case 48:	// EFFECT FIRSTCOL SCROLL
+		case 142:	// MODERATE VERT SCROLL
 			if (numlineanimspecials >= MAXLINEANIMS)
 				continue;
 			break;
 		case 60: // Moving platform
-			EV_DoFloor(&lines[i], floorContinuous);
+			if (ldflags[i] & ML_DONTPEGBOTTOM)
+				EV_DoFloor(&lines[i], floorContinuous);
+			else
+				EV_DoFloor(&lines[i], bothContinuous);
 			break;
 		case 120: // Water, but kind of boom-style
 		{

@@ -750,10 +750,10 @@ void P_LoadReject (int lump)
 void P_GroupLines (void)
 {
 //	VINT		*linebuffer;
-	int			i;//, total;
+//	int			i;//, total;
 //	sector_t	*sector;
-	subsector_t	*ss;
-	seg_t		*seg;
+//	subsector_t	*ss;
+//	seg_t		*seg;
 //	line_t		*li;
 
 /* look up sector number for each subsector */
