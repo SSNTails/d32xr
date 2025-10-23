@@ -295,6 +295,11 @@ int P_Ticker (void)
     W_POINTLUMPNUM(gamemaplump);
 #endif
 
+	if (!IsDemo() && IsLevelType(LEVELTYPE_NORMAL) && leveltime < 30) {
+		leveltime += accum_time;
+		return ga_nothing;
+	}
+
 	gameaction = ga_nothing;
 
 /* */
@@ -312,7 +317,7 @@ int P_Ticker (void)
 	/* run player actions */
 	/* */
 	if (gamepaused)
-		return 0;
+		return ga_nothing;
 
 	playertics = 0;
 	thinkertics = 0;
