@@ -871,9 +871,6 @@ void T_ScrollFlat (scrollflat_t *scrollflat)
 	fixed_t ldx = (v2->x - v1->x);
 	fixed_t ldy = (v2->y - v1->y);
 
-	fixed_t convDx = ldx << FRACBITS << 1;
-	fixed_t convDy = ldy << FRACBITS << 1;
-
 	for (int i = 0; i < scrollflat->numsectors; i++)
 	{
 		sector_t *sec = &sectors[scrollflat->sectors[i]];
@@ -886,26 +883,10 @@ void T_ScrollFlat (scrollflat_t *scrollflat)
 
 		sec->floor_xoffs = (xoff << 8) | yoff;
 
-		if (scrollflat->carry && sec->thinglist)
+		if (scrollflat->carry)
 		{
-			mobj_t *thing = SPTR_TO_LPTR(sec->thinglist);
-
-			while(thing) // walk sector thing list
-			{
-				if (thing->type == MT_PLAYER
-					&& thing->z <= sec->floorheight)
-				{
-					player_t *player = &players[thing->player - 1];
-
-					player->mo->momx = REALMOMX(player) + convDx;
-					player->mo->momy = REALMOMY(player) + convDy;
-					player->cmomx = convDx;//FixedMul(convDx, 58368);
-					player->cmomy = convDy;//FixedMul(convDy, 58368);
-					player->onconveyor = 4;
-				}
-
-				thing = SPTR_TO_LPTR(thing->snext);
-			}
+			sec->specialdata = LPTR_TO_SPTR(scrollflat);
+			sec->flags |= SF_CONVEYOR;
 		}
 	}
 }
@@ -931,7 +912,8 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 				if (sf->numsectors > sf->totalSectors) // Bounds check
 					return;
 
-				sf->sectors[sf->numsectors++] = (VINT)(sector-sectors);
+				sf->sectors[sf->numsectors] = (VINT)(sector-sectors);
+				sf->numsectors++;
 				return;
 			}
 		}
@@ -952,6 +934,7 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 		scrollflat->thinker.function = T_ScrollFlat;
 		scrollflat->ctrlLine = line;
 		scrollflat->sectors = (VINT*)((uint8_t*)scrollflat + sizeof(*scrollflat));
+		
 		scrollflat->sectors[0] = (VINT)(sector - sectors);
 		scrollflat->numsectors = 1;
 		scrollflat->totalSectors = numScrollflatSectors;
@@ -1606,6 +1589,7 @@ void P_SpawnSpecials (void)
 		case 170: // Crumbling (respawn)
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
+			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
 				sectors[s].fofsec = sec;
@@ -1623,6 +1607,7 @@ void P_SpawnSpecials (void)
 		case 105: // FOF that is invisible but solid
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
+			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
 				sectors[s].fofsec = sec;
@@ -1634,6 +1619,7 @@ void P_SpawnSpecials (void)
 		case 160: // Water bobbing FOF
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
+			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
 				sectors[s].fofsec = sec;
@@ -1648,6 +1634,7 @@ void P_SpawnSpecials (void)
 		case 178: // Crumbling, respawn, floating
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
+			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
 				sectors[s].fofsec = sec;
@@ -1656,12 +1643,12 @@ void P_SpawnSpecials (void)
 				sectors[s].flags |= SF_RESPAWN;
 				sectors[sec].specline = i;
 			}
-
 			break;
 		}
 		case 179: // Crumbling, no-respawn, floating
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
+			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
 				sectors[s].fofsec = sec;
@@ -1669,12 +1656,12 @@ void P_SpawnSpecials (void)
 				sectors[s].flags |= SF_FLOATBOB;
 				sectors[sec].specline = i;
 			}
-
 			break;
 		}
 		case 190: // Rising Platform
 		{
 			VINT sec = sides[lines[i].sidenum[0]].sector;
+			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
 			sector_t *fofSector = &sectors[sec];
 
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)

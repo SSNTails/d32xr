@@ -77,6 +77,68 @@ static void P_CheckFloatbobPlatforms(player_t *player)
 	P_InnerCheckFloatbobPlatforms(player, SS_SECTOR(player->mo->isubsector));
 }
 
+static void P_InnerCheckConveyor(player_t *player, sector_t *sector)
+{
+	boolean convey = false;
+	fixed_t convDx = 0;
+	fixed_t convDy = 0;
+
+	// Does fofsec >= 0 and fofsec->flags SF_FOF_CONVEYOR?
+	if (sector->fofsec >= 0 && (sectors[sector->fofsec].flags & SF_CONVEYOR) && sectors[sector->fofsec].ceilingheight == player->mo->z)
+	{
+		sector_t *fofsec = &sectors[sector->fofsec];
+		scrollflat_t *scrollflat = SPTR_TO_LPTR(fofsec->specialdata);
+
+		const mapvertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
+		const mapvertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
+
+		fixed_t ldx = (v2->x - v1->x);
+		fixed_t ldy = (v2->y - v1->y);
+
+		convDx = ldx << FRACBITS << 1;
+		convDy = ldy << FRACBITS << 1;
+		convey = true;
+	}
+
+	if ((sector->flags & SF_CONVEYOR) && sector->floorheight == player->mo->z) // Regular sector floor has conveyor belt
+	{
+		scrollflat_t *scrollflat = SPTR_TO_LPTR(sector->specialdata);
+
+		const mapvertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
+		const mapvertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
+
+		fixed_t ldx = (v2->x - v1->x);
+		fixed_t ldy = (v2->y - v1->y);
+
+		convDx = ldx << FRACBITS << 1;
+		convDy = ldy << FRACBITS << 1;
+		convey = true;
+	}
+
+	if (convey)
+	{
+		player->mo->momx = REALMOMX(player) + convDx;
+		player->mo->momy = REALMOMY(player) + convDy;
+		player->cmomx = convDx;//FixedMul(convDx, 58368);
+		player->cmomy = convDy;//FixedMul(convDy, 58368);
+		player->onconveyor = 4;
+	}
+}
+
+static void P_CheckConveyors(player_t *player)
+{
+	if (P_MobjFlip(player->mo)*player->mo->momz != 0)
+		return;
+
+	for (int i = 0; i < player->num_touching_sectors; i++)
+	{
+		sector_t *sector = &sectors[player->touching_sectorlist[i]];
+		P_InnerCheckConveyor(player, sector);
+	}
+
+	P_InnerCheckConveyor(player, SS_SECTOR(player->mo->isubsector));
+}
+
 void P_RestoreMusic(player_t *player)
 {
 	if (player->exiting)
@@ -379,6 +441,8 @@ void P_PlayerMobjThink(mobj_t *mobj)
 	player_t *player = &players[mobj->player - 1];
 	const state_t *st;
 	int state;
+
+	P_CheckConveyors(player);
 
 	// Make sure player shows dead
 	if (mobj->health == 0)

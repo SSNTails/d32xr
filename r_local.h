@@ -77,6 +77,8 @@ struct line_s;
 #define SF_AIRBOB                    8
 #define SF_CRUMBLE                  16
 #define SF_RESPAWN                  32
+#define SF_FOF_CONTROLSECTOR        64
+#define SF_CONVEYOR            128
 
 typedef	struct
 {
