@@ -115,7 +115,9 @@ static VINT displaymapnum;
 static boolean startup;
 VINT	uchar;
 
+#ifdef KIOSK_MODE
 static VINT rwx_logo;
+#endif
 
 void M_Start2 (boolean startup_)
 {
@@ -123,7 +125,10 @@ void M_Start2 (boolean startup_)
 
 /* cache all needed graphics	 */
 	m_skull1lump = W_CheckNumForName("M_CURSOR");
+
+#ifdef KIOSK_MODE
 	rwx_logo = W_GetNumForName("RWX");
+#endif
 
 	startup = startup_;
 	m_title = NULL;
@@ -759,7 +764,9 @@ void M_Drawer (void)
 			DrawJagobj(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37);
 	}
 
+#ifdef KIOSK_MODE
 	DrawJagobjLump(rwx_logo, (320-144-12), 224-8-32, NULL, NULL);
+#endif
 
 /* erase old skulls */
 #ifndef MARS
