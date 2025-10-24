@@ -859,12 +859,14 @@ void pri_vbi_handler(void)
 {
 	mars_vblank_count++;
 
+#ifdef SHOW_COMPATIBILITY_PROMPT
 	// Check for dropped interrupts. There are 225 HINT intervals, some emulators only handle 224.
 	if (mars_vblank_count < 300 && mars_hblank_count_peak > 0 && mars_hblank_count < 224) {
 		if (legacy_emulator == LEGACY_EMULATOR_NONE) {
 			legacy_emulator = LEGACY_EMULATOR_ARES;
 		}
 	}
+#endif
 
 	mars_hblank_count_peak = mars_hblank_count;
 	mars_hblank_count = 0;

@@ -113,7 +113,7 @@ void G_DoLoadLevel (void)
 		D_memset(players[i].powers, 0, sizeof(players[i].powers));
 		players[i].whiteFlash = 0;
 		players[i].lossCount = 0;
-		players[i].stillTimer = 0;
+		players[i].stillTimer = 30;
 		players[i].justSprung = 0;
 		players[i].scoreAdd = 0;
 		players[i].dashSpeed = 0;
@@ -616,8 +616,15 @@ startnew:
 				I_NetStop();
 			if (startsave != -1)
 				G_LoadGame(startsave);
-			else
+			else {
 				G_InitNew(startmap, starttype, startsplitscreen);
+				if (startmap >= SSTAGE_START && startmap <= SSTAGE_END) {
+					SetLevel(LevelType_SpecialStage);
+				}
+				else {
+					SetLevel(LevelType_Normal);
+				}
+			}
 			continue;
 		}
 

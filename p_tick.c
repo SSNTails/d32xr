@@ -295,7 +295,7 @@ int P_Ticker (void)
     W_POINTLUMPNUM(gamemaplump);
 #endif
 
-	if (!IsDemo() && IsLevelType(LEVELTYPE_NORMAL) && leveltime < 30) {
+	if (leveltime < 30 && IsLevelType(LevelType_Normal) && !IsDemo()) {
 		leveltime += accum_time;
 		return ga_nothing;
 	}
