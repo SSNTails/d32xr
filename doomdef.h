@@ -94,6 +94,18 @@ typedef unsigned short inpixel_t;
 #define	NULL	0
 #endif
 
+typedef struct
+{
+	short	width;		/* in pixels */
+	short	height;
+	short	depth;		/* 1-5 */
+	short	index;		/* location in palette of color 0 */
+	short	flags,pad2,pad3,pad4;	/* future expansion */
+	byte	data[8];		/* as much as needed */
+} jagobj_t;
+
+extern	jagobj_t	*sttnum_pic[10];
+
 #ifdef SKYDEBUG
 extern uint8_t load_sky_lump_scroll_a;
 extern uint8_t load_sky_lump_scroll_b;
@@ -1348,16 +1360,6 @@ extern	unsigned BASEORGY;
 
 /*================= */
 
-typedef struct
-{
-	short	width;		/* in pixels */
-	short	height;
-	short	depth;		/* 1-5 */
-	short	index;		/* location in palette of color 0 */
-	short	flags,pad2,pad3,pad4;	/* future expansion */
-	byte	data[8];		/* as much as needed */
-} jagobj_t;
-
 void DoubleBufferSetup (void);
 void EraseBlock (int x, int y, int width, int height);
 void GetJagobjSize(int lumpnum, int* ow, int* oh);
@@ -1377,8 +1379,6 @@ void UpdateBuffer (void);
 #ifndef MARS
 extern	byte	*bufferpage;		/* draw here */
 extern	byte	*displaypage;		/* copied to here when finished */
-
-extern	jagobj_t	*backgroundpic;
 
 /*================= */
 

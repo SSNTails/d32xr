@@ -45,7 +45,6 @@ VINT			gamevbls;		/* may not really be vbls in multiplayer */
 VINT			vblsinframe;		/* range from ticrate to ticrate*2 */
 
 VINT		maxlevel;			/* highest level selectable in menu (1-25) */
-//jagobj_t	*backgroundpic;
 
 int 		ticstart;
 
@@ -61,6 +60,8 @@ unsigned configuration[NUMCONTROLOPTIONS][3] =
 	{BT_FLIP, BT_JUMP, BT_SPIN},
 #endif
 };
+
+extern jagobj_t *sttnum_pic[10] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 
 /*============================================================================ */
 
@@ -628,10 +629,6 @@ static jagobj_t *arrowr_pic = NULL;
 static jagobj_t *chevblku_pic = NULL;
 static jagobj_t *chevblkd_pic = NULL;
 
-#ifdef KIOSK_MODE
-static jagobj_t *sttnum_pic[5] = { NULL, NULL, NULL, NULL, NULL };
-#endif
-
 #ifdef SHOW_DISCLAIMER
 	#define SELECTABLE_MAP_COUNT	6
 	const int8_t selectable_maps[SELECTABLE_MAP_COUNT] = {0, 1, 2, 3, 4, 6};
@@ -815,11 +812,11 @@ void START_LevelSelect (void)
 	chevblkd_pic = W_CacheLumpName("CHEVBLKD", PU_STATIC);
 
 #ifdef KIOSK_MODE
-	sttnum_pic[0] = W_CacheLumpName("STTNUM1", PU_STATIC);
-	sttnum_pic[1] = W_CacheLumpName("STTNUM2", PU_STATIC);
-	sttnum_pic[2] = W_CacheLumpName("STTNUM3", PU_STATIC);
-	sttnum_pic[3] = W_CacheLumpName("STTNUM4", PU_STATIC);
-	sttnum_pic[4] = W_CacheLumpName("STTNUM5", PU_STATIC);
+	sttnum_pic[1] = W_CacheLumpName("STTNUM1", PU_STATIC);
+	sttnum_pic[2] = W_CacheLumpName("STTNUM2", PU_STATIC);
+	sttnum_pic[3] = W_CacheLumpName("STTNUM3", PU_STATIC);
+	sttnum_pic[4] = W_CacheLumpName("STTNUM4", PU_STATIC);
+	sttnum_pic[5] = W_CacheLumpName("STTNUM5", PU_STATIC);
 #endif
 
 	if (gamemapinfo.data)
@@ -858,7 +855,7 @@ void STOP_LevelSelect (void)
 	Z_Free(chevblkd_pic);
 
 #ifdef KIOSK_MODE
-	for (int i = 0; i < 5; i++)
+	for (int i = 1; i <= 5; i++)
 		Z_Free(sttnum_pic[i]);
 #endif
 
@@ -1065,7 +1062,7 @@ void DRAW_LevelSelect (void)
 		int size_index = (((screenCount<<4) / 15) & 63);
 		fixed_t size_scale = FRACUNIT + (2048 * (63 - size_index));
 		DrawScaledJagobj(
-				sttnum_pic[countdown-1],
+				sttnum_pic[countdown],
 				280-8+(size_index>>2)-(size_index>>3),
 				184-7+(size_index>>3),
 				size_scale,
@@ -1443,7 +1440,6 @@ void START_Title(void)
 		UpdateBuffer();
 	}
 #else
-	//backgroundpic = W_POINTLUMPNUM(W_GetNumForName("M_TITLE"));
 	DoubleBufferSetup();
 #endif
 

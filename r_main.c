@@ -1863,7 +1863,6 @@ void R_RenderPlayerView(int displayplayer)
 
 	if (!drawworld)
 	{
-		while(true);
 		Mars_R_SecWait();
 		return;
 	}

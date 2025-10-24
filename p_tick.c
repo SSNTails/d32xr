@@ -923,6 +923,14 @@ void P_Start (void)
 		}
 	}
 
+	if (IsLevelType(LevelType_SpecialStage)) {
+		char sttnum_name[8] = { 'S', 'T', 'T', 'N', 'U', 'M', '0', '\0' };
+		for (int i=0; i < 10; i++) {
+			sttnum_pic[i] = W_CacheLumpName(sttnum_name, PU_STATIC);
+			sttnum_name[6]++;
+		}
+	}
+
 	//clearscreen = 2;
 }
 
@@ -933,6 +941,13 @@ void P_Stop (void)
 	}
 
 	DoubleBufferSetup();	// Clear frame buffers to black.
+
+	if (IsLevelType(LevelType_SpecialStage)) {
+		for (int i = 0; i < 10; i++) {
+			Z_Free(sttnum_pic[i]);
+		}
+	}
+
 	M_Stop();
 	ClearCopper();
 	Z_FreeTags (mainzone);

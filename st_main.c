@@ -365,14 +365,28 @@ static void ST_Drawer_ (stbar_t* sb)
 		V_DrawStringCenter(&menuFont, 160, 12+16, "TIME LEFT");
 #endif
 		const int delaytime = 3*TICRATE;
-		int worldTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
-		int timeLeft = (gamemapinfo.timeLimit - worldTime)/TICRATE;
+		int playTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
+		int timeLeft = (gamemapinfo.timeLimit - playTime)/TICRATE;
 		if (timeLeft < 0)
 			timeLeft = 0;
 		if (timeLeft > gamemapinfo.timeLimit/TICRATE)
 			timeLeft = gamemapinfo.timeLimit/TICRATE;
 #ifndef HIDE_HUD
-		V_DrawValueCenter(&hudNumberFont, 160, 24+16, timeLeft);
+		if (timeLeft > 9) {
+			V_DrawValueCenter(&hudNumberFont, 160, 24+16, timeLeft);
+			//V_DrawValueLeft(&hudNumberFont, 280, 184, (KIOSK_LEVELSELECT_TIMEOUT/60) - (screenCount/60));
+		}
+		else if (timeLeft >= 0) {
+			int size_index = (((playTime<<5) / 15) & 63);
+			fixed_t size_scale = FRACUNIT + (2048 * (63 - size_index));
+			DrawScaledJagobj(
+					sttnum_pic[timeLeft],
+					160-8+(size_index>>2)-(size_index>>3),
+					24+16-7+(size_index>>3),
+					size_scale,
+					size_scale,
+					I_OverwriteBuffer());
+		}
 #endif
 
 		// Not the best thing to do gamelogic inside of the draw routine,
