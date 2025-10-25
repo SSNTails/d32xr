@@ -374,7 +374,6 @@ static void ST_Drawer_ (stbar_t* sb)
 #ifndef HIDE_HUD
 		if (timeLeft > 9) {
 			V_DrawValueCenter(&hudNumberFont, 160, 24+16, timeLeft);
-			//V_DrawValueLeft(&hudNumberFont, 280, 184, (KIOSK_LEVELSELECT_TIMEOUT/60) - (screenCount/60));
 		}
 		else if (timeLeft >= 0) {
 			int size_index = (((playTime<<5) / 15) & 63);
