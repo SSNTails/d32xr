@@ -1565,7 +1565,8 @@ void P_SpawnSpecials (void)
 	numlineanimspecials = 0;
 	for (i = 0; i < numlines; i++)
 	{
-		switch (P_GetLineSpecial(&lines[i]))
+		const uint8_t special = P_GetLineSpecial(&lines[i]);
+		switch (special)
 		{
 		case 48:	// EFFECT FIRSTCOL SCROLL
 		case 142:	// MODERATE VERT SCROLL
@@ -1577,6 +1578,10 @@ void P_SpawnSpecials (void)
 				EV_DoFloor(&lines[i], floorContinuous);
 			else
 				EV_DoFloor(&lines[i], bothContinuous);
+			break;
+		case 61: // Crusher (Ceiling to floor)
+		case 62: // Crusher (Floor to ceiling)
+			EV_DoCeiling(&lines[i], special == 62 ? raiseAndCrush : crushAndRaise);
 			break;
 		case 120: // Water, but kind of boom-style
 		{

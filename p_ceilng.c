@@ -17,24 +17,15 @@
 void T_MoveCeiling (ceiling_t *ceiling)
 {
 	result_e	res;
-	
+
 	switch(ceiling->direction)
 	{
 		case 0:		/* IN STASIS */
 			break;
 		case 1:		/* UP */
-			res = T_MovePlane(ceiling->sector,ceiling->speed,
-					ceiling->topheight,false,1,ceiling->direction);
-			if (!(gametic&7))
-			{
-				switch (ceiling->type)
-				{
-				case silentCrushAndRaise:
-					break;
-				default:
-					break;
-				}
-				}
+			res = T_MovePlane(ceiling->sector,ceiling->upspeed,
+					ceiling->topheight << FRACBITS,false,1,ceiling->direction);
+
 			if (res == pastdest)
 				switch(ceiling->type)
 				{
@@ -50,41 +41,20 @@ void T_MoveCeiling (ceiling_t *ceiling)
 				}
 			break;
 		case -1:	/* DOWN */
-			res = T_MovePlane(ceiling->sector,ceiling->speed,
-				ceiling->bottomheight,ceiling->crush,1,ceiling->direction);
-			if (!(gametic&7))
-			{
-				switch (ceiling->type)
-				{
-				case silentCrushAndRaise:
-					break;
-				default:
-					break;
-				}
-			}
+			res = T_MovePlane(ceiling->sector,ceiling->downspeed,
+				ceiling->bottomheight << FRACBITS,ceiling->crush,1,ceiling->direction);
+
 			if (res == pastdest)
 				switch(ceiling->type)
 				{
 					case silentCrushAndRaise:
 					case crushAndRaise:
-						ceiling->speed = CEILSPEED;
+					case raiseAndCrush:
 					case fastCrushAndRaise:
 						ceiling->direction = 1;
 						break;
 					case lowerAndCrush:
 					case lowerToFloor:
-						break;
-					default:
-						break;
-				}
-			else
-			if (res == crushed)
-				switch(ceiling->type)
-				{
-					case silentCrushAndRaise:
-					case crushAndRaise:
-					case lowerAndCrush:
-						ceiling->speed = CEILSPEED / 8;
 						break;
 					default:
 						break;
@@ -127,6 +97,44 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 		ceiling->crush = false;
 		switch(type)
 		{
+			case raiseAndCrush:
+			case crushAndRaise:
+			{
+				mapvertex_t *v1 = &vertexes[line->v1];
+				mapvertex_t *v2 = &vertexes[line->v2];
+				fixed_t arg2, arg3;
+				if (ldflags[line-lines] & ML_MIDTEXTUREBLOCK)
+				{
+					arg2 = D_abs(v2->x - v1->x);
+					arg3 = arg2;
+				}
+				else
+				{
+					arg2 = R_PointToDist((v2->x << FRACBITS) - (v1->x << FRACBITS), (v2->y << FRACBITS) - (v1->y << FRACBITS)) >> (FRACBITS + 1);
+					arg3 = arg2 >> 2;
+				}
+
+				// Easier on a console. :)
+				arg2 >>= 1;
+				arg3 >>= 1;
+
+				ceiling->upspeed = arg2 << (FRACBITS - 2);
+				ceiling->crush = true;
+				ceiling->bottomheight = (sec->floorheight >> FRACBITS) + 1;
+				ceiling->downspeed = arg3 << (FRACBITS - 2);
+
+				if (type == raiseAndCrush)
+				{
+					ceiling->topheight = P_FindHighestCeilingSurrounding(sec)->ceilingheight >> FRACBITS;
+					ceiling->direction = 1;
+				}
+				else
+				{
+					ceiling->topheight = sec->ceilingheight >> FRACBITS;
+					ceiling->direction = -1;
+				}
+			}
+			break;
 			case fastCrushAndRaise:
 				ceiling->crush = true;
 				ceiling->topheight = sec->ceilingheight;
@@ -135,9 +143,6 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 				ceiling->speed = CEILSPEED * 2;
 				break;
 			case silentCrushAndRaise:
-			case crushAndRaise:
-				ceiling->crush = true;
-				ceiling->topheight = sec->ceilingheight;
 			case lowerAndCrush:
 			case lowerToFloor:
 				ceiling->bottomheight = sec->floorheight;

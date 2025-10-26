@@ -197,6 +197,7 @@ typedef enum
 	raiseToHighest,
 	lowerAndCrush,
 	crushAndRaise,
+	raiseAndCrush,
 	fastCrushAndRaise,
 	silentCrushAndRaise
 } ceiling_e;
@@ -206,7 +207,9 @@ typedef struct
 	thinker_t	thinker;
 	ceiling_e	type;
 	sector_t	*sector;
-	fixed_t		bottomheight, topheight;
+	VINT		bottomheight, topheight;
+	fixed_t     downspeed;
+	fixed_t     upspeed;
 	fixed_t		speed;
 	VINT		crush;
 	VINT		direction;		/* 1 = up, 0 = waiting, -1 = down */
@@ -342,7 +345,6 @@ typedef enum
 typedef enum
 {
 	ok,
-	crushed,
 	pastdest
 } result_e;
 

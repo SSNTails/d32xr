@@ -91,11 +91,11 @@ boolean PIT_ChangeSector (mobj_t *thing, changetest_t *ct)
 	if (! (thing->flags2 & MF2_SHOOTABLE) )
 		return true;				/* assume it is bloody gibs or something */
 		
-	ct->nofit = true;
-	if (ct->crushchange && !(gametic&3))
+//	ct->nofit = true;
+//	if (ct->crushchange && !(gametic&3))
 	{
 		// TODO: Crush player
-		P_DamageMobj(thing,NULL,NULL,1);
+		P_DamageMobj(thing,NULL,NULL,10000);
 	}
 		
 	return true;		/* keep checking (crush other things)	 */

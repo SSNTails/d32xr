@@ -8,7 +8,7 @@
 #include "r_local.h"
 #include "mars.h"
 
-static fixed_t R_PointToDist(fixed_t x, fixed_t y) ATTR_DATA_CACHE_ALIGN;
+fixed_t R_PointToDist(fixed_t x, fixed_t y) ATTR_DATA_CACHE_ALIGN;
 static fixed_t R_ScaleFromGlobalAngle(fixed_t rw_distance, angle_t visangle, angle_t normalangle) ATTR_DATA_CACHE_ALIGN;
 static void R_SetupCalc(viswall_t* wc, fixed_t hyp, angle_t normalangle, int angle1) ATTR_DATA_CACHE_ALIGN;
 void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts) ATTR_DATA_CACHE_ALIGN;
@@ -19,7 +19,7 @@ void R_WallPrep(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 //
 // Get distance to point in 3D projection
 //
-static fixed_t R_PointToDist(fixed_t x, fixed_t y)
+fixed_t R_PointToDist(fixed_t x, fixed_t y)
 {
     angle_t angle;
     fixed_t dx, dy, temp;
