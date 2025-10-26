@@ -823,7 +823,7 @@ void P_Drawer (void)
 	}
 
 	if (clearscreen > 0) {
-		I_ResetLineTable();
+		RemoveDistortionFilters();
 
 		//if ((viewportWidth == (VIEWPORT_WIDTH>>1) && lowResMode) || viewportWidth == 320)
 		//	DrawTiledLetterbox();

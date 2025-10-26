@@ -852,7 +852,7 @@ void DrawTiledLetterbox2(int flat)
 	// Draw the top letterbox.
 	bsrc = (const pixel_t*)W_POINTLUMPNUM(flat);
 	bdest = I_FrameBuffer();
-	const pixel_t* source = bsrc + ((w-21)*hw);
+	const pixel_t* source = bsrc + ((32-21)*hw);
 	const short two_black_pixels = (COLOR_BLACK<<8)|COLOR_BLACK;
 
 	for (yt = 0; yt < top_h; yt++)
@@ -899,9 +899,12 @@ void ClearViewportOverdraw(void)
 {
 	pixel_t *framebuffer = I_OverwriteBuffer();
 
+	// For levels, the last 11 lines are free memory; don't overwrite!
+	const int lines_used = IsLevel() ? 224-11 : 224;
+
 #if (VIEWPORT_OVERDRAW_AREA & 0xF) == 0
 	const int overdraw_width = VIEWPORT_OVERDRAW_AREA >> 4;
-	for (int y=0; y < 224; y++) {
+	for (int y=0; y < lines_used; y++) {
 		for (int x=0; x < overdraw_width; x++) {
 			*framebuffer++ = 0x1F1F;
 			*framebuffer++ = 0x1F1F;
@@ -920,7 +923,7 @@ void ClearViewportOverdraw(void)
 	}
 #elif (VIEWPORT_OVERDRAW_AREA & 0x7) == 0
 	const int overdraw_width = VIEWPORT_OVERDRAW_AREA >> 3;
-	for (int y=0; y < 224; y++) {
+	for (int y=0; y < lines_used; y++) {
 		for (int x=0; x < overdraw_width; x++) {
 			*framebuffer++ = 0x1F1F;
 			*framebuffer++ = 0x1F1F;
@@ -1382,7 +1385,7 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 	lines[202] = lines[21];
 
 	// The next eleven lines are unique.
-	pixel_offset = (((320*202)+512)/2);
+	pixel_offset = (((320*202)+512)/2) + ((~h40_sky)&1);
 	for (int i=203; i < 214; i++) {
 		lines[i] = pixel_offset;
 		pixel_offset += (320/2);
