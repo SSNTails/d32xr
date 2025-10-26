@@ -110,13 +110,9 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 				}
 				else
 				{
-					arg2 = R_PointToDist((v2->x << FRACBITS) - (v1->x << FRACBITS), (v2->y << FRACBITS) - (v1->y << FRACBITS)) >> (FRACBITS + 1);
+					arg2 = R_PointToDist2((v2->x << FRACBITS) - (v1->x << FRACBITS), (v2->y << FRACBITS) - (v1->y << FRACBITS)) >> (FRACBITS + 1);
 					arg3 = arg2 >> 2;
 				}
-
-				// Easier on a console. :)
-				arg2 >>= 1;
-				arg3 >>= 1;
 
 				ceiling->upspeed = arg2 << (FRACBITS - 2);
 				ceiling->crush = true;
@@ -132,6 +128,11 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 				{
 					ceiling->topheight = sec->ceilingheight >> FRACBITS;
 					ceiling->direction = -1;
+				}
+
+				if (sec-sectors == 352)
+				{
+					CONS_Printf("arg2: %d, arg3: %d", arg2, arg3);
 				}
 			}
 			break;

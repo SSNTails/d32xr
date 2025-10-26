@@ -8,7 +8,7 @@
 #include "r_local.h"
 #include "mars.h"
 
-fixed_t R_PointToDist(fixed_t x, fixed_t y) ATTR_DATA_CACHE_ALIGN;
+static fixed_t R_PointToDist(fixed_t x, fixed_t y) ATTR_DATA_CACHE_ALIGN;
 static fixed_t R_ScaleFromGlobalAngle(fixed_t rw_distance, angle_t visangle, angle_t normalangle) ATTR_DATA_CACHE_ALIGN;
 static void R_SetupCalc(viswall_t* wc, fixed_t hyp, angle_t normalangle, int angle1) ATTR_DATA_CACHE_ALIGN;
 void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts) ATTR_DATA_CACHE_ALIGN;
@@ -19,13 +19,38 @@ void R_WallPrep(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 //
 // Get distance to point in 3D projection
 //
-fixed_t R_PointToDist(fixed_t x, fixed_t y)
+static fixed_t R_PointToDist(fixed_t x, fixed_t y)
 {
     angle_t angle;
     fixed_t dx, dy, temp;
 
     dx = D_abs(x - vd.viewx);
     dy = D_abs(y - vd.viewy);
+
+    if (dy > dx)
+    {
+        temp = dx;
+        dx = dy;
+        dy = temp;
+    }
+
+    angle = (tantoangle[(unsigned)FixedDiv(dy, dx) >> DBITS] + ANG90) >> ANGLETOFINESHIFT;
+
+    // use as cosine
+    return FixedDiv(dx, finesine(angle));
+}
+
+//
+// Gets accurate distance of dx, dy
+// Use P_AproxDistance whenever possible.
+//
+fixed_t R_PointToDist2(fixed_t dx, fixed_t dy)
+{
+    angle_t angle;
+    fixed_t temp;
+
+    dx = D_abs(dx);
+	dy = D_abs(dy);
 
     if (dy > dx)
     {
