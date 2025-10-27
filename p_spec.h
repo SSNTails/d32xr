@@ -193,28 +193,20 @@ int		EV_DoPlat(line_t *line,plattype_e type,int amount);
 */
 typedef enum
 {
-	lowerToFloor,
-	raiseToHighest,
-	lowerAndCrush,
 	crushAndRaise,
 	raiseAndCrush,
-	fastCrushAndRaise,
-	silentCrushAndRaise
 } ceiling_e;
 
 typedef struct
 {
 	thinker_t	thinker;
-	ceiling_e	type;
 	sector_t	*sector;
 	VINT		bottomheight, topheight;
 	fixed_t     downspeed;
 	fixed_t     upspeed;
-	fixed_t		speed;
-	VINT		crush;
-	VINT		direction;		/* 1 = up, 0 = waiting, -1 = down */
-	VINT		olddirection;
-	VINT		tag;			/* ID */
+	uint8_t		type;
+	uint8_t		crush;
+	int8_t		direction;		/* 1 = up, 0 = waiting, -1 = down */
 } ceiling_t;
 
 typedef struct
@@ -281,7 +273,6 @@ extern	ceiling_t	**activeceilings/*[MAXCEILINGS]*/;
 
 int		EV_DoCeiling (line_t *line, ceiling_e  type);
 void	T_MoveCeiling (ceiling_t *ceiling);
-int		EV_CeilingCrushStop(line_t	*line);
 
 /*
 ===============================================================================
@@ -317,15 +308,15 @@ typedef enum
 typedef struct
 {
 	thinker_t	thinker;
-	VINT		type;
-	VINT		crush;
 	sector_t	*sector;
 	sector_t    *controlSector;
 	VINT        lowestSector;
 	VINT        highestSector;
 	boolean     dontChangeSector;
-	int			newspecial;
-	VINT		direction;
+	uint8_t		type;
+	uint8_t		newspecial;
+	uint8_t		crush;
+	int8_t		direction;
 	VINT		texture;
 	VINT        floorwasheight;
 	VINT		floordestheight;
