@@ -642,6 +642,8 @@ int TIC_LevelSelect (void)
 {
 	int exit = ga_nothing;
 
+	uint8_t effects_flags_queue = 0;
+
 	screenCount++;
 
 	if (gameaction == ga_nothing && !IsTransitionType(TransitionType_Leaving)) {
@@ -665,14 +667,14 @@ int TIC_LevelSelect (void)
 			R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
 			R_FadeMDPaletteFromBlack(fadetime);
 			copper_table_brightness = -31 + fadetime + (fadetime >> 1);
-			effects_flags |= EFFECTS_COPPER_REFRESH;
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
 			fadetime++;
 		}
 		else {
 			I_SetPalette(dc_playpals);
 			Mars_FadeMDPaletteFromBlack(0xEEE);
 			copper_table_brightness = 0;
-			effects_flags |= EFFECTS_COPPER_REFRESH;
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
 			SetTransition(TransitionType_None);
 		}
 	}
@@ -682,14 +684,14 @@ int TIC_LevelSelect (void)
 			R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
 			R_FadeMDPaletteFromBlack(21 - fadetime);
 			copper_table_brightness = 0 - fadetime - (fadetime >> 1);
-			effects_flags |= EFFECTS_COPPER_REFRESH;
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
 			fadetime++;
 		}
 		else {
 			R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
 			Mars_FadeMDPaletteFromBlack(0);
 			copper_table_brightness = -31;
-			effects_flags |= EFFECTS_COPPER_REFRESH;
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
 			exit = ga_startnew;
 		}
 	}
@@ -711,8 +713,10 @@ int TIC_LevelSelect (void)
 
 		if (selected_map != prev_selected_map) {
 #ifdef SHOW_DISCLAIMER
+			// Show a filtered list of stages.
 			startmap = gamemapnumbers[selectable_maps[selected_map]];
 #else
+			// Show all the stages.
 			startmap = gamemapnumbers[selected_map];
 #endif
 
@@ -747,6 +751,10 @@ int TIC_LevelSelect (void)
 				R_SetupMDPalettes("MENU", 0, 1, 0);
 			}
 
+			// Some stage selections cause the wrong neutral color to be used. Why??
+			// TODO: Do we actually need to keep two neutral colors in memory?
+			copper_neutral_color[next_bank^1] = copper_neutral_color[next_bank];
+
 			Mars_FadeMDPaletteFromBlack(0xEEE);
 
 			copper_table_selection &= 0x10;
@@ -755,7 +763,7 @@ int TIC_LevelSelect (void)
 
 			Mars_CrossfadeMDPalette(copper_table_selection & 0xF);
 
-			effects_flags |= EFFECTS_COPPER_REFRESH;
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
 		}
 		else if (copper_table_selection & 0xF) {
 			copper_table_selection++;
@@ -768,9 +776,11 @@ int TIC_LevelSelect (void)
 				Mars_CrossfadeMDPalette(copper_table_selection & 0xF);
 			}
 
-			effects_flags |= EFFECTS_COPPER_REFRESH;
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
 		}
 	}
+
+	effects_flags |= effects_flags_queue;
 
 	return exit;
 }
