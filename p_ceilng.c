@@ -29,11 +29,8 @@ void T_MoveCeiling (ceiling_t *ceiling)
 			if (res == pastdest)
 				switch(ceiling->type)
 				{
-					case raiseToHighest:
-						break;
-					case silentCrushAndRaise:
-					case fastCrushAndRaise:
 					case crushAndRaise:
+					case raiseAndCrush:
 						ceiling->direction = -1;
 						break;
 					default:
@@ -47,14 +44,9 @@ void T_MoveCeiling (ceiling_t *ceiling)
 			if (res == pastdest)
 				switch(ceiling->type)
 				{
-					case silentCrushAndRaise:
 					case crushAndRaise:
 					case raiseAndCrush:
-					case fastCrushAndRaise:
 						ceiling->direction = 1;
-						break;
-					case lowerAndCrush:
-					case lowerToFloor:
 						break;
 					default:
 						break;
@@ -129,62 +121,11 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 					ceiling->topheight = sec->ceilingheight >> FRACBITS;
 					ceiling->direction = -1;
 				}
-
-				if (sec-sectors == 352)
-				{
-					CONS_Printf("arg2: %d, arg3: %d", arg2, arg3);
-				}
 			}
 			break;
-			case fastCrushAndRaise:
-				ceiling->crush = true;
-				ceiling->topheight = sec->ceilingheight;
-				ceiling->bottomheight = sec->floorheight;
-				ceiling->direction = -1;
-				ceiling->speed = CEILSPEED * 2;
-				break;
-			case silentCrushAndRaise:
-			case lowerAndCrush:
-			case lowerToFloor:
-				ceiling->bottomheight = sec->floorheight;
-				ceiling->direction = -1;
-				ceiling->speed = CEILSPEED;
-				break;
-			case raiseToHighest:
-				ceiling->topheight = P_FindHighestCeilingSurrounding(sec)->ceilingheight;
-				ceiling->direction = 1;
-				ceiling->speed = CEILSPEED;
-				break;
 		}
 		
-		ceiling->tag = sec->tag;
 		ceiling->type = type;
 	}
-	return rtn;
-}
-
-/*================================================================== */
-/* */
-/*		EV_CeilingCrushStop */
-/*		Stop a ceiling from crushing! */
-/* */
-/*================================================================== */
-int	EV_CeilingCrushStop(line_t	*line)
-{
-	int		i;
-	int		rtn;
-	uint8_t tag = P_GetLineTag(line);
-	
-	rtn = 0;
-	for (i = 0;i < MAXCEILINGS;i++)
-		if (activeceilings[i] && (activeceilings[i]->tag == tag) &&
-			(activeceilings[i]->direction != 0))
-		{
-			activeceilings[i]->olddirection = activeceilings[i]->direction;
-			activeceilings[i]->thinker.function = NULL;
-			activeceilings[i]->direction = 0;		/* in-stasis */
-			rtn = 1;
-		}
-
 	return rtn;
 }
