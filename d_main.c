@@ -1131,10 +1131,17 @@ void DRAW_Compatibility (void)
 	};
 
 	const char *gens[4] = {
-		kega[0], // "This emulator does not support",
-		kega[1], // "certain features used by this game.",
+		kega[0],	// "This emulator does not support",
+		kega[1],	// "certain features used by this game.",
 		"It is therefore not recommended. We",
 		"suggest one of these alternatives:"
+	};
+
+	const char *ages[4] = {
+		"This emulator has a large number of",
+		"severe graphical and audio issues",
+		"and is strongly discouraged. We",
+		gens[3]		// "suggest one of these alternatives:"
 	};
 
 	const char *incompatible[3] = {
@@ -1148,7 +1155,7 @@ void DRAW_Compatibility (void)
 		"* PicoDrive 2.04",
 	};
 
-	const uint8_t compatibility_color[5] = { 0x70, 0xBC, 0x49, 0x36, 0x23 };
+	const uint8_t compatibility_color[6] = { 0x70, 0xBC, 0x49, 0x36, 0x47, 0x23 };
 
 	viewportbuffer = (pixel_t*)I_FrameBuffer();
 
@@ -1194,13 +1201,23 @@ void DRAW_Compatibility (void)
 				}
 				break;
 
+			case LEGACY_EMULATOR_AGES:
+				for (int i=0; i < 4; i++) {
+					V_DrawStringCenter(&menuFont, 160, 42+(i*12), ages[i]);
+				}
+				for (int i=0; i < 2; i++) {
+					V_DrawStringLeft(&menuFont, 100, 108+(i*12), emulators[i]);
+				}
+				break;
+
 			case LEGACY_EMULATOR_INCOMPATIBLE:
 				for (int i=0; i < 3; i++) {
 					V_DrawStringCenter(&menuFont, 160, 48+(i*12), incompatible[i]);
 				}
 				for (int i=0; i < 2; i++) {
-					V_DrawStringLeft(&menuFont, 100, 102+(i*12), emulators[i]);
+					V_DrawStringLeft(&menuFont, 100, 96+(i*12), emulators[i]);
 				}
+				//break;
 		}
 	}
 
@@ -1601,8 +1618,13 @@ D_printf ("DM_Main\n");
 	G_RecordPositionDemo();
 #endif
 
+	if (legacy_emulator == LEGACY_EMULATOR_GENS && mars_hblank_count_peak == 224) {
+		// This is probably AGES.
+		legacy_emulator = LEGACY_EMULATOR_AGES;
+	}
 	if (I_GetFRTCounter() <= 256) {
 		// Likely an old version of PicoDrive with incorrect WDT handling.
+		// This will also fail for RetroDrive.
 		legacy_emulator = LEGACY_EMULATOR_INCOMPATIBLE;
 	}
 

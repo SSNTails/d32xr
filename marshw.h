@@ -41,7 +41,8 @@
 #define LEGACY_EMULATOR_ARES			1	//TODO: Not really a "legacy" emulator.
 #define LEGACY_EMULATOR_KEGA			2
 #define LEGACY_EMULATOR_GENS			3
-#define LEGACY_EMULATOR_INCOMPATIBLE	4
+#define LEGACY_EMULATOR_AGES			4
+#define LEGACY_EMULATOR_INCOMPATIBLE	5
 
 void Mars_FlipFrameBuffers(char wait);
 void Mars_WaitFrameBuffersFlip(void);

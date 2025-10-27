@@ -861,8 +861,9 @@ void pri_vbi_handler(void)
 
 #ifdef SHOW_COMPATIBILITY_PROMPT
 	// Check for dropped interrupts. There are 225 HINT intervals, some emulators only handle 224.
-	if (mars_vblank_count < 300 && mars_hblank_count_peak > 0 && mars_hblank_count < 224) {
-		if (legacy_emulator == LEGACY_EMULATOR_NONE) {
+	if (mars_vblank_count < 300) {
+		if (mars_hblank_count < 224 && mars_hblank_count_peak >= 224 && legacy_emulator == LEGACY_EMULATOR_NONE) {
+			// A modern emulator with unstable interrupts is assumed to be Ares or older version of Jgenesis.
 			legacy_emulator = LEGACY_EMULATOR_ARES;
 		}
 	}
