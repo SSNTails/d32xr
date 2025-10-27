@@ -1159,8 +1159,12 @@ void DRAW_Compatibility (void)
 
 	viewportbuffer = (pixel_t*)I_FrameBuffer();
 
+	h40_sky = 1;	// Make sure the screen isn't shifted three pixels.
+
 	if (screenCount < 4)
 	{
+		RemoveDistortionFilters();	// Normalize the line table to get rid of the three-pixel shift.
+
 		I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
 
 		DrawFillRect(0, 0, 320, 8, compatibility_color[legacy_emulator]);
@@ -1219,13 +1223,24 @@ void DRAW_Compatibility (void)
 				}
 				//break;
 		}
-	}
 
-	if (screenCount & 0x80) {
 		V_DrawStringCenterWithColormap(&menuFont, 160, 192, "PRESS START TO CONTINUE", YELLOWTEXTCOLORMAP);
 	}
+
+	uint16_t *lines = Mars_FrameBufferLines();
+	short pixel_offset;
+	if (screenCount & 0x800) {
+		// Show "PRESS START" message.
+		pixel_offset = (((320*192)+512)/2);
+	}
 	else {
-		DrawFillRect(64, 192, 192, 8, COLOR_BLACK);
+		// Hide "PRESS START" message.
+		pixel_offset = (((320*200)+512)/2);
+	}
+
+	for (int i=192; i < 200; i++) {
+		lines[i] = pixel_offset;
+		pixel_offset += (320/2);
 	}
 }
 #endif
