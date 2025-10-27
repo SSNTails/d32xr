@@ -958,6 +958,22 @@ void DRAW_LevelSelect (void)
 
 	// Draw level picture
 	if (lvlsel_lump < 0) {
+		if ((copper_table_selection & 0xF) && (copper_table_selection & 0xF) < 3) {
+			background = I_FrameBuffer() + (((320*(72-2)) + ((320-96)>>1)-3) >> 1);
+
+			for (int y=0; y < 76; y++) {
+				for (int x=0; x < (104>>3); x++) {
+					// Write 8 thru pixels
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+				}
+
+				background += (216>>1);
+			}
+		}
+
 		DrawJagobj(lvlsel_static[((screenCount >> 2) % 3)], (320-96)>>1, 72);
 	}
 	else if ((copper_table_selection & 0xF) && (copper_table_selection & 0xF) < 8) {
