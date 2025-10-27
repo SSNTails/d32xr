@@ -1797,8 +1797,7 @@ void P_PlayerThink(player_t *player)
 
 	player->onconveyor = 0;
 
-	if (SS_SECTOR(player->mo->isubsector)->special)
-		P_PlayerInSpecialSector(player);
+	P_PlayerInSpecialSector(player);
 
 	ticphase = 23;
 	ticphase = 24;

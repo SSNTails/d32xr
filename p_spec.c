@@ -580,9 +580,53 @@ void P_LinedefExecute(player_t *player, sector_t *caller)
 ===============================================================================
 */
 
+static void P_PlayerOnSpecial3DFloor(player_t *player, sector_t *originalSector)
+{
+	sector_t *fofsec;
+
+	if (originalSector->fofsec < 0)
+		return;
+
+	fofsec = &sectors[originalSector->fofsec];
+
+	switch (fofsec->special)
+	{
+		case 255: // ignore
+			break;
+		case 1: // Clear the map
+			P_DoPlayerExit(player);
+			break;
+		case 2:
+			if (player->mo->z == fofsec->ceilingheight && !fofsec->specialdata)
+				P_DoPlayerExit(player);
+			break;
+		case 4: // Damage (electrical)
+			if (player->mo->z == fofsec->ceilingheight)
+				P_DamageMobj(player->mo, NULL, NULL, 1);
+			break;
+		case 6:
+			if (player->mo->z == fofsec->ceilingheight)
+				P_DamageMobj(player->mo, NULL, NULL, 10000);
+			break;
+		case 64: // Linedef Executor: entered a sector
+			P_LinedefExecute(player, fofsec);
+			break;
+		case 80: // Linedef Executor: on floor touch
+			if (player->mo->z == fofsec->ceilingheight
+				|| ((player->pflags & PF_VERTICALFLIP) && player->mo->z + (player->mo->theight << FRACBITS) == fofsec->floorheight))
+				P_LinedefExecute(player, fofsec);
+			break;
+			
+		default:
+			break;
+	};
+}
+
 void P_PlayerInSpecialSector (player_t *player)
 {
 	sector_t	*sector = SS_SECTOR(player->mo->isubsector);
+
+	P_PlayerOnSpecial3DFloor(player, sector);
 		
 	switch (sector->special)
 	{
