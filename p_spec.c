@@ -469,6 +469,7 @@ typedef struct
 	uint8_t flags;
 } crumble_t;
 
+// Warning! Both mo and callsec can be NULL
 static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 {
 	uint8_t special = P_GetLineSpecial(line);
@@ -476,6 +477,13 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 	switch (special)
 	{
+		case 218: // Move floor according to front sector
+		case 219: // Move ceiling according to front sector
+		{
+			boolean ceiling = special - 218;
+			EV_DoFloor(line, ceiling ? moveCeilingByFrontSector : moveFloorByFrontSector);
+			break;
+		}
 		case 220: // Move Floor According to Front Texture Offsets
 		{
 			side_t *side = &sides[line->sidenum[0]];
@@ -527,16 +535,16 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 }
 
 // Only players can trigger linedef executors... this is going to come back to bite me, isn't it?
-void P_LinedefExecute(player_t *player, sector_t *caller)
+// Why yes, yes it will. When we implement executors calling other executors.. which will shall do so now.
+void P_LinedefExecute(uint8_t tag, player_t *player, sector_t *caller)
 {
-
-	if (player->playerstate != PST_LIVE)
+	if (player && player->playerstate != PST_LIVE)
 		return;
 
 	// Find linedef with this tag that is an executor linedef.
 	int liStart = -1;
 	VINT li;
-	while ((li = P_FindNextLineWithTag(caller->tag, &liStart)) != -1)
+	while ((li = P_FindNextLineWithTag(tag, &liStart)) != -1)
 	{
 		line_t *line = &lines[li];
 		if (!(ldflags[li] & ML_HAS_SPECIAL_OR_TAG))
@@ -561,7 +569,7 @@ void P_LinedefExecute(player_t *player, sector_t *caller)
 			while ((start = P_FindNextSectorLine(ctrlSector, start)) >= 0)
 			{
 				line_t *ld = &lines[start];
-				P_ProcessLineSpecial(ld, player->mo, caller);
+				P_ProcessLineSpecial(ld, player ? player->mo : NULL, caller);
 			}
 		}
 
@@ -609,12 +617,12 @@ static void P_PlayerOnSpecial3DFloor(player_t *player, sector_t *originalSector)
 				P_DamageMobj(player->mo, NULL, NULL, 10000);
 			break;
 		case 64: // Linedef Executor: entered a sector
-			P_LinedefExecute(player, fofsec);
+			P_LinedefExecute(fofsec->tag, player, fofsec);
 			break;
 		case 80: // Linedef Executor: on floor touch
 			if (player->mo->z == fofsec->ceilingheight
 				|| ((player->pflags & PF_VERTICALFLIP) && player->mo->z + (player->mo->theight << FRACBITS) == fofsec->floorheight))
-				P_LinedefExecute(player, fofsec);
+				P_LinedefExecute(fofsec->tag, player, fofsec);
 			break;
 			
 		default:
@@ -648,12 +656,12 @@ void P_PlayerInSpecialSector (player_t *player)
 				P_DamageMobj(player->mo, NULL, NULL, 10000);
 			break;
 		case 64: // Linedef Executor: entered a sector
-			P_LinedefExecute(player, sector);
+			P_LinedefExecute(sector->tag, player, sector);
 			break;
 		case 80: // Linedef Executor: on floor touch
 			if (player->mo->z <= sector->floorheight
 				|| ((player->pflags & PF_VERTICALFLIP) && player->mo->z + (player->mo->theight << FRACBITS) >= sector->ceilingheight))
-				P_LinedefExecute(player, sector);
+				P_LinedefExecute(sector->tag, player, sector);
 			break;
 			
 		default:

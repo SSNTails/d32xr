@@ -195,6 +195,7 @@ typedef enum
 {
 	crushAndRaise,
 	raiseAndCrush,
+	moveCeilingByFrontSector,
 } ceiling_e;
 
 typedef struct
@@ -291,18 +292,13 @@ typedef enum
 	raiseToTexture,		/* raise floor to shortest height texture around it */
 	lowerAndChange,		/* lower floor to lowest surrounding floor and change */
 						/* floorpic */
-	raiseFloor24,
-	raiseFloor24AndChange,
-	raiseFloorCrush,
-	raiseFloorTurbo,	/* raise to next highest floor, turbo-speed */
-	donutRaise,
-	raiseFloor512,
 	floorContinuous,
 	bothContinuous,
 	eggCapsuleOuter,
 	eggCapsuleInner,
 	eggCapsuleOuterPop,
 	eggCapsuleInnerPop,
+	moveFloorByFrontSector,
 } floor_e;
 
 typedef struct
@@ -317,7 +313,8 @@ typedef struct
 	uint8_t		newspecial;
 	uint8_t		crush;
 	int8_t		direction;
-	VINT		texture;
+	uint8_t		texture;
+	uint8_t     tag;
 	VINT        floorwasheight;
 	VINT		floordestheight;
 	VINT        ceilDiff;
@@ -346,4 +343,4 @@ int		EV_DoFloor(line_t *line,floor_e floortype);
 int		EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag);
 void	T_MoveFloor(floormove_t *floor);
 
-
+void P_LinedefExecute(uint8_t tag, player_t *player, sector_t *caller);
