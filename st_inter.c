@@ -245,7 +245,7 @@ void Y_Ticker(void)
 			S_StartSound(NULL, sfx_s3k_b0); // cha-ching!
 		}
 
-		players[consoleplayer].score = data.coop.total;
+		players[consoleplayer].score = data.coop.score;
 	}
 }
 
@@ -271,9 +271,6 @@ void Y_StartIntermission(void)
 			gottimebonus = false;
 			gotemblem = false;
 
-			// award time and ring bonuses
-			Y_AwardCoopBonuses();
-
 			// setup time data
 			data.coop.tics = worldTime; // used if cv_timetic is on
 			data.coop.sec = worldTime / TICRATE;
@@ -291,6 +288,10 @@ void Y_StartIntermission(void)
 			
 			data.coop.passedx1 = 150;
 			data.coop.passedx2 = 150;
+
+			// award time and ring bonuses
+			Y_AwardCoopBonuses();
+
 			S_StartSong(gameinfo.intermissionMus, 0, cdtrack_intermission);
 			break;
 		}
