@@ -843,7 +843,7 @@ void DrawTiledLetterbox2(int flat)
 		return;
 
 	int			yt;
-	const int	w = CalcFlatSize(W_LumpLength(flat)), top_h = 21, bottom_h = 21;
+	const int	w = CalcFlatSize(W_LumpLength(flat)), top_h = 21, bottom_h = 21-10;
 	const int	hw = w / 2;
 	const int xtiles = (320 + w - 1) / w;
 	pixel_t* bdest;
@@ -852,7 +852,7 @@ void DrawTiledLetterbox2(int flat)
 	// Draw the top letterbox.
 	bsrc = (const pixel_t*)W_POINTLUMPNUM(flat);
 	bdest = I_FrameBuffer();
-	const pixel_t* source = bsrc + ((w-21)*hw);
+	const pixel_t* source = bsrc + ((32-21)*hw);
 	const short two_black_pixels = (COLOR_BLACK<<8)|COLOR_BLACK;
 
 	for (yt = 0; yt < top_h; yt++)
@@ -872,10 +872,7 @@ void DrawTiledLetterbox2(int flat)
 
 	// Draw the bottom letterbox.
 	bdest += ((320*180)/2);
-	source -= (w*hw);
-	
-	for (int xt = 0; xt < 320/2; xt++)
-		*bdest++ = two_black_pixels;
+	source = bsrc;
 
 	for (yt = 0; yt < bottom_h; yt++)
 	{
@@ -902,9 +899,12 @@ void ClearViewportOverdraw(void)
 {
 	pixel_t *framebuffer = I_OverwriteBuffer();
 
+	// For levels, the last 11 lines are free memory; don't overwrite!
+	const int lines_used = IsLevel() ? 224-11 : 224;
+
 #if (VIEWPORT_OVERDRAW_AREA & 0xF) == 0
 	const int overdraw_width = VIEWPORT_OVERDRAW_AREA >> 4;
-	for (int y=0; y < 224; y++) {
+	for (int y=0; y < lines_used; y++) {
 		for (int x=0; x < overdraw_width; x++) {
 			*framebuffer++ = 0x1F1F;
 			*framebuffer++ = 0x1F1F;
@@ -923,7 +923,7 @@ void ClearViewportOverdraw(void)
 	}
 #elif (VIEWPORT_OVERDRAW_AREA & 0x7) == 0
 	const int overdraw_width = VIEWPORT_OVERDRAW_AREA >> 3;
-	for (int y=0; y < 224; y++) {
+	for (int y=0; y < lines_used; y++) {
 		for (int x=0; x < overdraw_width; x++) {
 			*framebuffer++ = 0x1F1F;
 			*framebuffer++ = 0x1F1F;
@@ -1360,7 +1360,7 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 		distortion_line_bit_shift[i] = 0;
 	}
 
-	for (int i=0; i < 224; i++) {
+	for (int i=0; i < 202; i++) {
 		signed char shift_value;
 
 		distortion_line_bit_shift[i>>5] <<= 1;
@@ -1381,6 +1381,21 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 		pixel_offset += (320/2);
 	}
 
+	// Reuse the black pixels from the top of the screen for the next line.
+	lines[202] = lines[21];
+
+	// The next eleven lines are unique.
+	pixel_offset = (((320*202)+512)/2) + ((~h40_sky)&1);
+	for (int i=203; i < 214; i++) {
+		lines[i] = pixel_offset;
+		pixel_offset += (320/2);
+	}
+
+	// The remaining lines reuse pixels from the top border.
+	for (int i=214; i < 224; i++) {
+		lines[i] = lines[i-214];
+	}
+
 	effects_flags |= EFFECTS_DISTORTION_ENABLED;
 }
 
@@ -1391,9 +1406,32 @@ void RemoveDistortionFilters()
 	uint16_t *lines = Mars_FrameBufferLines();
 	short pixel_offset = (512/2) + ((~h40_sky)&1);
 
-	for (int i=0; i < 224; i++) {
-		lines[i] = pixel_offset;
-		pixel_offset += (320/2);
+	if (IsLevel()) {
+		// Set line offsets for the entire viewport (180 pixels) and top border (22 pixels)
+		for (int i=0; i < 202; i++) {
+			lines[i] = pixel_offset;
+			pixel_offset += (320/2);
+		}
+
+		// Reuse the black pixels from the top of the screen for the next line.
+		lines[202] = lines[21];
+		
+		// The next eleven lines are unique.
+		for (int i=203; i < 214; i++) {
+			lines[i] = pixel_offset;
+			pixel_offset += (320/2);
+		}
+
+		// The remaining lines reuse pixels from the top border.
+		for (int i=214; i < 224; i++) {
+			lines[i] = lines[i-214];
+		}
+	}
+	else {
+		for (int i=0; i < 224; i++) {
+			lines[i] = pixel_offset;
+			pixel_offset += (320/2);
+		}
 	}
 
 	MARS_VDP_SCRSHFT = ((~h40_sky)&1);
