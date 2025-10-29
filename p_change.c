@@ -159,21 +159,47 @@ boolean P_ChangeSector (sector_t *sector, boolean crunch)
 	
 	ct.nofit = false;
 	ct.crushchange = crunch;
-	
-/* recheck heights for all things near the moving sector */
-	VINT *blockbox = P_GetSectorBBox(sector);
-	if (!blockbox)
-	{
-		VINT bbox[4];
-		CalculateSectorBlockBox(sector, bbox);
-		
-		sectorBBox_t *sbb = P_AddSectorBBox(sector, bbox);
-		blockbox = sbb->bbox;
-	}
 
-	for (x=blockbox[BOXLEFT]; x<=blockbox[BOXRIGHT]; x++)
-		for (y=blockbox[BOXBOTTOM]; y<=blockbox[BOXTOP]; y++)
-			P_BlockThingsIterator (x, y, (blockthingsiter_t)PIT_ChangeSector, &ct);
+	if (sector->flags & SF_FOF_CONTROLSECTOR)
+	{
+		line_t *line = &lines[sector->specline];
+
+		for (int s = -1; (s = P_FindSectorFromLineTag(line,s)) >= 0;)
+		{
+			// recheck heights for all things near the moving sector
+			sector_t *checksector = &sectors[s];
+			VINT *blockbox = P_GetSectorBBox(checksector);
+			if (!blockbox)
+			{
+				VINT bbox[4];
+				CalculateSectorBlockBox(checksector, bbox);
+				
+				sectorBBox_t *sbb = P_AddSectorBBox(checksector, bbox);
+				blockbox = sbb->bbox;
+			}
+
+			for (x=blockbox[BOXLEFT]; x<=blockbox[BOXRIGHT]; x++)
+				for (y=blockbox[BOXBOTTOM]; y<=blockbox[BOXTOP]; y++)
+					P_BlockThingsIterator (x, y, (blockthingsiter_t)PIT_ChangeSector, &ct);
+		}
+	}
+	else
+	{	
+		// recheck heights for all things near the moving sector
+		VINT *blockbox = P_GetSectorBBox(sector);
+		if (!blockbox)
+		{
+			VINT bbox[4];
+			CalculateSectorBlockBox(sector, bbox);
+			
+			sectorBBox_t *sbb = P_AddSectorBBox(sector, bbox);
+			blockbox = sbb->bbox;
+		}
+
+		for (x=blockbox[BOXLEFT]; x<=blockbox[BOXRIGHT]; x++)
+			for (y=blockbox[BOXBOTTOM]; y<=blockbox[BOXTOP]; y++)
+				P_BlockThingsIterator (x, y, (blockthingsiter_t)PIT_ChangeSector, &ct);
+	}
 	
 	return ct.nofit;
 }

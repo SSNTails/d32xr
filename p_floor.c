@@ -227,7 +227,7 @@ void T_MoveFloor(floormove_t *floor)
 		res = T_MovePlane(floor->sector,floor->speed,
 				floor->floordestheight << FRACBITS,floor->crush,0,floor->direction);
 	}
-	else if (floor->type == moveCeilingByFrontSector)
+	else if (floor->type == moveCeilingByFrontSector || floor->type == continuousMoverCeiling)
 	{
 		res = T_MovePlane(floor->sector,floor->speed,
 				floor->floordestheight << FRACBITS,true,1,floor->direction);
@@ -253,8 +253,8 @@ void T_MoveFloor(floormove_t *floor)
 	else if (floor->type == continuousMoverCeiling)
 	{
 		const fixed_t origspeed = FixedMul(floor->origSpeed, (FRACUNIT/2));
-		const fixed_t fs = D_abs(floor->sector->floorheight - (LD_FRONTSECTOR(&lines[floor->sourceline])->ceilingheight));
-		const fixed_t bs = D_abs(floor->sector->floorheight - (LD_BACKSECTOR((&lines[floor->sourceline]))->ceilingheight));
+		const fixed_t fs = D_abs(floor->sector->ceilingheight - (LD_FRONTSECTOR(&lines[floor->sourceline])->ceilingheight));
+		const fixed_t bs = D_abs(floor->sector->ceilingheight - (LD_BACKSECTOR((&lines[floor->sourceline]))->ceilingheight));
 		if (fs < bs)
 			floor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
 		else
@@ -348,8 +348,8 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 		sec = &sectors[secnum];
 		
 		/*	ALREADY MOVING?  IF SO, KEEP GOING... */
-		if (sec->specialdata)
-			continue;
+//		if (sec->specialdata)
+//			continue;
 			
 		/* */
 		/*	new floor thinker */

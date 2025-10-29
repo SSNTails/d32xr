@@ -1633,7 +1633,7 @@ void P_SpawnSpecials (void)
 			EV_DoFloor(&lines[i], continuousMoverFloor);
 			break;
 		case 55: //Continuous ceiling mover
-			EV_DoCeiling(&lines[i], continuousMoverCeiling);
+			EV_DoFloor(&lines[i], continuousMoverCeiling);
 			break;
 		case 60: // Moving platform
 			if (ldflags[i] & ML_DONTPEGBOTTOM)
