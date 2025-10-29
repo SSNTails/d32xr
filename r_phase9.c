@@ -163,13 +163,12 @@ static void R_UpdateCache(void)
       void **data, **pdata;
       unsigned w, h, m, pixels;
       boolean masked = false;
+      boolean compressed = false;
 
       id = bestmips[i];
       if (id == -1) {
         continue;
       }
-
-      masked = false;
 
       if (id >= numtextures) {
 #ifndef FLATMIPS
@@ -181,6 +180,7 @@ static void R_UpdateCache(void)
         pdata = (void**)&data[i];
         w = h = flat->size;
         pixels = w * h;
+        compressed = true;
       } else {
         texture_t* tex = &textures[id];
         int lump = tex->lumpnum;
@@ -214,7 +214,7 @@ static void R_UpdateCache(void)
         continue;
       }
 
-      R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata);
+      R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata, compressed);
 
       if (debugmode == DEBUGMODE_TEXCACHE)
         continue;

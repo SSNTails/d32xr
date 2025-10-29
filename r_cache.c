@@ -144,7 +144,7 @@ void R_PostTexCacheFrame(r_texcache_t* c)
 =
 =================
 */
-void R_AddToTexCache(r_texcache_t* c, int id, int pixels, void **userp)
+void R_AddToTexCache(r_texcache_t* c, int id, int pixels, void **userp, boolean compressed)
 {
 	int size;
 	int trynum;
@@ -213,7 +213,14 @@ retry:
 	ref = (void *)(((uintptr_t)data - 4) & ~3);
 	*ref = entry;
 
-	D_memcpy(data, lumpdata, pixels);
+	if (compressed)
+	{
+		decode((unsigned char *)lumpdata,
+		(unsigned char *) data);
+	}
+	else
+		D_memcpy(data, lumpdata, pixels);
+
 	if (debugmode == DEBUGMODE_TEXCACHE)
 	{
 		D_memset(data, id & 255, pixels); // DEBUG

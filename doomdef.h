@@ -938,6 +938,8 @@ int		W_CheckNumForName (const char *name);
 int		W_GetNumForName (const char *name);
 int		W_CheckRangeForName (const char *name, int start, int end);
 
+void decode(unsigned char* input, unsigned char* output);
+
 int		W_LumpLength (int lump);
 int 	W_ReadLump (int lump, void *dest);
 
