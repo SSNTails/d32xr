@@ -124,6 +124,7 @@ typedef enum
   sfx_drtmpni2,
   sfx_drhit4,
   sfx_drhit5,
+  sfx_drsnare3,
   NUMSFX
 } sfxenum_t;
 
