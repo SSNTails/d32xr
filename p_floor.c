@@ -182,6 +182,12 @@ void T_MoveFloor(floormove_t *floor)
 {
 	result_e	res = ok;
 
+	if (floor->delayTimer)
+	{
+		floor->delayTimer--;
+		return;
+	}
+
 	if (floor->type == floorContinuous || floor->type == bothContinuous)
 	{
 		const fixed_t wh = D_abs(floor->sector->floorheight - (floor->floorwasheight << FRACBITS));
@@ -221,10 +227,40 @@ void T_MoveFloor(floormove_t *floor)
 		res = T_MovePlane(floor->sector,floor->speed,
 				floor->floordestheight << FRACBITS,floor->crush,0,floor->direction);
 	}
+	else if (floor->type == moveCeilingByFrontSector)
+	{
+		res = T_MovePlane(floor->sector,floor->speed,
+				floor->floordestheight << FRACBITS,true,1,floor->direction);
+	}
 	else
 	{
 		res = T_MovePlane(floor->sector,floor->speed,
 				floor->floordestheight << FRACBITS,true,0,floor->direction);
+	}
+
+	if (floor->type == continuousMoverFloor)
+	{
+		const fixed_t origspeed = FixedMul(floor->origSpeed, (FRACUNIT/2));
+		const fixed_t fs = D_abs(floor->sector->floorheight - (LD_FRONTSECTOR(&lines[floor->sourceline])->floorheight));
+		const fixed_t bs = D_abs(floor->sector->floorheight - (LD_BACKSECTOR((&lines[floor->sourceline]))->floorheight));
+		if (fs < bs)
+			floor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
+		else
+			floor->speed = FixedDiv(bs,25*FRACUNIT) + FRACUNIT/4;
+
+		floor->speed = FixedMul(floor->speed, origspeed);
+	}
+	else if (floor->type == continuousMoverCeiling)
+	{
+		const fixed_t origspeed = FixedMul(floor->origSpeed, (FRACUNIT/2));
+		const fixed_t fs = D_abs(floor->sector->floorheight - (LD_FRONTSECTOR(&lines[floor->sourceline])->ceilingheight));
+		const fixed_t bs = D_abs(floor->sector->floorheight - (LD_BACKSECTOR((&lines[floor->sourceline]))->ceilingheight));
+		if (fs < bs)
+			floor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
+		else
+			floor->speed = FixedDiv(bs,25*FRACUNIT) + FRACUNIT/4;
+
+		floor->speed = FixedMul(floor->speed, origspeed);
 	}
 
 	if (res == pastdest)
@@ -246,6 +282,26 @@ void T_MoveFloor(floormove_t *floor)
 				floor->floordestheight = sectors[floor->highestSector].floorheight >> FRACBITS;
 			}
 		}
+		else if (floor->type == continuousMoverFloor)
+		{
+			if ((floor->floordestheight << FRACBITS) == LD_FRONTSECTOR(&lines[floor->sourceline])->floorheight)
+				floor->floordestheight = LD_BACKSECTOR((&lines[floor->sourceline]))->floorheight >> FRACBITS;
+			else
+				floor->floordestheight = LD_FRONTSECTOR(&lines[floor->sourceline])->floorheight >> FRACBITS;
+
+			floor->direction = ((floor->floordestheight << FRACBITS) < floor->sector->floorheight) ? -1 : 1;
+			floor->delayTimer = floor->delay;
+		}
+		else if (floor->type == continuousMoverCeiling)
+		{
+			if ((floor->floordestheight << FRACBITS) == LD_FRONTSECTOR(&lines[floor->sourceline])->ceilingheight)
+				floor->floordestheight = LD_BACKSECTOR((&lines[floor->sourceline]))->ceilingheight >> FRACBITS;
+			else
+				floor->floordestheight = LD_FRONTSECTOR(&lines[floor->sourceline])->ceilingheight >> FRACBITS;
+
+			floor->direction = ((floor->floordestheight << FRACBITS) < floor->sector->ceilingheight) ? -1 : 1;
+			floor->delayTimer = floor->delay;
+		}
 		else
 		{
 			floor->sector->specialdata = (SPTR)0;
@@ -254,6 +310,12 @@ void T_MoveFloor(floormove_t *floor)
 				case moveFloorByFrontSector:
 					if (floor->texture < 255)
 						floor->sector->floorpic = (uint8_t)floor->texture;
+					if (floor->tag)
+						P_LinedefExecute(floor->tag, NULL, NULL);
+					break;
+				case moveCeilingByFrontSector:
+					if (floor->texture < 255)
+						floor->sector->ceilingpic = (uint8_t)floor->texture;
 					if (floor->tag)
 						P_LinedefExecute(floor->tag, NULL, NULL);
 					break;
@@ -303,8 +365,45 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 		floor->texture = (uint8_t)-1;
 		floor->tag = 0;
 		floor->sector = sec;
+		floor->delayTimer = floor->delay = 0;
+		floor->sourceline = line - lines;
 		switch(floortype)
 		{
+			case continuousMoverFloor:
+			case continuousMoverCeiling:
+			{
+				mapvertex_t *v1 = &vertexes[line->v1];
+				mapvertex_t *v2 = &vertexes[line->v2];
+				side_t *side = &sides[line->sidenum[0]];
+				int16_t textureoffset = side->textureoffset & 0xfff;
+				textureoffset <<= 4; // sign extend
+				textureoffset >>= 4; // sign extend
+				int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
+      			rowoffset >>= 4; // sign extend
+
+				// args3 is same as args2
+				// args4 is rowoffset
+				// args5 is textureoffset
+				floor->speed = P_AproxDistance((v1->x - v2->x) << FRACBITS, (v1->y - v2->y) << FRACBITS) >> 2;
+				floor->origSpeed = floor->speed;
+
+				fixed_t destHeight = floortype == continuousMoverCeiling ? LD_FRONTSECTOR(line)->ceilingheight >> FRACBITS
+					: LD_FRONTSECTOR(line)->floorheight >> FRACBITS;
+				fixed_t curHeight = floortype == continuousMoverCeiling ? sec->ceilingheight >> FRACBITS : sec->floorheight >> FRACBITS;
+
+				floor->floordestheight = destHeight;
+
+				if (destHeight >= curHeight)
+					floor->direction = 1; // up
+				else
+					floor->direction = -1; // down
+
+				// Any delay?
+				floor->delay = textureoffset;
+				floor->delayTimer = rowoffset;
+				break;
+			}
+			case moveCeilingByFrontSector:
 			case moveFloorByFrontSector:
 			{
 				mapvertex_t *v1 = &vertexes[line->v1];
@@ -319,18 +418,33 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 
 				floor->speed = P_AproxDistance((v1->x - v2->x) << FRACBITS, (v1->y - v2->y) << FRACBITS) >> 3;
 
-				floor->floordestheight = LD_FRONTSECTOR(line)->floorheight >> FRACBITS;
-
-				if (floor->floordestheight >= sec->floorheight >> FRACBITS)
-					floor->direction = 1; // up
-				else
-					floor->direction = -1; // down
-
 				// chained linedef executing ability
 				floor->tag = args3;
 
-				// Optionally change flat
-				floor->texture = args4 ? LD_FRONTSECTOR(line)->floorpic : (uint8_t)-1;
+				if (floortype == moveCeilingByFrontSector)
+				{
+					floor->floordestheight = LD_FRONTSECTOR(line)->ceilingheight >> FRACBITS;
+
+					if (floor->floordestheight >= sec->ceilingheight >> FRACBITS)
+						floor->direction = 1; // up
+					else
+						floor->direction = -1; // down
+
+					// Optionally change flat
+					floor->texture = args4 ? LD_FRONTSECTOR(line)->ceilingpic : (uint8_t)-1;
+				}
+				else
+				{
+					floor->floordestheight = LD_FRONTSECTOR(line)->floorheight >> FRACBITS;
+
+					if (floor->floordestheight >= sec->floorheight >> FRACBITS)
+						floor->direction = 1; // up
+					else
+						floor->direction = -1; // down
+
+					// Optionally change flat
+					floor->texture = args4 ? LD_FRONTSECTOR(line)->floorpic : (uint8_t)-1;
+				}
 				break;
 			}
 			case bothContinuous:

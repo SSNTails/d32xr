@@ -195,7 +195,6 @@ typedef enum
 {
 	crushAndRaise,
 	raiseAndCrush,
-	moveCeilingByFrontSector,
 } ceiling_e;
 
 typedef struct
@@ -294,11 +293,14 @@ typedef enum
 						/* floorpic */
 	floorContinuous,
 	bothContinuous,
+	continuousMoverFloor,
+	continuousMoverCeiling,
 	eggCapsuleOuter,
 	eggCapsuleInner,
 	eggCapsuleOuterPop,
 	eggCapsuleInnerPop,
 	moveFloorByFrontSector,
+	moveCeilingByFrontSector,
 } floor_e;
 
 typedef struct
@@ -306,9 +308,12 @@ typedef struct
 	thinker_t	thinker;
 	sector_t	*sector;
 	sector_t    *controlSector;
+	fixed_t     origSpeed;
+	fixed_t		speed;
+	VINT		sourceline;
 	VINT        lowestSector;
 	VINT        highestSector;
-	boolean     dontChangeSector;
+	VINT        dontChangeSector;
 	uint8_t		type;
 	uint8_t		newspecial;
 	uint8_t		crush;
@@ -318,8 +323,8 @@ typedef struct
 	VINT        floorwasheight;
 	VINT		floordestheight;
 	VINT        ceilDiff;
-	fixed_t     origSpeed;
-	fixed_t		speed;
+	VINT        delay; // like 'origSpeed'... set only at start
+	VINT        delayTimer; // the actual counter
 } floormove_t;
 
 typedef enum

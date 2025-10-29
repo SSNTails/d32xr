@@ -1625,6 +1625,16 @@ void P_SpawnSpecials (void)
 			if (numlineanimspecials >= MAXLINEANIMS)
 				continue;
 			break;
+		case 53: //Continuous floor/ceiling mover
+			EV_DoFloor(&lines[i], continuousMoverFloor);
+			EV_DoFloor(&lines[i], continuousMoverCeiling);
+			break;
+		case 54: //Continuous floor mover
+			EV_DoFloor(&lines[i], continuousMoverFloor);
+			break;
+		case 55: //Continuous ceiling mover
+			EV_DoCeiling(&lines[i], continuousMoverCeiling);
+			break;
 		case 60: // Moving platform
 			if (ldflags[i] & ML_DONTPEGBOTTOM)
 				EV_DoFloor(&lines[i], floorContinuous);
