@@ -33,6 +33,7 @@
 #define FIRE_STOP_TICON 90
 
 static jagobj_t *intro_titlepic;
+static jagobj_t *intro_titlepic2;
 static int titlepic_start;
 
 /* 
@@ -42,13 +43,14 @@ static int titlepic_start;
 =
 ================ 
 */ 
-void I_InitMenuFire(jagobj_t *titlepic)
+void I_InitMenuFire(jagobj_t *titlepic, jagobj_t *titlepic2)
 {
 	titlepic_start = I_GetTime();
 
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4), dc_cshift_playpals);
 
 	intro_titlepic = titlepic;
+	intro_titlepic2 = titlepic2;
 
 	clearscreen = 2;
 }
@@ -88,6 +90,9 @@ void I_DrawMenuFire(void)
 	{
 		const int titlepic_pos_x = (320 - titlepic->width) / 2;
 		DrawJagobj2(titlepic, titlepic_pos_x, y, 0, 0, 0, titlepic->height, I_FrameBuffer());
+
+		if (intro_titlepic2 != NULL)
+			DrawJagobj2(intro_titlepic2, titlepic_pos_x, y, 0, 0, 0, titlepic->height, I_FrameBuffer());
 	}
 
 	int duration = I_GetTime() - titlepic_start;

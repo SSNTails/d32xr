@@ -56,6 +56,7 @@ typedef struct
 	VINT borderFlat;
 	VINT titleTime;
 	VINT titlePage;
+	VINT titlePage2;
 	VINT titleMus;
 	VINT intermissionMus;
 	VINT emeraldMus;
