@@ -154,12 +154,20 @@ void CalculateSectorBlockBox(sector_t *sector, VINT blockbox[4])
 
 boolean P_ChangeSector (sector_t *sector, boolean crunch)
 {
-	int			x,y;
+//	int			x,y;
 	changetest_t ct;
 	
 	ct.nofit = false;
 	ct.crushchange = crunch;
 
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (playeringame[i])
+			players[i].pflags |= PF_CHANGESECTOR;
+	}
+
+	/*
+	Correct, but WAY too expensive!
 	if (sector->flags & SF_FOF_CONTROLSECTOR)
 	{
 		line_t *line = &lines[sector->specline];
@@ -199,9 +207,15 @@ boolean P_ChangeSector (sector_t *sector, boolean crunch)
 		for (x=blockbox[BOXLEFT]; x<=blockbox[BOXRIGHT]; x++)
 			for (y=blockbox[BOXBOTTOM]; y<=blockbox[BOXTOP]; y++)
 				P_BlockThingsIterator (x, y, (blockthingsiter_t)PIT_ChangeSector, &ct);
-	}
+	}*/
 	
 	return ct.nofit;
+}
+
+void P_ChangeSectorPlayer(player_t *player)
+{
+	changetest_t ct;
+	PIT_ChangeSector(player->mo, &ct);
 }
 
 sectorBBox_t *P_AddSectorBBox(sector_t *sector_, VINT bbox[4])

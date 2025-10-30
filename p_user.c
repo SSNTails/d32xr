@@ -1771,6 +1771,9 @@ static void RotateVertex(fixed_t polyCenterX, fixed_t polyCenterY, mapvertex_t *
 
 void P_PlayerThink(player_t *player)
 {
+	if (player->pflags & PF_CHANGESECTOR)
+		P_ChangeSectorPlayer(player);
+
 	ticphase = 20;
 	P_PlayerMobjThink(player->mo);
 

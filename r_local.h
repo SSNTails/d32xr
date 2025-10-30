@@ -113,6 +113,7 @@ typedef struct sectorBBox_s
 
 sectorBBox_t *P_AddSectorBBox(sector_t *sector_, VINT bbox[4]);
 VINT *P_GetSectorBBox(sector_t *sector);
+void P_ChangeSectorPlayer(player_t *player);
 
 typedef struct
 {

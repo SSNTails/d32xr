@@ -461,6 +461,8 @@ typedef enum
 #define PF_ELEMENTALBOUNCE 8192
 #define PF_CONTROLDISABLED 16384
 #define PF_MACESPIN 32768
+#define PF_CHANGESECTOR 65536
+#define PF_SPRINGSHELL 131072
 
 boolean P_IsObjectOnGround(mobj_t *mo);
 int8_t P_MobjFlip(mobj_t *mo);
@@ -491,7 +493,7 @@ typedef struct player_s
 	mobj_t		*mo;
 	playerstate_t	playerstate;
 
-	int         pflags;
+	int32_t     pflags;
 	fixed_t     speed;
 	
 	fixed_t		forwardmove, sidemove;	/* built from ticbuttons */
