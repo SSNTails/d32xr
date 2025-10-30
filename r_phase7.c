@@ -185,7 +185,22 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
         xfrac += FixedMul(finecosine(angle), bgofs << FRACBITS);
         yfrac += FixedMul(finesine(angle), bgofs << FRACBITS);
     }
+    
+    // Cache the flat if not done so already.
+    void **data, **pdata;
+    unsigned w, h, m, pixels;
 
+    flattex_t *flat = &flatpixels[flatnum];
+    data = (void **)flat->data;
+    pdata = (void**)&data[0];
+    w = h = flat->size;
+    pixels = w * h;
+
+    if (!R_InTexCache(&r_texcache, *pdata)) {
+        R_AddToTexCache(&r_texcache, 0, pixels, pdata, true);
+    }
+    
+    // Draw the flat.
     drawspan(y, x, x2, light, xfrac, yfrac, xstep, ystep, lpl->ds_source[miplevel], mipsize);
 }
 

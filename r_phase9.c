@@ -214,7 +214,7 @@ static void R_UpdateCache(void)
         continue;
       }
 
-      R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata, compressed);
+      //R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata, compressed);
 
       if (debugmode == DEBUGMODE_TEXCACHE)
         continue;
