@@ -198,13 +198,33 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
    if ((ldflags[ld-lines] & ML_HAS_SPECIAL_OR_TAG) && P_GetLineSpecial(ld) == 254 && P_GetLineTag(ld) > 0 && sw->slidething->player
       && (players[sw->slidething->player-1].pflags & PF_SPINNING)) // Bustable block
    {
-      if (ldflags[ld-lines] & ML_NOCLIMB)
-         back->ceilingheight = P_FindNextHighestCeiling(back, back->ceilingheight)->ceilingheight;
-      else
-         back->floorheight = P_FindNextLowestFloor(back, back->floorheight)->floorheight;
+      boolean busting = true;
       ldflags[ld-lines] &= ~ML_HAS_SPECIAL_OR_TAG;
-      S_StartSound(sw->slidething, sfx_s3k_59);
-      P_SpawnBustables(back, sw->slidething);
+
+      if (ldflags[ld-lines] & ML_NOCLIMB)
+      {
+         fixed_t nextHighest = P_FindNextHighestCeiling(back, back->ceilingheight)->ceilingheight;
+
+         if (nextHighest == back->ceilingheight)
+            busting = false;
+
+         back->ceilingheight = nextHighest;
+      }
+      else
+      {
+         fixed_t nextLowest = P_FindNextLowestFloor(back, back->floorheight)->floorheight;
+
+         if (nextLowest == back->floorheight)
+            busting = false;
+
+         back->floorheight = nextLowest;
+      }
+
+      if (busting)
+      {
+         S_StartSound(sw->slidething, sfx_s3k_59);
+         P_SpawnBustables(back, sw->slidething);
+      }
    }
    else if ((ldflags[ld-lines] & ML_HAS_SPECIAL_OR_TAG) && P_GetLineSpecial(ld) == 200 && sw->slidething->player)
    {
