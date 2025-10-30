@@ -307,6 +307,7 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 					if ((tmznext <= shelltop && tmz > shelltop) || (tmznext > shelltop - sprarea && tmznext < shelltop))
 					{
 						P_DoSpring(special, player);
+						player->pflags |= PF_SPRINGSHELL;
 						return;
 					}
 					else if (tmz > shelltop - sprarea && tmz < shelltop) // Don't damage people springing up / down

@@ -425,7 +425,17 @@ void P_PlayerZMovement(mobj_t *mo)
 	}
 
 	if (mo->state == S_PLAY_SPRING && mo->momz < 0)
-		P_SetMobjState(mo, S_PLAY_FALL1);
+	{
+		if (player->pflags & PF_SPRINGSHELL)
+		{
+			player->pflags &= ~PF_SPRINGSHELL;
+			player->pflags &= ~PF_THOKKED;
+			P_SetMobjState(player->mo, S_PLAY_ATK1);
+			player->pflags |= PF_JUMPED;
+		}
+		else
+			P_SetMobjState(mo, S_PLAY_FALL1);
+	}
 }
 
 /*
