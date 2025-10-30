@@ -901,6 +901,26 @@ void DRAW_LevelSelect (void)
 		clearscreen--;
 	}
 
+	if (screenCount < 4) {
+		// Draw text
+		V_DrawStringCenterWithColormap(&menuFont, 160, 32, "SELECT A STAGE", YELLOWTEXTCOLORMAP);
+
+		// Draw black lines
+		DrawLine(86, 58, 152, 0x1F, false);
+		DrawLine(86, 193, 152, 0x1F, false);
+		DrawLine(86, 59, 134, 0x1F, true);
+		DrawLine(237, 59, 134, 0x1F, true);
+
+		// Draw red lines
+		DrawLine(84, 56, 152, 0x23, false);
+		DrawLine(84, 191, 152, 0x23, false);
+		DrawLine(84, 57, 134, 0x23, true);
+		DrawLine(235, 57, 134, 0x23, true);
+
+		// Draw level picture
+		DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
+	}
+
 	Mars_SetScrollPositions(0, screenCount >> 1, 0, 0);
 
 	int arrow_offset = ((screenCount>>2) & 7) * (((screenCount>>2) & 0x8) == 0);
@@ -938,29 +958,30 @@ void DRAW_LevelSelect (void)
 		background += (296>>1);
 	}
 
-	// Clear level name text
-	background = I_FrameBuffer() + (((320*160) + ((320>>1)-64)) >> 1);
+	if (screenCount < 4 || ((copper_table_selection & 0xF) && (copper_table_selection & 0xF) < 3)) {
+		// Clear level name text
+		background = I_FrameBuffer() + (((320*160) + ((320>>1)-64)) >> 1);
 
-	for (int y=0; y < 20; y++) {
-		for (int x=0; x < (128>>3); x++) {
-			// Write 8 thru pixels
-			*background++ = COLOR_THRU_2;
-			*background++ = COLOR_THRU_2;
-			*background++ = COLOR_THRU_2;
-			*background++ = COLOR_THRU_2;
+		for (int y=0; y < 20; y++) {
+			for (int x=0; x < (128>>3); x++) {
+				// Write 8 thru pixels
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+			}
+
+			background += (192>>1);
 		}
 
-		background += (192>>1);
-	}
+		// Draw text
+		V_DrawStringCenterWithColormap(&menuFont, 160, 160, selected_map_info.name, YELLOWTEXTCOLORMAP);
 
-	// Draw text
-	V_DrawStringCenterWithColormap(&menuFont, 160, 32, "SELECT A STAGE", YELLOWTEXTCOLORMAP);
-	V_DrawStringCenterWithColormap(&menuFont, 160, 160, selected_map_info.name, YELLOWTEXTCOLORMAP);
-
-	if (selected_map_info.act > 0) {
-		char act_string[6] = { 'A','C','T',' ','0','\0' };
-		act_string[4] += selected_map_info.act;
-		V_DrawStringCenterWithColormap(&menuFont, 160, 172, act_string, YELLOWTEXTCOLORMAP);
+		if (selected_map_info.act > 0) {
+			char act_string[6] = { 'A','C','T',' ','0','\0' };
+			act_string[4] += selected_map_info.act;
+			V_DrawStringCenterWithColormap(&menuFont, 160, 172, act_string, YELLOWTEXTCOLORMAP);
+		}
 	}
 
 	// Draw arrows
@@ -1038,21 +1059,6 @@ void DRAW_LevelSelect (void)
 			DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
 		}
 	}
-	else {
-		DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
-	}
-
-	// Draw black lines
-	DrawLine(86, 58, 152, 0x1F, false);
-	DrawLine(86, 193, 152, 0x1F, false);
-	DrawLine(86, 59, 134, 0x1F, true);
-	DrawLine(237, 59, 134, 0x1F, true);
-
-	// Draw red lines
-	DrawLine(84, 56, 152, 0x23, false);
-	DrawLine(84, 191, 152, 0x23, false);
-	DrawLine(84, 57, 134, 0x23, true);
-	DrawLine(235, 57, 134, 0x23, true);
 
 	// Draw chevrons
 	int chev_offset = (screenCount & 0x1F);
