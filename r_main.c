@@ -840,8 +840,10 @@ static boolean IsRotatedFlat(uint8_t flatnum)
 		|| flatnum == 47
 		|| flatnum == 48
 		|| flatnum == 49
+		|| flatnum == 52
 		|| flatnum == 53
 		|| flatnum == 55
+		|| flatnum == 57
 		|| flatnum == 58
 		|| flatnum == 61
 		|| flatnum == 62
@@ -855,6 +857,10 @@ static boolean IsRotatedFlat(uint8_t flatnum)
 		|| flatnum == 78
 		|| flatnum == 82
 		|| flatnum == 83
+		|| flatnum == 91
+		|| flatnum == 95
+		|| flatnum == 97
+		|| flatnum == 100
 		|| flatnum == 101
 		|| flatnum == 107
 		|| flatnum == 108;
