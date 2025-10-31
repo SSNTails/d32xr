@@ -620,6 +620,7 @@ int TIC_Abortable (void)
 /*============================================================================= */
 
 unsigned short screenCount = 0;
+unsigned int frame_sync = 0;
 int8_t selected_map = 0;
 dmapinfo_t selected_map_info;
 
@@ -631,8 +632,8 @@ static jagobj_t *chevblku_pic = NULL;
 static jagobj_t *chevblkd_pic = NULL;
 
 #ifdef SHOW_DISCLAIMER
-	#define SELECTABLE_MAP_COUNT	6
-	const int8_t selectable_maps[SELECTABLE_MAP_COUNT] = {0, 1, 2, 3, 4, 6};
+	#define SELECTABLE_MAP_COUNT	7
+	const int8_t selectable_maps[SELECTABLE_MAP_COUNT] = {0, 1, 2, 3, 4, 5, 6};
 #else
 	#define SELECTABLE_MAP_COUNT	gamemapcount
 #endif
@@ -704,9 +705,21 @@ int TIC_LevelSelect (void)
 			if (selected_map < 0) {
 				selected_map = SELECTABLE_MAP_COUNT-1;
 			}
+#ifdef SHOW_DISCLAIMER
+			if (emeralds < 6 && selected_map == 6) {
+				// Skip CEZ1
+				selected_map -= 1;
+			}
+#endif
 		}
 		else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
 			selected_map += 1;
+#ifdef SHOW_DISCLAIMER
+			if (emeralds < 6 && selected_map == 6) {
+				// Skip CEZ1
+				selected_map += 1;
+			}
+#endif
 			if (selected_map == SELECTABLE_MAP_COUNT) {
 				selected_map = 0;
 			}
@@ -896,6 +909,9 @@ void ClearCopper()
 
 void DRAW_LevelSelect (void)
 {
+	while (frame_sync == mars_vblank_count);
+	frame_sync = mars_vblank_count;
+	
 	if (clearscreen > 0) {
 		I_ResetLineTable();
 		clearscreen--;
@@ -928,34 +944,44 @@ void DRAW_LevelSelect (void)
 		arrow_offset = 7 - arrow_offset;
 	}
 
-	// Clear left arrow
-	pixel_t* background = I_FrameBuffer() + (((320*112) + ((320-16)>>1)-96-4) >> 1);
+	pixel_t* background;
 
-	for (int y=0; y < 29; y++) {
-		for (int x=0; x < (24>>3); x++) {
-			// Write 8 thru pixels
-			*background++ = COLOR_THRU_2;
-			*background++ = COLOR_THRU_2;
-			*background++ = COLOR_THRU_2;
-			*background++ = COLOR_THRU_2;
+	if ((((screenCount & 0x20) == 0) && ((screenCount & 0x2) == 0)) ||
+		(((screenCount & 0x20) != 0) && ((screenCount & 0x1E) == 0)))
+	{
+		// Clear left arrow
+		background = I_FrameBuffer() + (((320*112) + ((320-16)>>1)-96-4) >> 1);
+
+		for (int y=0; y < 29; y++) {
+			for (int x=0; x < (24>>3); x++) {
+				// Write 8 thru pixels
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+			}
+
+			background += (296>>1);
 		}
 
-		background += (296>>1);
-	}
+		// Clear right arrow
+		background = I_FrameBuffer() + (((320*112) + ((320-16)>>1)+96-4) >> 1);
 
-	// Clear right arrow
-	background = I_FrameBuffer() + (((320*112) + ((320-16)>>1)+96-4) >> 1);
+		for (int y=0; y < 29; y++) {
+			for (int x=0; x < (24>>3); x++) {
+				// Write 8 thru pixels
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+			}
 
-	for (int y=0; y < 29; y++) {
-		for (int x=0; x < (24>>3); x++) {
-			// Write 8 thru pixels
-			*background++ = COLOR_THRU_2;
-			*background++ = COLOR_THRU_2;
-			*background++ = COLOR_THRU_2;
-			*background++ = COLOR_THRU_2;
+			background += (296>>1);
 		}
 
-		background += (296>>1);
+		// Draw arrows
+		DrawJagobj(arrowl_pic, ((320-16)>>1)-96 - arrow_offset, 112);
+		DrawJagobj(arrowr_pic, ((320-16)>>1)+96 + arrow_offset, 112);
 	}
 
 	if (screenCount < 4 || ((copper_table_selection & 0xF) && (copper_table_selection & 0xF) < 3)) {
@@ -983,10 +1009,6 @@ void DRAW_LevelSelect (void)
 			V_DrawStringCenterWithColormap(&menuFont, 160, 172, act_string, YELLOWTEXTCOLORMAP);
 		}
 	}
-
-	// Draw arrows
-	DrawJagobj(arrowl_pic, ((320-16)>>1)-96 - arrow_offset, 112);
-	DrawJagobj(arrowr_pic, ((320-16)>>1)+96 + arrow_offset, 112);
 
 	// Draw level picture
 	if (lvlsel_lump < 0) {
@@ -1190,6 +1212,9 @@ void DRAW_Compatibility (void)
 
 	const uint8_t compatibility_color[6] = { 0x70, 0xBC, 0x49, 0x36, 0x47, 0x23 };
 
+	while (frame_sync == mars_vblank_count);
+	frame_sync = mars_vblank_count;
+
 	viewportbuffer = (pixel_t*)I_FrameBuffer();
 
 	h40_sky = 1;	// Make sure the screen isn't shifted three pixels.
@@ -1262,7 +1287,7 @@ void DRAW_Compatibility (void)
 
 	uint16_t *lines = Mars_FrameBufferLines();
 	short pixel_offset;
-	if (screenCount & 0x800) {
+	if (screenCount & 0x20) {
 		// Show "PRESS START" message.
 		pixel_offset = (((320*192)+512)/2);
 	}
@@ -1283,10 +1308,10 @@ void DRAW_Compatibility (void)
 #ifdef SHOW_DISCLAIMER
 int TIC_Disclaimer(void)
 {
-	if (++screenCount > 300)
+	if (++screenCount > 600)
 		return 1;
 
-	if (screenCount == 270)
+	if (screenCount == 540)
 	{
 		// Set to totally black
 		R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
@@ -1442,52 +1467,66 @@ void BufferedDrawSprite (int sprite, int frame, int rotation, int top, int left,
 
 void DRAW_Disclaimer (void)
 {
-	unsigned char text1[] = { 0x2C, 0x59, 0xFF, 0x79, 0x68, 0x2D, 0x71, 0xEA, 0x3D, 0x31, 0xE5, 0x62, 0x07, 0x3F, 0x7C, 0xE3, 0x78};
-	unsigned char text2[] = { 0x36, 0x5E, 0xE2, 0x0A, 0x0A, 0x2F, 0x10, 0xF4, 0x37, 0x5D, 0xF2, 0x2A};
-	unsigned char text3[] = { 0x10, 0x65, 0xC2, 0x5A, 0x3B, 0x50, 0x1F, 0x88, 0x0B, 0x62, 0xD8, 0x5E, 0x29, 0x03, 0x5C, 0xD4, 0x56, 0x62, 0xC4, 0x48, 0x7A, 0x44, 0x5F, 0xD5, 0x1F, 0x3E, 0xC5, 0x58, 0x2A, 0x59, 0x02, 0xDF, 0x78 };
-	const VINT stext1 = 16;
-	const VINT stext2 = 11;
-	const VINT stext3 = 32;
+	while (frame_sync == mars_vblank_count);
+	frame_sync = mars_vblank_count;
 
-	int sum = 0;
-	for (int i = 0; i < stext1; i++)
-		sum += text1[i] / 2;
-	for (int i = 0; i < stext2; i++)
-		sum += text2[i] / 2;
-	for (int i = 0; i < stext3; i++)
-		sum += text3[i] / 2;
+	if (screenCount < 4) {
+		unsigned char text1[] = { 0x2C, 0x59, 0xFF, 0x79, 0x68, 0x2D, 0x71, 0xEA, 0x3D, 0x31, 0xE5, 0x62, 0x07, 0x3F, 0x7C, 0xE3, 0x78};
+		unsigned char text2[] = { 0x36, 0x5E, 0xE2, 0x0A, 0x0A, 0x2F, 0x10, 0xF4, 0x37, 0x5D, 0xF2, 0x2A};
+		unsigned char text3[] = { 0x10, 0x65, 0xC2, 0x5A, 0x3B, 0x50, 0x1F, 0x88, 0x0B, 0x62, 0xD8, 0x5E, 0x29, 0x03, 0x5C, 0xD4, 0x56, 0x62, 0xC4, 0x48, 0x7A, 0x44, 0x5F, 0xD5, 0x1F, 0x3E, 0xC5, 0x58, 0x2A, 0x59, 0x02, 0xDF, 0x78 };
+		const VINT stext1 = 16;
+		const VINT stext2 = 11;
+		const VINT stext3 = 32;
 
-	if (sum != keyValue)
-		I_Error("");
+		int sum = 0;
+		for (int i = 0; i < stext1; i++)
+			sum += text1[i] / 2;
+		for (int i = 0; i < stext2; i++)
+			sum += text2[i] / 2;
+		for (int i = 0; i < stext3; i++)
+			sum += text3[i] / 2;
 
-	parse_data(text1, stext1+1);
-	parse_data(text2, stext2+1);
-	parse_data(text3, stext3+1);
+		if (sum != keyValue)
+			I_Error("");
 
-	DrawFillRect(0, 0, 320, viewportHeight, COLOR_BLACK);
+		parse_data(text1, stext1+1);
+		parse_data(text2, stext2+1);
+		parse_data(text3, stext3+1);
 
-	if (screenCount < 240)
-	{
-		viewportbuffer = (pixel_t*)I_FrameBuffer();
-		I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
-		BufferedDrawSprite(SPR_PLAY, 1 + ((screenCount / 8) & 1), 0, 80, 160, false);
+		DrawFillRect(0, 0, 320, viewportHeight, COLOR_BLACK);
+
+		V_DrawStringCenter(&creditFont, 160, 64+32, (const char*)text1);
+		V_DrawStringCenter(&creditFont, 160, 88+32, (const char*)text2);
+
+		V_DrawStringCenter(&menuFont, 160, 128+32, (const char*)text3);
 	}
-	else if (screenCount < 250)
+
+	if (screenCount < 500)
 	{
-		DrawJagobjLump(W_GetNumForName("ZOOM"), 136, 80-56, NULL, NULL);
+		DrawFillRect((320>>1)-(56>>1), 24, 56, 64, COLOR_BLACK);
+
+		if (screenCount < 480)
+		{
+			viewportbuffer = (pixel_t*)I_FrameBuffer();
+			I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
+			BufferedDrawSprite(SPR_PLAY, 1 + ((screenCount>>4) & 1), 0, 80, 160, false);
+		}
+		else
+		{
+			DrawJagobjLump(W_GetNumForName("ZOOM"), 136, 80-56, NULL, NULL);
+		}
 	}
 	else
 	{
-		VINT Xpos = screenCount - 250;
+		VINT Xpos = screenCount - 500;
+
+		DrawFillRect((320>>1)-(80>>1) + (Xpos<<3), 20, 80, 64, COLOR_BLACK);
+
 		viewportbuffer = (pixel_t*)I_FrameBuffer();
 		I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
-		BufferedDrawSprite(SPR_PLAY, 11 + ((screenCount / 2) % 4), 2, 80, 160  + (Xpos * 16), true);
+		BufferedDrawSprite(SPR_PLAY, 11 + ((screenCount>>2) & 3), 2, 80, 160 + (Xpos<<3), true);
 	}
 
-	V_DrawStringCenter(&creditFont, 160, 64+32, (const char*)text1);
-	V_DrawStringCenter(&creditFont, 160, 88+32, (const char*)text2);
-
-	V_DrawStringCenter(&menuFont, 160, 128+32, (const char*)text3);
 	Mars_ClearCache();
 }
 #endif

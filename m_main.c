@@ -632,7 +632,7 @@ int M_Ticker (void)
 							playermap = 1;
 
 #ifdef SHOW_DISCLAIMER
-						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || gamemapnumbers[playermap-1] == 7 || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
+						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || (gamemapnumbers[playermap-1] == 10 && emeralds < 6) || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
 						{
 							if (++playermap == gamemapcount + 1)
 								playermap = 1;
@@ -644,7 +644,7 @@ int M_Ticker (void)
 						if(--playermap == 0)
 							playermap = gamemapcount;
 #ifdef SHOW_DISCLAIMER
-						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || gamemapnumbers[playermap-1] == 7 || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
+						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || (gamemapnumbers[playermap-1] == 10 && emeralds < 6) || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
 						{
 							if(--playermap == 0)
 								playermap = gamemapcount;
@@ -827,9 +827,11 @@ void M_Drawer (void)
 #ifndef MARS
 		EraseBlock(80, m_doom_height + CURSORY(NUMMAINITEMS - 2) + ITEMSPACE + 2, 320, nums[0]->height);
 #endif
-		D_snprintf(mapNum, sizeof(mapNum), "%d", mapnumber);
+		D_snprintf(mapNum, sizeof(mapNum), "%d", ((mapnumber-1)%3)+1);
 
-		V_DrawStringLeft(&titleNumberFont, item->x + 96, y + 2, mapNum);
+		if (mapnumber < TITLE_MAP_NUMBER) {
+			V_DrawStringLeft(&titleNumberFont, item->x + 96, y + 2, mapNum);
+		}
 
 		V_DrawStringLeft(&menuFont, (320 - (tmplen * 14)) >> 1, y + ITEMSPACE + 2, tmp);
 
