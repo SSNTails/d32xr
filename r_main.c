@@ -823,9 +823,41 @@ void R_SetTextureData(texture_t *tex, uint8_t *start, int size, boolean skiphead
 	}
 }
 
-static boolean IsWavyFlat(byte flatnum)
+static boolean IsWavyFlat(uint8_t flatnum)
 {
     return (flatnum >= 9 && flatnum <= 30); // BWATER/CEZWATR/CHEMG/DWATER/RLAVA1
+}
+
+static boolean IsRotatedFlat(uint8_t flatnum)
+{
+	return flatnum == 7
+		|| flatnum == 8
+		|| flatnum == 39
+		|| flatnum == 40
+		|| flatnum == 41
+		|| flatnum == 44
+		|| flatnum == 46
+		|| flatnum == 47
+		|| flatnum == 48
+		|| flatnum == 49
+		|| flatnum == 53
+		|| flatnum == 55
+		|| flatnum == 58
+		|| flatnum == 61
+		|| flatnum == 62
+		|| flatnum == 63
+		|| flatnum == 64
+		|| flatnum == 65
+		|| flatnum == 66
+		|| flatnum == 72
+		|| flatnum == 75
+		|| flatnum == 77
+		|| flatnum == 78
+		|| flatnum == 82
+		|| flatnum == 83
+		|| flatnum == 101
+		|| flatnum == 107
+		|| flatnum == 108;
 }
 
 /*
@@ -846,7 +878,11 @@ void R_SetFlatData(int f, uint8_t *start, int size)
 	{
 		flatpixels[f].data[j] = data;
 		flatpixels[f].size = w;
-		flatpixels[f].wavy = IsWavyFlat(f);
+		flatpixels[f].flags = 0;
+		if (IsWavyFlat(f))
+			flatpixels[f].flags |= FLF_WAVY;
+		if (IsRotatedFlat(f))
+			flatpixels[f].flags |= FLF_ROTATE;
 		if (texmips) {
 			data += w * w;
 			w >>= 1;
@@ -860,7 +896,11 @@ void R_SetFlatData(int f, uint8_t *start, int size)
 	{
 		flatpixels[f].data[j] = data;
 		flatpixels[f].size = w;
-		flatpixels[f].wavy = IsWavyFlat(f);
+		flatpixels[f].flags = 0;
+		if (IsWavyFlat(f))
+			flatpixels[f].flags |= FLF_WAVY;
+		if (IsRotatedFlat(f))
+			flatpixels[f].flags |= FLF_ROTATE;
 		if (texmips) {
 			data += w * w;
 			w >>= 1;

@@ -170,7 +170,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     }
 #endif
 
-    if (flatpixels[flatnum].wavy)
+    if (flatpixels[flatnum].flags & FLF_WAVY)
     {
         const int wtofs = 75 * gametic;
         const int peck = (wtofs + (distance >> 10)) & 8191;
@@ -341,6 +341,8 @@ static void R_DrawPlanes2(int isFOF)
     angle_t angle;
     localplane_t lpl;
     visplane_t* pl;
+    fixed_t basexscale, baseyscale;
+    fixed_t basexscale2, baseyscale2;
 
 #ifdef MARS
     Mars_ClearCacheLine(&vd.lastvisplane);
@@ -351,22 +353,12 @@ static void R_DrawPlanes2(int isFOF)
     if (vd.gsortedvisplanes == NULL)
         return;
 
-#ifdef FLATDRAW2X
-    lpl.x = vd.viewx >> 1;
-    lpl.y = -vd.viewy >> 1;
-#else
-    lpl.x = vd.viewx;
-    lpl.y = -vd.viewy;
-#endif
-
-    lpl.angle = vd.viewangle;
-    angle = (lpl.angle - ANG90) >> ANGLETOFINESHIFT;
-
-    lpl.basexscale = FixedDiv(finecosine(angle), centerXFrac);
-    lpl.baseyscale = -FixedDiv(finesine(angle), centerXFrac);
-#ifdef MARS
-    fixed_t baseyscale = lpl.baseyscale;
-#endif
+    angle = (vd.viewangle - ANG90) >> ANGLETOFINESHIFT;
+    basexscale = FixedDiv(finecosine(angle), centerXFrac);
+    baseyscale = -FixedDiv(finesine(angle), centerXFrac);
+    angle = (vd.viewangle) >> ANGLETOFINESHIFT;
+    basexscale2 = FixedDiv(finecosine(angle), centerXFrac);
+    baseyscale2 = -FixedDiv(finesine(angle), centerXFrac);
 
     while ((pl = R_GetNextPlane((uint16_t *)vd.gsortedvisplanes)) != NULL)
     {
@@ -386,12 +378,39 @@ static void R_DrawPlanes2(int isFOF)
 
         const int flatnum = pl->flatandlight&0xff;
 
+        if (flatpixels[flatnum].flags & FLF_ROTATE)
+        {
+#ifdef FLATDRAW2X
+            lpl.x = -(vd.viewx >> 1);
+            lpl.y = -(vd.viewy >> 1);
+#else
+            lpl.x = -vd.viewx;
+            lpl.y = -vd.viewy;
+#endif
+            lpl.angle = vd.viewangle + ANG90;
+            lpl.basexscale = basexscale2;
+            lpl.baseyscale = baseyscale2;
+        }
+        else
+        {
+#ifdef FLATDRAW2X
+            lpl.x = vd.viewx >> 1;
+            lpl.y = -(vd.viewy >> 1);
+#else
+            lpl.x = vd.viewx;
+            lpl.y = -vd.viewy;
+#endif
+            lpl.angle = vd.viewangle;
+            lpl.basexscale = basexscale;
+            lpl.baseyscale = baseyscale;
+        }
+
         lpl.xoff = UPPER8(pl->offs);
         lpl.yoff = LOWER8(pl->offs);
-        lpl.wavy = flatpixels[flatnum].wavy;
+        lpl.wavy = flatpixels[flatnum].flags & FLF_WAVY;
 
 #ifdef MARS
-        lpl.baseyscale = baseyscale * flatpixels[flatnum].size;
+        lpl.baseyscale *= flatpixels[flatnum].size;
 #endif
 
         I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);

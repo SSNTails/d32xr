@@ -195,10 +195,13 @@ typedef struct
 #endif
 } texture_t;
 
+#define FLF_WAVY 1
+#define FLF_ROTATE 2
+
 typedef struct
 {
 	VINT size;
-	VINT wavy;
+	VINT flags;
 #ifdef MARS
 #if FLATMIPS
 	inpixel_t 	*data[MIPLEVELS];
