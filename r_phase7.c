@@ -390,6 +390,8 @@ static void R_DrawPlanes2(int isFOF)
             lpl.angle = vd.viewangle + ANG90;
             lpl.basexscale = basexscale2;
             lpl.baseyscale = baseyscale2;
+            lpl.xoff = LOWER8(pl->offs);
+            lpl.yoff = UPPER8(pl->offs);
         }
         else
         {
@@ -403,10 +405,10 @@ static void R_DrawPlanes2(int isFOF)
             lpl.angle = vd.viewangle;
             lpl.basexscale = basexscale;
             lpl.baseyscale = baseyscale;
+            lpl.xoff = UPPER8(pl->offs);
+            lpl.yoff = LOWER8(pl->offs);
         }
 
-        lpl.xoff = UPPER8(pl->offs);
-        lpl.yoff = LOWER8(pl->offs);
         lpl.wavy = flatpixels[flatnum].flags & FLF_WAVY;
 
 #ifdef MARS
