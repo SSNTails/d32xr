@@ -381,11 +381,11 @@ static void R_DrawPlanes2(int isFOF)
         if (flatpixels[flatnum].flags & FLF_ROTATE)
         {
 #ifdef FLATDRAW2X
-            lpl.x = -(vd.viewx >> 1);
-            lpl.y = -(vd.viewy >> 1);
+            lpl.x = -(vd.viewy >> 1);
+            lpl.y = -(vd.viewx >> 1);
 #else
-            lpl.x = -vd.viewx;
-            lpl.y = -vd.viewy;
+            lpl.x = -vd.viewy;
+            lpl.y = -vd.viewx;
 #endif
             lpl.angle = vd.viewangle + ANG90;
             lpl.basexscale = basexscale2;
