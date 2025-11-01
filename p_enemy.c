@@ -2278,12 +2278,15 @@ void A_TurretFire(mobj_t *actor, int16_t var1, int16_t var2)
 void A_DetonChase(mobj_t *actor, int16_t var1, int16_t var2)
 {
 	fixed_t xyspeed;
-	fixed_t speed = 20*FRACUNIT;
+	fixed_t speed = mobjinfo[actor->type].speed;
 
 	fixed_t xydist = P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y);
 	angle_t exact = R_PointToAngle2(0, 0, xydist, actor->target->z - actor->z)>>ANGLETOFINESHIFT;
 	xyspeed = FixedMul(FixedMul(speed,3*FRACUNIT/4), finecosine(exact));
 	actor->momz = FixedMul(FixedMul(speed,3*FRACUNIT/4), finesine(exact));
+
+	if (actor->target && actor->target->health > 0)
+		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
 
 	P_InstaThrust(actor, actor->angle, xyspeed);
 
@@ -2294,7 +2297,7 @@ void A_DetonChase(mobj_t *actor, int16_t var1, int16_t var2)
 		xyspeed = 1;
 
 	// Beep faster the closer you get
-	if (leveltime % xyspeed == 0)
+	if (xydist < 256*FRACUNIT && (leveltime % xyspeed == 0))
 		S_StartSound(actor, sfx_deton);
 }
 

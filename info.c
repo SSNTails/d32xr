@@ -279,6 +279,7 @@ STATE(SPR_ESHI,0,TICRATE/2,A_EggShieldBroken,S_NULL), // S_EGGSHIELDBREAK
 // Deton
 STATE(SPR_DETN,0,TICRATE,A_Look,S_DETON1), // S_DETON1
 STATE(SPR_DETN,0,1,A_DetonChase,S_DETON2), // S_DETON2
+STATE(SPR_DETN,0,1,A_MineExplode,S_SONIC3KBOSSEXPLOSION1), // S_DETONEXPLODE
 
 // THZ Turret
 STATE(SPR_TRET,0,90,A_TurretPower,S_TURRETFIRE), // S_TURRET
@@ -1889,17 +1890,17 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		sfx_None,       // painsound
 		S_NULL,         // meleestate
 		S_NULL,         // missilestate
-		S_XPLD_FLICKY,  // deathstate
+		S_DETONEXPLODE,  // deathstate
 		S_NULL,         // xdeathstate
 		sfx_s3k_b4,     // deathsound
-		1*FRACUNIT,     // speed
+		10*FRACUNIT,     // speed
 		20*FRACUNIT,    // radius
 		32*FRACUNIT,    // height
-		0,              // mass
+		MT_SONIC3KBOSSEXPLODE, // mass
 		1,              // damage
 		sfx_None,       // activesound
 		MF_NOBLOCKMAP|MF_NOGRAVITY, // flags
-		MF2_MISSILE|MF2_FLOAT,              // flags2
+		MF2_ENEMY|MF2_MISSILE|MF2_FLOAT,              // flags2
 	},
 	{           // MT_TURRET
 		110,            // doomednum
