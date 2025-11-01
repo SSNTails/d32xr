@@ -1942,7 +1942,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		S_TURRETLASEREXPLODE, // deathstate
 		S_NULL,         // xdeathstate
 		sfx_turhit,     // deathsound
-		15*FRACUNIT,    // speed
+		10*FRACUNIT,    // speed
 		12*FRACUNIT,    // radius
 		24*FRACUNIT,    // height
 		0,              // mass

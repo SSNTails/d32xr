@@ -790,35 +790,32 @@ void P_CheckMissileSpawn (mobj_t *th)
 
 mobj_t *P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type)
 {
-	mobj_t		*th;
-	angle_t		an;
-	int			dist;
-	int			speed;
-	const mobjinfo_t* thinfo = &mobjinfo[type];
+    mobj_t        *th;
+    angle_t        an;
+    int            dist;
+    int            speed;
+    const mobjinfo_t* thinfo = &mobjinfo[type];
 
-	th = P_SpawnMobj (source->x,source->y, source->z + 4*8*FRACUNIT, type);
-	if (thinfo->seesound)
-		S_StartSound (source, thinfo->seesound);
-	th->target = source;		/* where it came from */
-	an = R_PointToAngle2 (source->x, source->y, dest->x, dest->y);	
-	th->angle = an;
+    th = P_SpawnMobj (source->x,source->y, source->z + 4*8*FRACUNIT, type);
+    if (thinfo->seesound)
+        S_StartSound (source, thinfo->seesound);
+    th->target = source;        /* where it came from */
+    an = R_PointToAngle2 (source->x, source->y, dest->x, dest->y);    
+    th->angle = an;
 
-	th->momx = dest->x - th->x;
-	th->momy = dest->y - th->y;
-	th->momz = dest->z - th->z;
-	dist = P_AproxDistance(P_AproxDistance(dest->x - th->x, dest->y - th->y), dest->z - th->z);
-	th->momx = FixedDiv(th->momx, dist);
-	th->momy = FixedDiv(th->momy, dist);
-	th->momz = FixedDiv(th->momz, dist);
+    th->momx = dest->x - th->x;
+    th->momy = dest->y - th->y;
+    th->momz = dest->z - th->z;
+	FV3_Normalize((vector3_t*)&th->momx, (vector3_t*)&th->momx);
 
-	speed = mobjinfo[th->type].speed;
-	th->momx = FixedMul(th->momx, speed);
-	th->momy = FixedMul(th->momy, speed);
-	th->momz = FixedMul(th->momz, speed);
+    speed = mobjinfo[th->type].speed;
+    th->momx = FixedMul(th->momx, speed);
+    th->momy = FixedMul(th->momy, speed);
+    th->momz = FixedMul(th->momz, speed)*2; // why do we multiply by two here I don't even
 
-	P_CheckMissileSpawn (th);
+    P_CheckMissileSpawn (th);
 
-	return th;
+    return th;
 }
 
 void P_MobjCheckWater(mobj_t *mo)
