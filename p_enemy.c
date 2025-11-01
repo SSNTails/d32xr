@@ -2208,6 +2208,96 @@ void A_EggShieldBroken(mobj_t *actor, int16_t var1, int16_t var2)
 	guard->flags2 |= MF2_SHOOTABLE;
 }
 
+void A_TurretPower(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	actor->target = NULL;
+
+	// Find closest player
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		if (players[i].playerstate != PST_LIVE)
+			continue;
+
+		if (P_AproxDistance(actor->x - players[i].mo->x, actor->y - players[i].mo->y) < 2048*FRACUNIT)
+		{
+			actor->target = players[i].mo;
+			break;
+		}
+	}
+
+	if (!actor->target)
+		return;
+
+	S_StartSound(actor, mobjinfo[actor->type].activesound);
+	actor->reactiontime = TICRATE >> 1;
+}
+
+void A_TurretFire(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	if (actor->reactiontime > 0)
+	{
+		actor->reactiontime--;
+		if (actor->reactiontime == 0)
+		{
+			P_SetMobjState(actor, mobjinfo[actor->type].spawnstate);
+			return;
+		}
+	}
+	if (actor->reactiontime == 0)
+		actor->reactiontime = TICRATE >> 1;
+
+	actor->target = NULL;
+
+	// Find closest player
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		if (players[i].playerstate != PST_LIVE)
+			continue;
+
+		if (P_AproxDistance(actor->x - players[i].mo->x, actor->y - players[i].mo->y) < 2048*FRACUNIT)
+		{
+			actor->target = players[i].mo;
+			break;
+		}
+	}
+
+	if (!actor->target)
+		return;
+
+	// Shoot at them
+	P_SpawnMissile(actor, actor->target, mobjinfo[actor->type].mass);
+	S_StartSound(actor, mobjinfo[actor->type].attacksound);
+}
+
+void A_DetonChase(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	fixed_t xyspeed;
+	fixed_t speed = 20*FRACUNIT;
+
+	fixed_t xydist = P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y);
+	angle_t exact = R_PointToAngle2(0, 0, xydist, actor->target->z - actor->z)>>ANGLETOFINESHIFT;
+	xyspeed = FixedMul(FixedMul(speed,3*FRACUNIT/4), finecosine(exact));
+	actor->momz = FixedMul(FixedMul(speed,3*FRACUNIT/4), finesine(exact));
+
+	P_InstaThrust(actor, actor->angle, xyspeed);
+
+	// Variable re-use
+	xyspeed = (P_AproxDistance(actor->target->x - actor->x, P_AproxDistance(actor->target->y - actor->y, actor->target->z - actor->z))>>(FRACBITS+6));
+
+	if (xyspeed < 1)
+		xyspeed = 1;
+
+	// Beep faster the closer you get
+	if (leveltime % xyspeed == 0)
+		S_StartSound(actor, sfx_deton);
+}
+
 /*============================================================================= */
 
 /* a move in p_base.c caused a missile to hit another thing or wall */

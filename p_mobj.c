@@ -802,16 +802,20 @@ mobj_t *P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type)
 	th->target = source;		/* where it came from */
 	an = R_PointToAngle2 (source->x, source->y, dest->x, dest->y);	
 	th->angle = an;
-	an >>= ANGLETOFINESHIFT;
-	speed = mobjinfo[th->type].speed >> 16;
-	th->momx = speed * finecosine(an);
-	th->momy = speed * finesine(an);
-	
-	dist = P_AproxDistance (dest->x - source->x, dest->y - source->y);
-	dist = dist / mobjinfo[th->type].speed;
-	if (dist < 1)
-		dist = 1;
-	th->momz = (dest->z - source->z) / dist;
+
+	th->momx = dest->x - th->x;
+	th->momy = dest->y - th->y;
+	th->momz = dest->z - th->z;
+	dist = P_AproxDistance(P_AproxDistance(dest->x - th->x, dest->y - th->y), dest->z - th->z);
+	th->momx = FixedDiv(th->momx, dist);
+	th->momy = FixedDiv(th->momy, dist);
+	th->momz = FixedDiv(th->momz, dist);
+
+	speed = mobjinfo[th->type].speed;
+	th->momx = FixedMul(th->momx, speed);
+	th->momy = FixedMul(th->momy, speed);
+	th->momz = FixedMul(th->momz, speed);
+
 	P_CheckMissileSpawn (th);
 
 	return th;

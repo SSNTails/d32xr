@@ -208,7 +208,10 @@ static boolean PB_CheckLine(line_t *ld, pmovetest_t *mt)
    if(ld->sidenum[1] == -1)
       return false; // one-sided line
 
-   if(!(mt->checkthing->flags2 & MF2_MISSILE) && (ldflags[ld-lines] & (ML_BLOCKING|ML_BLOCKMONSTERS)))
+   if (ldflags[ld-lines] & ML_BLOCKING)
+      return false;
+
+   if(!(mt->checkthing->flags2 & MF2_MISSILE) && (ldflags[ld-lines] & ML_BLOCKMONSTERS))
       return false; // explicitly blocking
 
    front = LD_FRONTSECTOR(ld);

@@ -24,6 +24,7 @@ const char * const sprnames[NUMSPRITES] = {
 "BUZZ",
 "CBFS",
 "CORL",
+"DETN",
 "DRWN",
 "DUST",
 "EGG1",
@@ -58,6 +59,7 @@ const char * const sprnames[NUMSPRITES] = {
 "LASF",
 "LASR",
 "MAGN",
+"MBWN",
 "MINE",
 "MISL",
 "MSTV",
@@ -91,6 +93,8 @@ const char * const sprnames[NUMSPRITES] = {
 "THZP",
 "THZT",
 "TOKE",
+"TRET",
+"TRLS",
 "TV1U",
 "TVAR",
 "TVAT",
@@ -149,6 +153,9 @@ void A_FaceStabUnPain();
 void A_GuardChase();
 void A_EggShield();
 void A_EggShieldBroken();
+void A_DetonChase();
+void A_TurretPower();
+void A_TurretFire();
 
 #define STATE(sprite,frame,tics,action,nextstate) {sprite,frame,tics,0,0,nextstate,action}
 #define STATE2(sprite,frame,tics,action,var1,var2,nextstate) {sprite,frame,tics,var1,var2,nextstate,action}
@@ -268,6 +275,19 @@ STATE(SPR_SPSH,9,1,A_GuardChase,S_EGGGUARD_RUN1),  // S_EGGGUARD_RUN4
 
 STATE(SPR_ESHI,0,1,A_EggShield,S_EGGSHIELD),  // S_EGGSHIELD
 STATE(SPR_ESHI,0,TICRATE/2,A_EggShieldBroken,S_NULL), // S_EGGSHIELDBREAK
+
+// Deton
+STATE(SPR_DETN,0,TICRATE,A_Look,S_DETON1), // S_DETON1
+STATE(SPR_DETN,0,1,A_DetonChase,S_DETON2), // S_DETON2
+
+// THZ Turret
+STATE(SPR_TRET,0,90,A_TurretPower,S_TURRETFIRE), // S_TURRET
+STATE(SPR_TRET,0,8,A_TurretFire,S_TURRETFIRE), // S_TURRETFIRE
+
+STATE(SPR_TRLS,FF_FULLBRIGHT,-1,NULL,S_TURRETLASEREXPLODE), // S_TURRETLASER
+STATE(SPR_TRLS,FF_FULLBRIGHT|1,2,NULL,S_NULL), // S_TURRETLASEREXPLODE
+
+STATE(SPR_MBWN,0,-1,NULL,S_MBROWN), // S_MBROWN
 
 STATE(SPR_TOKE,0,2,NULL,S_TOKEN2), // S_TOKEN1
 STATE(SPR_TOKE,1,2,NULL,S_TOKEN3), // S_TOKEN2
@@ -1855,6 +1875,106 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		sfx_None,        // activesound
 		MF_SPECIAL|MF_NOGRAVITY, // flags
 		MF2_SHOOTABLE           // flags2
+	},
+	{           // MT_DETON
+		108,            // doomednum
+		S_DETON1,       // spawnstate
+		1,              // spawnhealth
+		S_DETON2,       // seestate
+		sfx_s3k_86,     // seesound
+		1,              // reactiontime
+		sfx_deton,      // attacksound
+		S_NULL,         // painstate
+		3072,           // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_XPLD_FLICKY,  // deathstate
+		S_NULL,         // xdeathstate
+		sfx_s3k_b4,     // deathsound
+		1*FRACUNIT,     // speed
+		20*FRACUNIT,    // radius
+		32*FRACUNIT,    // height
+		0,              // mass
+		1,              // damage
+		sfx_None,       // activesound
+		MF_NOBLOCKMAP|MF_NOGRAVITY, // flags
+		MF2_MISSILE|MF2_FLOAT,              // flags2
+	},
+	{           // MT_TURRET
+		110,            // doomednum
+		S_TURRET,       // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,       // seesound
+		8,              // reactiontime
+		sfx_trfire,     // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		sfx_s3k_b4,     // deathsound
+		0,              // speed
+		16*FRACUNIT,    // radius
+		32*FRACUNIT,    // height
+		MT_TURRETLASER, // mass
+		1,              // damage
+		sfx_trpowr,     // activesound
+		MF_NOBLOCKMAP,  // flags
+		0,              // flags2
+	},
+	{           // MT_TURRETLASER
+		-1,             // doomednum
+		S_TURRETLASER,  // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,       // seesound
+		8,              // reactiontime
+		sfx_None,       // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_TURRETLASEREXPLODE, // deathstate
+		S_NULL,         // xdeathstate
+		sfx_turhit,     // deathsound
+		15*FRACUNIT,    // speed
+		12*FRACUNIT,    // radius
+		24*FRACUNIT,    // height
+		0,              // mass
+		1,              // damage
+		sfx_None,       // activesound
+		MF_NOBLOCKMAP|MF_NOGRAVITY, // flags
+		MF2_MISSILE|MF2_FLOAT,          // flags2
+	},
+	{           // MT_MBROWN
+		-1,           // doomednum
+		S_MBROWN,       // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,       // seesound
+		8,              // reactiontime
+		sfx_None,       // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		sfx_None,       // deathsound
+		0,              // speed
+		16*FRACUNIT,    // radius
+		56*FRACUNIT,   // height
+		4,              // mass
+		0,              // damage
+		sfx_None,       // activesound
+		MF_SPECIAL, // flags
+		0          // flags2
 	},
 	{           // MT_TOKEN
 		312,            // doomednum

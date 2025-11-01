@@ -32,6 +32,7 @@ typedef enum
   sfx_armasg,
   sfx_attrsg,
   sfx_cannon,
+  sfx_deton,
   sfx_dwnind,
   sfx_elemsg,
   sfx_forcsg,

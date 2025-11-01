@@ -204,13 +204,12 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
       return false; // one-sided line
 
    const uint16_t lineflags = ldflags[ld-lines];
-   if(!(tmthing->flags2 & MF2_MISSILE))
-   {
-      if(lineflags & ML_BLOCKING)
-         return false; // explicitly blocking everything
-      if(!(tmthing->player || tmthing->type == MT_CAMERA) && (lineflags & ML_BLOCKMONSTERS))
-         return false; // block monsters only
-   }
+
+   if(lineflags & ML_BLOCKING)
+      return false; // explicitly blocking everything
+
+   if(!(tmthing->flags2 & MF2_MISSILE) && !(tmthing->player || tmthing->type == MT_CAMERA) && (lineflags & ML_BLOCKMONSTERS))
+      return false; // block monsters only
 
    front = LD_FRONTSECTOR(ld);
    back  = LD_BACKSECTOR(ld);

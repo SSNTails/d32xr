@@ -17,6 +17,7 @@ const char * const S_sfxnames[NUMSFX] =
   "dsarmasg",
   "dsattrsg",
   "dscannon",
+  "dsdeton",
   "dsdwnind",
   "dselemsg",
   "dsforcsg",
