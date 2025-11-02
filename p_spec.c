@@ -722,7 +722,7 @@ void P_UpdateSpecials (int8_t numframes)
 	{
 		side_t *side;
 		int16_t textureoffset, rowoffset;
-		line = linespeciallist[i]; // TODO: Should this be a key/value pair instead?
+		line = &lines[linespeciallist[i]];
 		side = &sides[line->sidenum[0]];
 		switch(P_GetLineSpecial(line))
 		{
@@ -1587,7 +1587,7 @@ if (sm->msublinks > sm->mlength)
 }
 
 VINT		numlineanimspecials = 0;
-line_t	**linespeciallist = NULL;
+VINT	*linespeciallist = NULL;
 
 void P_SpawnSpecials (void)
 {
