@@ -2280,6 +2280,9 @@ void A_DetonChase(mobj_t *actor, int16_t var1, int16_t var2)
 	fixed_t xyspeed;
 	fixed_t speed = mobjinfo[actor->type].speed;
 
+	actor->flags2 &= ~MF2_ENEMY;
+	actor->flags2 |= MF2_MISSILE;
+
 	fixed_t xydist = P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y);
 	angle_t exact = R_PointToAngle2(0, 0, xydist, actor->target->z - actor->z)>>ANGLETOFINESHIFT;
 	xyspeed = FixedMul(FixedMul(speed,3*FRACUNIT/4), finecosine(exact));
@@ -2299,6 +2302,9 @@ void A_DetonChase(mobj_t *actor, int16_t var1, int16_t var2)
 	// Beep faster the closer you get
 	if (xydist < 256*FRACUNIT && (leveltime % xyspeed == 0))
 		S_StartSound(actor, sfx_deton);
+
+	if (xydist < 16*FRACUNIT)
+		P_SetMobjState(actor, mobjinfo[actor->type].deathstate);
 }
 
 /*============================================================================= */

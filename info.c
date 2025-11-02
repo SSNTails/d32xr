@@ -1900,7 +1900,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		1,              // damage
 		sfx_None,       // activesound
 		MF_NOBLOCKMAP|MF_NOGRAVITY, // flags
-		MF2_ENEMY|MF2_MISSILE|MF2_FLOAT,              // flags2
+		MF2_ENEMY|MF2_FLOAT,              // flags2
 	},
 	{           // MT_TURRET
 		110,            // doomednum
