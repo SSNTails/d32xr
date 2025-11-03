@@ -1109,8 +1109,9 @@ void DrawScaledJagobj(jagobj_t* jo, int x, int y,
 	}
 }
 
-void DrawJagobj2(jagobj_t* jo, int x, int y, 
-	int src_x, int src_y, int src_w, int src_h, pixel_t *fb)
+void DrawJagobj3(jagobj_t* jo, int x, int y, 
+	int src_x, int src_y, int src_w, int src_h,
+	const int canvas_width, pixel_t *fb)
 {
 	int		srcx, srcy;
 	int		width, height, depth, flags, index, hw;
@@ -1153,8 +1154,8 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 	}
 	srcy += src_y;
 
-	if (x + width > 320)
-		width = 320 - x;
+	if (x + width > canvas_width)
+		width = canvas_width - x;
 	if (y + height > mars_framebuffer_height)
 		height = mars_framebuffer_height - y;
 	inc = rowsize - width;
@@ -1172,7 +1173,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 		index = (index << 1) + (flags & 2 ? 1 : 0);
 	}
 
-	dest = (byte*)fb + y * 320 + x;
+	dest = (byte*)fb + y * canvas_width + x;
 	source = jo->data + srcx + srcy * rowsize;
 
 	if (depth == 2)
@@ -1181,6 +1182,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 		{
 			pixel_t* dest2 = (pixel_t *)dest, *source2 = (pixel_t*)source;
 			index = ((unsigned)index << 8) | index;
+			int canvas_inc = (canvas_width >> 1) - hw;
 
 			inc >>= 1;
 			for (; height; height--)
@@ -1195,7 +1197,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 				} while (--n > 0);
 				}
 				source2 += inc;
-				dest2 += 160 - hw;
+				dest2 += canvas_inc;
 			}
 
 			return;
@@ -1213,7 +1215,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 			} while (--n > 0);
 			}
 			source += inc;
-			dest += 320 - width;
+			dest += canvas_width - width;
 		}
 		return;
 	}
@@ -1221,6 +1223,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 	if ((x & 1) == 0 && (width & 1) == 0 && (rowsize & 1) == 0)
 	{
 		pixel_t* dest2 = (pixel_t*)dest, * source2 = (pixel_t*)source;
+		int canvas_inc = (canvas_width >> 1) - hw;
 
 		inc >>= 1;
 		for (; height; height--)
@@ -1235,7 +1238,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 			} while (--n > 0);
 			}
 			source2 += inc;
-			dest2 += 160 - hw;
+			dest2 += canvas_inc;
 		}
 
 		return;
@@ -1253,13 +1256,18 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 		} while (--n > 0);
 		}
 		source += rowsize - width;
-		dest += 320 - width;
+		dest += canvas_width - width;
 	}
 }
 
 void DrawJagobj(jagobj_t* jo, int x, int y)
 {
-	DrawJagobj2(jo, x, y, 0, 0, 0, 0, I_OverwriteBuffer());
+	DrawJagobj3(jo, x, y, 0, 0, 0, 0, 320, I_OverwriteBuffer());
+}
+
+void DrawJagobj2(jagobj_t* jo, int x, int y, int canvas_width)
+{
+	DrawJagobj3(jo, x, y, 0, 0, 0, 0, canvas_width, I_OverwriteBuffer());
 }
 
 void DrawFillRect(int x, int y, int w, int h, int c)

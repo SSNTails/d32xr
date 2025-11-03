@@ -1365,18 +1365,19 @@ extern	unsigned BASEORGY;
 
 void DoubleBufferSetup (void);
 void EraseBlock (int x, int y, int width, int height);
-void GetJagobjSize(int lumpnum, int* ow, int* oh);
+void GetJagobjSize (int lumpnum, int* ow, int* oh);
 void DrawJagobj (jagobj_t *jo, int x, int y);
-void DrawJagobjLump(int lumpnum, int x, int y, int* ow, int* oh);
-void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int colormap);
-void DrawJagobjWithColormap(jagobj_t* jo, int x, int y, 
+void DrawJagobj2 (jagobj_t *jo, int x, int y, int canvas_width);
+void DrawJagobjLump (int lumpnum, int x, int y, int* ow, int* oh);
+void DrawJagobjLumpWithColormap (int lumpnum, int x, int y, int* ow, int* oh, int colormap);
+void DrawJagobjWithColormap (jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h, pixel_t *fb, int colormap);
-void DrawJagobj2(jagobj_t* jo, int x, int y, 
-	int src_x, int src_y, int src_w, int src_h, pixel_t* fb);
-void DrawScaledJagobj(jagobj_t* jo, int x, int y, 
+void DrawJagobj3 (jagobj_t* jo, int x, int y, 
+	int src_x, int src_y, int src_w, int src_h, int canvas_width, pixel_t* fb);
+void DrawScaledJagobj (jagobj_t* jo, int x, int y, 
 	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb);
-void DrawFillRect(int x, int y, int w, int h, int c);
-void DrawLine(int x, int y, int length, int c, boolean vertical);
+void DrawFillRect (int x, int y, int w, int h, int c);
+void DrawLine (int x, int y, int length, int c, boolean vertical);
 void UpdateBuffer (void);
 
 #ifndef MARS

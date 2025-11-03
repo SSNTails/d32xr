@@ -914,10 +914,23 @@ void DRAW_LevelSelect (void)
 	
 	if (clearscreen > 0) {
 		I_ResetLineTable();
+
+		uint16_t *lines = Mars_FrameBufferLines();
+		uint16_t pixel_offset = (512>>1);
+		for (int i=0; i <= 17; i++) {
+			lines[i] = pixel_offset;
+			lines[223-i] = pixel_offset;
+			pixel_offset += (352>>1);
+		}
+
 		clearscreen--;
 	}
 
 	if (screenCount < 4) {
+		for (int i=0; i < 0x160; i += 0x20) {
+			DrawJagobj2(chevblkd_pic, i, 0, 352);
+		}
+
 		// Draw text
 		V_DrawStringCenterWithColormap(&menuFont, 160, 32, "SELECT A STAGE", YELLOWTEXTCOLORMAP);
 
@@ -939,6 +952,16 @@ void DRAW_LevelSelect (void)
 
 	Mars_SetScrollPositions(0, screenCount >> 1, 0, 0);
 
+	// Scroll chevrons
+	uint16_t *lines = Mars_FrameBufferLines();
+	uint16_t pixel_offset = (512>>1);
+	for (int i=0; i < 16; i++) {
+		lines[i] = pixel_offset + (15 - ((screenCount>>1) & 15));
+		lines[223-i] = pixel_offset + ((screenCount>>1) & 15);
+		pixel_offset += (352>>1);
+	}
+
+	// Move arrows
 	int arrow_offset = ((screenCount>>2) & 7) * (((screenCount>>2) & 0x8) == 0);
 	if (arrow_offset > 3) {
 		arrow_offset = 7 - arrow_offset;
@@ -1083,15 +1106,15 @@ void DRAW_LevelSelect (void)
 	}
 
 	// Draw chevrons
-	int chev_offset = (screenCount & 0x1F);
+	/*int chev_offset = (screenCount & 0x1F);
 	for (int i=0; i < 0x140; i += 0x20) {
-		DrawJagobj(chevblkd_pic, i + chev_offset, 0);
-		DrawJagobj(chevblku_pic, i - chev_offset, 224-16);
+		DrawJagobj2(chevblkd_pic, i + chev_offset, 0, 352);
+		DrawJagobj2(chevblku_pic, i - chev_offset, 224-16, 352);
 	}
 	if (chev_offset != 0) {
-		DrawJagobj(chevblkd_pic, -0x20 + chev_offset, 0);
-		DrawJagobj(chevblku_pic, 0x140 - chev_offset, 224-16);
-	}
+		DrawJagobj2(chevblkd_pic, -0x20 + chev_offset, 0, 352);
+		DrawJagobj2(chevblku_pic, 0x140 - chev_offset, 224-16, 352);
+	}*/
 
 #ifdef KIOSK_MODE
 	// Clear countdown digits

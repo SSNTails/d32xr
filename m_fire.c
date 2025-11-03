@@ -89,10 +89,10 @@ void I_DrawMenuFire(void)
 	if (titlepic != NULL)
 	{
 		const int titlepic_pos_x = (320 - titlepic->width) / 2;
-		DrawJagobj2(titlepic, titlepic_pos_x, y, 0, 0, 0, titlepic->height, I_OverwriteBuffer());
+		DrawJagobj3(titlepic, titlepic_pos_x, y, 0, 0, 0, titlepic->height, 320, I_OverwriteBuffer());
 
 		if (intro_titlepic2 != NULL)
-			DrawJagobj2(intro_titlepic2, titlepic_pos_x, y, 0, 0, 0, titlepic->height, I_OverwriteBuffer());
+			DrawJagobj3(intro_titlepic2, titlepic_pos_x, y, 0, 0, 0, titlepic->height, 320, I_OverwriteBuffer());
 	}
 
 	int duration = I_GetTime() - titlepic_start;

@@ -270,8 +270,8 @@ static void ST_DrawTitleCard()
 			VINT lt_height = lt_y + lt_obj->height > (180+22)
 					? lt_obj->height - ((lt_y + lt_obj->height) - (180+22))
 					: lt_obj->height;
-			DrawJagobj2(lt_obj, titlecard_x_offset + 68-24 - ((gametic - 80) << 5), lt_y, 0, 0,
-					lt_obj->width, lt_height, I_OverwriteBuffer());
+			DrawJagobj3(lt_obj, titlecard_x_offset + 68-24 - ((gametic - 80) << 5), lt_y, 0, 0,
+					lt_obj->width, lt_height, 320, I_OverwriteBuffer());
 			
 			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 68 - ((gametic - 80) << 5), 124-4, gamemapinfo.act);
 		}
@@ -564,7 +564,7 @@ void ST_EraseBlock(int x, int y, int width, int height)
 	if (width & 1)
 		width -= 1;
 
-	DrawJagobj2(sbar, x, stbar_y + y, x, y, width, height, I_FrameBuffer());
+	DrawJagobj3(sbar, x, stbar_y + y, x, y, width, height, 320, I_FrameBuffer());
 }*/
 
 #endif
