@@ -446,6 +446,7 @@ int M_Ticker (void)
 	buttons = ticrealbuttons & MENU_BTNMASK;
 	oldbuttons = oldticrealbuttons & MENU_BTNMASK;
 
+	// Handle navigation to the next menu screen
 	if (((buttons & (BT_B | BT_LMBTN | BT_START)) && !(oldbuttons & (BT_B | BT_LMBTN | BT_START)))
 		|| ((buttons & (BT_B | BT_LMBTN)) && !(oldbuttons & (BT_B | BT_LMBTN))))
 	{
@@ -473,7 +474,9 @@ int M_Ticker (void)
 					break;
 			}
 			screenpos = nextscreen;
-			clearscreen = 2;
+			/*if (nextscreen != ms_main) {
+				clearscreen = 2;
+			}*/
 			prevsaveslot = -1;
 			saveslot = screenpos == ms_save;
 			//S_StartSound(NULL, sfx_None);
@@ -481,6 +484,7 @@ int M_Ticker (void)
 		}
 	}
 
+	// Handle navigation to the previous menu screen.
 	if ((buttons & (BT_A | BT_C | BT_RMBTN)) && !(oldbuttons & (BT_A | BT_C | BT_RMBTN)))
 	{
 		if (screenpos != ms_main)
@@ -506,7 +510,9 @@ int M_Ticker (void)
 			}
 
 			movecount = 0;
-			clearscreen = 2;
+			if (!IsTitleScreen()) {
+				clearscreen = 2;
+			}
 			//S_StartSound(NULL, sfx_None);
 			return 0;
 		}
@@ -541,7 +547,7 @@ int M_Ticker (void)
 				I_NetSetup();
 				if (starttype != gt_single)
 					return ga_startnew;
-				clearscreen = 2;
+				//clearscreen = 2;
 				return ga_nothing;
 			}
 		}
@@ -680,12 +686,6 @@ int M_Ticker (void)
 	if (sound != sfx_None)
 		S_StartSound(NULL, sound);
 
-	if (newcursor || sound != sfx_None)
-	{
-		/* long menu item names can spill onto the screen border */
-		clearscreen = 2;
-	}
-
 	return ga_nothing;
 }
 
@@ -707,7 +707,7 @@ void M_Drawer (void)
 	mainitem_t* items = &mainitem[menuscr->firstitem];
 	int y, y_offset = 0;
 
-	if (IsTitleScreen() && gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {		
+	if (IsTitleScreen()) {		
 		if (scrpos == ms_gametype) {
 			// Don't display sub-menus on the title screen.
 			return;
@@ -720,10 +720,10 @@ void M_Drawer (void)
 		VINT logoPos = 160 - (m_title->width / 2);
 
 		// Fill the area above the viewport with the sky color.
-//		if (titleTicker < 2)
+		if (titleTicker < 4)
 			DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 44, gamemapinfo.skyTopColor);
-//		else
-//			DrawFillRect(logoPos + 6, 18, 60, 26, gamemapinfo.skyTopColor);
+		else
+			DrawFillRect(48, 18, 58, 24, gamemapinfo.skyTopColor);
 
 		DrawJagobj(m_title, logoPos, 16);
 		y_offset = m_title->height + 24 - STARTY;
@@ -770,12 +770,14 @@ void M_Drawer (void)
 
 /* erase old skulls */
 #ifndef MARS
-	EraseBlock (CURSORX, m_doom_height,m_skull1->width, CURSORY(menuscr->numitems)- CURSORY(0));
+	EraseBlock (CURSORX, m_doom_height, m_skull1->width, CURSORY(menuscr->numitems)- CURSORY(0));
 #endif
 
 	if (scrpos == ms_help)
 	{
-		DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 44, gamemapinfo.skyTopColor);
+		if (IsTitleScreen()) {
+			DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 44, gamemapinfo.skyTopColor);
+		}
 		O_DrawHelp(80);
 		return;
 	}

@@ -292,10 +292,15 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
     x = start;
     do
     {
-       fixed_t r;
-       int floorclipx, ceilingclipx;
-       fixed_t scale2;
-       unsigned colnum, iscale;
+        if (IsTitleScreen() &&  x > 70 && x < 240) {
+            // Don't bother drawing behind the title emblem.
+            continue;
+        }
+
+        fixed_t r;
+        int floorclipx, ceilingclipx;
+        fixed_t scale2;
+        unsigned colnum, iscale;
 
 #ifdef MARS
         volatile int32_t t;
