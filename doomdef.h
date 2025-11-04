@@ -888,15 +888,19 @@ memzone_t *Z_InitZone (byte *base, int size);
 
 #ifdef MEMDEBUG
 void 	*Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err, const char *file, int line);
+void    *Z_Calloc2 (memzone_t *mainzone, int size, int tag, boolean err, const char *file, int line);
 #else
 void 	*Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err);
+void    *Z_Calloc2 (memzone_t *mainzone, int size, int tag, boolean err);
 #endif
 void 	Z_Free2 (memzone_t *mainzone,void *ptr);
 
 #ifdef MEMDEBUG
 #define Z_Malloc(x,y) Z_Malloc2(mainzone,x,y,true,__FILE__,__LINE__)
+#define Z_Calloc(x,y) Z_Calloc2(mainzone,x,y,true,__FILE__,__LINE__)
 #else
 #define Z_Malloc(x,y) Z_Malloc2(mainzone,x,y,true)
+#define Z_Calloc(x,y) Z_Calloc2(mainzone,x,y,true)
 #endif
 #define Z_Free(x) Z_Free2(mainzone,x)
 

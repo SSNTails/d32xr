@@ -859,7 +859,7 @@ void P_DoBossVictory(mobj_t *mo)
 	inner->heightsec = -1;
 
 	// Move the outer
-	floormove_t *floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
+	floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
 	P_AddThinker (&floor->thinker);
 	outer->specialdata = LPTR_TO_SPTR(floor);
 	floor->thinker.function = T_MoveFloor;
@@ -872,7 +872,8 @@ void P_DoBossVictory(mobj_t *mo)
 		(outer->floorheight>>FRACBITS) + 128;
 
 	// Move the inner
-	floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
+	floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
+	D_memset(floor, 0, sizeof(*floor));
 	P_AddThinker (&floor->thinker);
 	inner->specialdata = LPTR_TO_SPTR(floor);
 	floor->thinker.function = T_MoveFloor;

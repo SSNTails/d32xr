@@ -1150,7 +1150,7 @@ void P_DoPlayerExit(player_t *player)
 		sector_t *outer = &sectors[outerNum];
 		spawnPoint->movecount = 1;
 		
-		floormove_t *floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
+		floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
 		P_AddThinker (&floor->thinker);
 		inner->specialdata = LPTR_TO_SPTR(floor);
 		floor->thinker.function = T_MoveFloor;

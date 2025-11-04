@@ -388,7 +388,7 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 		/*	new floor thinker */
 		/* */
 		rtn = 1;
-		floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
+		floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
 		P_AddThinker (&floor->thinker);
 		sec->specialdata = LPTR_TO_SPTR(floor);
 		floor->thinker.function = T_MoveFloor;

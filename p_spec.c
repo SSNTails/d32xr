@@ -518,7 +518,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					if (sec->specialdata)
 						continue;
 
-					floormove_t *floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
+					floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
 					P_AddThinker (&floor->thinker);
 					sec->specialdata = LPTR_TO_SPTR(floor);
 					floor->thinker.function = T_MoveFloor;
@@ -596,7 +596,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					if (sec->specialdata)
 						continue;
 
-					ceiling_t *ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVSPEC);
+					ceiling_t *ceiling = Z_Calloc(sizeof(*ceiling), PU_LEVSPEC);
 					P_AddThinker (&ceiling->thinker);
 					sec->specialdata = LPTR_TO_SPTR(ceiling);
 					ceiling->thinker.function = T_MoveCeiling;

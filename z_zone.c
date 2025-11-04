@@ -219,6 +219,21 @@ backtostart:
 	return (void *) ((byte *)base + sizeof(memblock_t));
 }
 
+#ifdef MEMDEBUG
+void *Z_Calloc2 (memzone_t *mainzone, int size, int tag, boolean err, const char *file, int line)
+{
+	void *p = Z_Malloc2(mainzone, size, tag, err, file, line);
+	D_memset(p, 0, size);
+	return p;
+}
+#else
+void *Z_Calloc2 (memzone_t *mainzone, int size, int tag, boolean err)
+{
+	void *p = Z_Malloc2(mainzone, size, tag, err);
+	D_memset(p, 0, size);
+	return p;
+}
+#endif
 
 /*
 ========================
