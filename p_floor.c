@@ -183,9 +183,6 @@ void T_MoveFloor(floormove_t *floor)
 {
 	result_e	res = ok;
 
-	if (floor->type == thz2DropBlock)
-		CONS_Printf("Wot? %d", floor->delayTimer);
-
 	if (floor->delayTimer)
 	{
 		floor->delayTimer--;
