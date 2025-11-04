@@ -27,6 +27,7 @@ typedef struct camera_s
 extern boolean invertCamera;
 
 extern mobj_t *camBossMobj;
+extern VINT camBossMobjCounter;
 extern camera_t camera;
 void P_MoveChaseCamera(player_t *player, camera_t *thiscam);
 #endif

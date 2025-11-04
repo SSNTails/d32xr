@@ -1770,7 +1770,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		28*FRACUNIT,    // radius
 		56*FRACUNIT,    // height
 		MT_SONIC3KBOSSEXPLODE,   // mass
-		0,              // damage
+		128,              // damage
 		sfx_s3k_9e,      // activesound
 		MF_SPECIAL|MF_NOGRAVITY, // flags
 		MF2_SHOOTABLE|MF2_ENEMY          // flags2
@@ -1897,7 +1897,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		20*FRACUNIT,    // radius
 		32*FRACUNIT,    // height
 		MT_SONIC3KBOSSEXPLODE, // mass
-		1,              // damage
+		32,              // damage
 		sfx_None,       // activesound
 		MF_NOBLOCKMAP|MF_NOGRAVITY, // flags
 		MF2_ENEMY|MF2_FLOAT,              // flags2
@@ -3349,6 +3349,32 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		sfx_None,       // activesound
 		MF_NOBLOCKMAP|MF_NOGRAVITY|MF_NOCLIP, // flags
 		0, // flags2
+	},
+
+	{           // MT_ALTVIEWMAN
+		752,            // doomednum
+		S_INVISIBLE,    // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,       // seesound
+		8,              // reactiontime
+		sfx_None,       // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		sfx_None,       // deathsound
+		0,              // speed
+		8,              // radius
+		8,              // height
+		10,             // mass
+		0,              // damage
+		sfx_None,       // activesound
+		MF_STATIC|MF_NOBLOCKMAP|MF_NOGRAVITY|MF_NOSECTOR, // flags
+		0          // flags2
 	},
 
 	{           // MT_ELEMENTAL_ORB

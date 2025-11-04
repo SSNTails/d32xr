@@ -33,6 +33,10 @@ void T_MoveCeiling (ceiling_t *ceiling)
 					case raiseAndCrush:
 						ceiling->direction = -1;
 						break;
+					case raiseCeiling:
+						// Remove it
+						P_RemoveThinker(&ceiling->thinker);
+						break;
 					default:
 						break;
 				}
@@ -47,6 +51,10 @@ void T_MoveCeiling (ceiling_t *ceiling)
 					case crushAndRaise:
 					case raiseAndCrush:
 						ceiling->direction = 1;
+						break;
+					case raiseCeiling:
+						// Remove it
+						P_RemoveThinker(&ceiling->thinker);
 						break;
 					default:
 						break;

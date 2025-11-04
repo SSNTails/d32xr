@@ -590,11 +590,11 @@ void P_BuildMove(player_t *player)
 	/* */
 	mo = player->mo;
 
-	if (D_abs(REALMOMX(player)) < STOPSPEED && D_abs(REALMOMY(player)) < STOPSPEED && player->forwardmove == 0 && player->sidemove == 0 && !(player->pflags & PF_GASPEDAL) && !(player->pflags & PF_SPINNING))
-	{ /* if in a walking frame, stop moving */
-		if (mo->state >= S_PLAY_RUN1 && mo->state <= S_PLAY_RUN8)
-			P_SetMobjState(mo, S_PLAY_STND);
-	}
+		if (D_abs(REALMOMX(player)) < STOPSPEED && D_abs(REALMOMY(player)) < STOPSPEED && player->forwardmove == 0 && player->sidemove == 0 && !(player->pflags & PF_GASPEDAL) && !(player->pflags & PF_SPINNING))
+		{ /* if in a walking frame, stop moving */
+			if (mo->state >= S_PLAY_RUN1 && mo->state <= S_PLAY_RUN8)
+				P_SetMobjState(mo, S_PLAY_STND);
+		}
 
 	const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
 	if (leveltime > delaytime)
@@ -1293,6 +1293,7 @@ void P_MovePlayer(player_t *player)
 
 	//	player->mo->angle += player->angleturn;
 	fixed_t speed = P_AproxDistance(REALMOMX(player), REALMOMY(player));
+	player->speed = speed;
 
 	if (player->homingTimer || (player->powers[pw_sneakers] && speed > 20*FRACUNIT))
 	{

@@ -1,6 +1,7 @@
 /* P_Spec.c */
 #include "doomdef.h"
 #include "p_local.h"
+#include "p_camera.h"
 
 /*
 ===================
@@ -529,6 +530,84 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					floor->sector = sec;
 					floor->speed = textureoffset << (FRACBITS - 3); // each unit is 1/8th
 					floor->floordestheight = 
+						(sec->floorheight >> FRACBITS) + rowoffset;
+				}
+			}
+		}
+			break;
+		case 221: // Focus on point
+		{
+			// Find object with angle matching tag
+			uint8_t tag = P_GetLineTag(line);
+			side_t *side = &sides[line->sidenum[0]];
+			int16_t textureoffset = side->textureoffset & 0xfff;
+	    	textureoffset <<= 4; // sign extend
+    	  	textureoffset >>= 4; // sign extend
+			int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
+      		rowoffset >>= 4; // sign extend
+
+			if (rowoffset == 0)
+			{
+				camBossMobj = NULL;
+				camBossMobjCounter = 0;
+				break;
+			}
+
+			for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+			{
+				if (node->type == MT_ALTVIEWMAN && node->angle / ANGLE_1 == tag)
+				{
+					camBossMobj = node;
+
+					if (rowoffset > 0)
+						camBossMobjCounter = rowoffset;
+					break;
+				}
+			}
+			break;
+		}
+		case 222: // Move ceiling according to front texture offsets
+		{
+			side_t *side = &sides[line->sidenum[0]];
+			int16_t textureoffset = side->textureoffset & 0xfff;
+	    	textureoffset <<= 4; // sign extend
+    	  	textureoffset >>= 4; // sign extend
+			int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
+      		rowoffset >>= 4; // sign extend
+
+			if (ldflags[line-lines] & ML_NOCLIMB)
+			{
+				// Instant
+				int secnum = -1;
+				while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+				{
+					sector_t *sec = &sectors[secnum];
+					sec->ceilingheight += textureoffset << FRACBITS;
+					P_ChangeSector(sec, false);
+				}
+			}
+			else
+			{
+				// Initiate movement
+				int secnum = -1;
+				while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+				{
+					sector_t *sec = &sectors[secnum];
+					if (sec->specialdata)
+						continue;
+
+					ceiling_t *ceiling = Z_Malloc(sizeof(*ceiling), PU_LEVSPEC);
+					P_AddThinker (&ceiling->thinker);
+					sec->specialdata = LPTR_TO_SPTR(ceiling);
+					ceiling->thinker.function = T_MoveCeiling;
+					ceiling->type = raiseCeiling;
+					ceiling->crush = true;
+//					ceiling->dontChangeSector = false;
+
+					ceiling->direction = rowoffset > 0 ? 1 : -1;
+					ceiling->sector = sec;
+					ceiling->upspeed = ceiling->downspeed = textureoffset << (FRACBITS - 3); // each unit is 1/8th
+					ceiling->topheight = ceiling->bottomheight = 
 						(sec->floorheight >> FRACBITS) + rowoffset;
 				}
 			}

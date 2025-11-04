@@ -187,6 +187,7 @@ camwrapup:
 }
 
 mobj_t *camBossMobj = NULL;
+VINT camBossMobjCounter = 0;
 
 void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 {
@@ -208,6 +209,12 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
          angle = focusangle = R_PointToAngle2(thiscam->x, thiscam->y, camBossMobj->x, camBossMobj->y);
       else
          angle = focusangle = R_PointToAngle2(thiscam->x, thiscam->y, 0, 0);
+
+	  if (camBossMobjCounter > 0)
+	  {
+		if (--camBossMobjCounter <= 0)
+			camBossMobj = NULL;
+	  }
    }
    else
    {

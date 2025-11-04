@@ -183,9 +183,6 @@ void T_MoveFloor(floormove_t *floor)
 {
 	result_e	res = ok;
 
-	if (floor->type == thz2DropBlock)
-		CONS_Printf("Wot? %d", floor->delayTimer);
-
 	if (floor->delayTimer)
 	{
 		floor->delayTimer--;
@@ -194,7 +191,6 @@ void T_MoveFloor(floormove_t *floor)
 	
 	if (floor->type == thz2DropBlock)
 	{
-		CONS_Printf("Floordest:%d", floor->floordestheight);
 		floor->speed += GRAVITY/2;
 		res = T_MovePlane(floor->sector,floor->speed,
 				(floor->floordestheight << FRACBITS) + (floor->sector->ceilingheight - floor->sector->floorheight), !floor->dontChangeSector, 1, floor->direction);
@@ -339,7 +335,6 @@ void T_MoveFloor(floormove_t *floor)
 
 							P_SetMobjState(node, S_XPLD1);
 							S_StartSound(node, sfx_s3k_3d);
-							camBossMobj = NULL;
 							break;
 						}
 					}
@@ -416,15 +411,6 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 				floor->floordestheight = rowoffset;
 				floor->origSpeed = floor->speed = 1;
 				floor->direction = -1;
-
-				for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
-				{
-					if (node->type == MT_TURRET && node->health > 0)
-					{
-						camBossMobj = node;
-						break;
-					}
-				}
 				break;
 			}
 			case continuousMoverFloor:
