@@ -1739,6 +1739,7 @@ void P_SpawnSpecials (void)
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
 			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
+
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
 				sectors[s].fofsec = sec;
@@ -1750,8 +1751,6 @@ void P_SpawnSpecials (void)
 			// Or maybe even configurable somehow, by using the control sector's texture offset value...
 				if (ldflags[i] & ML_BLOCKMONSTERS)
 					sectors[s].flags |= SF_FOF_SWAPHEIGHTS;
-				if (ldflags[i] & ML_NOCLIMB)
-					sectors[s].flags |= SF_FOF_SWAPHEIGHTS_NOWATER;
 			}
 			break;
 		}
