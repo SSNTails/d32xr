@@ -628,8 +628,7 @@ static jagobj_t *lvlsel_pic = NULL;
 static jagobj_t *lvlsel_static[3] = { NULL, NULL, NULL };
 static jagobj_t *arrowl_pic = NULL;
 static jagobj_t *arrowr_pic = NULL;
-static jagobj_t *chevblku_pic = NULL;
-static jagobj_t *chevblkd_pic = NULL;
+static jagobj_t *chevblk_pic = NULL;
 
 #ifdef SHOW_DISCLAIMER
 	#define SELECTABLE_MAP_COUNT	7
@@ -832,8 +831,7 @@ void START_LevelSelect (void)
 
 	arrowl_pic = W_CacheLumpName("ARROWL", PU_STATIC);
 	arrowr_pic = W_CacheLumpName("ARROWR", PU_STATIC);
-	chevblku_pic = W_CacheLumpName("CHEVBLKU", PU_STATIC);
-	chevblkd_pic = W_CacheLumpName("CHEVBLKD", PU_STATIC);
+	chevblk_pic = W_CacheLumpName("CHEVBLK", PU_STATIC);
 
 #ifdef KIOSK_MODE
 	sttnum_pic[1] = W_CacheLumpName("STTNUM1", PU_STATIC);
@@ -875,8 +873,7 @@ void STOP_LevelSelect (void)
 
 	Z_Free(arrowl_pic);
 	Z_Free(arrowr_pic);
-	Z_Free(chevblku_pic);
-	Z_Free(chevblkd_pic);
+	Z_Free(chevblk_pic);
 
 #ifdef KIOSK_MODE
 	for (int i = 1; i <= 5; i++)
@@ -928,7 +925,7 @@ void DRAW_LevelSelect (void)
 
 	if (screenCount < 4) {
 		for (int i=0; i < 0x160; i += 0x20) {
-			DrawJagobj2(chevblkd_pic, i, 0, 352);
+			DrawJagobj2(chevblk_pic, i, 0, 352);
 		}
 
 		// Draw text
@@ -1104,17 +1101,6 @@ void DRAW_LevelSelect (void)
 			DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
 		}
 	}
-
-	// Draw chevrons
-	/*int chev_offset = (screenCount & 0x1F);
-	for (int i=0; i < 0x140; i += 0x20) {
-		DrawJagobj2(chevblkd_pic, i + chev_offset, 0, 352);
-		DrawJagobj2(chevblku_pic, i - chev_offset, 224-16, 352);
-	}
-	if (chev_offset != 0) {
-		DrawJagobj2(chevblkd_pic, -0x20 + chev_offset, 0, 352);
-		DrawJagobj2(chevblku_pic, 0x140 - chev_offset, 224-16, 352);
-	}*/
 
 #ifdef KIOSK_MODE
 	// Clear countdown digits
