@@ -477,6 +477,9 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 	switch (special)
 	{
+		case 215: // Drop block on turret (THZ2)
+			EV_DoFloor(line, thz2DropBlock);
+			break;
 		case 218: // Move floor according to front sector
 		case 219: // Move ceiling according to front sector
 		{
@@ -863,7 +866,7 @@ void T_BounceCheese(bouncecheese_t *bouncer)
 	}
 	else if (bouncer->fofSector->ceilingheight > bouncer->ceilingwasheight) // Up
 	{
-		bouncer->speed += GRAVITY;
+		bouncer->speed += GRAVITY/2;
 	}
 
 	if (D_abs(bouncer->speed) < 2*FRACUNIT

@@ -301,6 +301,7 @@ typedef enum
 	eggCapsuleInnerPop,
 	moveFloorByFrontSector,
 	moveCeilingByFrontSector,
+	thz2DropBlock,
 } floor_e;
 
 typedef struct
@@ -314,17 +315,16 @@ typedef struct
 	VINT        lowestSector;
 	VINT        highestSector;
 	VINT        dontChangeSector;
-	uint8_t		type;
-	uint8_t		newspecial;
-	uint8_t		crush;
-	int8_t		direction;
-	uint8_t		texture;
-	uint8_t     tag;
 	VINT        floorwasheight;
 	VINT		floordestheight;
 	VINT        ceilDiff;
 	VINT        delay; // like 'origSpeed'... set only at start
 	VINT        delayTimer; // the actual counter
+	VINT		type;
+	uint8_t		crush;
+	int8_t		direction;
+	uint8_t		texture;
+	uint8_t     tag;
 } floormove_t;
 
 typedef enum

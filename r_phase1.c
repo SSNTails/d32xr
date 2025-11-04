@@ -801,10 +801,14 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
 
    if (line->v1 == rbsp->lastv2)
       angle1 = rbsp->lastangle2;
+   else if (line->v1 == rbsp->lastv1)
+      angle1 = rbsp->lastangle1;
    else
       angle1 = R_PointToAngle2(vd.viewx, vd.viewy, v1->x << FRACBITS, v1->y << FRACBITS);
    if (line->v2 == rbsp->lastv1)
       angle2 = rbsp->lastangle1;
+   else if (line->v2 == rbsp->lastv2)
+      angle2 = rbsp->lastangle2;
    else
       angle2 = R_PointToAngle2(vd.viewx, vd.viewy, v2->x << FRACBITS, v2->y << FRACBITS);
 

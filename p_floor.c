@@ -1,5 +1,6 @@
 #include "doomdef.h"
 #include "p_local.h"
+#include "p_camera.h"
 
 //e6y
 #define STAIRS_UNINITIALIZED_CRUSH_FIELD_VALUE 10
@@ -182,13 +183,26 @@ void T_MoveFloor(floormove_t *floor)
 {
 	result_e	res = ok;
 
+	if (floor->type == thz2DropBlock)
+		CONS_Printf("Wot? %d", floor->delayTimer);
+
 	if (floor->delayTimer)
 	{
 		floor->delayTimer--;
 		return;
 	}
+	
+	if (floor->type == thz2DropBlock)
+	{
+		CONS_Printf("Floordest:%d", floor->floordestheight);
+		floor->speed += GRAVITY/2;
+		res = T_MovePlane(floor->sector,floor->speed,
+				(floor->floordestheight << FRACBITS) + (floor->sector->ceilingheight - floor->sector->floorheight), !floor->dontChangeSector, 1, floor->direction);
 
-	if (floor->type == floorContinuous || floor->type == bothContinuous)
+		res = T_MovePlane(floor->sector,floor->speed,
+			floor->floordestheight << FRACBITS, !floor->dontChangeSector, 0, floor->direction);		
+	}
+	else if (floor->type == floorContinuous || floor->type == bothContinuous)
 	{
 		const fixed_t wh = D_abs(floor->sector->floorheight - (floor->floorwasheight << FRACBITS));
 		const fixed_t dh = D_abs(floor->sector->floorheight - (floor->floordestheight << FRACBITS));
@@ -307,6 +321,30 @@ void T_MoveFloor(floormove_t *floor)
 			floor->sector->specialdata = (SPTR)0;
 			switch(floor->type)
 			{
+				case thz2DropBlock:
+				{
+					// Find the turret, destroy it
+					for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+					{
+						if (node->type == MT_TURRET && node->health > 0)
+						{
+							// Spawn MT_EXPLODE at every 45
+							for (VINT ang = 0; ang < 8192; ang += 1024)
+							{
+								fixed_t outX = node->x;
+								fixed_t outY = node->y;
+								//P_ThrustValues(ang << ANGLETOFINESHIFT, 112*FRACUNIT, &outX, &outY);
+								P_SpawnMobj(outX, outY, node->z, MT_EXPLODE);
+							}
+
+							P_SetMobjState(node, S_XPLD1);
+							S_StartSound(node, sfx_s3k_3d);
+							camBossMobj = NULL;
+							break;
+						}
+					}
+					break;
+				}
 				case moveFloorByFrontSector:
 					if (floor->texture < 255)
 						floor->sector->floorpic = (uint8_t)floor->texture;
@@ -369,6 +407,26 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 		floor->sourceline = line - lines;
 		switch(floortype)
 		{
+			case thz2DropBlock:
+			{
+				side_t *side = &sides[line->sidenum[0]];
+				int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
+      			rowoffset >>= 4; // sign extend
+
+				floor->floordestheight = rowoffset;
+				floor->origSpeed = floor->speed = 1;
+				floor->direction = -1;
+
+				for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+				{
+					if (node->type == MT_TURRET && node->health > 0)
+					{
+						camBossMobj = node;
+						break;
+					}
+				}
+				break;
+			}
 			case continuousMoverFloor:
 			case continuousMoverCeiling:
 			{
