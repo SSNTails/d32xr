@@ -621,7 +621,7 @@ void A_MineExplode(mobj_t *actor, int16_t var1, int16_t var2)
 {
 	S_StartSound(actor, mobjinfo[actor->type].deathsound);
 
-	P_RadiusAttack(actor, actor, 128);
+	P_RadiusAttack(actor, actor, mobjinfo[actor->type].damage);
 	actor->flags |= MF_NOGRAVITY|MF_NOCLIP;
 	P_SpawnMobj(actor->x, actor->y, actor->z, mobjinfo[actor->type].mass);
 	S_StartSound(actor, sfx_s3k_6c);

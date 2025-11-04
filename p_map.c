@@ -98,7 +98,7 @@ boolean PIT_RadiusAttack (mobj_t *thing, pradiusattack_t *ra)
 	if (dist >= ra->dist || dz >= ra->dist)
 		return true;		/* out of range */
 /* FIXME?	if ( P_CheckSight (thing, bombspot) )	// must be in direct path */
-		P_DamageMobj (thing, ra->bombspot, ra->bombsource, (ra->bombdamage - dist) >> FRACBITS);
+		P_DamageMobj (thing, ra->bombspot, ra->bombsource, 1);
 	return true;
 }
 
@@ -117,7 +117,7 @@ void P_RadiusAttack (mobj_t *spot, mobj_t *source, int damage)
 	int			x,y, xl, xh, yl, yh;
 	pradiusattack_t ra;
 	
-	ra.dist = (damage+MAXRADIUS)<<FRACBITS;
+	ra.dist = (damage)<<FRACBITS;
 	yh = spot->y + ra.dist - bmaporgy;
 	yl = spot->y - ra.dist - bmaporgy;
 	xh = spot->x + ra.dist - bmaporgx;

@@ -195,6 +195,7 @@ typedef enum
 {
 	crushAndRaise,
 	raiseAndCrush,
+	raiseCeiling,
 } ceiling_e;
 
 typedef struct
