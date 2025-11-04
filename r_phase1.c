@@ -707,7 +707,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
       const sector_t *fofsec = &sectors[sec->fofsec];
 
-      if (sec->heightsec < 0) // Standard midpoint version
+      if (sec->heightsec < 0 || (sec->flags & SF_FOF_SWAPHEIGHTS_NOWATER)) // Standard midpoint version
       {
          const fixed_t midpoint = fofsec->floorheight + (fofsec->ceilingheight - fofsec->floorheight)/2;
 

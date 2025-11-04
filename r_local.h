@@ -79,6 +79,7 @@ struct line_s;
 #define SF_RESPAWN                  32
 #define SF_FOF_CONTROLSECTOR        64
 #define SF_CONVEYOR            128
+#define SF_FOF_SWAPHEIGHTS_NOWATER 256
 
 typedef	struct
 {
