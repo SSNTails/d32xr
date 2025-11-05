@@ -292,7 +292,7 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
     x = start;
     do
     {
-        if (IsTitleScreen() &&  x > 70 && x < 240) {
+        if (overlay_graphics == og_title &&  x > 70 && x < 240) {
             // Don't bother drawing behind the title emblem.
             continue;
         }

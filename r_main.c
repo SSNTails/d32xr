@@ -36,6 +36,8 @@ drawcol_t draw32xskycol;
 drawcol_t drawspritecol;
 #endif
 
+overlaygraphics_t overlay_graphics;
+
 // Classic Sonic fade
 const short md_palette_fade_table[22] =
 {

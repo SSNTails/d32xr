@@ -931,6 +931,13 @@ void P_Start (void)
 		}
 	}
 
+	if (IsTitleScreen()) {
+		overlay_graphics = og_title;
+	}
+	else {
+		overlay_graphics = og_none;
+	}
+
 	//clearscreen = 2;
 }
 

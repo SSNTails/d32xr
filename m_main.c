@@ -419,6 +419,9 @@ int M_Ticker (void)
 	if (screenpos == ms_none)
 	{
 		screenpos = ms_main;
+		if (IsTitleScreen()) {
+			overlay_graphics = og_title;
+		}
 		//S_StartSound(NULL, sfx_None);
 	}
 
@@ -474,6 +477,9 @@ int M_Ticker (void)
 					break;
 			}
 			screenpos = nextscreen;
+			if (nextscreen == ms_help) {
+				overlay_graphics = og_none;
+			}
 			/*if (nextscreen != ms_main) {
 				clearscreen = 2;
 			}*/
@@ -494,6 +500,9 @@ int M_Ticker (void)
 
 			cursorpos = 0;
 			screenpos = ms_main;
+			if (IsTitleScreen()) {
+				overlay_graphics = og_title;
+			}
 
 			for (i =0; i < NUMMAINITEMS; i++)
 			{
@@ -707,7 +716,7 @@ void M_Drawer (void)
 	mainitem_t* items = &mainitem[menuscr->firstitem];
 	int y, y_offset = 0;
 
-	if (IsTitleScreen()) {		
+	if (IsTitleScreen()) {
 		if (scrpos == ms_gametype) {
 			// Don't display sub-menus on the title screen.
 			return;

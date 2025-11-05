@@ -491,6 +491,16 @@ extern	int		phasetime[9];
 #endif
 
 
+typedef enum 
+{
+	og_none,
+	og_title
+	//TODO: Add HUD, title card, and other types of overlay graphics?
+} overlaygraphics_t;
+
+extern overlaygraphics_t overlay_graphics;
+
+
 
 /* */
 /* R_data.c */
