@@ -405,13 +405,6 @@ int P_Ticker (void)
 			tictics = frtc - ticstart;
 	}
 
-	if (!(IsDemo()))
-	{
-#ifdef MARS
-   		Mars_P_EndAnimationUpdate();
-#endif
-	}
-
 //	start = frtc;
 	P_RunMobjLate(); // I think we can get away with freeing dead mobjs once per vblank
 //	latetics = frtc - start;
