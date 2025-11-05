@@ -327,8 +327,10 @@ int P_Ticker (void)
 	if (!(IsDemo()))
 		P_CheckSights();
 
+	// TODO: Put these on secondary CPU
 	P_AnimateScenery((int8_t)accum_time);
 	P_UpdateSpecials((int8_t)accum_time);
+	// End TODO
 
 	P_Weather();
 

@@ -854,10 +854,9 @@ D_printf ("P_SetupLevel(%i)\n",lumpnum);
 	P_LoadNodes (lumpnum+ML_NODES);
 	P_LoadReject(lumpnum+ML_REJECT);
 
-	validcount = Z_Malloc((numlines + 1) * sizeof(*validcount) * 2, PU_LEVEL);
-	D_memset(validcount, 0, (numlines + 1) * sizeof(*validcount) * 2);
+	validcount = Z_Malloc((numlines + 1) * sizeof(*validcount), PU_LEVEL);
+	D_memset(validcount, 0, (numlines + 1) * sizeof(*validcount));
 	validcount[0] = 1; // cpu 0
-	validcount[numlines] = 1; // cpu 1
 
 	P_GroupLines();
 
@@ -888,8 +887,6 @@ extern byte *debugscreen;
 
 	gamezonemargin = DEFAULT_GAME_ZONE_MARGIN;
 	R_SetupLevel(gamezonemargin, gamemapinfo.sky);
-
-	I_SetThreadLocalVar(DOOMTLS_VALIDCOUNT, &validcount[0]);
 
 #ifdef MARS
 	Mars_CommSlaveClearCache();
