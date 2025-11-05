@@ -384,7 +384,7 @@ boolean PM_CheckPosition(pmovework_t *mw)
 {
    int xl, xh, yl, yh, bx, by;
    mobj_t *tmthing = mw->tmthing;
-   VINT *lvalidcount;
+   VINT *lvalidcount = validcount;
 
    mw->tmflags = tmthing->flags;
 
@@ -401,7 +401,6 @@ boolean PM_CheckPosition(pmovework_t *mw)
    mw->tmfloorz   = mw->tmdropoffz = FloorZAtPos(mw->newsec, mw->tmthing->z, mw->tmthing->theight << FRACBITS);
    mw->tmceilingz = CeilingZAtPos(mw->newsec, mw->tmthing->z, mw->tmthing->theight << FRACBITS);
 
-   I_GetThreadLocalVar(DOOMTLS_VALIDCOUNT, lvalidcount);
    *lvalidcount = *lvalidcount + 1;
    if (*lvalidcount == 0)
       *lvalidcount = 1;

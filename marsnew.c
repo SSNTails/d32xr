@@ -218,15 +218,12 @@ void Mars_Secondary(void)
 	while (1)
 	{
 		int cmd;
-		extern VINT *validcount;
 
 		while ((cmd = MARS_SYS_COMM4) == MARS_SECCMD_NONE);
 
 		switch (cmd) {
 		case MARS_SECCMD_CLEAR_CACHE:
 			Mars_ClearCache();
-			// FIXME: find a better place for this
-			I_SetThreadLocalVar(DOOMTLS_VALIDCOUNT, validcount + numlines + 1);
 			break;
 		case MARS_SECCMD_BREAK:
 			// break current command
@@ -250,8 +247,9 @@ void Mars_Secondary(void)
 		case MARS_SECCMD_R_DRAW_SPRITES:
 			Mars_Sec_R_DrawSprites(MARS_SYS_COMM6);
 			break;
-		case MARS_SECCMD_UNUSED:
-//			Mars_Sec_M_AnimateFire();
+		case MARS_SECCMD_ANIMATIONUPDATE:
+			P_AnimateScenery((int8_t)accum_time);
+			P_UpdateSpecials((int8_t)accum_time);
 			break;
 		case MARS_SECCMD_S_INIT_DMA:
 			Mars_Sec_InitSoundDMA(MARS_SYS_COMM6);

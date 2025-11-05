@@ -297,7 +297,7 @@ findfrac:
 fixed_t P_CompletableFrac(pslidework_t *sw, fixed_t dx, fixed_t dy)
 {
    int xl, xh, yl, yh, bx, by;
-   VINT *lvalidcount;
+   VINT *lvalidcount = validcount;
 
    sw->blockfrac = FRACUNIT;
    sw->slidedx = dx;
@@ -318,7 +318,6 @@ fixed_t P_CompletableFrac(pslidework_t *sw, fixed_t dx, fixed_t dy)
    else
       sw->endbox[BOXBOTTOM] += dy;
 
-   I_GetThreadLocalVar(DOOMTLS_VALIDCOUNT, lvalidcount);
    *lvalidcount = *lvalidcount + 1;
    if (*lvalidcount == 0)
       *lvalidcount = 1;

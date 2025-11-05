@@ -1491,7 +1491,7 @@ void S_SetSoundDriver (int newdrv);
 // !!! if this is changed, it must be changed in mars_tls_t too!
 #define DOOMTLS_BANKPAGE 		0
 #define DOOMTLS_SETBANKPAGEPTR 	4
-#define DOOMTLS_VALIDCOUNT 		8
+
 #define DOOMTLS_COLUMNCACHE		12
 #define DOOMTLS_COLORMAP		16
 // !!! if this is changed, it must be changed in mars_tls_t too!

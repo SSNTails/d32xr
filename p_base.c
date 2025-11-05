@@ -270,7 +270,7 @@ static boolean PB_CrossCheck(line_t *ld, pmovetest_t *mt)
 static boolean PB_CheckPosition(pmovetest_t *mt)
 {
    int xl, xh, yl, yh, bx, by;
-   VINT *lvalidcount;
+   VINT *lvalidcount = validcount;
    mobj_t *mo = mt->checkthing;
 
    mt->testbbox[BOXTOP   ] = mt->testy + mobjinfo[mo->type].radius;
@@ -285,7 +285,6 @@ static boolean PB_CheckPosition(pmovetest_t *mt)
    mt->testfloorz   = mt->testdropoffz = FloorZAtPos(testsec, mt->checkthing->z, mt->checkthing->theight << FRACBITS);
    mt->testceilingz = CeilingZAtPos(testsec, mt->checkthing->z, mt->checkthing->theight << FRACBITS);
 
-   I_GetThreadLocalVar(DOOMTLS_VALIDCOUNT, lvalidcount);
    *lvalidcount = *lvalidcount + 1;
    if (*lvalidcount == 0)
       *lvalidcount = 1;
@@ -1112,12 +1111,6 @@ void P_RunMobjBase2(void)
       if (mo->player)
          continue;
 
-#ifdef MARS
-      // clear cache for mobj flags following the sight check as 
-      // the other CPU might have modified the MF_SEETARGET state
-      if ((mo->flags2 & MF2_ENEMY) && mo->tics == 1)
-         Mars_ClearCacheLine(&mo->flags);
-#endif
       P_MobjThinker(mo);
 
       if (!(mo->flags & MF_STATIC) && mo->latecall != LC_NONE)
