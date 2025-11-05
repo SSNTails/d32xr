@@ -503,6 +503,13 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                }
             }
          }
+
+         // Special case for closed sectors acting as sky windows
+         if (b_floorheight == b_ceilingheight && b_ceilingpic == (uint8_t)-1 && b_floorpic == (uint8_t)-1)
+         {
+            actionbits &= ~(AC_TOPSIL | AC_BOTTOMSIL | AC_SOLIDSIL | AC_TOPTEXTURE | AC_BOTTOMTEXTURE | AC_MIDTEXTURE | AC_NEWCEILING | AC_NEWFLOOR);
+            actionbits |= AC_ADDSKY;
+         }
       }
 
       if (vertexes[li->v1].y == vertexes[li->v2].y)
@@ -841,7 +848,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
 
    if (!backsector)
       solid = true;
-   else if (backsector->ceilingpic == (uint8_t)-1 && frontsector->ceilingpic == (uint8_t)-1)
+   else if (backsector->ceilingpic == (uint8_t)-1 || frontsector->ceilingpic == (uint8_t)-1)
    {
       // When both ceilings are skies, consider them always "open" to prevent HOM
       solid = false;
