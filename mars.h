@@ -44,7 +44,7 @@ enum
 	MARS_SECCMD_R_DRAW_FOFPLANES,
 	MARS_SECCMD_R_DRAW_SPRITES,
 
-	MARS_SECCMD_UNUSED,
+	MARS_SECCMD_ANIMATIONUPDATE,
 
 	MARS_SECCMD_S_INIT_DMA,
 
@@ -115,6 +115,18 @@ static inline void Mars_R_BeginDrawFOFPlanes(void)
 
 static inline void Mars_R_EndDrawPlanes(void)
 {
+}
+
+static inline void Mars_R_BeginAnimationUpdate()
+{
+	while (MARS_SYS_COMM4 != 0) {};
+	MARS_SYS_COMM6 = 0;
+	MARS_SYS_COMM4 = MARS_SECCMD_ANIMATIONUPDATE;
+}
+
+static inline void Mars_P_EndAnimationUpdate(void)
+{
+	while (MARS_SYS_COMM4 != 0);
 }
 
 // r_phase8

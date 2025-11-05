@@ -247,8 +247,9 @@ void Mars_Secondary(void)
 		case MARS_SECCMD_R_DRAW_SPRITES:
 			Mars_Sec_R_DrawSprites(MARS_SYS_COMM6);
 			break;
-		case MARS_SECCMD_UNUSED:
-//			Mars_Sec_M_AnimateFire();
+		case MARS_SECCMD_ANIMATIONUPDATE:
+			P_AnimateScenery((int8_t)accum_time);
+			P_UpdateSpecials((int8_t)accum_time);
 			break;
 		case MARS_SECCMD_S_INIT_DMA:
 			Mars_Sec_InitSoundDMA(MARS_SYS_COMM6);

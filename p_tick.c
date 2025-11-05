@@ -325,12 +325,17 @@ int P_Ticker (void)
 
 	// Not needed for every tic. At least not unless we're needing synchronicity...
 	if (!(IsDemo()))
+	{
+#ifdef MARS
+   		Mars_R_BeginAnimationUpdate();
+#endif
 		P_CheckSights();
-
-	// TODO: Put these on secondary CPU
-	P_AnimateScenery((int8_t)accum_time);
-	P_UpdateSpecials((int8_t)accum_time);
-	// End TODO
+	}
+	else
+	{
+		P_AnimateScenery((int8_t)accum_time);
+		P_UpdateSpecials((int8_t)accum_time);
+	}
 
 	P_Weather();
 
@@ -398,6 +403,13 @@ int P_Ticker (void)
 
 		if (skipCount == 0)
 			tictics = frtc - ticstart;
+	}
+
+	if (!(IsDemo()))
+	{
+#ifdef MARS
+   		Mars_P_EndAnimationUpdate();
+#endif
 	}
 
 //	start = frtc;
