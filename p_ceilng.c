@@ -131,6 +131,9 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 				}
 			}
 			break;
+			case raiseCeiling:
+				// Squash compiler warning. This is all going to be rewritten anyway.
+				break;
 		}
 		
 		ceiling->type = type;

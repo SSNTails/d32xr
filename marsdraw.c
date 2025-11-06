@@ -1007,7 +1007,7 @@ void DrawScaledJagobj(jagobj_t* jo, int x, int y,
 	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb)
 {
 	int		srcx, srcy;
-	int		width, height, flags, index;
+	int		width, height;//, flags, index;
 	fixed_t	total_scaled_w, total_scaled_h;
 	int		rowsize;
 	fixed_t	inc_x, inc_y;
@@ -1016,8 +1016,8 @@ void DrawScaledJagobj(jagobj_t* jo, int x, int y,
 	rowsize = BIGSHORT(jo->width);
 	width = BIGSHORT(jo->width);
 	height = BIGSHORT(jo->height);
-	flags = BIGSHORT(jo->flags);
-	index = BIGSHORT(jo->index);
+//	flags = BIGSHORT(jo->flags);
+//	index = BIGSHORT(jo->index);
 
 	/*
 	if (src_w > 0)
