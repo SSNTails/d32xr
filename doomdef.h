@@ -176,7 +176,7 @@ typedef unsigned angle_t;
 #define	FINEMASK			(FINEANGLES-1)
 #define	ANGLETOFINESHIFT	19	/* 0x100000000 to 0x2000 */
 
-#define TITLE_ANGLE_INC		0x800000
+#define TITLE_ANGLE_INC		0x555555
 
 #define TITLE_MAP_NUMBER	30
 #define SSTAGE_START        60

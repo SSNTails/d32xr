@@ -290,134 +290,138 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
     char *restrict cxtoviewangle = (char*)xtoviewangle;
 
     x = start;
-    do
-    {
-        if (overlay_graphics == og_title &&  x > 70 && x < 240) {
-            // Don't bother drawing behind the title emblem.
-            continue;
-        }
-
-        fixed_t r;
-        int floorclipx, ceilingclipx;
-        fixed_t scale2;
-        unsigned colnum, iscale;
+    if (overlay_graphics == og_title) {
+        do {
+            if (x <= 70 || x >= 240) {
+                R_Draw32XSky(44, 76, x/2, draw32xsky, drawmdsky);
+            }
+        } while (++x, ++x <= stop);
+    }
+    else {
+        do
+        {
+            fixed_t r;
+            int floorclipx, ceilingclipx;
+            fixed_t scale2;
+            unsigned colnum, iscale;
 
 #ifdef MARS
-        volatile int32_t t;
-        __asm volatile (
-           "mov #-128, r0\n\t"
-           "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
-           "mov #0, %0\n\t"
-           "mov.l %0, @(16, r0) /* set high bits of the 64-bit dividend */ \n\t"
-           "mov.l %1, @(0, r0) /* set 32-bit divisor */ \n\t"
-           "mov #-1, %0\n\t"
-           "mov.l %0, @(20, r0) /* set low  bits of the 64-bit dividend, start divide */\n\t"
-           : "=&r" (t) : "r" (scalefrac) : "r0");
+            volatile int32_t t;
+            __asm volatile (
+            "mov #-128, r0\n\t"
+            "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+            "mov #0, %0\n\t"
+            "mov.l %0, @(16, r0) /* set high bits of the 64-bit dividend */ \n\t"
+            "mov.l %1, @(0, r0) /* set 32-bit divisor */ \n\t"
+            "mov #-1, %0\n\t"
+            "mov.l %0, @(20, r0) /* set low  bits of the 64-bit dividend, start divide */\n\t"
+            : "=&r" (t) : "r" (scalefrac) : "r0");
 #else
-        fixed_t scale = scalefrac;
+            fixed_t scale = scalefrac;
 #endif
 
-        scale2 = scalefrac;
-        scalefrac += scalestep;
+            scale2 = scalefrac;
+            scalefrac += scalestep;
 
-        //
-        // get ceilingclipx and floorclipx from clipbounds
-        //
-        ceilingclipx = *(uint16_t *)&cclipbounds[x];
-        floorclipx = ceilingclipx & 0x00ff;
-        ceilingclipx = (unsigned)ceilingclipx >> 8;
+            //
+            // get ceilingclipx and floorclipx from clipbounds
+            //
+            ceilingclipx = *(uint16_t *)&cclipbounds[x];
+            floorclipx = ceilingclipx & 0x00ff;
+            ceilingclipx = (unsigned)ceilingclipx >> 8;
 
-        //
-        // sky mapping
-        //
-        #ifdef MDSKY
-        if (draw32xsky || drawmdsky)
-        #else
-        if (draw32xsky)
-        #endif
-        {
-            int top, bottom;
+            //
+            // sky mapping
+            //
+            #ifdef MDSKY
+            if (draw32xsky || drawmdsky)
+            #else
+            if (draw32xsky)
+            #endif
+            {
+                int top, bottom;
 
-            if (segl->actionbits & AC_ADDSKY) {
-                top = ceilingclipx;
-                bottom = FixedMul(scale2, ceilingheight)>>FRACBITS;
-                bottom = centerY - bottom;
-                if (bottom > floorclipx)
-                    bottom = floorclipx;
-
-                if (top < bottom)
-                    R_Draw32XSky(top, bottom, x/2, draw32xsky, drawmdsky);
-            }
-            if (segl->actionbits & AC_ADDFLOORSKY) {
-                bottom = floorclipx;
-                top = FixedMul(scale2, floorheight)>>FRACBITS;
-                top = centerY - top;
-                if (top < ceilingclipx)
+                if (segl->actionbits & AC_ADDSKY) {
                     top = ceilingclipx;
+                    bottom = FixedMul(scale2, ceilingheight)>>FRACBITS;
+                    bottom = centerY - bottom;
+                    if (bottom > floorclipx)
+                        bottom = floorclipx;
 
-                if (top < bottom)
-                    R_Draw32XSky(top, bottom, x/2, draw32xsky, drawmdsky);
+                    if (top < bottom)
+                        R_Draw32XSky(top, bottom, x/2, draw32xsky, drawmdsky);
+                }
+                if (segl->actionbits & AC_ADDFLOORSKY) {
+                    bottom = floorclipx;
+                    top = FixedMul(scale2, floorheight)>>FRACBITS;
+                    top = centerY - top;
+                    if (top < ceilingclipx)
+                        top = ceilingclipx;
+
+                    if (top < bottom)
+                        R_Draw32XSky(top, bottom, x/2, draw32xsky, drawmdsky);
+                }
             }
-        }
 
-        //
-        // texture only stuff
-        //
+            //
+            // texture only stuff
+            //
 #ifndef SIMPLELIGHT
-        if (lightcoef != 0)
-        {
-            // calc light level
-            texturelight = FixedMul(scale2, lightcoef) - lightsub;
-            if (texturelight < lightmin)
-                texturelight = lightmin;
-            else if (texturelight > lightmax)
-                texturelight = lightmax;
-            // convert to a hardware value
-            texturelight = HWLIGHT((unsigned)texturelight>>FRACBITS);
-        }
+            if (lightcoef != 0)
+            {
+                // calc light level
+                texturelight = FixedMul(scale2, lightcoef) - lightsub;
+                if (texturelight < lightmin)
+                    texturelight = lightmin;
+                else if (texturelight > lightmax)
+                    texturelight = lightmax;
+                // convert to a hardware value
+                texturelight = HWLIGHT((unsigned)texturelight>>FRACBITS);
+            }
 #endif
 
-        // calculate texture offset
-        r = finetangent((centerangle + (*(uint16_t *)&cxtoviewangle[x]<<FRACBITS)) >> ANGLETOFINESHIFT);
-        r = FixedMul(distance, r);
+            // calculate texture offset
+            r = finetangent((centerangle + (*(uint16_t *)&cxtoviewangle[x]<<FRACBITS)) >> ANGLETOFINESHIFT);
+            r = FixedMul(distance, r);
 
-        colnum = (offset - r) >> FRACBITS;
-        colnum &= 0xff;
+            colnum = (offset - r) >> FRACBITS;
+            colnum &= 0xff;
 
-        if (csegcolmask)
-            *(uint16_t *)&csegcolmask[x] = texturelight | colnum;
+            if (csegcolmask)
+                *(uint16_t *)&csegcolmask[x] = texturelight | colnum;
 
 #ifdef MARS
 #ifdef WALLDRAW2X
-        __asm volatile (
-            "mov #-128, r0\n\t"
-            "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
-            "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
-            "shar %0\n\t"
-            : "=r" (iscale) : : "r0");
+            __asm volatile (
+                "mov #-128, r0\n\t"
+                "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+                "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
+                "shar %0\n\t"
+                : "=r" (iscale) : : "r0");
 #else
-        __asm volatile (
-            "mov #-128, r0\n\t"
-            "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
-            "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
-            : "=r" (iscale) : : "r0");
+            __asm volatile (
+                "mov #-128, r0\n\t"
+                "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+                "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
+                : "=r" (iscale) : : "r0");
 #endif
 #else
-        iscale = 0xffffffffu / scale;
+            iscale = 0xffffffffu / scale;
 #endif
 
 #if MIPLEVELS > 1
-        // other texture drawing info
-        miplevel = iscale / MIPSCALE;
-        if (miplevel > lseg->maxmip)
-            lseg->maxmip = miplevel;
-        if (miplevel < lseg->minmip)
-            lseg->minmip = miplevel;
+            // other texture drawing info
+            miplevel = iscale / MIPSCALE;
+            if (miplevel > lseg->maxmip)
+                lseg->maxmip = miplevel;
+            if (miplevel < lseg->minmip)
+                lseg->minmip = miplevel;
 #endif
 
-        for (tex = lseg->first; tex < lseg->last; tex++)
-            R_DrawTexture(x/2, iscale, colnum, scale2, floorclipx, ceilingclipx, texturelight, tex, miplevel);
-    } while (++x, ++x <= stop);
+            for (tex = lseg->first; tex < lseg->last; tex++)
+                R_DrawTexture(x/2, iscale, colnum, scale2, floorclipx, ceilingclipx, texturelight, tex, miplevel);
+        } while (++x, ++x <= stop);
+    }
 }
 
 static void R_LockSeg(void)

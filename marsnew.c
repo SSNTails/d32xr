@@ -727,7 +727,7 @@ void I_Update(void)
 	/* */
 	/* wait until on the third tic after last display */
 	/* */
-	const int ticwait = (IsTitleScreen() ? 4 : 2); // run title screen at 15 fps
+	const int ticwait = (IsTitleScreen() ? 3 : 2); // run title screen at 20 fps
 
 	// Adjust sky position.
 	unsigned short scroll_y_base = gamemapinfo.skyOffsetY;

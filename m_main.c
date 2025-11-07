@@ -434,15 +434,17 @@ int M_Ticker (void)
 //	if (gametic & 1)
 		titleTicker++;
 
-	if (titleTicker & 1)
-	{
-		titleSmallTicker++;
-	}
+//	if (titleTicker & 1)
+//		titleSmallTicker++;
 		cursorframe++;
 
 // For 30fps
 //	if (cursorframe & 1)
 //		titleSmallTicker++;
+
+// For 20fps
+	if (cursorframe % 3)
+		titleSmallTicker++;
 
 	//M_UpdateSaveInfo();
 
@@ -728,18 +730,23 @@ void M_Drawer (void)
 	{
 		VINT logoPos = 160 - (m_title->width / 2);
 
-		// Fill the area above the viewport with the sky color.
-		if (titleTicker < 4)
-			DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 44, gamemapinfo.skyTopColor);
-		else
+		if (titleTicker < 4) {
+			// Fill the area above the viewport with the sky color.
+			DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 88, gamemapinfo.skyTopColor);
+		}
+		else {
+			// Cover up animation trails.
 			DrawFillRect(48, 18, 58, 24, gamemapinfo.skyTopColor);
+			DrawFillRect(44, 46, 12, 42, gamemapinfo.skyTopColor);
+			DrawFillRect(262, 76, 8, 6, gamemapinfo.skyTopColor);
+		}
 
 		DrawJagobj(m_title, logoPos, 16);
 		y_offset = m_title->height + 24 - STARTY;
 
-		DrawJagobj(m_hand[titleSmallTicker % NUMHANDFRAMES], 160 + 3, 16 + 32);
+		DrawJagobj(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32);
 
-		DrawJagobj(m_tailwag[titleSmallTicker % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
+		DrawJagobj(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
 
 		if (titleTicker & 1)
 		{
@@ -755,7 +762,7 @@ void M_Drawer (void)
 
 			fistCounter--;
 			if (fistCounter <= -NUMKFISTFRAMES)
-				fistCounter = 15 + (M_Random() & 15);
+				fistCounter = 20 + (M_Random() % 21);
 		}
 
 		if (fistCounter < 0)
@@ -785,7 +792,7 @@ void M_Drawer (void)
 	if (scrpos == ms_help)
 	{
 		if (IsTitleScreen()) {
-			DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 44, gamemapinfo.skyTopColor);
+			DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 88, gamemapinfo.skyTopColor);
 		}
 		O_DrawHelp(80);
 		return;

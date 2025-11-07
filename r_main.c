@@ -1933,8 +1933,10 @@ void R_RenderPlayerView(int displayplayer)
 	t_planes = I_GetFRTCounter() - t_planes;
 
 	t_sprites = I_GetFRTCounter();
-	R_SpritePrep();
-	R_Sprites();
+	if (IsLevel()) {
+		R_SpritePrep();
+		R_Sprites();
+	}
 	t_sprites = I_GetFRTCounter() - t_sprites;
 	
 	R_Update();

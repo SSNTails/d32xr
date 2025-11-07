@@ -508,7 +508,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 			}
 		}
 		else if (IsTitleScreen()) {
-			int timeleft = (gameinfo.titleTime >> 1) - leveltime;
+			int timeleft = ((gameinfo.titleTime << 1) / 3) - leveltime;
 			if (timeleft <= 0) {
 				R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
 				Mars_FadeMDPaletteFromBlack(0);
