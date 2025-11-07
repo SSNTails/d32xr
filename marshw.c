@@ -1061,7 +1061,7 @@ void pri_vbi_handler(void)
 
 		if (IsTitleScreen()) {
 			unsigned short *table = &copper_source_table
-					[(copper_table_selection>>4)^1][((leveltime-3)+((leveltime-3)<<1)) & 127];
+					[(copper_table_selection>>4)^1][((leveltime-3)<<1) & 127];
 
 			buffer += (143-120);	// Some emulators will be one raster late, so make this 143 instead of 144.
 
