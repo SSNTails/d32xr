@@ -67,7 +67,7 @@ static VINT checkcoord[12][4] =
    { 0, 0, 0, 0 }
 };
 
-static sector_t emptysector = { .floorheight = 0, .ceilingheight = 0, .validcount = 0, .floorpic = -2, .ceilingpic = -2, .lightlevel = -2, .special = 0, .tag = 0, .flags = 0, .heightsec = -1, .fofsec = -1, .thinglist = (SPTR)0, .specialdata = (SPTR)0, .specline = -1 };
+static sector_t emptysector = { .floorheight = 0, .ceilingheight = 0, .floorpic = -2, .ceilingpic = -2, .lightlevel = -2, .special = 0, .tag = 0, .flags = 0, .heightsec = -1, .fofsec = -1, .thinglist = (SPTR)0, .specialdata = (SPTR)0, .specline = -1 };
 
 static int R_ClipToViewEdges(angle_t angle1, angle_t angle2)
 {
@@ -887,13 +887,14 @@ static void R_Subsector(rbspWork_t *rbsp, int num)
    const subsector_t *sub = &subsectors[num];
    seg_t       *line;
    int          count;
+   int secnum = sub->isector;
    sector_t    *frontsector = &sectors[sub->isector];
       
    if (frontsector->thinglist)
    {
-      if(frontsector->validcount != validcount[0]) // not already processed?
+      if(validcount[secnum+1] != validcount[0]) // not already processed?
       {
-         frontsector->validcount = validcount[0];  // mark it as processed
+         validcount[secnum+1] = validcount[0];  // mark it as processed
          if (vd.lastvissector < vd.vissectors + MAXVISSSEC)
          {
            *vd.lastvissector++ = frontsector;

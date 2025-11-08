@@ -83,14 +83,14 @@ struct line_s;
 typedef	struct
 {
 	fixed_t		floorheight, ceilingheight;
+
 	SPTR        specialdata;		/* thinker_t for reversable actions */
-	VINT		validcount;			/* if == validcount, already checked */
 	uint8_t		floorpic, ceilingpic;	/* if ceilingpic == (uint8_t)-1,draw sky */
 
 	uint8_t		lightlevel, special;
-
 	uint8_t		tag;
 	uint8_t     flags;
+	
 	uint16_t    floor_xoffs; // Upper X, Lower Y.
 
 	// killough 3/7/98: support flat heights drawn at another sector's heights
