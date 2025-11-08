@@ -497,7 +497,6 @@ void R_SegCommands(void)
 {
     int i, segcount;
     seglocal_t lseg;
-    drawtex_t* toptex, * bottomtex;
     uint32_t clipbounds_[SCREENWIDTH / 2 + 1];
     uint16_t *clipbounds = (uint16_t *)clipbounds_;
 #ifdef MARS
@@ -510,16 +509,12 @@ void R_SegCommands(void)
 
     D_memset(&lseg, 0, sizeof(lseg));
 
-    toptex = &lseg.tex[0];
-    bottomtex = &lseg.tex[1];
-
-    D_memset(toptex, 0, sizeof(*toptex));
-    D_memset(bottomtex, 0, sizeof(*bottomtex));
+    D_memset(lseg.tex, 0, sizeof(lseg.tex));
 
     I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
 
-    I_GetThreadLocalVar(DOOMTLS_COLUMNCACHE, toptex->columncache);
-    bottomtex->columncache = toptex->columncache + COLUMN_CACHE_SIZE;
+    I_GetThreadLocalVar(DOOMTLS_COLUMNCACHE, lseg.tex[0].columncache);
+    lseg.tex[1].columncache = lseg.tex[0].columncache + COLUMN_CACHE_SIZE;
 
     segcount = vd.lastwallcmd - vd.viswalls;
     for (i = 0; i < segcount; i++)
@@ -550,8 +545,8 @@ void R_SegCommands(void)
 #endif
 
         lseg.segl = segl;
-        lseg.first = lseg.tex + 1;
-        lseg.last = lseg.tex + 1;
+        lseg.first = lseg.tex;
+        lseg.last = lseg.tex;
 #if MIPLEVELS > 1
         lseg.minmip = MIPLEVELS;
         lseg.maxmip = 0;
@@ -623,14 +618,14 @@ void R_SegCommands(void)
 
         if (actionbits & AC_TOPTEXTURE)
         {
-            R_SetupDrawTexture(toptex, &textures[UPPER8(segl->tb_texturenum)],
+            R_SetupDrawTexture(lseg.last, &textures[UPPER8(segl->tb_texturenum)],
                 segl->t_texturemid, segl->t_topheight, segl->t_bottomheight);
-            lseg.first--;
+            lseg.last++;
         }
 
         if (actionbits & AC_BOTTOMTEXTURE)
         {
-            R_SetupDrawTexture(bottomtex, &textures[LOWER8(segl->tb_texturenum)],
+            R_SetupDrawTexture(lseg.last, &textures[LOWER8(segl->tb_texturenum)],
                 segl->b_texturemid, segl->b_topheight, segl->b_bottomheight);
             lseg.last++;
         }
