@@ -881,8 +881,12 @@ void P_Drawer (void)
 
 	drawtics = frtc - drawtics;
 
-	if (debugscreenactive)
+	if (debugscreenactive) {
 		I_DebugScreen();
+	}
+#ifdef SHOW_FPS
+	I_DebugScreen();
+#endif
 #else
 	if (optionsMenuOn)
 	{

@@ -587,7 +587,7 @@ int benchcounter = 0;
 void I_DebugScreen(void)
 {
 	int i;
-	int x = 200;
+	int x = 216;
 	int line = 3;
 	static char buf[19][16];
 
@@ -602,7 +602,11 @@ void I_DebugScreen(void)
 	if (debugmode == DEBUGMODE_FPSCOUNT)
 	{
 		D_snprintf(buf[0], sizeof(buf[0]), "fps:%2d", fpscount);
-		I_Print8(x, line++, buf[0]);
+
+		if (IsTitleScreen()) {
+			line = 21;
+		}
+		I_Print8(x, line, buf[0]);
 	}
 	else if (debugmode > DEBUGMODE_FPSCOUNT)
 	{

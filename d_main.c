@@ -1745,6 +1745,10 @@ D_printf ("DM_Main\n");
 	cheats_enabled = CHEAT_METRICS;	// Cheats already active for development builds.
 #endif
 
+#ifdef SHOW_FPS
+	debugmode = DEBUGMODE_FPSCOUNT;
+#endif
+
 	startmap = 1;
 	starttype = gt_single;
 	consoleplayer = 0;
