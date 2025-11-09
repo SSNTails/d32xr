@@ -408,6 +408,7 @@ int M_Ticker (void)
 	int		buttons, oldbuttons;
 	mainscreen_t* menuscr;
 	boolean newcursor = false;
+	boolean goto_prev_screen = false;
 	int sound = sfx_None;
 
 	if (cursorframe == -1)
@@ -420,6 +421,7 @@ int M_Ticker (void)
 	{
 		screenpos = ms_main;
 		if (IsTitleScreen()) {
+			titleTicker = 0;	// Redraw the title emblem.
 			overlay_graphics = og_title;
 		}
 		//S_StartSound(NULL, sfx_None);
@@ -455,45 +457,52 @@ int M_Ticker (void)
 	if (((buttons & (BT_B | BT_LMBTN | BT_START)) && !(oldbuttons & (BT_B | BT_LMBTN | BT_START)))
 		|| ((buttons & (BT_B | BT_LMBTN)) && !(oldbuttons & (BT_B | BT_LMBTN))))
 	{
-		int itemno = menuscr->firstitem + cursorpos;
+		if (screenpos == ms_help) {
+			// Navigate to the previous menu screen instead.
+			// Prevents title emblem redraw issues.
+			goto_prev_screen = true;
+		}
+		else {
+			int itemno = menuscr->firstitem + cursorpos;
 
-		int nextscreen = mainitem[itemno].screen;
-		if (nextscreen == ms_save && (startup || netgame == gt_deathmatch))
-			nextscreen = ms_none;
+			int nextscreen = mainitem[itemno].screen;
+			if (nextscreen == ms_save && (startup || netgame == gt_deathmatch))
+				nextscreen = ms_none;
 
-		if (nextscreen != ms_none)
-		{
-			movecount = 0;
-			cursorpos = 0;
-			switch (itemno) {
-				case mi_splitscreen:
-				case mi_network:
-					if (currentplaymode == single)
-						currentplaymode++;
-					currentgametype = itemno;
-					break;
-				case mi_singleplayer:
-				default:
-					currentplaymode = single;
-					currentgametype = itemno;
-					break;
+			if (nextscreen != ms_none)
+			{
+				movecount = 0;
+				cursorpos = 0;
+				switch (itemno) {
+					case mi_splitscreen:
+					case mi_network:
+						if (currentplaymode == single)
+							currentplaymode++;
+						currentgametype = itemno;
+						break;
+					case mi_singleplayer:
+					default:
+						currentplaymode = single;
+						currentgametype = itemno;
+						break;
+				}
+				screenpos = nextscreen;
+				if (nextscreen == ms_help) {
+					overlay_graphics = og_none;
+				}
+				/*if (nextscreen != ms_main) {
+					clearscreen = 2;
+				}*/
+				prevsaveslot = -1;
+				saveslot = screenpos == ms_save;
+				//S_StartSound(NULL, sfx_None);
+				return ga_nothing;
 			}
-			screenpos = nextscreen;
-			if (nextscreen == ms_help) {
-				overlay_graphics = og_none;
-			}
-			/*if (nextscreen != ms_main) {
-				clearscreen = 2;
-			}*/
-			prevsaveslot = -1;
-			saveslot = screenpos == ms_save;
-			//S_StartSound(NULL, sfx_None);
-			return ga_nothing;
 		}
 	}
 
 	// Handle navigation to the previous menu screen.
-	if ((buttons & (BT_A | BT_C | BT_RMBTN)) && !(oldbuttons & (BT_A | BT_C | BT_RMBTN)))
+	if (goto_prev_screen || ((buttons & (BT_A | BT_C | BT_RMBTN)) && !(oldbuttons & (BT_A | BT_C | BT_RMBTN))))
 	{
 		if (screenpos != ms_main)
 		{
@@ -503,6 +512,7 @@ int M_Ticker (void)
 			cursorpos = 0;
 			screenpos = ms_main;
 			if (IsTitleScreen()) {
+				titleTicker = 0;	// Redraw the title emblem.
 				overlay_graphics = og_title;
 			}
 
@@ -726,22 +736,38 @@ void M_Drawer (void)
 	}
 
 /* Draw main menu */
-	if (m_title && (scrpos == ms_main || scrpos == ms_gametype))
+	if (m_title && scrpos == ms_main)
 	{
-		VINT logoPos = 160 - (m_title->width / 2);
+		const VINT logoPos = 160 - (m_title->width / 2);
 
 		if (titleTicker < 4) {
 			// Fill the area above the viewport with the sky color.
 			DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 88, gamemapinfo.skyTopColor);
+			
+			// Draw the entire logo emblem.
+			DrawJagobj(m_title, logoPos, 16);
 		}
 		else {
 			// Cover up animation trails.
-			DrawFillRect(48, 18, 58, 24, gamemapinfo.skyTopColor);
-			DrawFillRect(44, 46, 12, 42, gamemapinfo.skyTopColor);
-			DrawFillRect(262, 76, 8, 6, gamemapinfo.skyTopColor);
-		}
+			DrawFillRect(48, 18, 58, 24, gamemapinfo.skyTopColor);	// two tails (top)
+			DrawFillRect(44, 46, 12, 42, gamemapinfo.skyTopColor);	// two tails (side/bottom)
+			DrawFillRect(262, 76, 8, 6, gamemapinfo.skyTopColor);	// fist
 
-		DrawJagobj(m_title, logoPos, 16);
+			// Draw the logo emblem in pieces (helps get PicoDrive very close to 20 fps).
+			DrawJagobj3(m_title, logoPos+4, 16, 4, 0, 62, 28, 320, I_OverwriteBuffer());
+			DrawJagobj3(m_title, logoPos, 16+28, 0, 28, m_title->width, 58, 320, I_OverwriteBuffer());
+			DrawJagobj3(m_title, logoPos+24, 16+86, 24, 86, 10, 15, 320, I_OverwriteBuffer());
+			DrawJagobj3(m_title, logoPos+206, 16+86, 206, 86, 10, 13, 320, I_OverwriteBuffer());
+			DrawJagobj3(m_title, logoPos+34, 16+99, 34, 99, 174, 9, 320, I_OverwriteBuffer());
+			
+			DrawJagobj3(m_title, logoPos, 16+108, 0, 108, m_title->width, m_title->height - 108, 320, I_OverwriteBuffer());
+			
+			//DrawJagobj3(m_title, logoPos, 16+108, 0, 108, 34, 47, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos+34, 16+108, 34, 108, 18, 38, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos+188, 16+108, 188, 108, 18, 38, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos+206, 16+108, 206, 108, 34, 47, 320, I_OverwriteBuffer());
+		}
+		
 		y_offset = m_title->height + 24 - STARTY;
 
 		DrawJagobj(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32);
