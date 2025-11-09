@@ -597,7 +597,6 @@ void G_RunGame (void)
 
 	while (1)
 	{
-		boolean		finale;
 #ifdef JAGUAR
 		int			nextmap;
 #endif
@@ -669,11 +668,17 @@ startnew:
 		else
 			nextmapl = returnspecstagemapl;
 
-		finale = nextmapl == 0;
+		if (nextmapl == 0) {
+			if (gamemapinfo.mapNumber != 10 && emeralds == 6) {
+				nextmapl = G_LumpNumForMapNum(10);	// Go to CEZ1 (secret level)
+			}
+			else {
+				SetCredits();
+			}
+		}
 
 		if (gameaction == ga_backtotitle)
 		{
-			finale = false;
 			nextmapl = 0;
 			break;
 		}
@@ -695,16 +700,16 @@ startnew:
 #ifdef MARS
 		if (netgame == gt_deathmatch)
 		{
-			if (finale)
+			if (IsCredits())
 			{
 				/* go back to start map */
-				finale = 0;
+				SetLevel(LevelType_Normal);
 				nextmapl = G_LumpNumForMapNum(1);
 			}
 		}
 		else
 		{
-			if (!finale)
+			if (!IsCredits())
 			{
 				/* quick save */
 				int nextmap = G_MapNumForLumpNum(nextmapl);
@@ -718,7 +723,7 @@ startnew:
 		MiniLoop (IN_Start, IN_Stop, IN_Ticker, IN_Drawer, UpdateBuffer);
 	
 	/* run the finale if needed */
-		if (finale)
+		if (IsCredits())
 		{
 #ifdef MARS
 			MiniLoop(F_Start, F_Stop, F_Ticker, F_Drawer, I_Update);
