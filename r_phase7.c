@@ -181,7 +181,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
         else if (y + bgofs < 0)
             bgofs = -y;
 
-        angle = (vd.viewangle + ANG90) >> ANGLETOFINESHIFT;
+        angle = (vd.viewangle + flat_rotation + ANG90) >> ANGLETOFINESHIFT;
         xfrac += FixedMul(finecosine(angle), bgofs << FRACBITS);
         yfrac += FixedMul(finesine(angle), bgofs << FRACBITS);
     }
@@ -353,10 +353,10 @@ static void R_DrawPlanes2(int isFOF)
     if (vd.gsortedvisplanes == NULL)
         return;
 
-    angle = (vd.viewangle - ANG90) >> ANGLETOFINESHIFT;
+    angle = (vd.viewangle + flat_rotation - ANG90) >> ANGLETOFINESHIFT;
     basexscale = FixedDiv(finecosine(angle), centerXFrac);
     baseyscale = -FixedDiv(finesine(angle), centerXFrac);
-    angle = (vd.viewangle) >> ANGLETOFINESHIFT;
+    angle = (vd.viewangle + flat_rotation) >> ANGLETOFINESHIFT;
     basexscale2 = FixedDiv(finecosine(angle), centerXFrac);
     baseyscale2 = -FixedDiv(finesine(angle), centerXFrac);
 
@@ -387,7 +387,7 @@ static void R_DrawPlanes2(int isFOF)
             lpl.x = -vd.viewy;
             lpl.y = -vd.viewx;
 #endif
-            lpl.angle = vd.viewangle + ANG90;
+            lpl.angle = vd.viewangle + flat_rotation + ANG90;
             lpl.basexscale = basexscale2;
             lpl.baseyscale = baseyscale2;
             lpl.xoff = LOWER8(pl->offs);
@@ -402,7 +402,7 @@ static void R_DrawPlanes2(int isFOF)
             lpl.x = vd.viewx;
             lpl.y = -vd.viewy;
 #endif
-            lpl.angle = vd.viewangle;
+            lpl.angle = vd.viewangle + flat_rotation;
             lpl.basexscale = basexscale;
             lpl.baseyscale = baseyscale;
             lpl.xoff = UPPER8(pl->offs);

@@ -164,7 +164,7 @@ static void R_Draw32XSky(const int top, const int bottom, const int x, drawcol_t
 
     if (draw32xsky)
     {
-        unsigned short scroll_x = (*((unsigned short *)&vd.viewangle) >> 6);
+        unsigned short scroll_x = (vd.viewangle + sky_rotation) >> ANGLETOSKYSHIFT;
 
         int colnum = ((skystretch[x] << 1) - scroll_x) & 1023;
 

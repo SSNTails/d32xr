@@ -406,6 +406,9 @@ extern	uint16_t *distscale/*[SCREENWIDTH]*/;
 #define EFFECTS_COPPER_INDEX_CHANGE			0x40
 #define EFFECTS_COPPER_SKY_IN_VIEW			0x80
 
+extern angle_t flat_rotation;
+extern angle_t sky_rotation;
+
 #ifdef MARS
 __attribute__((aligned(2)))
 #endif

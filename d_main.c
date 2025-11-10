@@ -527,7 +527,6 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 			}
 			// Rotate on the title screen.
 			ticbuttons[consoleplayer] = buttons = 0;
-			players[0].mo->angle += TITLE_ANGLE_INC;
 		}
 
 #ifdef PLAY_POS_DEMO

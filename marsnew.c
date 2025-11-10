@@ -763,7 +763,7 @@ void I_Update(void)
 
 #ifdef MDSKY
 	if (sky_md_layer) {
-		unsigned short scroll_x = (*((unsigned short *)&vd.viewangle) >> 6);
+		unsigned short scroll_x = (vd.viewangle + sky_rotation) >> ANGLETOSKYSHIFT;
 
 		if (h40_sky) {
 			// Use this to scroll the sky 1280 pixels. Works well for 256-width skies.

@@ -17,6 +17,9 @@ fixed_t centerXViewportFrac, centerYViewportFrac;
 fixed_t stretch;
 fixed_t stretchX;
 
+angle_t flat_rotation;
+angle_t sky_rotation;
+
 VINT anamorphicview = 0;
 VINT initmathtables = 2;
 
@@ -1276,7 +1279,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 
 	player = &players[displayplayer];
 
-	if (gamemapinfo.mapNumber != TITLE_MAP_NUMBER)
+	if (!IsTitleScreen())
 	{
 		const camera_t *thiscam = NULL;
 		thiscam = &camera;
@@ -1291,6 +1294,9 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.heightsec = NULL;
 		vd.fofsec = NULL;
 		vd.underwater = false;
+
+		flat_rotation = 0;
+		sky_rotation = 0;
 
 		if (vd.viewsector->heightsec >= 0)
 		{
@@ -1320,11 +1326,14 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.viewx = player->mo->x;
 		vd.viewy = player->mo->y;
 		vd.viewz = player->viewz;
-		vd.viewangle = player->mo->angle;
+		vd.viewangle = 0x40000000;
 		vd.aimingangle = 0;
 		vd.viewsector = SS_SECTOR(player->mo->isubsector);
 		vd.heightsec = NULL;
 		vd.fofsec = NULL;
+
+		flat_rotation += TITLE_ANGLE_INC;
+		sky_rotation += TITLE_ANGLE_INC;
 
 		if (vd.viewsector->heightsec >= 0)
 			vd.heightsec = &sectors[vd.viewsector->heightsec];
