@@ -584,7 +584,12 @@ void O_DrawHelp (VINT yPos)
 	V_DrawStringCenter(&menuFont, 160, yPos - 96, "TIP: Use gas pedal for easier control");
 
 	V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 32, "SONIC ROBO BLAST 32X", YELLOWTEXTCOLORMAP);
-	V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 20, "RETRO WORLD EXPO DEMO", YELLOWTEXTCOLORMAP);
+	//V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 20, "RETRO WORLD EXPO DEMO", YELLOWTEXTCOLORMAP);
+	
+	// TODO: Build the cached text object elsewhere, just once instead of every frame.
+	jagobj_t *jo = V_CacheStringLeftWithColormap(&menuFont, 160, yPos - 20, "RETRO WORLD EXPO DEMO", YELLOWTEXTCOLORMAP);
+	DrawJagobj(jo, 160, yPos - 20);
+	Z_Free(jo); // TODO: Do this somewhere else.
 
 	V_DrawStringRight(&menuFont, 160-8, yPos, "JUMP ");
 	V_DrawStringLeft(&menuFont, 160, yPos, "= B");

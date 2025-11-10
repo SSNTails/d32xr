@@ -25,7 +25,7 @@ void V_FontInit()
     titleFont.fixedWidth = false;
     titleFont.fixedWidth = 0;
     titleFont.spaceWidthSize = 16;
-    titleFont.verticalOffset = 16;
+    titleFont.verticalOffset = 20;
 
     creditFont.lumpStart = W_GetNumForName("CRFNT065");
     creditFont.lumpStartChar = 65;
@@ -93,6 +93,86 @@ int V_GetStringWidth(const font_t *font, const char *string)
     }
 
     return width;
+}
+
+jagobj_t *V_CacheStringLeftWithColormap(const font_t *font, int x, int y, const char *string, int colormap)
+{
+    //Note: Compressed fonts are *NOT* currently supported!
+
+    int i,c;
+    int startX = x;
+
+    // Create buffer
+    int width = V_GetStringWidth(font, string);
+    int height = font->verticalOffset;
+
+    for (i = 0; i < mystrlen(string); i++) {
+        if (string[i] == '\n') {
+            height += font->verticalOffset;
+        }
+    }
+
+    jagobj_t *jo = (jagobj_t *)Z_Malloc(sizeof(jagobj_t) + (width * height), PU_STATIC);
+    jo->width = width;
+    jo->height = height;
+
+    jagobj_t *character[128];
+    for (i=0; i < 128; i++) {
+        character[i] = NULL;
+    }
+
+    // Draw the string to the buffer.
+    for (i = 0; i < mystrlen(string); i++)
+	{
+		c = string[i];
+
+        if (character[c] == NULL) {
+            // Cache any characters that are used in the string.
+            character[c] = W_CacheLumpNum(font->lumpStart + (c - font->lumpStartChar), PU_STATIC);
+        }
+	
+        if (c == '\n') // Basic newline support
+        {
+            x = startX;
+            y += font->verticalOffset;
+        }
+        else if (c == 0x20) // Space
+            x += font->spaceWidthSize;
+		else if (c >= font->minChar && c <= font->maxChar)
+		{
+			if (font->fixedWidth)
+            {
+                if (colormap) {
+                    //NOTE: Not supported yet!
+    			    //DrawJagobjLumpWithColormap(character[c], x, y, NULL, NULL, colormap);
+                }
+                else {
+                    DrawJagobj3(character[c], x, y, 0, 0, character[c]->width, character[c]->height, jo->width, jo->data);
+                    //DrawJagobjLump(c, x, y, NULL, NULL);
+                }
+                
+			    x += font->fixedWidthSize;
+            }
+            else
+            {
+                if (colormap)
+                    DrawJagobjWithColormap(character[c], x, y + font->verticalOffset - jo->height, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+                else
+                    DrawJagobj(character[c], x, y + font->verticalOffset - jo->height);
+
+                x += jo->width;
+	        }
+		}
+	}
+
+    // Free temporary cached characters.
+    for (i=127; i >= 0; i++) {
+        if (character[i] != NULL) {
+            Z_Free(character[i]);
+        }
+    }
+
+    return jo;
 }
 
 int V_DrawStringLeftWithColormap(const font_t *font, int x, int y, const char *string, int colormap)

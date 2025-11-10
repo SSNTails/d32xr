@@ -6,7 +6,7 @@ typedef struct
     char lumpStartChar;
     int8_t fixedWidthSize;
     int8_t spaceWidthSize;
-    int8_t verticalOffset;
+    int8_t verticalOffset;  // This also serves as height for cached strings.
     char minChar;
     char maxChar;
     boolean fixedWidth;
@@ -21,6 +21,8 @@ extern font_t hudNumberFont;
 void V_FontInit();
 
 int V_GetStringWidth(const font_t *font, const char *string);
+
+jagobj_t *V_CacheStringLeftWithColormap(const font_t *font, int x, int y, const char *string, int colormap);
 
 int V_DrawStringLeftWithColormap(const font_t *font, int x, int y, const char *string, int colormap);
 int V_DrawStringRightWithColormap(const font_t *font, int x, int y, const char *string, int colormap);
