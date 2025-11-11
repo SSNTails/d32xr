@@ -522,7 +522,7 @@ void DrawJagobjLump(int lumpnum, int x, int y, int* ow, int* oh)
 // NOTE: Using a colormap is slower because it must
 // draw only one byte at a time, not two.
 void DrawJagobjWithColormap(jagobj_t* jo, int x, int y, 
-	int src_x, int src_y, int src_w, int src_h, pixel_t *fb, int colormap)
+	int src_x, int src_y, int src_w, int src_h, int canvas_width, pixel_t *fb, int colormap)
 {
 	int16_t *dc_colormap = (int16_t*)dc_colormaps + colormap;
 	int		srcx, srcy;
@@ -566,8 +566,8 @@ void DrawJagobjWithColormap(jagobj_t* jo, int x, int y,
 	}
 	srcy += src_y;
 
-	if (x + width > 320)
-		width = 320 - x;
+	if (x + width > canvas_width)
+		width = canvas_width - x;
 	if (y + height > mars_framebuffer_height)
 		height = mars_framebuffer_height - y;
 	inc = rowsize - width;
@@ -583,7 +583,7 @@ void DrawJagobjWithColormap(jagobj_t* jo, int x, int y,
 		index = (index << 1) + (flags & 2 ? 1 : 0);
 	}
 
-	dest = (byte*)fb + y * 320 + x;
+	dest = (byte*)fb + y * canvas_width + x;
 	source = jo->data + srcx + srcy * rowsize;
 
 	if (depth == 2)
@@ -600,7 +600,7 @@ void DrawJagobjWithColormap(jagobj_t* jo, int x, int y,
 			} while (--n > 0);
 			}
 			source += inc;
-			dest += 320 - width;
+			dest += canvas_width - width;
 		}
 		return;
 	}
@@ -617,7 +617,7 @@ void DrawJagobjWithColormap(jagobj_t* jo, int x, int y,
 		} while (--n > 0);
 		}
 		source += rowsize - width;
-		dest += 320 - width;
+		dest += canvas_width - width;
 	}
 }
 
@@ -642,7 +642,7 @@ void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int
 		jo = (jagobj_t*)lump;
 		if (ow) *ow = BIGSHORT(jo->width);
 		if (oh) *oh = BIGSHORT(jo->height);
-		DrawJagobjWithColormap((void*)lump, x, y, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+		DrawJagobjWithColormap((void*)lump, x, y, 0, 0, 0, 0, 320, I_OverwriteBuffer(), colormap);
 		return;
 	}
 

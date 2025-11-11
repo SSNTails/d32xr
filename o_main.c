@@ -18,6 +18,8 @@
 #define CURSORY(y)	(STARTY+ITEMSPACE*(y))
 #define SLIDEWIDTH 90
 
+static jagobj_t *about_lines[9];
+
 typedef enum
 {
 	mi_game, 
@@ -581,16 +583,40 @@ void O_Control (player_t *player)
 
 void O_DrawHelp (VINT yPos)
 {
-	V_DrawStringCenter(&menuFont, 160, yPos - 96, "TIP: Use gas pedal for easier control");
+	//V_DrawStringCenter(&menuFont, 160, yPos - 96, "TIP: Use gas pedal for easier control");
 
-	V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 32, "SONIC ROBO BLAST 32X", YELLOWTEXTCOLORMAP);
+	//V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 32, "SONIC ROBO BLAST 32X", YELLOWTEXTCOLORMAP);
 	//V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 20, "RETRO WORLD EXPO DEMO", YELLOWTEXTCOLORMAP);
 	
-	// TODO: Build the cached text object elsewhere, just once instead of every frame.
-	jagobj_t *jo = V_CacheStringLeftWithColormap(&menuFont, 160, yPos - 20, "RETRO WORLD EXPO DEMO", YELLOWTEXTCOLORMAP);
-	DrawJagobj(jo, 160, yPos - 20);
-	Z_Free(jo); // TODO: Do this somewhere else.
+	if (about_lines[0] == NULL)
+		about_lines[0] = V_CacheStringWithColormap(&menuFont, "SONIC ROBO BLAST 32X", YELLOWTEXTCOLORMAP);
+	if (about_lines[1] == NULL)
+		about_lines[1] = V_CacheStringWithColormap(&menuFont, "RETRO WORLD EXPO DEMO", YELLOWTEXTCOLORMAP);
+	if (about_lines[2] == NULL)
+		about_lines[2] = V_CacheStringWithColormap(&menuFont, "JUMP = B", NULL);
+	if (about_lines[3] == NULL)
+		about_lines[3] = V_CacheStringWithColormap(&menuFont, "SPIN = A or C", NULL);
+	if (about_lines[4] == NULL)
+		about_lines[4] = V_CacheStringWithColormap(&menuFont, "GAS PEDAL = Y", NULL);
+	if (about_lines[5] == NULL)
+		about_lines[5] = V_CacheStringWithColormap(&menuFont, "MOVE CAMERA = X and Z", NULL);
+	if (about_lines[6] == NULL)
+		about_lines[6] = V_CacheStringWithColormap(&menuFont, "INTENDED ONLY FOR NTSC SYSTEMS AND", YELLOWTEXTCOLORMAP);
+	if (about_lines[7] == NULL)
+		about_lines[7] = V_CacheStringWithColormap(&menuFont, "PICODRIVE 2.04 & JGENESIS 0.10.0", YELLOWTEXTCOLORMAP);
+	if (about_lines[8] == NULL)
+		about_lines[8] = V_CacheStringWithColormap(&menuFont, "ssntails.srb2.org/srb32x", NULL);
 
+	DrawJagobj(about_lines[0], 160 - (about_lines[0]->width >> 1), yPos - 32);
+	DrawJagobj(about_lines[1], 160 - (about_lines[1]->width >> 1), yPos - 20);
+	DrawJagobj(about_lines[2], 160 - (about_lines[2]->width >> 1), yPos);
+	DrawJagobj(about_lines[3], 160 - (about_lines[3]->width >> 1), yPos + (12*1));
+	DrawJagobj(about_lines[4], 160 - (about_lines[4]->width >> 1), yPos + (12*2));
+	DrawJagobj(about_lines[5], 160 - (about_lines[5]->width >> 1), yPos + (12*3));
+	DrawJagobj(about_lines[6], 160 - (about_lines[6]->width >> 1), yPos + (12*5));
+	DrawJagobj(about_lines[7], 160 - (about_lines[7]->width >> 1), yPos + (12*5) + 8);
+	DrawJagobj(about_lines[8], 160 - (about_lines[8]->width >> 1), yPos + 80);
+/*
 	V_DrawStringRight(&menuFont, 160-8, yPos, "JUMP ");
 	V_DrawStringLeft(&menuFont, 160, yPos, "= B");
 	V_DrawStringRight(&menuFont, 160-8, yPos + (12*1), "SPIN ");
@@ -604,6 +630,7 @@ void O_DrawHelp (VINT yPos)
 	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5) + 8, "PICODRIVE 2.04 & JGENESIS 0.10.0", YELLOWTEXTCOLORMAP);
 
 	V_DrawStringCenter(&menuFont, 160, yPos + 80, "ssntails.srb2.org/srb32x");
+*/
 }
 
 void O_Drawer (void)

@@ -95,12 +95,13 @@ int V_GetStringWidth(const font_t *font, const char *string)
     return width;
 }
 
-jagobj_t *V_CacheStringLeftWithColormap(const font_t *font, int x, int y, const char *string, int colormap)
+jagobj_t *V_CacheStringWithColormap(const font_t *font, const char *string, int colormap)
 {
     //Note: Compressed fonts are *NOT* currently supported!
 
+    int x = 0;
+    int y = 0;
     int i,c;
-    int startX = x;
 
     // Create buffer
     int width = V_GetStringWidth(font, string);
@@ -112,9 +113,15 @@ jagobj_t *V_CacheStringLeftWithColormap(const font_t *font, int x, int y, const 
         }
     }
 
-    jagobj_t *jo = (jagobj_t *)Z_Malloc(sizeof(jagobj_t) + (width * height), PU_STATIC);
+    jagobj_t *jo = NULL;
+    int size = sizeof(jagobj_t) + (width * height);
+    jo = Z_Calloc(size+1, PU_STATIC);
     jo->width = width;
     jo->height = height;
+    jo->depth = 8;
+    jo->flags = 0;
+    jo->index = 0;
+    ((char *)jo)[size] = '\0';
 
     jagobj_t *character[128];
     for (i=0; i < 128; i++) {
@@ -133,22 +140,22 @@ jagobj_t *V_CacheStringLeftWithColormap(const font_t *font, int x, int y, const 
 	
         if (c == '\n') // Basic newline support
         {
-            x = startX;
+            x = 0;
             y += font->verticalOffset;
         }
         else if (c == 0x20) // Space
+        {
             x += font->spaceWidthSize;
+        }
 		else if (c >= font->minChar && c <= font->maxChar)
 		{
 			if (font->fixedWidth)
             {
                 if (colormap) {
-                    //NOTE: Not supported yet!
-    			    //DrawJagobjLumpWithColormap(character[c], x, y, NULL, NULL, colormap);
-                }
+                    DrawJagobjWithColormap(character[c], x, y, 0, 0, character[c]->width, character[c]->height, jo->width, jo->data, colormap);
+    			}
                 else {
                     DrawJagobj3(character[c], x, y, 0, 0, character[c]->width, character[c]->height, jo->width, jo->data);
-                    //DrawJagobjLump(c, x, y, NULL, NULL);
                 }
                 
 			    x += font->fixedWidthSize;
@@ -156,9 +163,9 @@ jagobj_t *V_CacheStringLeftWithColormap(const font_t *font, int x, int y, const 
             else
             {
                 if (colormap)
-                    DrawJagobjWithColormap(character[c], x, y + font->verticalOffset - jo->height, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+                    DrawJagobjWithColormap(character[c], x, y, 0, 0, 0, 0, 320, I_OverwriteBuffer(), colormap);
                 else
-                    DrawJagobj(character[c], x, y + font->verticalOffset - jo->height);
+                    DrawJagobj(character[c], x, y);
 
                 x += jo->width;
 	        }
@@ -166,9 +173,12 @@ jagobj_t *V_CacheStringLeftWithColormap(const font_t *font, int x, int y, const 
 	}
 
     // Free temporary cached characters.
-    for (i=127; i >= 0; i++) {
-        if (character[i] != NULL) {
-            Z_Free(character[i]);
+    for (i = mystrlen(string)-1; i >= 0; i--)
+	{
+		c = string[i];
+        if (character[c] != NULL) {
+            Z_Free(character[c]);
+            character[c] = NULL;
         }
     }
 
@@ -212,7 +222,7 @@ int V_DrawStringLeftWithColormap(const font_t *font, int x, int y, const char *s
 	            {
     		        jo = (jagobj_t*)lump;
                     if (colormap)
-                        DrawJagobjWithColormap(jo, x, y + font->verticalOffset - jo->height, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+                        DrawJagobjWithColormap(jo, x, y + font->verticalOffset - jo->height, 0, 0, 0, 0, 320, I_OverwriteBuffer(), colormap);
                     else
                         DrawJagobj(jo, x, y + font->verticalOffset - jo->height);
 	            }
@@ -273,7 +283,7 @@ int V_DrawStringRightWithColormap(const font_t *font, int x, int y, const char *
 		            x -= jo->width;
 
                     if (colormap)
-                        DrawJagobjWithColormap(jo, x, y + font->verticalOffset - jo->height, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+                        DrawJagobjWithColormap(jo, x, y + font->verticalOffset - jo->height, 0, 0, 0, 0, 320, I_OverwriteBuffer(), colormap);
                     else
                         DrawJagobj(jo, x, y + font->verticalOffset - jo->height);
 	            }
