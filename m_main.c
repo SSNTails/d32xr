@@ -719,6 +719,7 @@ void O_DrawHelp (VINT yPos);
 =
 =================
 */
+static dither_test = 1;	//TODO: Remove this!
 void M_Drawer (void)
 {
 	int i;
@@ -742,13 +743,38 @@ void M_Drawer (void)
 		const VINT logoPos = 160 - (m_title->width / 2);
 
 		if (scrpos == ms_help) {
+
+			// TESTING!
+			//TODO: Remove this!
+			if (ticrealbuttons & BT_MODE && !(oldticrealbuttons & BT_MODE)) {
+				dither_test++;
+				if (dither_test > 5) {
+					dither_test = 0;
+				}
+				titleTicker = 0;	// Redraw the screen.
+			}
+
 			if (titleTicker < 4) {
 				const colormap = 12*256;	// 75% dark
 				const fillcolor = 0x8B;		// Dark blue
 
-				// Erase the even lines.
-				for (int y=0; y < 224; y += 2) {
-					DrawLine(0, y, 320, fillcolor, false);
+				switch (dither_test) {
+					case 0:
+						// Erase the even lines (horizontal).
+						for (int y=0; y < 224; y += 2) {
+							DrawLine(0, y, 320, fillcolor, false);
+						}
+						break;
+					case 1:
+						// Erase the even lines (vertical).
+						for (int x=0; x < 320; x += 2) {
+							DrawLine(x, 0, 224, fillcolor, true);
+						}
+						break;
+					default:
+						// Clear the entire screen.
+						I_FillFrameBuffer(fillcolor);
+						//break;
 				}
 
 				// Draw the entire emblem with an alternate colormap.
@@ -780,9 +806,61 @@ void M_Drawer (void)
 					DrawJagobjWithColormap(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37,
 							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
 				
-				// Erase the odd lines.
-				for (int y=1; y < 224; y += 2) {
-					DrawLine(0, y, 320, fillcolor, false);
+				pixel_t *framebuffer = I_OverwriteBuffer();
+				const even_pixel_word = (fillcolor << 8);
+				const odd_pixel_word = fillcolor;
+
+				switch (dither_test) {
+					case 0:
+						// Erase the odd lines (horizontal).
+						for (int y=1; y < 224; y += 2) {
+							DrawLine(0, y, 320, fillcolor, false);
+						}
+						break;
+					case 1:
+						// Erase the odd lines (vertical).
+						for (int x=1; x < 320; x += 2) {
+							DrawLine(x, 0, 224, fillcolor, true);
+						}
+						break;
+					case 2:
+						// Dither (even/odd).
+						for (int y=0; y < (224/2); y++) {
+							for (int x=0; x < (320/2); x++) {
+								*framebuffer++ = even_pixel_word;
+							}
+							for (int x=0; x < (320/2); x++) {
+								*framebuffer++ = odd_pixel_word;
+							}
+						}
+						break;
+					case 3:
+						// Dither (even/even/odd).
+						for (int x=0; x < (320/2)*2; x++) {
+							*framebuffer++ = even_pixel_word;
+						}
+						for (int y=0; y < ((224-2)/3); y++) {
+							for (int x=0; x < (320/2); x++) {
+								*framebuffer++ = odd_pixel_word;
+							}
+							for (int x=0; x < (320/2)*2; x++) {
+								*framebuffer++ = even_pixel_word;
+							}
+						}
+						break;
+					case 4:
+						// Dither (even/even/odd/odd).
+						for (int y=0; y < (224/4); y++) {
+							for (int x=0; x < (320/2)*2; x++) {
+								*framebuffer++ = even_pixel_word;
+							}
+							for (int x=0; x < (320/2)*2; x++) {
+								*framebuffer++ = odd_pixel_word;
+							}
+						}
+						//break;
+					default:
+						//break;
 				}
 			}
 		}
