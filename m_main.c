@@ -432,21 +432,17 @@ int M_Ticker (void)
 	if (!gamemapnumbers)
 		return ga_startnew;
 
-/* animate skull */
-//	if (gametic & 1)
-		titleTicker++;
+	titleTicker++;
+	cursorframe++;
 
-//	if (titleTicker & 1)
-//		titleSmallTicker++;
-		cursorframe++;
-
-// For 30fps
-//	if (cursorframe & 1)
-//		titleSmallTicker++;
-
-// For 20fps
-	if (cursorframe % 3)
-		titleSmallTicker++;
+	if (screenpos != ms_help) {
+	//	if (cursorframe & 1)	// For 30 fps
+		if (cursorframe % 3)	// For 20 fps
+	//	if (titleTicker & 1)	// For 15 fps
+		{
+			titleSmallTicker++;
+		}
+	}
 
 	//M_UpdateSaveInfo();
 
@@ -488,7 +484,8 @@ int M_Ticker (void)
 				}
 				screenpos = nextscreen;
 				if (nextscreen == ms_help) {
-					overlay_graphics = og_none;
+					titleTicker = 0;	// Redraw the title emblem.
+					overlay_graphics = og_about;
 				}
 				/*if (nextscreen != ms_main) {
 					clearscreen = 2;
@@ -514,6 +511,10 @@ int M_Ticker (void)
 			if (IsTitleScreen()) {
 				titleTicker = 0;	// Redraw the title emblem.
 				overlay_graphics = og_title;
+				clear_h32_borders = 2;
+			}
+			else if (overlay_graphics == og_about) {
+				overlay_graphics = og_none;		// May want "og_hud" in the future.
 			}
 
 			for (i =0; i < NUMMAINITEMS; i++)
@@ -736,18 +737,64 @@ void M_Drawer (void)
 	}
 
 /* Draw main menu */
-	if (m_title && scrpos == ms_main)
+	if (m_title)
 	{
 		const VINT logoPos = 160 - (m_title->width / 2);
 
-		if (titleTicker < 4) {
-			// Fill the area above the viewport with the sky color.
-			DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 88, gamemapinfo.skyTopColor);
-			
-			// Draw the entire logo emblem.
-			DrawJagobj(m_title, logoPos, 16);
+		if (scrpos == ms_help) {
+			if (titleTicker < 4) {
+				const colormap = 12*256;	// 75% dark
+				const fillcolor = 0x8B;		// Dark blue
+
+				// Erase the even lines.
+				for (int y=0; y < 224; y += 2) {
+					DrawLine(0, y, 320, fillcolor, false);
+				}
+
+				// Draw the entire emblem with an alternate colormap.
+				DrawJagobjWithColormap(m_title, logoPos, 16,
+						0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+
+				// Draw animations with an alternate colormap.
+				DrawJagobjWithColormap(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32,
+						0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+				DrawJagobjWithColormap(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2,
+						0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+
+				if (fistCounter < 0)
+					DrawJagobjWithColormap(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43,
+							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+				else
+					DrawJagobjWithColormap(m_kfist[0], logoPos + 188, 16 + 43,
+							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+
+				if (sBlinkCounter < 0)
+					DrawJagobjWithColormap(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27,
+							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+
+				if (tBlinkCounter < 0)
+					DrawJagobjWithColormap(m_tblink[D_abs(tBlinkCounter)], logoPos + 54, 16 + 40,
+							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+
+				if (kBlinkCounter < 0)
+					DrawJagobjWithColormap(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37,
+							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+				
+				// Erase the odd lines.
+				for (int y=1; y < 224; y += 2) {
+					DrawLine(0, y, 320, fillcolor, false);
+				}
+			}
 		}
-		else {
+		else if (scrpos == ms_main) {
+			if (titleTicker < 4) {
+				// Fill the area above the viewport with the sky color.
+				DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 88, gamemapinfo.skyTopColor);
+
+				// Draw the entire logo emblem.
+				DrawJagobj(m_title, logoPos, 16);
+			}
+
 			// Cover up animation trails.
 			DrawFillRect(48, 18, 58, 24, gamemapinfo.skyTopColor);	// two tails (top)
 			DrawFillRect(44, 46, 12, 42, gamemapinfo.skyTopColor);	// two tails (side/bottom)
@@ -766,44 +813,50 @@ void M_Drawer (void)
 			//DrawJagobj3(m_title, logoPos+34, 16+108, 34, 108, 18, 38, 320, I_OverwriteBuffer());
 			//DrawJagobj3(m_title, logoPos+188, 16+108, 188, 108, 18, 38, 320, I_OverwriteBuffer());
 			//DrawJagobj3(m_title, logoPos+206, 16+108, 206, 108, 34, 47, 320, I_OverwriteBuffer());
+
+			DrawJagobj(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32);
+			DrawJagobj(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
+
+			if (titleTicker & 1) {
+				sBlinkCounter--;
+				if (sBlinkCounter <= -NUMSBLINKFRAMES)
+					sBlinkCounter = M_Random() & 127;
+				tBlinkCounter--;
+				if (tBlinkCounter <= -NUMTBLINKFRAMES)
+					tBlinkCounter = M_Random() & 127;
+				kBlinkCounter--;
+				if (kBlinkCounter <= -NUMKBLINKFRAMES)
+					kBlinkCounter = M_Random() & 127;
+
+				fistCounter--;
+				if (fistCounter <= -NUMKFISTFRAMES)
+					fistCounter = 20 + (M_Random() % 21);
+			}
+
+			if (fistCounter < 0)
+				DrawJagobj(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
+			else
+				DrawJagobj(m_kfist[0], logoPos + 188, 16 + 43);
+
+			if (sBlinkCounter < 0)
+				DrawJagobj(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27);
+
+			if (tBlinkCounter < 0)
+				DrawJagobj(m_tblink[D_abs(tBlinkCounter)], logoPos + 54, 16 + 40);
+
+			if (kBlinkCounter < 0)
+				DrawJagobj(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37);
 		}
-		
+
 		y_offset = m_title->height + 24 - STARTY;
+	}
+	else {
+		y_offset = 0;
+	}
 
-		DrawJagobj(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32);
-
-		DrawJagobj(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
-
-		if (titleTicker & 1)
-		{
-			sBlinkCounter--;
-			if (sBlinkCounter <= -NUMSBLINKFRAMES)
-				sBlinkCounter = M_Random() & 127;
-			tBlinkCounter--;
-			if (tBlinkCounter <= -NUMTBLINKFRAMES)
-				tBlinkCounter = M_Random() & 127;
-			kBlinkCounter--;
-			if (kBlinkCounter <= -NUMKBLINKFRAMES)
-				kBlinkCounter = M_Random() & 127;
-
-			fistCounter--;
-			if (fistCounter <= -NUMKFISTFRAMES)
-				fistCounter = 20 + (M_Random() % 21);
-		}
-
-		if (fistCounter < 0)
-			DrawJagobj(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
-		else
-			DrawJagobj(m_kfist[0], logoPos + 188, 16 + 43);
-
-		if (sBlinkCounter < 0)
-			DrawJagobj(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27);
-
-		if (tBlinkCounter < 0)
-			DrawJagobj(m_tblink[D_abs(tBlinkCounter)], logoPos + 54, 16 + 40);
-
-		if (kBlinkCounter < 0)
-			DrawJagobj(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37);
+	if (scrpos == ms_help) {
+		O_DrawHelp(80);
+		return;
 	}
 
 #ifdef KIOSK_MODE
@@ -814,15 +867,6 @@ void M_Drawer (void)
 #ifndef MARS
 	EraseBlock (CURSORX, m_doom_height, m_skull1->width, CURSORY(menuscr->numitems)- CURSORY(0));
 #endif
-
-	if (scrpos == ms_help)
-	{
-		if (IsTitleScreen()) {
-			DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 88, gamemapinfo.skyTopColor);
-		}
-		O_DrawHelp(80);
-		return;
-	}
 
 /* draw menu items */
 	int selectedPos = 0;

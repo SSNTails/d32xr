@@ -494,7 +494,8 @@ extern	int		phasetime[9];
 typedef enum 
 {
 	og_none,
-	og_title
+	og_title,
+	og_about
 	//TODO: Add HUD, title card, and other types of overlay graphics?
 } overlaygraphics_t;
 

@@ -399,7 +399,9 @@ int P_Ticker (void)
 		}
 #endif
 
-		leveltime++;
+		if (overlay_graphics != og_about) {
+			leveltime++;
+		}
 
 		if (skipCount == 0)
 			tictics = frtc - ticstart;
@@ -859,12 +861,14 @@ void P_Drawer (void)
 		initmathtables--;
 	}
 
-	/* view the guy you are playing */
-	R_RenderPlayerView(consoleplayer);
-	/* view the other guy in split screen mode */
-	if (splitscreen) {
-		Mars_R_SecWait();
-		R_RenderPlayerView(consoleplayer ^ 1);
+	if (IsLevel() || (IsTitleScreen() && overlay_graphics != og_about)) {
+		/* view the guy you are playing */
+		R_RenderPlayerView(consoleplayer);
+		/* view the other guy in split screen mode */
+		if (splitscreen) {
+			Mars_R_SecWait();
+			R_RenderPlayerView(consoleplayer ^ 1);
+		}
 	}
 
 	// Gotta wait for the other CPU to finish drawing before we start drawing the HUD overtop.

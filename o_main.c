@@ -267,14 +267,15 @@ void O_Control (player_t *player)
 
 		if (playernum == curplayer)
 		{
-			if (screenpos == ms_game)
+			if (screenpos == ms_game) {
 				M_Stop();
+			}
 			if (netgame == gt_single)
 				gamepaused ^= 1;
 			movecount = 0;
 			cursorpos = 0;
 			screenpos = ms_main;
-			S_StartSound(NULL, sfx_None);
+			overlay_graphics = og_none;		// May want "og_hud" in the future.
 			if (optionsMenuOn)
 #ifndef MARS
 				DoubleBufferSetup();
