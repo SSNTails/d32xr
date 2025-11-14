@@ -104,7 +104,20 @@ typedef struct
 	byte	data[8];		/* as much as needed */
 } jagobj_t;
 
+// Digits (for scaling)
 extern	jagobj_t	*sttnum_pic[10];
+
+extern int free_memory;
+
+// Special stage HUD
+extern	jagobj_t	*narrow9_jagobj;
+extern	jagobj_t	*nbrackt_jagobj;
+extern	jagobj_t	*nbrackl_jagobj;
+extern	jagobj_t	*nbrackr_jagobj;
+extern	jagobj_t	*nbrackb_jagobj;
+extern	jagobj_t	*nrng1_jagobj;
+extern	jagobj_t	*nsshud_jagobj;
+extern	jagobj_t	*chaos_jagobj;
 
 #ifdef SKYDEBUG
 extern uint8_t load_sky_lump_scroll_a;
@@ -885,6 +898,8 @@ extern	memzone_t	*refzone;
 
 void	Z_Init (void);
 memzone_t *Z_InitZone (byte *base, int size);
+
+int		Z_CalculateAllocSize(int datasize);
 
 #ifdef MEMDEBUG
 void 	*Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err, const char *file, int line);

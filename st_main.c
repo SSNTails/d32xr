@@ -25,10 +25,22 @@ static short go_game, go_over;
 // Special stage
 static short narrow1;
 static short narrow9;
-static short nbracket;
+static short nbrackt;
+static short nbrackl;
+static short nbrackr;
+static short nbrackb;
 static short nrng1;
 static short nsshud;
 static short chaos;
+
+jagobj_t *narrow9_jagobj = NULL;
+jagobj_t *nbrackt_jagobj = NULL;
+jagobj_t *nbrackl_jagobj = NULL;
+jagobj_t *nbrackr_jagobj = NULL;
+jagobj_t *nbrackb_jagobj = NULL;
+jagobj_t *nrng1_jagobj = NULL;
+jagobj_t *nsshud_jagobj = NULL;
+jagobj_t *chaos_jagobj = NULL;
 
 static short ltzz_blue_lump, chev_blue_lump, lt_blue_lump;
 static short ltzz_red_lump, chev_red_lump, lt_red_lump;
@@ -72,7 +84,10 @@ void ST_Init (void)
 	// Special stage
 	narrow1 = W_CheckNumForName("NARROW1");
 	narrow9 = W_CheckNumForName("NARROW9");
-	nbracket = W_CheckNumForName("NBRACKET");
+	nbrackt = W_CheckNumForName("NBRACKT");
+	nbrackl = W_CheckNumForName("NBRACKL");
+	nbrackr = W_CheckNumForName("NBRACKR");
+	nbrackb = W_CheckNumForName("NBRACKB");
 	nrng1 = W_CheckNumForName("NRNG1");
 	nsshud = W_CheckNumForName("NSSHUD");
 	chaos = W_CheckNumForName("CHAOS1");
@@ -348,16 +363,89 @@ static void ST_Drawer_ (stbar_t* sb)
 
 		// Special stage HUD
 #ifndef HIDE_HUD
-		DrawJagobjLump(nbracket, 16, 8+16, NULL, NULL);
-		DrawJagobjLump(nbracket, 72, 8+16, NULL, NULL);
-		DrawJagobjLump(nbracket, 272, 8+16, NULL, NULL);
 
-		DrawJagobjLump(nsshud, 24, 16+16, NULL, NULL);
-		DrawJagobjLump(nrng1, 280, 17+16, NULL, NULL);
-		DrawJagobjLump(chaos+(gamemapinfo.mapNumber - 60), 77, 13+16, NULL, NULL);
+		// Bracket (top)
+		if (nbrackt_jagobj != NULL) {
+			DrawJagobj(nbrackt_jagobj, 16, 8+16);
+			DrawJagobj(nbrackt_jagobj, 72, 8+16);
+			DrawJagobj(nbrackt_jagobj, 272, 8+16);
+		}
+		else {
+			DrawJagobjLump(nbrackt, 16, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackt, 72, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackt, 272, 8+16, NULL, NULL);
+		}
 
+		// Bracket (left)
+		if (nbrackl_jagobj != NULL) {
+			DrawJagobj(nbrackl_jagobj, 16, 8+16);
+			DrawJagobj(nbrackl_jagobj, 72, 8+16);
+			DrawJagobj(nbrackl_jagobj, 272, 8+16);
+		}
+		else {
+			DrawJagobjLump(nbrackl, 16, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackl, 72, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackl, 272, 8+16, NULL, NULL);
+		}
+
+		// Bracket (right)
+		if (nbrackr_jagobj != NULL) {
+			DrawJagobj(nbrackr_jagobj, 16, 8+16);
+			DrawJagobj(nbrackr_jagobj, 72, 8+16);
+			DrawJagobj(nbrackr_jagobj, 272, 8+16);
+		}
+		else {
+			DrawJagobjLump(nbrackr, 16, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackr, 72, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackr, 272, 8+16, NULL, NULL);
+		}
+
+		// Bracket (bottom)
+		if (nbrackb_jagobj != NULL) {
+			DrawJagobj(nbrackb_jagobj, 16, 8+16);
+			DrawJagobj(nbrackb_jagobj, 72, 8+16);
+			DrawJagobj(nbrackb_jagobj, 272, 8+16);
+		}
+		else {
+			DrawJagobjLump(nbrackb, 16, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackb, 72, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackb, 272, 8+16, NULL, NULL);
+		}
+
+		// Blue sphere icon
+		if (nsshud_jagobj != NULL) {
+			DrawJagobj(nsshud_jagobj, 24, 16+16);
+		}
+		else {
+			DrawJagobjLump(nsshud, 24, 16+16, NULL, NULL);
+		}
+
+		// Ring icon
+		if (nrng1_jagobj != NULL) {
+			DrawJagobj(nrng1_jagobj, 280, 17+16);
+		}
+		else {
+			DrawJagobjLump(nrng1, 280, 17+16, NULL, NULL);
+		}
+
+		// Chaos emerald icon
+		if (chaos_jagobj != NULL) {
+			DrawJagobj(chaos_jagobj, 77, 13+16);
+		}
+		else {
+			DrawJagobjLump(chaos+(gamemapinfo.mapNumber - SSTAGE_START), 77, 13+16, NULL, NULL);
+		}
+
+		// Arrow (left side)
 		DrawJagobjLump(narrow1 + ((gametic/2) & 3), 40, 13+16, NULL, NULL);
-		DrawJagobjLump(narrow9, 240, 13+16, NULL, NULL);
+
+		// Arrow (right side)
+		if (narrow9_jagobj != NULL) {
+			DrawJagobj(narrow9_jagobj, 240, 13+16);
+		}
+		else {
+			DrawJagobjLump(narrow9, 240, 13+16, NULL, NULL);
+		}
 
 		V_DrawValueCenter(&hudNumberFont, 260, 8+12+16, totalitems - sb->rings);
 		V_DrawValueCenter(&hudNumberFont, 60, 13+6+16, gamemapinfo.spheresNeeded);
@@ -410,6 +498,8 @@ static void ST_Drawer_ (stbar_t* sb)
 			if (fadetime > TICRATE/3)
 				fadetime = TICRATE/3;
 		}
+
+		CONS_Printf("free_memory: %d", free_memory);	//DLG: Remove me!
 	}
 	else
 	{

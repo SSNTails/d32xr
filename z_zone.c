@@ -127,6 +127,15 @@ void Z_Free2 (memzone_t *mainzone, void *ptr)
 ========================
 */
 
+int Z_CalculateAllocSize(int datasize)
+{
+	int allocsize = datasize+1;
+	allocsize += sizeof(memblock_t);	/* account for size of block header */
+	allocsize = (allocsize+3)&~3;		/* longword align everything */
+
+	return allocsize;
+}
+
 #define MINFRAGMENT	64
 
 #ifdef MEMDEBUG
