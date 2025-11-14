@@ -10,6 +10,7 @@ typedef struct
     char minChar;
     char maxChar;
     boolean fixedWidth;
+    jagobj_t **charCache;
 } font_t;
 
 extern font_t menuFont;

@@ -61,8 +61,6 @@ unsigned configuration[NUMCONTROLOPTIONS][3] =
 #endif
 };
 
-extern jagobj_t *sttnum_pic[10] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-
 /*============================================================================ */
 
 
@@ -832,13 +830,14 @@ void START_LevelSelect (void)
 	arrowl_pic = W_CacheLumpName("ARROWL", PU_STATIC);
 	arrowr_pic = W_CacheLumpName("ARROWR", PU_STATIC);
 	chevblk_pic = W_CacheLumpName("CHEVBLK", PU_STATIC);
-
+	
 #ifdef KIOSK_MODE
-	sttnum_pic[1] = W_CacheLumpName("STTNUM1", PU_STATIC);
-	sttnum_pic[2] = W_CacheLumpName("STTNUM2", PU_STATIC);
-	sttnum_pic[3] = W_CacheLumpName("STTNUM3", PU_STATIC);
-	sttnum_pic[4] = W_CacheLumpName("STTNUM4", PU_STATIC);
-	sttnum_pic[5] = W_CacheLumpName("STTNUM5", PU_STATIC);
+	hudNumberFont.charCache = Z_Calloc(sizeof(void*) * 6, PU_STATIC);
+	hudNumberFont.charCache[1] = W_CacheLumpName("STTNUM1", PU_STATIC);
+	hudNumberFont.charCache[2] = W_CacheLumpName("STTNUM2", PU_STATIC);
+	hudNumberFont.charCache[3] = W_CacheLumpName("STTNUM3", PU_STATIC);
+	hudNumberFont.charCache[4] = W_CacheLumpName("STTNUM4", PU_STATIC);
+	hudNumberFont.charCache[5] = W_CacheLumpName("STTNUM5", PU_STATIC);
 #endif
 
 	if (gamemapinfo.data)
@@ -876,8 +875,11 @@ void STOP_LevelSelect (void)
 	Z_Free(chevblk_pic);
 
 #ifdef KIOSK_MODE
-	for (int i = 1; i <= 5; i++)
-		Z_Free(sttnum_pic[i]);
+	for (int i = 5; i > 0; i--) {
+		Z_Free(hudNumberFont.charCache[i]);
+	}
+	Z_Free(hudNumberFont.charCache);
+	hudNumberFont.charCache = NULL;
 #endif
 
 	ClearCopper();
@@ -1126,7 +1128,7 @@ void DRAW_LevelSelect (void)
 		int size_index = (((screenCount<<4) / 15) & 63);
 		fixed_t size_scale = FRACUNIT + (2048 * (63 - size_index));
 		DrawScaledJagobj(
-				sttnum_pic[countdown],
+				hudNumberFont.charCache[countdown],
 				280-8+(size_index>>2)-(size_index>>3),
 				184-7+(size_index>>3),
 				size_scale,

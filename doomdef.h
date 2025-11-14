@@ -104,10 +104,7 @@ typedef struct
 	byte	data[8];		/* as much as needed */
 } jagobj_t;
 
-// Digits (for scaling)
-extern	jagobj_t	*sttnum_pic[10];
-
-extern int free_memory;
+//extern int free_memory;
 
 // Special stage HUD
 extern	jagobj_t	*narrow9_jagobj;

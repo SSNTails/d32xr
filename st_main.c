@@ -366,50 +366,50 @@ static void ST_Drawer_ (stbar_t* sb)
 
 		// Bracket (top)
 		if (nbrackt_jagobj != NULL) {
-			DrawJagobj(nbrackt_jagobj, 16, 8+16);
-			DrawJagobj(nbrackt_jagobj, 72, 8+16);
-			DrawJagobj(nbrackt_jagobj, 272, 8+16);
+			DrawJagobj(nbrackt_jagobj, 16+2, 8+16);
+			DrawJagobj(nbrackt_jagobj, 72+2, 8+16);
+			DrawJagobj(nbrackt_jagobj, 272+2, 8+16);
 		}
 		else {
-			DrawJagobjLump(nbrackt, 16, 8+16, NULL, NULL);
-			DrawJagobjLump(nbrackt, 72, 8+16, NULL, NULL);
-			DrawJagobjLump(nbrackt, 272, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackt, 16+2, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackt, 72+2, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackt, 272+2, 8+16, NULL, NULL);
 		}
 
 		// Bracket (left)
 		if (nbrackl_jagobj != NULL) {
-			DrawJagobj(nbrackl_jagobj, 16, 8+16);
-			DrawJagobj(nbrackl_jagobj, 72, 8+16);
-			DrawJagobj(nbrackl_jagobj, 272, 8+16);
+			DrawJagobj(nbrackl_jagobj, 16, 8+16+3);
+			DrawJagobj(nbrackl_jagobj, 72, 8+16+3);
+			DrawJagobj(nbrackl_jagobj, 272, 8+16+3);
 		}
 		else {
-			DrawJagobjLump(nbrackl, 16, 8+16, NULL, NULL);
-			DrawJagobjLump(nbrackl, 72, 8+16, NULL, NULL);
-			DrawJagobjLump(nbrackl, 272, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackl, 16, 8+16+3, NULL, NULL);
+			DrawJagobjLump(nbrackl, 72, 8+16+3, NULL, NULL);
+			DrawJagobjLump(nbrackl, 272, 8+16+3, NULL, NULL);
 		}
 
 		// Bracket (right)
 		if (nbrackr_jagobj != NULL) {
-			DrawJagobj(nbrackr_jagobj, 16, 8+16);
-			DrawJagobj(nbrackr_jagobj, 72, 8+16);
-			DrawJagobj(nbrackr_jagobj, 272, 8+16);
+			DrawJagobj(nbrackr_jagobj, 16+28, 8+16+3);
+			DrawJagobj(nbrackr_jagobj, 72+28, 8+16+3);
+			DrawJagobj(nbrackr_jagobj, 272+28, 8+16+3);
 		}
 		else {
-			DrawJagobjLump(nbrackr, 16, 8+16, NULL, NULL);
-			DrawJagobjLump(nbrackr, 72, 8+16, NULL, NULL);
-			DrawJagobjLump(nbrackr, 272, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackr, 16+28, 8+16+3, NULL, NULL);
+			DrawJagobjLump(nbrackr, 72+28, 8+16+3, NULL, NULL);
+			DrawJagobjLump(nbrackr, 272+28, 8+16+3, NULL, NULL);
 		}
 
 		// Bracket (bottom)
 		if (nbrackb_jagobj != NULL) {
-			DrawJagobj(nbrackb_jagobj, 16, 8+16);
-			DrawJagobj(nbrackb_jagobj, 72, 8+16);
-			DrawJagobj(nbrackb_jagobj, 272, 8+16);
+			DrawJagobj(nbrackb_jagobj, 16+2, 8+16+29);
+			DrawJagobj(nbrackb_jagobj, 72+2, 8+16+29);
+			DrawJagobj(nbrackb_jagobj, 272+2, 8+16+29);
 		}
 		else {
-			DrawJagobjLump(nbrackb, 16, 8+16, NULL, NULL);
-			DrawJagobjLump(nbrackb, 72, 8+16, NULL, NULL);
-			DrawJagobjLump(nbrackb, 272, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackb, 16+2, 8+16+29, NULL, NULL);
+			DrawJagobjLump(nbrackb, 72+2, 8+16+29, NULL, NULL);
+			DrawJagobjLump(nbrackb, 272+2, 8+16+29, NULL, NULL);
 		}
 
 		// Blue sphere icon
@@ -467,7 +467,7 @@ static void ST_Drawer_ (stbar_t* sb)
 			int size_index = (((playTime<<5) / 15) & 63);
 			fixed_t size_scale = FRACUNIT + (2048 * (63 - size_index));
 			DrawScaledJagobj(
-					sttnum_pic[timeLeft],
+					hudNumberFont.charCache[timeLeft],
 					160-8+(size_index>>2)-(size_index>>3),
 					24+16-7+(size_index>>3),
 					size_scale,
@@ -499,7 +499,7 @@ static void ST_Drawer_ (stbar_t* sb)
 				fadetime = TICRATE/3;
 		}
 
-		CONS_Printf("free_memory: %d", free_memory);	//DLG: Remove me!
+		//CONS_Printf("free_memory: %d", free_memory);	//DLG: Remove me!
 	}
 	else
 	{

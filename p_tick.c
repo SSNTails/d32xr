@@ -3,9 +3,10 @@
 #include "sounds.h"
 #ifdef MARS
 #include "mars.h"
+#include "v_font.h"
 #endif
 
-int free_memory;
+//int free_memory;
 
 int	playertics, thinkertics, sighttics, basetics, latetics;
 int	tictics, drawtics;
@@ -941,9 +942,10 @@ void P_Start (void)
 	}
 
 	if (IsLevelType(LevelType_SpecialStage)) {
+		hudNumberFont.charCache = Z_Calloc(sizeof(void *) * 10, PU_STATIC);
 		char sttnum_name[8] = "STTNUM0";
 		for (int i=0; i < 10; i++) {
-			sttnum_pic[i] = W_CacheLumpName(sttnum_name, PU_STATIC);
+			hudNumberFont.charCache[i] = W_CacheLumpName(sttnum_name, PU_STATIC);
 			sttnum_name[6]++;
 		}
 
@@ -971,7 +973,8 @@ void P_Start (void)
 
 		//names_list[7][5] += (gamemapinfo.mapNumber - SSTAGE_START);
 
-		free_memory = Z_FreeMemory(mainzone);
+		//free_memory = Z_FreeMemory(mainzone);
+		int free_memory = Z_FreeMemory(mainzone);
 
 		for (int i=0; i < 7; i++) {
 			int lumpnum = W_GetNumForName(names_list[i]);
@@ -990,7 +993,7 @@ void P_Start (void)
 			chaos_jagobj = W_CacheLumpName(chaos_name, PU_STATIC);
 		}
 
-		free_memory = Z_FreeMemory(mainzone);
+		//free_memory = Z_FreeMemory(mainzone);
 	}
 
 	if (IsTitleScreen()) {
@@ -1053,9 +1056,10 @@ void P_Stop (void)
 		}
 
 		for (int i = 9; i >= 0; i--) {
-			Z_Free(sttnum_pic[i]);
-			sttnum_pic[i] = NULL;
+			Z_Free(hudNumberFont.charCache[i]);
 		}
+		Z_Free(hudNumberFont.charCache);
+		hudNumberFont.charCache = NULL;
 	}
 
 	M_Stop();
