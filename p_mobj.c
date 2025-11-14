@@ -715,7 +715,7 @@ return;	/*DEBUG */
 
 	if (mobj->type == MT_STARPOST)
 	{
-		mobj->health = mthing->angle / 360;
+		mobj->health = (mthing->angle / 360) + 1;
 		mobj->angle = (mthing->angle % 360) * ANGLE_1;
 	}
 	else {
