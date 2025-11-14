@@ -587,7 +587,7 @@ int benchcounter = 0;
 void I_DebugScreen(void)
 {
 	int i;
-	int x = 216;
+	int x = 200;
 	int line = 3;
 	static char buf[19][16];
 
@@ -605,6 +605,7 @@ void I_DebugScreen(void)
 
 		if (IsTitleScreen()) {
 			line = 21;
+			x = 216;
 		}
 		I_Print8(x, line, buf[0]);
 	}

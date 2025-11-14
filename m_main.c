@@ -746,10 +746,8 @@ void M_Drawer (void)
 				const colormap = 12*256;	// 75% dark
 				const fillcolor = 0x8B;		// Dark blue
 
-				// Erase the even lines.
-				for (int y=0; y < 224; y += 2) {
-					DrawLine(0, y, 320, fillcolor, false);
-				}
+				// Clear the entire screen.
+				I_FillFrameBuffer(fillcolor);
 
 				// Draw the entire emblem with an alternate colormap.
 				DrawJagobjWithColormap(m_title, logoPos, 16,
@@ -781,8 +779,8 @@ void M_Drawer (void)
 							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
 				
 				// Erase the odd lines.
-				for (int y=1; y < 224; y += 2) {
-					DrawLine(0, y, 320, fillcolor, false);
+				for (int x=1; x < 320; x += 2) {
+					DrawLine(x, 0, 224, fillcolor, true);
 				}
 			}
 		}
