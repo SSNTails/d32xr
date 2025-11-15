@@ -942,6 +942,7 @@ void P_Start (void)
 	}
 
 	if (IsLevelType(LevelType_SpecialStage)) {
+		hudNumberFont.charCacheLength = 10;
 		hudNumberFont.charCache = Z_Calloc(sizeof(void *) * 10, PU_STATIC);
 		char sttnum_name[8] = "STTNUM0";
 		for (int i=0; i < 10; i++) {
@@ -998,6 +999,22 @@ void P_Start (void)
 
 	if (IsTitleScreen()) {
 		overlay_graphics = og_title;
+
+		// Cache the characters necessary for "START GAME" and "ABOUT".
+		const int array_start = menuFont.lumpStartChar;
+		const int cache_length = ('U'-array_start+1);
+		menuFont.charCache = Z_Calloc(sizeof(void*) * cache_length, PU_STATIC);
+		menuFont.charCacheLength = cache_length;
+		menuFont.charCache['A'-array_start] = W_CacheLumpName("STCFN065", PU_STATIC);
+		menuFont.charCache['B'-array_start] = W_CacheLumpName("STCFN066", PU_STATIC);
+		menuFont.charCache['E'-array_start] = W_CacheLumpName("STCFN069", PU_STATIC);
+		menuFont.charCache['G'-array_start] = W_CacheLumpName("STCFN071", PU_STATIC);
+		menuFont.charCache['M'-array_start] = W_CacheLumpName("STCFN077", PU_STATIC);
+		menuFont.charCache['O'-array_start] = W_CacheLumpName("STCFN079", PU_STATIC);
+		menuFont.charCache['R'-array_start] = W_CacheLumpName("STCFN082", PU_STATIC);
+		menuFont.charCache['S'-array_start] = W_CacheLumpName("STCFN083", PU_STATIC);
+		menuFont.charCache['T'-array_start] = W_CacheLumpName("STCFN084", PU_STATIC);
+		menuFont.charCache['U'-array_start] = W_CacheLumpName("STCFN085", PU_STATIC);
 	}
 	else {
 		overlay_graphics = og_none;
@@ -1060,6 +1077,19 @@ void P_Stop (void)
 		}
 		Z_Free(hudNumberFont.charCache);
 		hudNumberFont.charCache = NULL;
+		hudNumberFont.charCacheLength = 0;
+	}
+
+	if (IsTitleScreen()) {
+		const int array_start = menuFont.lumpStartChar;
+		for (int i='U'-array_start; i >= 'A'-array_start; i--) {
+			if (menuFont.charCache[i] != NULL) {
+				Z_Free(menuFont.charCache[i]);
+			}
+		}
+		Z_Free(menuFont.charCache);
+		menuFont.charCache = NULL;
+		menuFont.charCacheLength = 0;
 	}
 
 	M_Stop();

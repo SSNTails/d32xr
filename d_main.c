@@ -832,6 +832,7 @@ void START_LevelSelect (void)
 	chevblk_pic = W_CacheLumpName("CHEVBLK", PU_STATIC);
 	
 #ifdef KIOSK_MODE
+	hudNumberFont.charCacheLength = 6;
 	hudNumberFont.charCache = Z_Calloc(sizeof(void*) * 6, PU_STATIC);
 	hudNumberFont.charCache[1] = W_CacheLumpName("STTNUM1", PU_STATIC);
 	hudNumberFont.charCache[2] = W_CacheLumpName("STTNUM2", PU_STATIC);

@@ -17,6 +17,7 @@ void V_FontInit()
     menuFont.fixedWidthSize = 8;
     menuFont.spaceWidthSize = 4;
     menuFont.verticalOffset = 8;
+    menuFont.charCacheLength = 0;
     menuFont.charCache = NULL;
 
     titleFont.lumpStart = W_GetNumForName("LTFNT065");
@@ -27,6 +28,7 @@ void V_FontInit()
     titleFont.fixedWidth = 0;
     titleFont.spaceWidthSize = 16;
     titleFont.verticalOffset = 16;
+    titleFont.charCacheLength = 0;
     titleFont.charCache = NULL;
 
     creditFont.lumpStart = W_GetNumForName("CRFNT065");
@@ -37,6 +39,7 @@ void V_FontInit()
     creditFont.fixedWidthSize = 16;
     creditFont.spaceWidthSize = 8;
     creditFont.verticalOffset = 16;
+    creditFont.charCacheLength = 0;
     creditFont.charCache = NULL;
 
     titleNumberFont.lumpStart = W_GetNumForName("TTL01");
@@ -46,6 +49,7 @@ void V_FontInit()
     titleNumberFont.fixedWidth = false;
     titleNumberFont.fixedWidthSize = 0;
     titleNumberFont.verticalOffset = 29;
+    titleNumberFont.charCacheLength = 0;
     titleNumberFont.charCache = NULL;
 
     hudNumberFont.lumpStart = W_GetNumForName("STTNUM0");
@@ -56,6 +60,7 @@ void V_FontInit()
     hudNumberFont.fixedWidthSize = 8;
     hudNumberFont.spaceWidthSize = 4;
     hudNumberFont.spaceWidthSize = 11;
+    hudNumberFont.charCacheLength = 0;
     hudNumberFont.charCache = NULL;
 }
 
@@ -121,7 +126,7 @@ int V_DrawStringLeftWithColormap(const font_t *font, int x, int y, const char *s
 			if (font->fixedWidth)
             {
                 int charnum = (c - font->lumpStartChar);
-                if (font->charCache != NULL && font->charCache[charnum] != NULL) {
+                if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
                     if (colormap) {
                         DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
                     }
@@ -143,7 +148,7 @@ int V_DrawStringLeftWithColormap(const font_t *font, int x, int y, const char *s
             else
             {
                 int charnum = (c - font->lumpStartChar);
-                if (font->charCache != NULL && font->charCache[charnum] != NULL) {
+                if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
                     if (colormap) {
                         DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
                     }
@@ -208,7 +213,7 @@ int V_DrawStringRightWithColormap(const font_t *font, int x, int y, const char *
             if (font->fixedWidth)
             {
                 int charnum = (c - font->lumpStartChar);
-                if (font->charCache != NULL && font->charCache[charnum] != NULL) {
+                if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
                     if (colormap) {
                         DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
                     }
@@ -228,7 +233,7 @@ int V_DrawStringRightWithColormap(const font_t *font, int x, int y, const char *
             else
             {
                 int charnum = (c - font->lumpStartChar);
-                if (font->charCache != NULL && font->charCache[charnum] != NULL) {
+                if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
                     if (colormap) {
                         DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
                     }
@@ -289,7 +294,7 @@ int V_DrawStringCenterWithColormap(const font_t *font, int x, int y, const char 
             else
             {
                 int charnum = (c - font->lumpStartChar);
-                if (font->charCache != NULL && font->charCache[charnum] != NULL) {
+                if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
                     x -= font->charCache[charnum]->width / 2;
                 }
                 else {
@@ -372,7 +377,7 @@ void V_DrawValuePaddedRight(const font_t *font, int x, int y, int value, int pad
             x -= font->spaceWidthSize;
 		else if (c >= font->minChar && c <= font->maxChar) {
             int charnum = (c - font->lumpStartChar);
-            if (font->charCache != NULL && font->charCache[charnum] != NULL) {
+            if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
                 DrawJagobj(font->charCache[charnum], x, y);
             }
             else {
@@ -387,7 +392,7 @@ void V_DrawValuePaddedRight(const font_t *font, int x, int y, int value, int pad
 	{
 		x -= font->fixedWidthSize;
         int charnum = ('0' - font->lumpStartChar);
-        if (font->charCache != NULL && font->charCache[charnum] != NULL) {
+        if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
             DrawJagobj(font->charCache[charnum], x, y);
         }
         else {

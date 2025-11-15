@@ -10,6 +10,7 @@ typedef struct
     char minChar;
     char maxChar;
     boolean fixedWidth;
+    uint8_t charCacheLength;
     jagobj_t **charCache;
 } font_t;
 
