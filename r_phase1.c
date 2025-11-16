@@ -806,6 +806,12 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    side_t *sidedef;
    boolean solid;
 
+   if ((ldflags[line->linedef] & ML_UNDERWATERONLY) && !vd.underwater)
+      return;
+
+   if ((ldflags[line->linedef] & ML_CULLING) && (D_abs(vd.viewx_t - v1->x) > 2048 || D_abs(vd.viewy_t - v1->y) > 2048))
+      return;
+
    if (line->v1 == rbsp->lastv2)
       angle1 = rbsp->lastangle2;
    else if (line->v1 == rbsp->lastv1)
@@ -823,12 +829,6 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    rbsp->lastv2 = line->v2;
    rbsp->lastangle1 = angle1;
    rbsp->lastangle2 = angle2;
-
-   if ((ldflags[line->linedef] & ML_UNDERWATERONLY) && !vd.underwater)
-      return;
-
-   if ((ldflags[line->linedef] & ML_CULLING) && (D_abs(vd.viewx_t - v1->x) > 2048 || D_abs(vd.viewy_t - v1->y) > 2048))
-      return;
 
    x1 = R_ClipToViewEdges(angle1, angle2);
    if (x1 <= 0)
