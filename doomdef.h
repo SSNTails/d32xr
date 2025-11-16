@@ -629,6 +629,7 @@ typedef enum
 #define GAMEMODE_TITLESCREEN				0x04
 #define GAMEMODE_LEVELSELECT				0x05
 #define GAMEMODE_CREDITS					0x06
+#define GAMEMODE_SPECIALSTAGEINTERMISSION	0x07
 
 #define GAMEMODE_LEVEL_ACTIVE				0x10
 #define GAMEMODE_LEVEL						0x30
@@ -669,6 +670,8 @@ static inline boolean IsLevelSelect()
 	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_LEVELSELECT; }
 static inline boolean IsCredits()
 	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_CREDITS; }
+static inline boolean IsSpecialStageIntermission()
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_SPECIALSTAGEINTERMISSION; }
 
 static inline void SetCompatibility()
 	{ gamemode = GAMEMODE_COMPATIBILITY; MD_SetGamemode(gamemode); }
@@ -682,6 +685,8 @@ static inline void SetLevelSelect()
 	{ gamemode = GAMEMODE_LEVELSELECT; MD_SetGamemode(gamemode); }
 static inline void SetCredits()
 	{ gamemode = GAMEMODE_CREDITS; MD_SetGamemode(gamemode); }
+static inline void SetSpecialStageIntermission()
+	{ gamemode = GAMEMODE_SPECIALSTAGEINTERMISSION; MD_SetGamemode(gamemode); }
 
 // Level
 static inline boolean IsLevel()

@@ -184,6 +184,8 @@ void IN_Start (void)
 	RemoveDistortionFilters();
 
 	S_StartSong(gameinfo.intermissionMus, 0, cdtrack_intermission);
+
+	clearscreen = 2;
 }
 
 void IN_Stop (void)
@@ -329,6 +331,11 @@ int IN_Ticker (void)
 
 void IN_Drawer (void)
 {
+	if (clearscreen > 0) {
+		I_ResetLineTable();
+		clearscreen--;
+	}
+
 	if (intertic < TICRATE/2)
 	{
 		VINT palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4 - (intertic / 3);

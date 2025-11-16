@@ -719,8 +719,16 @@ startnew:
 #endif
 
 	/* run a stats intermission */
-	if (gameaction == ga_specialstageexit)
+	if (gameaction == ga_specialstageexit) {
+		SetSpecialStageIntermission();
 		MiniLoop (IN_Start, IN_Stop, IN_Ticker, IN_Drawer, UpdateBuffer);
+
+		if (nextmapl == -1) {
+			nextmapl = G_LumpNumForMapNum(1);
+		}
+
+		SetLevel(LevelType_Normal);
+	}
 	
 	/* run the finale if needed */
 		if (IsCredits())
