@@ -219,8 +219,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       f_lightlevel    = front_sector->lightlevel;
       f_floorheight   = front_sector->floorheight   - vd.viewz;
       f_ceilingheight = front_sector->ceilingheight - vd.viewz;
-      segl->floor_offs = 0;
-
+  
       if (f_floorpic != 0xff)
       {
           SETLOWER8(segl->floorceilpicnum, flattranslation[f_floorpic]);
@@ -229,6 +228,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       else
       {
           SETLOWER8(segl->floorceilpicnum, (uint8_t)-1);
+          segl->floor_offs = 0;
       }
 
       if (f_ceilingpic != 0xff)
@@ -310,19 +310,13 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
          // single-sided line
 //         if (si->midtexture > 0)
          {
-            SETUPPER8(segl->tb_texturenum, texturetranslation[st->midtexture]);
+            segl->t_texturenum = texturetranslation[st->midtexture];
 
             // handle unpegging (bottom of texture at bottom, or top of texture at top)
             if(liflags & ML_DONTPEGBOTTOM)
-#ifdef WALLDRAW2X
-               t_texturemid = f_floorheight + (textures[UPPER8(segl->tb_texturenum)].height << (FRACBITS+1));
-#else
-               t_texturemid = f_floorheight + (textures[UPPER8(segl->tb_texturenum)].height << FRACBITS);
-#endif
+               t_texturemid = f_floorheight + (((textures[segl->t_texturenum].height << 1) + rowoffset) << FRACBITS);
             else
-               t_texturemid = f_ceilingheight;
-
-            t_texturemid += rowoffset<<FRACBITS;                               // add in sidedef texture offset
+               t_texturemid = f_ceilingheight + (rowoffset<<FRACBITS);
 
 #ifdef WALLDRAW2X
             t_texturemid >>= 1;
@@ -362,14 +356,9 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                const fixed_t rf_floorheight = rbsp->curfsector->floorheight - vd.viewz;
                const fixed_t rb_floorheight = rbsp->curbsector->floorheight - vd.viewz;
                if(rf_floorheight > rb_floorheight)
-                  m_texturemid = rf_floorheight;
+                  m_texturemid = rf_floorheight + (((textures[segl->m_texturenum].height << 1) + rowoffset) << FRACBITS);
                else
-                  m_texturemid = rb_floorheight;
-#ifdef WALLDRAW2X
-               m_texturemid += (textures[segl->m_texturenum].height << (FRACBITS+1));
-#else
-               m_texturemid += (textures[segl->m_texturenum].height << FRACBITS);
-#endif
+                  m_texturemid = rb_floorheight + (((textures[segl->m_texturenum].height << 1) + rowoffset) << FRACBITS);
             }
             else
             {
@@ -379,8 +368,9 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                   m_texturemid = rf_ceilingheight;
                else
                   m_texturemid = rb_ceilingheight;
+
+               m_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
             }
-            m_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
 #ifdef WALLDRAW2X
             m_texturemid >>= 1;
 #endif
@@ -437,7 +427,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
          {
 //            if (si->bottomtexture > 0)
             {
-               SETLOWER8(segl->tb_texturenum, texturetranslation[st->bottomtexture]);
+               segl->b_texturenum = texturetranslation[st->bottomtexture];
                if(liflags & ML_DONTPEGBOTTOM)
                   b_texturemid = f_ceilingheight;
                else
@@ -459,17 +449,11 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
          {
 //            if (si->toptexture > 0)
             {
-               SETUPPER8(segl->tb_texturenum, texturetranslation[st->toptexture]);
+               segl->t_texturenum = texturetranslation[st->toptexture];
                if(liflags & ML_DONTPEGTOP)
-                  t_texturemid = f_ceilingheight;
+                  t_texturemid = f_ceilingheight + (rowoffset<<FRACBITS);
                else
-#ifdef WALLDRAW2X
-                  t_texturemid = b_ceilingheight + (textures[UPPER8(segl->tb_texturenum)].height << (FRACBITS+1));
-#else
-                  t_texturemid = b_ceilingheight + (textures[UPPER8(segl->tb_texturenum)].height << FRACBITS);
-#endif
-
-               t_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
+                  t_texturemid = b_ceilingheight + (((textures[segl->t_texturenum].height << 1) + rowoffset) << FRACBITS);
 
 #ifdef WALLDRAW2X
                t_texturemid >>= 1;

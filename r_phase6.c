@@ -623,14 +623,14 @@ void R_SegCommands(void)
 
         if (actionbits & AC_TOPTEXTURE)
         {
-            R_SetupDrawTexture(toptex, &textures[UPPER8(segl->tb_texturenum)],
+            R_SetupDrawTexture(toptex, &textures[segl->t_texturenum],
                 segl->t_texturemid, segl->t_topheight, segl->t_bottomheight);
             lseg.first--;
         }
 
         if (actionbits & AC_BOTTOMTEXTURE)
         {
-            R_SetupDrawTexture(bottomtex, &textures[LOWER8(segl->tb_texturenum)],
+            R_SetupDrawTexture(bottomtex, &textures[segl->b_texturenum],
                 segl->b_texturemid, segl->b_topheight, segl->b_bottomheight);
             lseg.last++;
         }
@@ -694,12 +694,12 @@ void Mars_Sec_R_SegCommands(void)
     {
         if (segl->actionbits & AC_TOPTEXTURE)
         {
-            texture_t* tex = &textures[UPPER8(segl->tb_texturenum)];
+            texture_t* tex = &textures[segl->t_texturenum];
             Mars_ClearCacheLines(tex->data, (sizeof(tex->data)+31)/16);
         }
         if (segl->actionbits & AC_BOTTOMTEXTURE)
         {
-            texture_t* tex = &textures[LOWER8(segl->tb_texturenum)];
+            texture_t* tex = &textures[segl->b_texturenum];
             Mars_ClearCacheLines(tex->data, (sizeof(tex->data)+31)/16);
         }
         if (segl->actionbits & AC_MIDTEXTURE)
