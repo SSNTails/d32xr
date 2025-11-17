@@ -41,7 +41,7 @@ static void R_UpdateCache(void)
       {
         if (wall->actionbits & AC_TOPTEXTURE)
         {
-            texture_t* tex = &textures[UPPER8(wall->tb_texturenum)];
+            texture_t* tex = &textures[wall->t_texturenum];
 #if MIPLEVELS > 1
             int mipcount = tex->mipcount;
 #else
@@ -51,14 +51,14 @@ static void R_UpdateCache(void)
                 if (i >= mipcount)
                   break;
                 if (!R_TouchIfInTexCache(&r_texcache, tex->data[i]) && (bestmips[i] < 0)) {
-                    bestmips[i] = UPPER8(wall->tb_texturenum);
+                    bestmips[i] = wall->t_texturenum;
                 }
             }
         }
 
         if (wall->actionbits & AC_BOTTOMTEXTURE)
         {
-            texture_t* tex = &textures[LOWER8(wall->tb_texturenum)];
+            texture_t* tex = &textures[wall->b_texturenum];
 #if MIPLEVELS > 1
             int mipcount = tex->mipcount;
 #else
@@ -68,7 +68,7 @@ static void R_UpdateCache(void)
                 if (i >= mipcount)
                   break;
                 if (!R_TouchIfInTexCache(&r_texcache, tex->data[i]) && (bestmips[i] < 0)) {
-                    bestmips[i] = LOWER8(wall->tb_texturenum);
+                    bestmips[i] = wall->b_texturenum;
                 }
             }
         }

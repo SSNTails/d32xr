@@ -653,7 +653,8 @@ typedef struct
 #endif
 	uint8_t     fof_texturenum; // wall texture for FOF
 	uint8_t     fof_picnum; // floor or ceiling pic for backsector FOF
-	uint16_t     tb_texturenum; // t_texturenum top word, b_texturenum bottom word
+	uint8_t     t_texturenum;
+	uint8_t     b_texturenum;
 
 	uint16_t     floorceilpicnum; // ceilingpicnum top word, floorpicnum bottom word (just like a ceiling and floor!)
 
