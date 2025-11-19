@@ -943,10 +943,10 @@ void P_Start (void)
 
 	if (IsLevelType(LevelType_SpecialStage)) {
 		hudNumberFont.charCacheLength = 10;
-		hudNumberFont.charCache = Z_Calloc(sizeof(void *) * 10, PU_STATIC);
+		hudNumberFont.charCache = Z_Calloc(sizeof(void *) * 10, PU_LEVEL);
 		char sttnum_name[8] = "STTNUM0";
 		for (int i=0; i < 10; i++) {
-			hudNumberFont.charCache[i] = W_CacheLumpName(sttnum_name, PU_STATIC);
+			hudNumberFont.charCache[i] = W_CacheLumpName(sttnum_name, PU_LEVEL);
 			sttnum_name[6]++;
 		}
 
@@ -981,7 +981,7 @@ void P_Start (void)
 			int lumpnum = W_GetNumForName(names_list[i]);
 			int length = Z_CalculateAllocSize(W_LumpLength(lumpnum));
 			if (length < free_memory) {
-				*jagobjs_list[i] = (jagobj_t *)W_CacheLumpName(names_list[i], PU_STATIC);
+				*jagobjs_list[i] = (jagobj_t *)W_CacheLumpName(names_list[i], PU_LEVEL);
 				free_memory = Z_FreeMemory(mainzone);
 			}
 		}
@@ -991,7 +991,7 @@ void P_Start (void)
 		int lumpnum = W_GetNumForName(chaos_name);
 		int length = Z_CalculateAllocSize(W_LumpLength(lumpnum));
 		if (length < free_memory) {
-			chaos_jagobj = W_CacheLumpName(chaos_name, PU_STATIC);
+			chaos_jagobj = W_CacheLumpName(chaos_name, PU_LEVEL);
 		}
 
 		//free_memory = Z_FreeMemory(mainzone);
