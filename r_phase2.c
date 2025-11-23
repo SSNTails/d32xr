@@ -363,7 +363,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                         if (top < bottom)
                             SETUPPER8(fof_bottomopen[x], top)
                         else
-                            SETUPPER8(fof_bottomopen[x], 0);
+                            SETUPPER8(fof_bottomopen[x], bottom);
 
 //                        CONS_Printf("Top: %d, Bottom: %d", UPPER8(fof_bottomopen[x]), LOWER8(fof_bottomopen[x]));
                     }
