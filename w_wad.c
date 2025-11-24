@@ -284,8 +284,6 @@ void	*W_CacheLumpNum (int lump, int tag)
 		I_Error("W_CacheLumpNum: %i < 0", lump);
 	if (lump >= numlumps)
 		I_Error ("W_CacheLumpNum: %i >= numlumps",lump);
-	if (tag != PU_STATIC)
-		I_Error("W_CacheLumpNum: %i tag != PU_STATIC", lump);
 
 	len = W_LumpLength(lump);
 	cache = Z_Malloc(len+1, tag);

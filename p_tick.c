@@ -3,7 +3,10 @@
 #include "sounds.h"
 #ifdef MARS
 #include "mars.h"
+#include "v_font.h"
 #endif
+
+//int free_memory;
 
 int	playertics, thinkertics, sighttics, basetics, latetics;
 int	tictics, drawtics;
@@ -939,11 +942,59 @@ void P_Start (void)
 	}
 
 	if (IsLevelType(LevelType_SpecialStage)) {
-		char sttnum_name[8] = { 'S', 'T', 'T', 'N', 'U', 'M', '0', '\0' };
+		hudNumberFont.charCacheLength = 10;
+		hudNumberFont.charCache = Z_Calloc(sizeof(void *) * 10, PU_LEVEL);
+		char sttnum_name[8] = "STTNUM0";
 		for (int i=0; i < 10; i++) {
-			sttnum_pic[i] = W_CacheLumpName(sttnum_name, PU_STATIC);
+			hudNumberFont.charCache[i] = W_CacheLumpName(sttnum_name, PU_LEVEL);
 			sttnum_name[6]++;
 		}
+
+		jagobj_t **jagobjs_list[7] = {
+			&narrow9_jagobj,
+			&nbrackt_jagobj,
+			&nbrackl_jagobj,
+			&nbrackr_jagobj,
+			&nbrackb_jagobj,
+			&nrng1_jagobj,
+			&nsshud_jagobj,
+			//&chaos_jagobj
+		};
+
+		char *names_list[7] = {
+			"NARROW9",
+			"NBRACKT",
+			"NBRACKL",
+			"NBRACKR",
+			"NBRACKB",
+			"NRNG1",
+			"NSSHUD",
+			//"CHAOS1"
+		};
+
+		//names_list[7][5] += (gamemapinfo.mapNumber - SSTAGE_START);
+
+		//free_memory = Z_FreeMemory(mainzone);
+		int free_memory = Z_FreeMemory(mainzone);
+
+		for (int i=0; i < 7; i++) {
+			int lumpnum = W_GetNumForName(names_list[i]);
+			int length = Z_CalculateAllocSize(W_LumpLength(lumpnum));
+			if (length < free_memory) {
+				*jagobjs_list[i] = (jagobj_t *)W_CacheLumpName(names_list[i], PU_LEVEL);
+				free_memory = Z_FreeMemory(mainzone);
+			}
+		}
+
+		char chaos_name[7] = { 'C', 'H', 'A', 'O', 'S', '1', '\0' };
+		chaos_name[5] += gamemapinfo.mapNumber - SSTAGE_START;
+		int lumpnum = W_GetNumForName(chaos_name);
+		int length = Z_CalculateAllocSize(W_LumpLength(lumpnum));
+		if (length < free_memory) {
+			chaos_jagobj = W_CacheLumpName(chaos_name, PU_LEVEL);
+		}
+
+		//free_memory = Z_FreeMemory(mainzone);
 	}
 
 	if (IsTitleScreen()) {
@@ -965,9 +1016,52 @@ void P_Stop (void)
 	DoubleBufferSetup();	// Clear frame buffers to black.
 
 	if (IsLevelType(LevelType_SpecialStage)) {
-		for (int i = 0; i < 10; i++) {
-			Z_Free(sttnum_pic[i]);
+		if (chaos_jagobj != NULL) {
+			Z_Free(chaos_jagobj);
+			chaos_jagobj = NULL;
 		}
+
+		if (nsshud_jagobj != NULL) {
+			Z_Free(nsshud_jagobj);
+			nsshud_jagobj = NULL;
+		}
+
+		if (nrng1_jagobj != NULL) {
+			Z_Free(nrng1_jagobj);
+			nrng1_jagobj = NULL;
+		}
+
+		if (nbrackt_jagobj != NULL) {
+			Z_Free(nbrackt_jagobj);
+			nbrackt_jagobj = NULL;
+		}
+
+		if (nbrackt_jagobj != NULL) {
+			Z_Free(nbrackl_jagobj);
+			nbrackl_jagobj = NULL;
+		}
+
+		if (nbrackt_jagobj != NULL) {
+			Z_Free(nbrackr_jagobj);
+			nbrackr_jagobj = NULL;
+		}
+
+		if (nbrackt_jagobj != NULL) {
+			Z_Free(nbrackb_jagobj);
+			nbrackb_jagobj = NULL;
+		}
+
+		if (nbrackt_jagobj != NULL) {
+			Z_Free(narrow9_jagobj);
+			narrow9_jagobj = NULL;
+		}
+
+		for (int i = 9; i >= 0; i--) {
+			Z_Free(hudNumberFont.charCache[i]);
+		}
+		Z_Free(hudNumberFont.charCache);
+		hudNumberFont.charCache = NULL;
+		hudNumberFont.charCacheLength = 0;
 	}
 
 	M_Stop();

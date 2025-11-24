@@ -7,6 +7,7 @@
 #include "st_inter.h"
 
 #define DEFAULT_GAME_ZONE_MARGIN (4*1024)
+#define SPECIAL_STAGE_GAME_ZONE_MARGIN (8*1024)		// Guessing at this number...
 
 uint16_t			numvertexes;
 uint16_t			numsegs;
@@ -885,7 +886,13 @@ extern byte *debugscreen;
 
 	gamepaused = false;
 
-	gamezonemargin = DEFAULT_GAME_ZONE_MARGIN;
+	if (IsLevelType(LevelType_SpecialStage)) {
+		gamezonemargin = SPECIAL_STAGE_GAME_ZONE_MARGIN;
+	}
+	else {
+		gamezonemargin = DEFAULT_GAME_ZONE_MARGIN;
+	}
+
 	R_SetupLevel(gamezonemargin, gamemapinfo.sky);
 
 #ifdef MARS

@@ -17,6 +17,8 @@ void V_FontInit()
     menuFont.fixedWidthSize = 8;
     menuFont.spaceWidthSize = 4;
     menuFont.verticalOffset = 8;
+    menuFont.charCacheLength = 0;
+    menuFont.charCache = NULL;
 
     titleFont.lumpStart = W_GetNumForName("LTFNT065");
     titleFont.lumpStartChar = 65;
@@ -26,6 +28,8 @@ void V_FontInit()
     titleFont.fixedWidth = 0;
     titleFont.spaceWidthSize = 16;
     titleFont.verticalOffset = 16;
+    titleFont.charCacheLength = 0;
+    titleFont.charCache = NULL;
 
     creditFont.lumpStart = W_GetNumForName("CRFNT065");
     creditFont.lumpStartChar = 65;
@@ -35,6 +39,8 @@ void V_FontInit()
     creditFont.fixedWidthSize = 16;
     creditFont.spaceWidthSize = 8;
     creditFont.verticalOffset = 16;
+    creditFont.charCacheLength = 0;
+    creditFont.charCache = NULL;
 
     titleNumberFont.lumpStart = W_GetNumForName("TTL01");
     titleNumberFont.lumpStartChar = '1';
@@ -43,6 +49,8 @@ void V_FontInit()
     titleNumberFont.fixedWidth = false;
     titleNumberFont.fixedWidthSize = 0;
     titleNumberFont.verticalOffset = 29;
+    titleNumberFont.charCacheLength = 0;
+    titleNumberFont.charCache = NULL;
 
     hudNumberFont.lumpStart = W_GetNumForName("STTNUM0");
     hudNumberFont.lumpStartChar = '0';
@@ -52,6 +60,8 @@ void V_FontInit()
     hudNumberFont.fixedWidthSize = 8;
     hudNumberFont.spaceWidthSize = 4;
     hudNumberFont.spaceWidthSize = 11;
+    hudNumberFont.charCacheLength = 0;
+    hudNumberFont.charCache = NULL;
 }
 
 int V_GetStringWidth(const font_t *font, const char *string)
@@ -115,44 +125,70 @@ int V_DrawStringLeftWithColormap(const font_t *font, int x, int y, const char *s
 		{
 			if (font->fixedWidth)
             {
-                if (colormap)
-    			    DrawJagobjLumpWithColormap(font->lumpStart + (c - font->lumpStartChar), x, y, NULL, NULL, colormap);
-                else
-                    DrawJagobjLump(font->lumpStart + (c - font->lumpStartChar), x, y, NULL, NULL);
+                int charnum = (c - font->lumpStartChar);
+                if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
+                    if (colormap) {
+                        DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
+                    }
+                    else {
+                        DrawJagobj(font->charCache[charnum], x, y);
+                    }
+                }
+                else {
+                    if (colormap) {
+    			        DrawJagobjLumpWithColormap(font->lumpStart + charnum, x, y, NULL, NULL, colormap);
+                    }
+                    else {
+                        DrawJagobjLump(font->lumpStart + charnum, x, y, NULL, NULL);
+                    }
+                }
                 
 			    x += font->fixedWidthSize;
             }
             else
             {
-                int lumpnum = font->lumpStart + (c - font->lumpStartChar);
-                byte *lump = W_POINTLUMPNUM(lumpnum);
-                jagobj_t *jo;
+                int charnum = (c - font->lumpStartChar);
+                if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
+                    if (colormap) {
+                        DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
+                    }
+                    else {
+                        DrawJagobj(font->charCache[charnum], x, y);
+                    }
 
-	            if (!(lumpinfo[lumpnum].name[0] & 0x80))
-	            {
-    		        jo = (jagobj_t*)lump;
-                    if (colormap)
-                        DrawJagobjWithColormap(jo, x, y + font->verticalOffset - jo->height, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
-                    else
-                        DrawJagobj(jo, x, y + font->verticalOffset - jo->height);
-	            }
-                else
-                {
-                    // Can draw compressed characters
-                    lzexe_state_t gfx_lzexe;
-	                uint8_t lzexe_buf[32];
-                    lzexe_setup(&gfx_lzexe, lump, lzexe_buf, 32);
-                    if (lzexe_read_partial(&gfx_lzexe, 16) != 16)
-                        continue;
-
-                    jo = (jagobj_t*)gfx_lzexe.output;
-                    if (colormap)
-                        DrawJagobjLumpWithColormap(lumpnum, x, y + font->verticalOffset - jo->height, NULL, NULL, colormap);
-                    else
-                        DrawJagobjLump(lumpnum, x, y + font->verticalOffset - jo->height, NULL, NULL);
+                    x += font->charCache[charnum]->width;
                 }
+                else {
+                    int lumpnum = font->lumpStart + charnum;
+                    byte *lump = W_POINTLUMPNUM(lumpnum);
+                    jagobj_t *jo;
 
-                x += jo->width;
+                    if (!(lumpinfo[lumpnum].name[0] & 0x80))
+                    {
+                        jo = (jagobj_t*)lump;
+                        if (colormap)
+                            DrawJagobjWithColormap(jo, x, y + font->verticalOffset - jo->height, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+                        else
+                            DrawJagobj(jo, x, y + font->verticalOffset - jo->height);
+                    }
+                    else
+                    {
+                        // Can draw compressed characters
+                        lzexe_state_t gfx_lzexe;
+                        uint8_t lzexe_buf[32];
+                        lzexe_setup(&gfx_lzexe, lump, lzexe_buf, 32);
+                        if (lzexe_read_partial(&gfx_lzexe, 16) != 16)
+                            continue;
+
+                        jo = (jagobj_t*)gfx_lzexe.output;
+                        if (colormap)
+                            DrawJagobjLumpWithColormap(lumpnum, x, y + font->verticalOffset - jo->height, NULL, NULL, colormap);
+                        else
+                            DrawJagobjLump(lumpnum, x, y + font->verticalOffset - jo->height, NULL, NULL);
+                    }
+
+                    x += jo->width;
+                }
             }
 		}
 	}
@@ -176,27 +212,51 @@ int V_DrawStringRightWithColormap(const font_t *font, int x, int y, const char *
 		{
             if (font->fixedWidth)
             {
-                if (colormap)
-                    DrawJagobjLumpWithColormap(font->lumpStart + (c - font->lumpStartChar), x, y, NULL, NULL, colormap);
-                else
-    			    DrawJagobjLump(font->lumpStart + (c - font->lumpStartChar), x, y, NULL, NULL);
+                int charnum = (c - font->lumpStartChar);
+                if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
+                    if (colormap) {
+                        DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
+                    }
+                    else {
+                        DrawJagobj(font->charCache[charnum], x, y);
+                    }
+                }
+                else {
+                    if (colormap)
+                        DrawJagobjLumpWithColormap(font->lumpStart + (c - font->lumpStartChar), x, y, NULL, NULL, colormap);
+                    else
+    			        DrawJagobjLump(font->lumpStart + (c - font->lumpStartChar), x, y, NULL, NULL);
+                }
                 
                 x -= font->fixedWidthSize;
             }
             else
             {
-                int lumpnum = font->lumpStart + (c - font->lumpStartChar);
-                lump = W_POINTLUMPNUM(lumpnum);
-	            if (!(lumpinfo[lumpnum].name[0] & 0x80))
-	            {
-    		        jo = (jagobj_t*)lump;
-		            x -= jo->width;
+                int charnum = (c - font->lumpStartChar);
+                if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
+                    if (colormap) {
+                        DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
+                    }
+                    else {
+                        DrawJagobj(font->charCache[charnum], x, y);
+                    }
 
-                    if (colormap)
-                        DrawJagobjWithColormap(jo, x, y + font->verticalOffset - jo->height, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
-                    else
-                        DrawJagobj(jo, x, y + font->verticalOffset - jo->height);
-	            }
+                    x += font->charCache[charnum]->width;
+                }
+                else {
+                    int lumpnum = font->lumpStart + (c - font->lumpStartChar);
+                    lump = W_POINTLUMPNUM(lumpnum);
+                    if (!(lumpinfo[lumpnum].name[0] & 0x80))
+                    {
+                        jo = (jagobj_t*)lump;
+                        x -= jo->width;
+
+                        if (colormap)
+                            DrawJagobjWithColormap(jo, x, y + font->verticalOffset - jo->height, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+                        else
+                            DrawJagobj(jo, x, y + font->verticalOffset - jo->height);
+                    }
+                }
             }
 		}
 	}
@@ -233,26 +293,32 @@ int V_DrawStringCenterWithColormap(const font_t *font, int x, int y, const char 
             }
             else
             {
-                int lumpnum = font->lumpStart + (c - font->lumpStartChar);
-                byte *lump = W_POINTLUMPNUM(lumpnum);
-                jagobj_t *jo;
+                int charnum = (c - font->lumpStartChar);
+                if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
+                    x -= font->charCache[charnum]->width / 2;
+                }
+                else {
+                    int lumpnum = font->lumpStart + charnum;
+                    byte *lump = W_POINTLUMPNUM(lumpnum);
+                    jagobj_t *jo;
 
-	            if (!(lumpinfo[lumpnum].name[0] & 0x80))
-	            {
-    		        jo = (jagobj_t*)lump;
-		            x -= jo->width / 2;
-	            }
-                else
-                {
-                    // Can draw compressed characters
-                    lzexe_state_t gfx_lzexe;
-	                uint8_t lzexe_buf[32];
-                    lzexe_setup(&gfx_lzexe, lump, lzexe_buf, 32);
-                    if (lzexe_read_partial(&gfx_lzexe, 16) != 16)
-                        continue;
+                    if (!(lumpinfo[lumpnum].name[0] & 0x80))
+                    {
+                        jo = (jagobj_t*)lump;
+                        x -= jo->width / 2;
+                    }
+                    else
+                    {
+                        // Can draw compressed characters
+                        lzexe_state_t gfx_lzexe;
+                        uint8_t lzexe_buf[32];
+                        lzexe_setup(&gfx_lzexe, lump, lzexe_buf, 32);
+                        if (lzexe_read_partial(&gfx_lzexe, 16) != 16)
+                            continue;
 
-                    jo = (jagobj_t*)gfx_lzexe.output;
-		            x -= jo->width / 2;
+                        jo = (jagobj_t*)gfx_lzexe.output;
+                        x -= jo->width / 2;
+                    }
                 }
             }
 		}
@@ -309,8 +375,15 @@ void V_DrawValuePaddedRight(const font_t *font, int x, int y, int value, int pad
 	
         if (c == 0x20) // Space
             x -= font->spaceWidthSize;
-		else if (c >= font->minChar && c <= font->maxChar)
-			DrawJagobjLump(font->lumpStart + (c - font->lumpStartChar), x, y, NULL, NULL);
+		else if (c >= font->minChar && c <= font->maxChar) {
+            int charnum = (c - font->lumpStartChar);
+            if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
+                DrawJagobj(font->charCache[charnum], x, y);
+            }
+            else {
+			    DrawJagobjLump(font->lumpStart + (c - font->lumpStartChar), x, y, NULL, NULL);
+            }
+        }
 
         pad--;
 	}
@@ -318,7 +391,13 @@ void V_DrawValuePaddedRight(const font_t *font, int x, int y, int value, int pad
 	while (pad > 0)
 	{
 		x -= font->fixedWidthSize;
-		DrawJagobjLump(font->lumpStart + ('0' - font->lumpStartChar), x, y, NULL, NULL);
+        int charnum = ('0' - font->lumpStartChar);
+        if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
+            DrawJagobj(font->charCache[charnum], x, y);
+        }
+        else {
+		    DrawJagobjLump(font->lumpStart + charnum, x, y, NULL, NULL);
+        }
 		pad--;
 	}
 }
