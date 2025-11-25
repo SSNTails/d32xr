@@ -421,6 +421,7 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 	{
 		case MT_GOOP:
 			P_DamageMobj(toucher, special, special, 1);
+			special->latecall = LC_REMOVE_MOBJ;
 			return;
 		case MT_ATTRACTRING:
 		case MT_FLINGRING:
@@ -697,7 +698,7 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 /* */
 	if (player)
 	{
-		if (player->exiting)
+		if (player->exiting || leveltime < 3*TICRATE)
 			return;
 
 		P_ResetPlayer(player);
