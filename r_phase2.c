@@ -328,7 +328,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
 //        if (actionbits & (AC_FOFBOTTOM|AC_FOFTOP|AC_FOFSIDE))
         {
             if (actionbits & AC_FOFSIDE)
-            {// TODO: This one doesn't cause weird bleed-thrus...   why?
+            {
                 if (backFOF->floorheight > vd.viewz) // Bottom of FOF is visible
                 {
                     const VINT fofandlight = ((backFOF->lightlevel & 0xff) << 8) | backFOF->floorpic;
@@ -351,9 +351,12 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                     fof_bottomopen = fofplane->open;
 
                     if (top < bottom)
-                        SETUPPER8(fof_bottomopen[x], top)
+                    {
+                        if (UPPER8(fof_bottomopen[x]) == 0xff)
+                            SETUPPER8(fof_bottomopen[x], top)
+                    }
                     else
-                        SETUPPER8(fof_bottomopen[x], bottom);
+                        SETUPPER8(fof_bottomopen[x], bottom-1);
                 }
                 else if (backFOF->ceilingheight < vd.viewz) // Top of FOF is visible
                 {
