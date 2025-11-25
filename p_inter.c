@@ -548,6 +548,15 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 		{
 			score = 1000;
 			scoreState = mobjinfo[MT_SCORE].spawnstate + 3;
+
+			if (target->type == MT_EGGMOBILE2)
+			{
+				for (mobj_t *mo = mobjhead.next ; mo != (void *)&mobjhead; mo = mo->next)
+				{					
+					if (mo->type == MT_GOOP)
+						mo->latecall = LC_REMOVE_MOBJ;
+				}
+			}
 		}
 
 		P_SetMobjState(scoremobj, scoreState);
