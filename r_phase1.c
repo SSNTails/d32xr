@@ -393,8 +393,9 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             if (front_sector->fofsec < 0)
             {
                const line_t *fofline = &lines[backFOF->specline];
+               const side_t *fofside = &sides[fofline->sidenum[0]];
                fof_texturemid = backFOF->ceilingheight - vd.viewz;
-               segl->fof_texturenum = texturetranslation[SIDETEX(&sides[fofline->sidenum[0]])->midtexture];
+               segl->fof_texturenum = texturetranslation[SIDETEX(fofside)->midtexture];
 //               fof_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
 #ifdef WALLDRAW2X
                fof_texturemid >>= 1;
@@ -403,6 +404,20 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                {
                   fof_texturemid = 0;
                   segl->fof_texturenum = (uint8_t)-1;
+               }
+            }
+            else if (!(front_sector->flags & SF_FOF_SWAPHEIGHTS))
+            {
+               const sector_t *frontFOF = &sectors[front_sector->fofsec];
+               *fofInfo = front_sector->fofsec;
+               if (frontFOF->ceilingheight < vd.viewz)
+               {
+                  // Rendering the ceiling
+                  actionbits |= AC_FOFTOP;
+               }
+               else if (frontFOF->floorheight > vd.viewz)
+               {
+                  actionbits |= AC_FOFBOTTOM;
                }
             }
          }

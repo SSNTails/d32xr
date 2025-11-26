@@ -217,8 +217,6 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
 
     unsigned short *flooropen = (actionbits & AC_ADDFLOOR) ? vd.visplanes[0].open : NULL;
     unsigned short *ceilopen = (actionbits & AC_ADDCEILING) ? vd.visplanes[0].open : NULL;
-    unsigned short *fof_topopen = (actionbits & AC_FOFTOP) ? vd.visplanes[0].open : NULL;
-    unsigned short *fof_bottomopen = (actionbits & AC_FOFBOTTOM) ? vd.visplanes[0].open : NULL;
 
     unsigned short *newclipbounds = segl->clipbounds;
 
@@ -347,16 +345,14 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                         top = ceilingclipx;
                     bottom = floorclipx;
 
-                    visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, 0);
-                    fof_bottomopen = fofplane->open;
-
                     if (top < bottom)
                     {
+                        visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, 0);
+                        unsigned short *fof_bottomopen = fofplane->open;
+
                         if (UPPER8(fof_bottomopen[x]) == 0xff)
                             SETUPPER8(fof_bottomopen[x], top)
                     }
-                    else
-                        SETUPPER8(fof_bottomopen[x], bottom-1);
                 }
                 else if (backFOF->ceilingheight < vd.viewz) // Top of FOF is visible
                 {
@@ -379,43 +375,16 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                     if (top < bottom)
                     {
                         visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, backFOF->floor_xoffs);
-                        fof_topopen = fofplane->open;
+                        unsigned short *fof_topopen = fofplane->open;
 
-                        SETUPPER8(fofplane->open[x], 0xff);
+//                        SETUPPER8(fof_topopen[x], 0xff);
 
-                        if (LOWER8(fofplane->open[x]) == 0)
-                            SETLOWER8(fofplane->open[x], bottom-1);
+                        if (LOWER8(fof_topopen[x]) == 0)
+                            SETLOWER8(fof_topopen[x], bottom-1);
                     }
                 }
-/*
-                // Cool story bro, but we also need to clip the frontFOF
-                if (actionbits & AC_FOFTOP) // Top of FOF is visible
-                {
-                    const VINT fofandlight = ((255 & 0xff) << 8) | frontFOF->ceilingpic;
-                    const fixed_t fofplaneHeight = frontFOF->ceilingheight - vd.viewz;
-
-                    // "flooropen"
-                    top = FixedMul(scale2, fofplaneHeight)>>FRACBITS;
-                    top = cy - top;
-                    if (top < ceilingclipx)
-                        top = ceilingclipx;
-                    bottom = floorclipx;
-
-                    if (top < bottom)
-                    {
-                        visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, frontFOF->floor_xoffs);
-
-                        SETUPPER8(fofplane->open[x], top);
-
-                        if (LOWER8(fofplane->open[x]) == 0)
-                            SETLOWER8(fofplane->open[x], bottom-1);
-
-//                        CONS_Printf("top: %d, bottom: %d, low: %d, high: %d (%d, %d)", top, bottom, low, high, floorclipx, ceilingclipx);
-
-                    }
-                }*/
             }
-            else if (actionbits & AC_FOFBOTTOM) // Bottom of FOF is visible
+            if (actionbits & AC_FOFBOTTOM) // Bottom of FOF is visible
             {
                 const VINT fofandlight = ((frontFOF->lightlevel & 0xff) << 8) | frontFOF->floorpic;
                 const fixed_t fofplaneHeight = frontFOF->floorheight - vd.viewz;
@@ -430,12 +399,19 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                 if (top < bottom)
                 {
                     visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, 0);
-                    fof_bottomopen = fofplane->open;
+                    unsigned short *fof_bottomopen = fofplane->open;
 
                     SETLOWER8(fof_bottomopen[x], bottom-1);
 
                     if (UPPER8(fof_bottomopen[x]) == 0xff)
                         SETUPPER8(fof_bottomopen[x], 0);
+                }
+                else if (bottom < 0)
+                {
+                    visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, 0);
+                    unsigned short *fof_bottomopen = fofplane->open;
+
+                    fof_bottomopen[x] = 0xff00; // Nope, too far above the screen.
                 }
             }
             else if (actionbits & AC_FOFTOP) // Top of FOF is visible
@@ -453,7 +429,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                 if (top < bottom)
                 {
                     visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, frontFOF->floor_xoffs);
-                    fof_topopen = fofplane->open;
+                    unsigned short *fof_topopen = fofplane->open;
 
                     SETUPPER8(fof_topopen[x], top);
 
