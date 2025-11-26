@@ -336,7 +336,11 @@ static boolean PA_CrossSubsector(shootWork_t *sw, int bspnum)
    count = P_GetSubsectorNumlines(sub);
    seg   = &segs[sub->firstline];
 
-   vc = *lvalidcount;
+   vc = *lvalidcount + 1;
+   if (vc == 0)
+      vc = 1;
+
+   *lvalidcount = vc;
    ++lvalidcount;
 
    for(; count; seg++, count--)
@@ -411,7 +415,6 @@ void P_Shoot2(lineattack_t *la)
    angle_t  angle;
    fixed_t  tmp;
    shootWork_t sw;
-   VINT *lvalidcount;
 
    t1        = la->shooter;
    sw.shooter = la->shooter;
@@ -443,9 +446,6 @@ void P_Shoot2(lineattack_t *la)
    sw.old_intercept.d.line  = NULL;
    sw.old_intercept.frac    = 0;
    sw.old_intercept.isaline = false;
-
-   I_GetThreadLocalVar(DOOMTLS_VALIDCOUNT, lvalidcount);
-   *lvalidcount = *lvalidcount + 1;
 
    PA_CrossBSPNode(&sw, numnodes - 1);
 
