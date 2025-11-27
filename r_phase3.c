@@ -65,6 +65,14 @@ static void R_PrepMobj(mobj_t *thing)
 //       return;
 
    sprframe = &spriteframes[sprdef->firstframe + (frame & FF_FRAMEMASK)];
+
+#ifndef SHOW_DISCLAIMER
+   if (sprframe->lump >= numlumps)
+   {
+      CONS_Printf("Mobj type %d has corruption. (%d)", thing->type, thing->state);
+      return;
+   }
+#endif
    sprlump = &spritelumps[sprframe->lump];
 
    lump = sprlump[0];
