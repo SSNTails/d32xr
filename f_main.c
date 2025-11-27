@@ -86,6 +86,8 @@ void F_Start (void)
 
 	curCard = -1;
 	F_NextCard();
+
+	clearedGame = true;
 }
 
 void F_Stop (void)

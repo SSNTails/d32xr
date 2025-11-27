@@ -106,6 +106,14 @@ void ST_ForceDraw(void)
 	ST_Ticker();
 }
 
+typedef struct
+{
+	int phase;
+	int counter;
+} mbrown_t;
+
+mbrown_t mbrownState;
+
 /*================================================== */
 /* */
 /*  Init this stuff EVERY LEVEL */
@@ -130,6 +138,8 @@ void ST_InitEveryLevel(void)
 		sb->score = 0;
 	}
 	stbar_tics = 0;
+
+	mbrownState.phase = 0;
 }
 
 /*
@@ -139,6 +149,7 @@ void ST_InitEveryLevel(void)
 =
 ====================
 */
+void MBrownSequenceTicker();
 
 static void ST_Ticker_(stbar_t* sb)
 {
@@ -177,6 +188,9 @@ static void ST_Ticker_(stbar_t* sb)
 	{
 		gameaction = ga_specialstageexit;
 	}
+
+	if (mbrownState.phase > 0)
+		MBrownSequenceTicker();
 }
 
 void ST_Ticker(void)
@@ -591,9 +605,63 @@ static void ST_Drawer_ (stbar_t* sb)
 
 static char consoleMsg[128];
 static VINT consoleMsgTics = 0;
+static boolean consoleCenter = false;
+
+void MBrownSequenceStart()
+{
+	if (!clearedGame)
+		return;
+
+	camBossMobj = P_SpawnMobj(1680 << FRACBITS, 4352 << FRACBITS, 768 << FRACBITS, MT_MBROWN);
+	mbrownState.phase = 1;
+	mbrownState.counter = TICRATE;
+	CONS_Printf("You again!");
+	consoleCenter = true;
+}
+
+void MBrownSequenceTicker()
+{
+	mbrownState.counter--;
+
+	if (mbrownState.counter > 0)
+		return;
+
+	if (mbrownState.phase == 1)
+	{
+		CONS_Printf("Are you responsible...");
+		consoleCenter = true;
+		mbrownState.counter = TICRATE;
+	}
+	else if (mbrownState.phase == 2)
+	{
+		CONS_Printf("...for this pixellated mess!?");
+		consoleCenter = true;
+		mbrownState.counter = TICRATE;
+	}
+	else if (mbrownState.phase == 3)
+	{
+		CONS_Printf("Take a hike!");
+		consoleCenter = true;
+		mbrownState.counter = TICRATE;
+	}
+	else if (mbrownState.phase == 4)
+	{
+		CONS_Printf("In a forest.");
+		consoleCenter = true;
+		mbrownState.counter = TICRATE;
+	}
+	else if (mbrownState.phase == 5)
+	{
+		startmap = 10;
+		gameaction = ga_warped;
+	}
+
+	mbrownState.phase++;
+}
 
 void CONS_Printf(char *msg, ...) 
 {
+	consoleCenter = false;
 	if (stbar)
 	{
 		va_list ap;
@@ -637,8 +705,15 @@ void ST_Drawer(void)
 
 	if (consoleMsgTics)
 	{
-		V_DrawStringLeft(&menuFont, 8, 24, consoleMsg);
+		if (consoleCenter)
+			V_DrawStringCenter(&menuFont, 160, 112, consoleMsg);
+		else
+			V_DrawStringLeft(&menuFont, 8, 24, consoleMsg);
+		
 		consoleMsgTics--;
+
+		if (consoleMsgTics <= 0)
+			consoleCenter = false;
 	}
 }
 

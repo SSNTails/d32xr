@@ -28,6 +28,8 @@
 
 #include "doomdef.h"
 #include "p_local.h"
+#include "p_camera.h"
+#include "st_main.h"
 
 #define CLIPRADIUS 23
 
@@ -229,7 +231,11 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
    else if ((ldflags[ld-lines] & ML_HAS_SPECIAL_OR_TAG) && P_GetLineSpecial(ld) == 200 && sw->slidething->player)
    {
       ldflags[ld-lines] &= ~ML_HAS_SPECIAL_OR_TAG;
-      CONS_Printf("Go away! Dave's not here. *B^D");
+
+      if (gamemapinfo.mapNumber == 1)
+         MBrownSequenceStart();
+      else if (gamemapinfo.mapNumber == 2)
+         CONS_Printf("Go away! Dave's not here. *B^D");
    }
 
    if(front->floorheight > back->floorheight)

@@ -999,6 +999,8 @@ extern	gametype_t	starttype;
 extern	VINT		startsave;
 extern 	boolean 	startsplitscreen;
 
+extern boolean clearedGame;
+
 /*--------- */
 /*SYSTEM IO */
 /*--------- */
