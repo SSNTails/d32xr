@@ -37,7 +37,7 @@
         .ascii  "                "
         .ascii  "GM 00000000-00"        /* Serial (insert date) */
         .word   0x0000                  /* Checksum */
-        .ascii  "J6CM            "
+        .ascii  "J6              "      /* 3 and 6 button controllers */
         .long   0x00000000,0x003FFFFF   /* ROM start, end */
         .long   0x00FF0000,0x00FFFFFF   /* RAM start, end */
 
