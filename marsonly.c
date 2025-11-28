@@ -22,12 +22,14 @@ int main(void)
 	Mars_Init();
 
 /* clear screen */
-	if (Mars_IsPAL()) {
-		/* use letter-boxed 240p mode */
+	/*if (Mars_IsPAL()) {
+		// Use letter-boxed 240p mode
 		Mars_InitVideo(-240);
 	} else {
 		Mars_InitVideo(224);
-	}
+	}*/
+
+	Mars_InitVideo(224);
 
 	/* set a two color palette */
 	Mars_FlipFrameBuffers(false);
