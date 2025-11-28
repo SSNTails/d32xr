@@ -48,10 +48,6 @@ enum
 
 	MARS_SECCMD_S_INIT_DMA,
 
-	MARS_SECCMD_P_SIGHT_CHECKS,
-
-	MARS_SECCMD_UNUSED2,
-
 	MARS_SECCMD_NUMCMDS
 };
 
@@ -63,9 +59,6 @@ void Mars_Sec_R_SegCommands(void) ATTR_DATA_CACHE_ALIGN;
 void Mars_Sec_R_DrawPlanes(int isFOF) ATTR_DATA_CACHE_ALIGN;
 void Mars_Sec_R_PreDrawPlanes(void) ATTR_DATA_CACHE_ALIGN;
 void Mars_Sec_R_DrawSprites(int sprscreenhalf) ATTR_DATA_CACHE_ALIGN;
-void Mars_Sec_P_CheckSights(void) ATTR_DATA_CACHE_ALIGN;
-
-void Mars_Sec_M_AnimateFire(void) ATTR_OPTIMIZE_EXTREME;
 
 void Mars_Sec_InitSoundDMA(int initfull);
 void Mars_Sec_ReadSoundCmds(void) ATTR_DATA_OPTIMIZE_NONE;
@@ -147,18 +140,6 @@ static inline void Mars_InitSoundDMA(int initfull)
 	MARS_SYS_COMM6 = initfull;
 	MARS_SYS_COMM4 = MARS_SECCMD_S_INIT_DMA;
 	Mars_R_SecWait();
-}
-
-static inline void Mars_P_BeginCheckSights(void)
-{
-	while (MARS_SYS_COMM4 != 0) {};
-	MARS_SYS_COMM6 = 0;
-	MARS_SYS_COMM4 = MARS_SECCMD_P_SIGHT_CHECKS;
-}
-
-static inline void Mars_P_EndCheckSights(void)
-{
-	while (MARS_SYS_COMM4 != 0);
 }
 
 #endif 

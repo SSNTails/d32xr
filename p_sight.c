@@ -414,13 +414,6 @@ static void P_CheckSights2(void)
 ===============
 */
 
-#ifdef MARS
-void Mars_Sec_P_CheckSights(void)
-{
-	P_CheckSights2(1);
-}
-#endif
-
 void P_CheckSights (void)
 {
 #ifdef JAGUAR

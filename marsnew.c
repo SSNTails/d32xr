@@ -254,9 +254,6 @@ void Mars_Secondary(void)
 		case MARS_SECCMD_S_INIT_DMA:
 			Mars_Sec_InitSoundDMA(MARS_SYS_COMM6);
 			break;
-		case MARS_SECCMD_P_SIGHT_CHECKS:
-			Mars_Sec_P_CheckSights();
-			break;
 		default:
 			break;
 		}
