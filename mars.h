@@ -117,7 +117,7 @@ static inline void Mars_R_EndDrawPlanes(void)
 {
 }
 
-static inline void Mars_R_BeginAnimationUpdate()
+static inline void Mars_P_BeginAnimationUpdate()
 {
 	while (MARS_SYS_COMM4 != 0) {};
 	MARS_SYS_COMM6 = 0;

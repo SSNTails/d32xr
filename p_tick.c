@@ -330,7 +330,7 @@ int P_Ticker (void)
 	if (!(IsDemo()))
 	{
 #ifdef MARS
-   		Mars_R_BeginAnimationUpdate();
+   		Mars_P_BeginAnimationUpdate();
 #endif
 		P_CheckSights();
 	}
@@ -341,6 +341,8 @@ int P_Ticker (void)
 	}
 
 	P_Weather();
+
+	Mars_P_EndAnimationUpdate();
 
 	for (int skipCount = 0; skipCount < accum_time; skipCount++)
 	{
