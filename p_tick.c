@@ -1016,50 +1016,14 @@ void P_Stop (void)
 	DoubleBufferSetup();	// Clear frame buffers to black.
 
 	if (IsLevelType(LevelType_SpecialStage)) {
-		if (chaos_jagobj != NULL) {
-			Z_Free(chaos_jagobj);
-			chaos_jagobj = NULL;
-		}
-
-		if (nsshud_jagobj != NULL) {
-			Z_Free(nsshud_jagobj);
-			nsshud_jagobj = NULL;
-		}
-
-		if (nrng1_jagobj != NULL) {
-			Z_Free(nrng1_jagobj);
-			nrng1_jagobj = NULL;
-		}
-
-		if (nbrackt_jagobj != NULL) {
-			Z_Free(nbrackt_jagobj);
-			nbrackt_jagobj = NULL;
-		}
-
-		if (nbrackt_jagobj != NULL) {
-			Z_Free(nbrackl_jagobj);
-			nbrackl_jagobj = NULL;
-		}
-
-		if (nbrackt_jagobj != NULL) {
-			Z_Free(nbrackr_jagobj);
-			nbrackr_jagobj = NULL;
-		}
-
-		if (nbrackt_jagobj != NULL) {
-			Z_Free(nbrackb_jagobj);
-			nbrackb_jagobj = NULL;
-		}
-
-		if (nbrackt_jagobj != NULL) {
-			Z_Free(narrow9_jagobj);
-			narrow9_jagobj = NULL;
-		}
-
-		for (int i = 9; i >= 0; i--) {
-			Z_Free(hudNumberFont.charCache[i]);
-		}
-		Z_Free(hudNumberFont.charCache);
+		chaos_jagobj = NULL;
+		nsshud_jagobj = NULL;
+		nrng1_jagobj = NULL;
+		nbrackt_jagobj = NULL;
+		nbrackl_jagobj = NULL;
+		nbrackr_jagobj = NULL;
+		nbrackb_jagobj = NULL;
+		narrow9_jagobj = NULL;
 		hudNumberFont.charCache = NULL;
 		hudNumberFont.charCacheLength = 0;
 	}
