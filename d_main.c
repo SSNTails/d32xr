@@ -703,7 +703,7 @@ int TIC_LevelSelect (void)
 				selected_map = SELECTABLE_MAP_COUNT-1;
 			}
 #ifdef SHOW_DISCLAIMER
-			if (emeralds != 127 && selected_map == 6) {
+			if (emeralds != 63 && selected_map == 6) {
 				// Skip CEZ1
 				selected_map -= 1;
 			}
@@ -712,7 +712,7 @@ int TIC_LevelSelect (void)
 		else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
 			selected_map += 1;
 #ifdef SHOW_DISCLAIMER
-			if (emeralds != 127 && selected_map == 6) {
+			if (emeralds != 63 && selected_map == 6) {
 				// Skip CEZ1
 				selected_map += 1;
 			}
