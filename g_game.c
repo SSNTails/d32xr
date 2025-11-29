@@ -33,9 +33,9 @@ int             gametic;
 int             leveltime;
 VINT            fadetime;
 VINT            totalitems, totalsecret;    /* for intermission  */
-uint16_t        emeralds;
-uint16_t        token;
-uint16_t        tokenbits;
+uint8_t         emeralds;
+uint8_t         tokens;
+uint8_t         tokenbits;
 
 
 
@@ -561,7 +561,7 @@ void G_InitNew (int map, gametype_t gametype, boolean splitscr)
 	gamepaused = false;
 	gametic = 0;
 	emeralds = 0;
-	token = 0;
+	tokens = 0;
 	tokenbits = 0;
 } 
 
@@ -647,12 +647,12 @@ startnew:
 			continue;			/* skip intermission */
 		}
 
-		if (token && emeralds < 63)//127) // Got a token, and missing at least one emerald // TODO: Restore this for all 7 stages
+		if (tokens && emeralds < 63)//127) // Got a token, and missing at least one emerald // TODO: Restore this for all 7 stages
 		{
 			if (gamemapinfo.mapNumber < SSTAGE_START || gamemapinfo.mapNumber > SSTAGE_END)
 				returnspecstagemapl = gamemapinfo.next; // Save the 'next' regular stage to go to
 
-			token--;
+			tokens--;
 
 			for (i = 0; i < 7; i++)
 			{

@@ -217,7 +217,7 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 		else if (special->type == MT_TOKEN)
 		{
 			ringmobj_t *ring = (ringmobj_t*)special;
-			token++;
+			tokens++;
 			tokenbits |= special->angle / ANG45;
 			P_SpawnMobj(ring->x << FRACBITS, ring->y << FRACBITS, ring->z << FRACBITS, MT_SPARK);
 			sound = mobjinfo[special->type].deathsound;

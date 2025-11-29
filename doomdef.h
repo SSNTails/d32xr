@@ -769,9 +769,9 @@ extern 	VINT 		gamemapcount;
 extern 	int 		gametic;
 extern  int         leveltime;
 extern  VINT        fadetime;
-extern uint16_t     emeralds;
-extern uint16_t     token;
-extern uint16_t     tokenbits;
+extern  uint8_t     emeralds;
+extern  uint8_t     tokens;
+extern  uint8_t     tokenbits;
 
 extern	mapthing_t	playerstarts[MAXPLAYERS];
 
