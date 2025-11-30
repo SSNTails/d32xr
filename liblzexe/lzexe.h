@@ -1,5 +1,5 @@
-#ifndef __LZEXE_H__
-#define __LZEXE_H__
+#ifndef _LZEXE_H_
+#define _LZEXE_H_
 
 #include <stdint.h>
 
@@ -25,9 +25,9 @@ typedef struct
     uint16_t output_mask;
 } lzexe_state_t;
 
-void lzexe_reset(lzexe_state_t* lzexe);
 void lzexe_setup(lzexe_state_t* lzexe, uint8_t* input, uint8_t* output, uint32_t buf_size);
-int lzexe_read_all(uint8_t* input, uint8_t* output);
 int lzexe_read_partial(lzexe_state_t* lzexe, uint16_t chunk_size);
+int lzexe_read_all(uint8_t* input, uint8_t* output);
+void lzexe_reset(lzexe_state_t* lzexe);
 
-#endif
+#endif // _LZEXE_H_

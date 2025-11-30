@@ -9,7 +9,7 @@ WAD ?= doom32x.wad
 LDSCRIPTSDIR = $(ROOTDIR)/ldscripts
 
 LIBPATH = -L$(ROOTDIR)/sh-elf/lib -L$(ROOTDIR)/sh-elf/lib/gcc/sh-elf/4.6.2 -L$(ROOTDIR)/sh-elf/sh-elf/lib
-INCPATH = -I. -I$(ROOTDIR)/sh-elf/include -I$(ROOTDIR)/sh-elf/sh-elf/include -I./liblzexe
+INCPATH = -I. -I$(ROOTDIR)/sh-elf/include -I$(ROOTDIR)/sh-elf/sh-elf/include -I./liblzexe -I./liblzss
 
 CCFLAGS = -c -std=c11 -m2 -mb
 CCFLAGS += -Wall -Wextra -pedantic -Wno-unused-parameter -Wimplicit-fallthrough=0 -Wno-missing-field-initializers -Wnonnull
@@ -38,6 +38,7 @@ CCFLAGS += -DCPUDEBUG
 CCFLAGS += -DSHOW_COMPATIBILITY_PROMPT
 #CCFLAGS += -DSHOW_DISCLAIMER
 #CCFLAGS += -DBENCHMARK
+CCFLAGS += -DUSE_LZEXE
 LDFLAGS = -T mars-ssf.ld -Wl,-Map=output.map -nostdlib -Wl,--gc-sections,--sort-section=alignment --specs=nosys.specs
 ASFLAGS = --big
 ASFLAGS += --defsym WADBASE=$(BINSIZE)

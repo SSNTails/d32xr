@@ -2,7 +2,7 @@
 
 #include "32x.h"
 #include "doomdef.h"
-#include "lzexe.h"
+#include "lz.h"
 #include "mars.h"
 
 /* include "r_local.h" */
@@ -66,11 +66,17 @@ void decode(unsigned char *input, unsigned char *output)
 	;
 }
 #else
-inline void decode(unsigned char* input, unsigned char* output)
+void decode(unsigned char* input, unsigned char* output)
 {
-	lzexe_read_all(input, output);
+#ifdef USE_LZEXE
+	LzReadAll(input, output);
+#else
+	LZSTATE lz;
+	lzss_setup(&lz, input, output, LZ_BUF_SIZE);
+	LzReadAll(&lz);
 #endif
 }
+#endif
 
 /*
 ============================================================================
@@ -256,11 +262,12 @@ int W_ReadLump (int lump, void *dest)
 	l = lumpinfo+lump;
 	if (l->name[0] & 0x80) /* compressed */
 	{
-		 decode((unsigned char *)W_POINTLUMPNUM(lump),
-		(unsigned char *) dest);
+		decode((unsigned char *)W_POINTLUMPNUM(lump),
+				(unsigned char *) dest);
 	}
 	else
-	  D_memcpy (dest, W_POINTLUMPNUM(lump), BIGLONG(l->size));
+		D_memcpy (dest, W_POINTLUMPNUM(lump), BIGLONG(l->size));
+
 	return BIGLONG(l->size);
 }
 

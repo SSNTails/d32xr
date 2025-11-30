@@ -31,11 +31,11 @@ typedef struct
     // the output ring buffer
     uint32_t buf_size;
     uint32_t buf_mask;
-    uint8_t *buf;
+    uint8_t *output;
 } lzss_state_t;
 
-void lzss_setup(lzss_state_t* lzss, uint8_t* base, uint8_t *buf, uint32_t buf_size);
-int lzss_read(lzss_state_t* lzss, uint16_t chunk);
+void lzss_setup(lzss_state_t* lzss, uint8_t* base, uint8_t* buf, uint32_t buf_size);
+int lzss_read_partial(lzss_state_t* lzss, uint16_t chunk);
 int lzss_read_all(lzss_state_t* lzss);
 void lzss_reset(lzss_state_t* lzss);
 

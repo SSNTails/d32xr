@@ -19,19 +19,19 @@ void lzss_reset(lzss_state_t* lzss)
 void lzss_setup(lzss_state_t* lzss, uint8_t* base, uint8_t* buf, uint32_t buf_size)
 {
 	lzss->base = base;
-	lzss->buf = buf;
+	lzss->output = buf;
 	lzss->buf_size = buf_size;
 	lzss->buf_mask = buf_size - 1;
 	lzss_reset(lzss);
 }
 
-int lzss_read(lzss_state_t* lzss, uint16_t chunk)
+int lzss_read_partial(lzss_state_t* lzss, uint16_t chunk)
 {
 	uint16_t i = lzss->run;
 	uint16_t len = lzss->runlen;
 	uint32_t source = lzss->runpos;
 	uint8_t* input = lzss->input;
-	uint8_t* output = lzss->buf;
+	uint8_t* output = lzss->output;
 	uint32_t outpos = lzss->outpos;
 	uint8_t idbyte = lzss->idbyte;
 	uint8_t getidbyte = lzss->getidbyte;
@@ -144,7 +144,7 @@ int lzss_read_all(lzss_state_t* lzss)
 	uint8_t getidbyte = 0;
 	uint32_t source = 0;
 	uint8_t* input = lzss->input;
-	uint8_t* output = lzss->buf;
+	uint8_t* output = lzss->output;
 	uint32_t outpos = 0;
 	uint32_t buf_size = lzss->buf_size;
 
@@ -182,7 +182,7 @@ int lzss_read_all(lzss_state_t* lzss)
 
 			if (len == 1) {
 				/* end of stream */
-				return output - lzss->buf;
+				return output - lzss->output;
 			}
 
 			for (j = 0; j < len; j++)
@@ -195,5 +195,5 @@ int lzss_read_all(lzss_state_t* lzss)
 		getidbyte = (getidbyte + 1) & 7;
 	}
 
-	return output - lzss->buf;
+	return output - lzss->output;
 }
