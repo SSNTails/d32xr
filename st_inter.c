@@ -145,7 +145,7 @@ void Y_EndIntermission(void)
 	endtic = -1;
 	intertype = int_none;
 
-	if (emeralds == 127 && gamemapinfo.mapNumber == 6)
+	if (emeralds == 63 && gamemapinfo.mapNumber == 6)
 		gamemapinfo.next = G_LumpNumForMapNum(10);
 }
 
