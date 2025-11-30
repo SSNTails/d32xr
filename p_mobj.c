@@ -191,7 +191,7 @@ int8_t P_MobjFlip(mobj_t *mo)
 
 boolean P_SetMobjState (mobj_t *mobj, statenum_t state)
 {
-	uint16_t changes = 0xffff;
+	uint16_t changes = 0xf; // Only chain up to 16 states.
 
 	if (mobj->flags & MF_RINGMOBJ)
 		return true; // silently fail
@@ -219,9 +219,6 @@ boolean P_SetMobjState (mobj_t *mobj, statenum_t state)
 
 		if (st->action)		/* call action functions when the state is set */
 			st->action(mobj, st->var1, st->var2);
-
-//		if (!(mobj->flags & (MF_STATIC)))
-//			mobj->latecall = LC_INVALID;	/* make sure it doesn't come back to life... */
 
 		state = st->nextstate;
 	} while (!mobj->tics && --changes > 0);
