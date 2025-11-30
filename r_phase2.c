@@ -329,7 +329,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
             {
                 if (backFOF->floorheight > vd.viewz) // Bottom of FOF is visible
                 {
-                    const VINT fofandlight = ((backFOF->lightlevel & 0xff) << 8) | backFOF->floorpic;
+                    const VINT fofandlight = ((backFOF->lightlevel & 0xff) << 8) | flattranslation[backFOF->floorpic];
                     const fixed_t fofplaneHeight = backFOF->floorheight - vd.viewz;
 
                     // "ceilopen"
@@ -356,7 +356,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                 }
                 else if (backFOF->ceilingheight < vd.viewz) // Top of FOF is visible
                 {
-                    const VINT fofandlight = ((255 & 0xff) << 8) | backFOF->ceilingpic;
+                    const VINT fofandlight = ((255 & 0xff) << 8) | flattranslation[backFOF->ceilingpic];
                     const fixed_t fofplaneHeight = backFOF->ceilingheight - vd.viewz;
 
                     top = ceilingclipx;
@@ -386,7 +386,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
             }
             if (actionbits & AC_FOFBOTTOM) // Bottom of FOF is visible
             {
-                const VINT fofandlight = ((frontFOF->lightlevel & 0xff) << 8) | frontFOF->floorpic;
+                const VINT fofandlight = ((frontFOF->lightlevel & 0xff) << 8) | flattranslation[frontFOF->floorpic];
                 const fixed_t fofplaneHeight = frontFOF->floorheight - vd.viewz;
 
                 // "ceilopen"
@@ -416,7 +416,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
             }
             else if (actionbits & AC_FOFTOP) // Top of FOF is visible
             {
-                const VINT fofandlight = ((255 & 0xff) << 8) | frontFOF->ceilingpic;
+                const VINT fofandlight = ((255 & 0xff) << 8) | flattranslation[frontFOF->ceilingpic];
                 const fixed_t fofplaneHeight = frontFOF->ceilingheight - vd.viewz;
 
                 // "flooropen"
