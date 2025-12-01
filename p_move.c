@@ -529,6 +529,9 @@ boolean P_TryMove2(ptrymove_t *tm, boolean checkposonly)
          return false; // don't stand over a dropoff
       if (tmthing->type == MT_SKIM && mw.newsec->heightsec < 0)
          return false; // Skim can't go out of water
+
+      if (tmthing->type == MT_PLAYER && tmthing->z == tmthing->floorz && mw.tmfloorz < tmthing->z && tmthing->z - mw.tmfloorz <= 24*FRACUNIT)
+         tmthing->z = mw.tmfloorz;
    }
 
    // the move is ok, so link the thing into its new position.
