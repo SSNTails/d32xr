@@ -750,7 +750,8 @@ extern	VINT		consoleplayer;		/* player taking events and displaying */
 extern	player_t	players[MAXPLAYERS];
 extern	playerresp_t	playersresp[MAXPLAYERS];
 
-extern	VINT		totalitems, totalsecret;	/* for intermission */
+extern	uint8_t		totalitems, totalsecret;	/* for intermission */
+extern	uint8_t		totaltokens;
 extern	VINT		gamemaplump;
 extern	dmapinfo_t	gamemapinfo;
 extern	dgameinfo_t	gameinfo;

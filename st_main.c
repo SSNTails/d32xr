@@ -538,11 +538,11 @@ static void ST_Drawer_ (stbar_t* sb)
 		}
 		else {
 			DrawJagobjLump(score, 16, 10+22, NULL, NULL);
-			V_DrawValuePaddedRight(&hudNumberFont, 16 + 120, 10+22, sb->score, 0);
+			V_DrawValuePaddedRight(&hudNumberFont, 16 + 120, 10+22, tokenbits, 0); //sb->score
 			DrawJagobjLump(time, 16, 26+22, NULL, NULL);
-			V_DrawValuePaddedRight(&hudNumberFont, 72, 26+22, minutes, 0);
+			V_DrawValuePaddedRight(&hudNumberFont, 72, 26+22, totaltokens, 0); //minutes
 			DrawJagobjLump(timecolon, 72, 26+22, NULL, NULL);
-			V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26+22, seconds, 2);
+			V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26+22, tokens, 2); //seconds
 			if (sb->rings <= 0 && (gametic / 4 & 1))
 				DrawJagobjLumpWithColormap(rings, 16, 42+22, NULL, NULL, YELLOWTEXTCOLORMAP);
 			else

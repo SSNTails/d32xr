@@ -657,17 +657,16 @@ return;	/*DEBUG */
 	z = (mthing->options >> 4) << FRACBITS;
 	z = P_GetMapThingSpawnHeight(i, mthing, x, y, z);
 
-	if (mthing->type == 312 && (tokenbits & (mthing->angle / 45))) // MT_TOKEN
+	if (mthing->type == 312 && (tokenbits & mthing->angle)) // MT_TOKEN
+	{
+		totaltokens++;
 		return; // Player already has this token
+	}
 
 	mobj = P_SpawnMobj (x,y,z, i);
 	if (mobj->type == MT_RING)
 	{
 		totalitems++;
-	}
-	else if (mobj->type == MT_TOKEN)
-	{
-		tokenbits |= (mthing->angle / 45);
 	}
 	else if (mobj->type == MT_EGGMOBILE)
 	{
@@ -707,9 +706,16 @@ return;	/*DEBUG */
 		jet->movecount = 4; // This tells it which one it is
 	}
 
+	if (mobj->type == MT_TOKEN) {
+		((ringmobj_t *)mobj)->pad = (1 << totaltokens);
+		totaltokens++;
+	}
+
 	if (mobj->flags & MF_RINGMOBJ)
 		return;
 
+
+	// Set the angle
 	if (mobj->type == MT_STARPOST)
 	{
 		mobj->health = (mthing->angle / 360) + 1;
