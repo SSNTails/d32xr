@@ -77,7 +77,7 @@ static void P_CheckFloatbobPlatforms(player_t *player)
 	P_InnerCheckFloatbobPlatforms(player, SS_SECTOR(player->mo->isubsector));
 }
 
-static void P_InnerCheckConveyor(player_t *player, sector_t *sector)
+static void P_InnerCheckConveyor(player_t *player, const sector_t *sector)
 {
 	boolean convey = false;
 	fixed_t convDx = 0;
@@ -86,33 +86,33 @@ static void P_InnerCheckConveyor(player_t *player, sector_t *sector)
 	// Does fofsec >= 0 and fofsec->flags SF_FOF_CONVEYOR?
 	if (sector->fofsec >= 0 && (sectors[sector->fofsec].flags & SF_CONVEYOR) && sectors[sector->fofsec].ceilingheight == player->mo->z)
 	{
-		sector_t *fofsec = &sectors[sector->fofsec];
-		scrollflat_t *scrollflat = SPTR_TO_LPTR(fofsec->specialdata);
+		const sector_t *fofsec = &sectors[sector->fofsec];
+		const scrollflat_t *scrollflat = SPTR_TO_LPTR(fofsec->specialdata);
 
-		const mapvertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
-		const mapvertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
+		if (scrollflat && scrollflat->ctrlLine)
+		{
+			const mapvertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
+			const mapvertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
 
-		fixed_t ldx = (v2->x - v1->x);
-		fixed_t ldy = (v2->y - v1->y);
-
-		convDx = ldx << FRACBITS << 1;
-		convDy = ldy << FRACBITS << 1;
-		convey = true;
+			convDx = ((fixed_t)(v2->x - v1->x)) << (FRACBITS+1);
+			convDy = ((fixed_t)(v2->y - v1->y)) << (FRACBITS+1);
+			convey = true;
+		}
 	}
 
 	if ((sector->flags & SF_CONVEYOR) && sector->floorheight == player->mo->z) // Regular sector floor has conveyor belt
 	{
-		scrollflat_t *scrollflat = SPTR_TO_LPTR(sector->specialdata);
+		const scrollflat_t *scrollflat = SPTR_TO_LPTR(sector->specialdata);
 
-		const mapvertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
-		const mapvertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
+		if (scrollflat && scrollflat->ctrlLine)
+		{
+			const mapvertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
+			const mapvertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
 
-		fixed_t ldx = (v2->x - v1->x);
-		fixed_t ldy = (v2->y - v1->y);
-
-		convDx = ldx << FRACBITS << 1;
-		convDy = ldy << FRACBITS << 1;
-		convey = true;
+			convDx = ((fixed_t)(v2->x - v1->x)) << (FRACBITS+1);
+			convDy = ((fixed_t)(v2->y - v1->y)) << (FRACBITS+1);
+			convey = true;
+		}
 	}
 
 	if (convey)

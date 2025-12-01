@@ -95,45 +95,37 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 		ceiling->thinker.function = T_MoveCeiling;
 		ceiling->sector = sec;
 		ceiling->crush = false;
-		switch(type)
+
 		{
-			case raiseAndCrush:
-			case crushAndRaise:
+			mapvertex_t *v1 = &vertexes[line->v1];
+			mapvertex_t *v2 = &vertexes[line->v2];
+			fixed_t arg2, arg3;
+			if (ldflags[line-lines] & ML_MIDTEXTUREBLOCK)
 			{
-				mapvertex_t *v1 = &vertexes[line->v1];
-				mapvertex_t *v2 = &vertexes[line->v2];
-				fixed_t arg2, arg3;
-				if (ldflags[line-lines] & ML_MIDTEXTUREBLOCK)
-				{
-					arg2 = D_abs(v2->x - v1->x);
-					arg3 = arg2;
-				}
-				else
-				{
-					arg2 = R_PointToDist2((v2->x << FRACBITS) - (v1->x << FRACBITS), (v2->y << FRACBITS) - (v1->y << FRACBITS)) >> (FRACBITS + 1);
-					arg3 = arg2 >> 2;
-				}
-
-				ceiling->upspeed = arg2 << (FRACBITS - 2);
-				ceiling->crush = true;
-				ceiling->bottomheight = (sec->floorheight >> FRACBITS) + 1;
-				ceiling->downspeed = arg3 << (FRACBITS - 2);
-
-				if (type == raiseAndCrush)
-				{
-					ceiling->topheight = P_FindHighestCeilingSurrounding(sec)->ceilingheight >> FRACBITS;
-					ceiling->direction = 1;
-				}
-				else
-				{
-					ceiling->topheight = sec->ceilingheight >> FRACBITS;
-					ceiling->direction = -1;
-				}
+				arg2 = D_abs(v2->x - v1->x);
+				arg3 = arg2;
 			}
-			break;
-			case raiseCeiling:
-				// Squash compiler warning. This is all going to be rewritten anyway.
-				break;
+			else
+			{
+				arg2 = R_PointToDist2((v2->x << FRACBITS) - (v1->x << FRACBITS), (v2->y << FRACBITS) - (v1->y << FRACBITS)) >> (FRACBITS + 1);
+				arg3 = arg2 >> 2;
+			}
+
+			ceiling->upspeed = arg2 << (FRACBITS - 2);
+			ceiling->crush = true;
+			ceiling->bottomheight = (sec->floorheight >> FRACBITS) + 1;
+			ceiling->downspeed = arg3 << (FRACBITS - 2);
+
+			if (type == raiseAndCrush)
+			{
+				ceiling->topheight = P_FindHighestCeilingSurrounding(sec)->ceilingheight >> FRACBITS;
+				ceiling->direction = 1;
+			}
+			else
+			{
+				ceiling->topheight = sec->ceilingheight >> FRACBITS;
+				ceiling->direction = -1;
+			}
 		}
 		
 		ceiling->type = type;
