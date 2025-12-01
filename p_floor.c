@@ -250,27 +250,39 @@ void T_MoveFloor(floormove_t *floor)
 
 	if (floor->type == continuousMoverFloor)
 	{
-		const fixed_t origspeed = FixedMul(floor->origSpeed, (FRACUNIT/2));
-		const fixed_t fs = D_abs(floor->sector->floorheight - (LD_FRONTSECTOR(&lines[floor->sourceline])->floorheight));
-		const fixed_t bs = D_abs(floor->sector->floorheight - (LD_BACKSECTOR((&lines[floor->sourceline]))->floorheight));
-		if (fs < bs)
-			floor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
-		else
-			floor->speed = FixedDiv(bs,25*FRACUNIT) + FRACUNIT/4;
+		const line_t *sourceline = &lines[floor->sourceline];
+		const sector_t *frontsector = LD_FRONTSECTOR(sourceline);
+		const sector_t *backsector = LD_BACKSECTOR(sourceline);
+		if (frontsector && backsector)
+		{
+			const fixed_t origspeed = FixedMul(floor->origSpeed, (FRACUNIT/2));
+			const fixed_t fs = D_abs(floor->sector->floorheight - (frontsector->floorheight));
+			const fixed_t bs = D_abs(floor->sector->floorheight - (backsector->floorheight));
+			if (fs < bs)
+				floor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
+			else
+				floor->speed = FixedDiv(bs,25*FRACUNIT) + FRACUNIT/4;
 
-		floor->speed = FixedMul(floor->speed, origspeed);
+			floor->speed = FixedMul(floor->speed, origspeed);
+		}
 	}
 	else if (floor->type == continuousMoverCeiling)
 	{
+		const line_t *sourceline = &lines[floor->sourceline];
+		const sector_t *frontsector = LD_FRONTSECTOR(sourceline);
+		const sector_t *backsector = LD_BACKSECTOR(sourceline);
 		const fixed_t origspeed = FixedMul(floor->origSpeed, (FRACUNIT/2));
-		const fixed_t fs = D_abs(floor->sector->ceilingheight - (LD_FRONTSECTOR(&lines[floor->sourceline])->ceilingheight));
-		const fixed_t bs = D_abs(floor->sector->ceilingheight - (LD_BACKSECTOR((&lines[floor->sourceline]))->ceilingheight));
-		if (fs < bs)
-			floor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
-		else
-			floor->speed = FixedDiv(bs,25*FRACUNIT) + FRACUNIT/4;
+		if (frontsector && backsector)
+		{
+			const fixed_t fs = D_abs(floor->sector->floorheight - (frontsector->ceilingheight));
+			const fixed_t bs = D_abs(floor->sector->floorheight - (backsector->ceilingheight));
+			if (fs < bs)
+				floor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
+			else
+				floor->speed = FixedDiv(bs,25*FRACUNIT) + FRACUNIT/4;
 
-		floor->speed = FixedMul(floor->speed, origspeed);
+			floor->speed = FixedMul(floor->speed, origspeed);
+		}
 	}
 
 	if (res == pastdest)
@@ -294,20 +306,24 @@ void T_MoveFloor(floormove_t *floor)
 		}
 		else if (floor->type == continuousMoverFloor)
 		{
-			if ((floor->floordestheight << FRACBITS) == LD_FRONTSECTOR(&lines[floor->sourceline])->floorheight)
-				floor->floordestheight = LD_BACKSECTOR((&lines[floor->sourceline]))->floorheight >> FRACBITS;
+			const sector_t *frontsector = LD_FRONTSECTOR(&lines[floor->sourceline]);
+			const sector_t *backsector = LD_BACKSECTOR((&lines[floor->sourceline]));
+			if ((floor->floordestheight << FRACBITS) == frontsector->floorheight)
+				floor->floordestheight = backsector->floorheight >> FRACBITS;
 			else
-				floor->floordestheight = LD_FRONTSECTOR(&lines[floor->sourceline])->floorheight >> FRACBITS;
+				floor->floordestheight = frontsector->floorheight >> FRACBITS;
 
 			floor->direction = ((floor->floordestheight << FRACBITS) < floor->sector->floorheight) ? -1 : 1;
 			floor->delayTimer = floor->delay;
 		}
 		else if (floor->type == continuousMoverCeiling)
 		{
-			if ((floor->floordestheight << FRACBITS) == LD_FRONTSECTOR(&lines[floor->sourceline])->ceilingheight)
-				floor->floordestheight = LD_BACKSECTOR((&lines[floor->sourceline]))->ceilingheight >> FRACBITS;
+			const sector_t *frontsector = LD_FRONTSECTOR(&lines[floor->sourceline]);
+			const sector_t *backsector = LD_BACKSECTOR((&lines[floor->sourceline]));
+			if ((floor->floordestheight << FRACBITS) == frontsector->ceilingheight)
+				floor->floordestheight = backsector->ceilingheight >> FRACBITS;
 			else
-				floor->floordestheight = LD_FRONTSECTOR(&lines[floor->sourceline])->ceilingheight >> FRACBITS;
+				floor->floordestheight = frontsector->ceilingheight >> FRACBITS;
 
 			floor->direction = ((floor->floordestheight << FRACBITS) < floor->sector->ceilingheight) ? -1 : 1;
 			floor->delayTimer = floor->delay;
