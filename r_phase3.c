@@ -66,13 +66,6 @@ static void R_PrepMobj(mobj_t *thing)
 
    sprframe = &spriteframes[sprdef->firstframe + (frame & FF_FRAMEMASK)];
 
-#ifndef SHOW_DISCLAIMER
-   if (sprframe->lump >= numlumps)
-   {
-      CONS_Printf("Mobj type %d has corruption. (%d)", thing->type, thing->state);
-      return;
-   }
-#endif
    sprlump = &spritelumps[sprframe->lump];
 
    lump = sprlump[0];
@@ -90,16 +83,15 @@ static void R_PrepMobj(mobj_t *thing)
 
    lump &= SL_LUMPMASK;
 
-   if (thing->flags2 & MF2_FORWARDOFFSET)
-      tz -= 1024; // Make sure this sprite is drawn on top of sprites with the same distance to the camera
-
-#ifndef SHOW_DISCLAIMER
    if (lump >= numlumps)
    {
-      CONS_Printf("Mobj type %d has corruption2. (%d)", thing->type, thing->state);
+      // Carmack had a frame validity check in here, so it must be important.
+//      CONS_Printf("Mobj type %d has corruption. (%d)", thing->type, thing->state);
       return;
    }
-#endif
+
+   if (thing->flags2 & MF2_FORWARDOFFSET)
+      tz -= 1024; // Make sure this sprite is drawn on top of sprites with the same distance to the camera
 
    patch = W_POINTLUMPNUM(lump);
    xscale = FixedDiv(PROJECTION, tz);
