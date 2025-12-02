@@ -32,7 +32,8 @@ VINT            consoleplayer = 0;          /* player taking events and displayi
 int             gametic;
 int             leveltime;
 VINT            fadetime;
-VINT            totalitems, totalsecret;    /* for intermission  */
+uint8_t         totalitems, totalsecret;    /* for intermission  */
+uint8_t			totaltokens;
 uint8_t         emeralds;
 uint8_t         tokens;
 uint8_t         tokenbits;
@@ -99,7 +100,7 @@ void G_DoLoadLevel (void)
 	int 		gamemap;
 	int			music;
 
-	totalitems = totalsecret = 0;
+	totalitems = totalsecret = totaltokens = 0;
 	for (i=0 ; i<MAXPLAYERS ; i++)
 	{
 		if (playeringame[i]/* && players[i].playerstate == PST_DEAD*/)
