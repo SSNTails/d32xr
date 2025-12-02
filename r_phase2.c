@@ -345,13 +345,12 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                         top = ceilingclipx;
                     bottom = floorclipx;
 
-                    if (top < bottom)
+//                    if (top < bottom)
                     {
                         visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, 0);
                         unsigned short *fof_bottomopen = fofplane->open;
 
-                        if (UPPER8(fof_bottomopen[x]) == 0xff)
-                            SETUPPER8(fof_bottomopen[x], top)
+                        SETUPPER8(fof_bottomopen[x], top);
                     }
                 }
                 else if (backFOF->ceilingheight < vd.viewz) // Top of FOF is visible
@@ -401,17 +400,19 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                     visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, 0);
                     unsigned short *fof_bottomopen = fofplane->open;
 
+                    if (fof_bottomopen[x] == 0xff00)
+                    {
+                        SETUPPER8(fof_bottomopen[x], 0);
+                        SETLOWER8(fof_bottomopen[x], bottom-1);
+                    }
+                    else if (UPPER8(fof_bottomopen[x]) == 0)
+                        fof_bottomopen[x] = 0xff00;
+                    
+
                     SETLOWER8(fof_bottomopen[x], bottom-1);
 
                     if (UPPER8(fof_bottomopen[x]) == 0xff)
-                        SETUPPER8(fof_bottomopen[x], 0);
-                }
-                else if (bottom < 0)
-                {
-                    visplane_t *fofplane = R_FindPlaneFOF(fofplaneHeight, fofandlight, x, stop, 0);
-                    unsigned short *fof_bottomopen = fofplane->open;
-
-                    fof_bottomopen[x] = 0xff00; // Nope, too far above the screen.
+                        SETUPPER8(fof_bottomopen[x], top);
                 }
             }
             else if (actionbits & AC_FOFTOP) // Top of FOF is visible
