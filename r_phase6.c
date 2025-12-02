@@ -164,9 +164,8 @@ static void R_Draw32XSky(const int top, const int bottom, const int x, drawcol_t
 
     if (draw32xsky)
     {
-        unsigned short scroll_x = (*((unsigned short *)&vd.viewangle) >> 6);
-
-        int colnum = ((skystretch[x] << 1) - scroll_x) & 1023;
+        const uint16_t scroll_x = vd.viewangle >> 22;
+        const int colnum = ((skystretch[x] << 1) - scroll_x) & 1023;
 
 
         // Half width:

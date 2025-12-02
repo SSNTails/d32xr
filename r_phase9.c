@@ -171,7 +171,8 @@ static void R_UpdateCache(void)
 
       masked = false;
 
-      if (id >= numtextures) {
+      if (id >= numtextures)
+      {
 #ifndef FLATMIPS
         if (i > 0)
           continue;
@@ -181,16 +182,21 @@ static void R_UpdateCache(void)
         pdata = (void**)&data[i];
         w = h = flat->size;
         pixels = w * h;
-      } else {
+      }
+      else
+      {
         texture_t* tex = &textures[id];
         int lump = tex->lumpnum;
 
         data = (void **)tex->data;
-        if (lump >= firstsprite && lump < firstsprite + numsprites) {
+        if (lump >= firstsprite && lump < firstsprite + numsprites)
+        {
           masked = true;
           pixels = W_LumpLength(lump+1);
           pdata = (void**)&data[0];
-        } else {
+        }
+        else
+        {
           w = tex->width, h = tex->height;
           pixels = w * h;
           pdata = (void**)&data[i];
