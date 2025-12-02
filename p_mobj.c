@@ -657,7 +657,7 @@ return;	/*DEBUG */
 	z = (mthing->options >> 4) << FRACBITS;
 	z = P_GetMapThingSpawnHeight(i, mthing, x, y, z);
 
-	if (mthing->type == 312 && (tokenbits & mthing->angle)) // MT_TOKEN
+	if (mthing->type == 312 && (tokenbits & (1 << totaltokens))) // MT_TOKEN
 	{
 		totaltokens++;
 		return; // Player already has this token
