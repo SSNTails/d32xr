@@ -1014,7 +1014,7 @@ void DrawScaledJagobj(jagobj_t* jo, int x, int y,
 	fixed_t	total_scaled_w, total_scaled_h;
 	int		rowsize;
 	fixed_t	inc_x, inc_y;
-	byte	*dest, *source;
+	uint8_t	*dest, *source;
 
 	rowsize = BIGSHORT(jo->width);
 	width = BIGSHORT(jo->width);
@@ -1077,8 +1077,8 @@ void DrawScaledJagobj(jagobj_t* jo, int x, int y,
 	{
 		pixel_t* dest2 = (pixel_t*)dest;
 
-		uint8_t* source2 = (pixel_t*)source;
-		uint8_t* source3 = (pixel_t*)source;
+		uint8_t* source2 = source;
+		uint8_t* source3 = source;
 
 		for (; total_scaled_h; total_scaled_h--)
 		{
