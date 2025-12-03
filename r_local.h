@@ -720,7 +720,7 @@ typedef struct
 	fixed_t    fofInfo;
 } viswallextra_t;
 
-#define	MAXWALLCMDS		169
+#define	MAXWALLCMDS		168
 
 /* A vissprite_t is a thing that will be drawn during a refresh */
 typedef struct vissprite_s
