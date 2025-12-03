@@ -253,9 +253,9 @@ void T_MoveFloor(floormove_t *floor)
 		const line_t *sourceline = &lines[floor->sourceline];
 		const sector_t *frontsector = LD_FRONTSECTOR(sourceline);
 		const sector_t *backsector = LD_BACKSECTOR(sourceline);
+		const fixed_t origspeed = FixedMul(floor->origSpeed, (FRACUNIT/2));
 		if (frontsector && backsector)
 		{
-			const fixed_t origspeed = FixedMul(floor->origSpeed, (FRACUNIT/2));
 			const fixed_t fs = D_abs(floor->sector->floorheight - (frontsector->floorheight));
 			const fixed_t bs = D_abs(floor->sector->floorheight - (backsector->floorheight));
 			if (fs < bs)
@@ -274,8 +274,8 @@ void T_MoveFloor(floormove_t *floor)
 		const fixed_t origspeed = FixedMul(floor->origSpeed, (FRACUNIT/2));
 		if (frontsector && backsector)
 		{
-			const fixed_t fs = D_abs(floor->sector->floorheight - (frontsector->ceilingheight));
-			const fixed_t bs = D_abs(floor->sector->floorheight - (backsector->ceilingheight));
+			const fixed_t fs = D_abs(floor->sector->ceilingheight - (frontsector->ceilingheight));
+			const fixed_t bs = D_abs(floor->sector->ceilingheight - (backsector->ceilingheight));
 			if (fs < bs)
 				floor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
 			else
@@ -345,7 +345,7 @@ void T_MoveFloor(floormove_t *floor)
 							{
 								fixed_t outX = node->x;
 								fixed_t outY = node->y;
-								//P_ThrustValues(ang << ANGLETOFINESHIFT, 112*FRACUNIT, &outX, &outY);
+								P_ThrustValues(ang << ANGLETOFINESHIFT, 112*FRACUNIT, &outX, &outY);
 								P_SpawnMobj(outX, outY, node->z, MT_EXPLODE);
 							}
 
@@ -532,7 +532,13 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 				}
 
 				floor->floorwasheight = sec->floorheight >> FRACBITS;
-				floor->crush = sides[line->sidenum[0]].rowoffset; // initial delay
+
+				side_t *side = &sides[line->sidenum[0]];
+				int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
+      			rowoffset >>= 4; // sign extend
+
+				floor->delay = rowoffset; // initial delay
+				floor->delayTimer = floor->delay;
 				break;
 			case lowerFloor:
 				floor->direction = -1;
