@@ -106,7 +106,7 @@ static VINT saveslot;
 static VINT savecount;
 static VINT prevsaveslot;
 static VINT saveslotmap;
-static VINT saveslotskill;
+//static VINT saveslotskill;
 static VINT saveslotmode;
 
 static char displaymapname[32];
@@ -379,7 +379,7 @@ static char* M_MapName(VINT mapnum)
 	return displaymapname;
 }
 
-static void M_UpdateSaveInfo(void)
+/*static void M_UpdateSaveInfo(void)
 {
 	if (prevsaveslot != saveslot) {
 		prevsaveslot = saveslot;
@@ -388,7 +388,7 @@ static void M_UpdateSaveInfo(void)
 		saveslotmode = gt_single;
 		GetSaveInfo(saveslot, &saveslotmap, &saveslotskill, &saveslotmode);
 	}
-}
+}*/
 
 /*
 =================
