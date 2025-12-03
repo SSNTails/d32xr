@@ -922,6 +922,15 @@ void P_Start (void)
 	/* load a level */
 	G_DoLoadLevel();
 
+	if (IsLevel()) {
+		if (startmap >= SSTAGE_START && startmap <= SSTAGE_END) {
+			SetLevel(LevelType_SpecialStage);
+		}
+		else {
+			SetLevel(LevelType_Normal);
+		}
+	}
+
 #ifndef MARS
 	S_RestartSounds ();
 #endif

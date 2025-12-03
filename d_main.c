@@ -881,6 +881,7 @@ void STOP_LevelSelect (void)
 	}
 	Z_Free(hudNumberFont.charCache);
 	hudNumberFont.charCache = NULL;
+	hudNumberFont.charCacheLength = 0;
 #endif
 
 	ClearCopper();
