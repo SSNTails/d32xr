@@ -743,8 +743,8 @@ void M_Drawer (void)
 
 		if (scrpos == ms_help) {
 			if (titleTicker < 4) {
-				const colormap = 12*256;	// 75% dark
-				const fillcolor = 0x8B;		// Dark blue
+				const int colormap = 12*256;	// 75% dark
+				const int fillcolor = 0x8B;		// Dark blue
 
 				// Clear the entire screen.
 				I_FillFrameBuffer(fillcolor);

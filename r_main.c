@@ -140,7 +140,7 @@ uint8_t *skystretch/*[SCREENWIDTH/2]*/;
 /* performance counters */
 /* */
 VINT t_ref_cnt = 0;
-int t_ref_bsp[4], t_ref_prep[4], t_ref_segs[4], t_ref_planes[4], t_ref_sprites[4], t_ref_total[4];
+int t_ref_bsp[4], t_ref_segs[4], t_ref_planes[4], t_ref_sprites[4], t_ref_total[4];
 
 r_texcache_t r_texcache;
 
@@ -1877,7 +1877,7 @@ void R_RenderPlayerView(int displayplayer)
 
 void R_RenderPlayerView(int displayplayer)
 {
-	int t_bsp, t_prep, t_segs, t_planes, t_sprites, t_total;
+	int t_bsp, t_segs, t_planes, t_sprites, t_total;
 	boolean drawworld = true;//!(optionsMenuOn);
 	__attribute__((aligned(16)))
 		visplane_t visplanes_[MAXVISPLANES];
@@ -1915,8 +1915,6 @@ void R_RenderPlayerView(int displayplayer)
 		return;
 	}
 
-	t_prep = I_GetFRTCounter() - t_prep;
-
 	t_segs = I_GetFRTCounter();
 	R_SegCommands();
 	t_segs = I_GetFRTCounter() - t_segs;
@@ -1945,7 +1943,6 @@ void R_RenderPlayerView(int displayplayer)
 
 	t_ref_cnt = (t_ref_cnt + 1) & 3;
 	t_ref_bsp[t_ref_cnt] = t_bsp;
-	t_ref_prep[t_ref_cnt] = t_prep;
 	t_ref_segs[t_ref_cnt] = t_segs;
 	t_ref_planes[t_ref_cnt] = t_planes;
 	t_ref_sprites[t_ref_cnt] = t_sprites;

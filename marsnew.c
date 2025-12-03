@@ -76,7 +76,7 @@ static volatile pixel_t *framebufferend = &MARS_FRAMEBUFFER + 0x10000;
 
 #define jo_stbar_height 22
 
-extern int t_ref_bsp[4], t_ref_prep[4], t_ref_segs[4], t_ref_planes[4], t_ref_sprites[4], t_ref_total[4];
+extern int t_ref_bsp[4], t_ref_segs[4], t_ref_planes[4], t_ref_sprites[4], t_ref_total[4];
 
 static volatile mars_tls_t mars_tls_pri, mars_tls_sec;
 static uint32_t mars_rom_bsw_start = 0;
@@ -761,7 +761,7 @@ void I_Update(void)
 
 #ifdef MDSKY
 	if (sky_md_layer) {
-		unsigned short scroll_x = (*((unsigned short *)&vd.viewangle) >> 6);
+		unsigned short scroll_x = vd.viewangle >> 22;
 
 		if (h40_sky) {
 			// Use this to scroll the sky 1280 pixels. Works well for 256-width skies.

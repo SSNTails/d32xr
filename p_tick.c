@@ -800,7 +800,8 @@ void DrawSinglePlaque (jagobj_t *pl)
 ============= 
 */ 
  
- 
+void ClearViewportOverdraw(void); // marsdraw.c
+
 void P_Drawer (void) 
 { 	
 	static boolean o_wasactive = false;

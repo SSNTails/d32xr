@@ -128,7 +128,7 @@ int V_DrawStringLeftWithColormap(const font_t *font, int x, int y, const char *s
                 int charnum = (c - font->lumpStartChar);
                 if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
                     if (colormap) {
-                        DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
+                        DrawJagobjWithColormap(font->charCache[charnum], x, y, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
                     }
                     else {
                         DrawJagobj(font->charCache[charnum], x, y);
@@ -150,7 +150,7 @@ int V_DrawStringLeftWithColormap(const font_t *font, int x, int y, const char *s
                 int charnum = (c - font->lumpStartChar);
                 if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
                     if (colormap) {
-                        DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
+                        DrawJagobjWithColormap(font->charCache[charnum], x, y, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
                     }
                     else {
                         DrawJagobj(font->charCache[charnum], x, y);
@@ -215,7 +215,7 @@ int V_DrawStringRightWithColormap(const font_t *font, int x, int y, const char *
                 int charnum = (c - font->lumpStartChar);
                 if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
                     if (colormap) {
-                        DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
+                        DrawJagobjWithColormap(font->charCache[charnum], x, y, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
                     }
                     else {
                         DrawJagobj(font->charCache[charnum], x, y);
@@ -235,7 +235,7 @@ int V_DrawStringRightWithColormap(const font_t *font, int x, int y, const char *
                 int charnum = (c - font->lumpStartChar);
                 if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
                     if (colormap) {
-                        DrawJagobjWithColormap(font->charCache[charnum], x, y, NULL, NULL, NULL, NULL, I_OverwriteBuffer(), colormap);
+                        DrawJagobjWithColormap(font->charCache[charnum], x, y, 0, 0, 0, 0, I_OverwriteBuffer(), colormap);
                     }
                     else {
                         DrawJagobj(font->charCache[charnum], x, y);
