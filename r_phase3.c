@@ -86,7 +86,7 @@ static void R_PrepMobj(mobj_t *thing)
    if (lump >= numlumps)
    {
       // Carmack had a frame validity check in here, so it must be important.
-//      CONS_Printf("Mobj type %d has corruption. (%d)", thing->type, thing->state);
+      CONS_Printf("R_PrepMobj: %d, %d, %d, %d\n %d, %d, %d, %d, %d", thing->type, thing->state, lump, flip, sprlump[0], sprframe->lump, frame, thing->angle, ang);
       return;
    }
 
