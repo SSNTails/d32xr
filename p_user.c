@@ -1162,7 +1162,10 @@ void P_DoPlayerExit(player_t *player)
 		floor->floordestheight = 
 			(inner->floorheight>>FRACBITS) - 8;
 
-		outer->floorheight -= 64*FRACUNIT;
+		if (gamemapinfo.mapNumber == 3)
+			outer->floorheight -= 64*FRACUNIT;
+		else
+			outer->floorheight -= 80*FRACUNIT;
 
 		for (int i = 0; i < numsides; i++)
 		{
