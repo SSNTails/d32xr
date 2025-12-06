@@ -220,6 +220,8 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
    {
       if (!player->exiting && player->stillTimer > TICRATE/2 && !(player->buttons & (BT_CAMLEFT | BT_CAMRIGHT)))
          angle = focusangle = mo->angle;
+	  else if (player->pflags & PF_STARTDASH)
+	  	 angle = focusangle = mo->angle;
       else
          angle = focusangle = R_PointToAngle2(thiscam->x, thiscam->y, mo->x, mo->y);
    }
