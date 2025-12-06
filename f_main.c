@@ -14,7 +14,7 @@ typedef struct
 
 creditcard_t creditCards[] = {
 	{"C_STJR",   "SONIC ROBO BLAST",     "32X",              "STAFF", "" },
-	{NULL, "TRACKING",                NULL,         "Cryptik\n\nWessquiid\n\nNerreave\n\nNotQuiteHere\n\nJoy Tay\n\nJustKam", "" },
+	{NULL, "TRACKING",                NULL,         "Cryptik\n\nWessquiid\n\nNerreave\n\nNotQuiteHere\n\nJoy Tay\n\nJustKam\n\nMattM4nia", "" },
 	{"C_SAXMAN", "PROGRAMMING",          "Saxman",           "MegaDrive & 32X\nAssembly\nAdditional programming\nTools", "rumble.com/user\n/ymtx81z" },
 	{"C_SSN",    "PROGRAMMING",          "SSNTails",         "Project Lead\nGameplay\nEngine Enhancements\nAdditional Art",            "x.com/@SSNTails\nyoutube.com\n/@ssntails" },
 	{"C_VIC",    "SPECIAL THANKS",       "Viciious",         "Doom 32X:\nResurrection\nDoom CD32X:\nFusion",             "x.com/vluchitz" },
@@ -30,7 +30,7 @@ static VINT cardPFP = 0;
 static VINT cardTimer = 0;
 static VINT curCard = 0;
 
-static VINT trackerCards[6];
+static VINT trackerCards[7];
 
 static void F_DrawBackground(void)
 {
@@ -76,6 +76,7 @@ void F_Start (void)
 	trackerCards[3] = W_GetNumForName("C_TRACK4");
 	trackerCards[4] = W_GetNumForName("C_TRACK5");
 	trackerCards[5] = W_GetNumForName("C_TRACK6");
+	trackerCards[6] = W_GetNumForName("C_TRACK7");
 
 	S_StartSong(gameinfo.victoryMus, 1, cdtrack_end);
 
@@ -173,6 +174,7 @@ void F_Drawer (void)
 		DrawJagobjLump(trackerCards[3], 24, 64+48, NULL, NULL);
 		DrawJagobjLump(trackerCards[4], 24+48, 64+48, NULL, NULL);
 		DrawJagobjLump(trackerCards[5], 24+48+48, 64+48, NULL, NULL);
+		DrawJagobjLump(trackerCards[6], 24+48, 64+48+48, NULL, NULL);
 
 		V_DrawStringLeft(&menuFont, 160+8, 64, card->didWhat);
 	}
