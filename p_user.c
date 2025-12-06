@@ -1323,25 +1323,28 @@ void P_MovePlayer(player_t *player)
 		if (player->pflags & PF_STARTDASH)
 		{
 			angle_t controlAngleDelta = (player->mo->angle - controlAngle);
-			angle_t controlAngleDeltaAdjusted = controlAngleDelta;	// Gets adjusted
-
-			// Angle zero is straight forward. Consider these quadrants accordingly.
-			angle_t angleIncQ4;	// right-side of forward
-			angle_t angleIncQ1; // left-side of forward
-			angle_t angleIncQ2; // left-side of backward
-			angle_t angleIncQ3; // right-side of backward
 
 			if ((player->buttons & DPAD_BTNMASK) == BT_UP || (player->buttons & DPAD_BTNMASK) == BT_DOWN)
 			{
+				// Only up or down is pressed on the D-pad.
+
+				angle_t controlAngleDeltaAdjusted;
+
+				// Angle zero is straight forward. Consider these quadrants accordingly.
+				angle_t angleIncQ4;	// right-side of forward
+				angle_t angleIncQ1; // left-side of forward
+				angle_t angleIncQ2; // left-side of backward
+				angle_t angleIncQ3; // right-side of backward
+
 				if ((player->buttons & DPAD_BTNMASK) == BT_UP) {
-					//controlAngleDeltaAdjusted += 0;
+					controlAngleDeltaAdjusted = controlAngleDelta;
 					angleIncQ4 = SPINDASH_SLOW_ANGLE_INC;
 					angleIncQ1 = -SPINDASH_SLOW_ANGLE_INC;
 					angleIncQ2 = -SPINDASH_FAST_ANGLE_INC;
 					angleIncQ3 = SPINDASH_FAST_ANGLE_INC;
 				}
 				else {
-					controlAngleDeltaAdjusted += ANG180;
+					controlAngleDeltaAdjusted = controlAngleDelta + ANG180;
 					angleIncQ4 = -SPINDASH_FAST_ANGLE_INC;
 					angleIncQ1 = SPINDASH_FAST_ANGLE_INC;
 					angleIncQ2 = SPINDASH_SLOW_ANGLE_INC;
@@ -1366,6 +1369,8 @@ void P_MovePlayer(player_t *player)
 				}
 			}
 			else if (player->buttons & (BT_RIGHT|BT_LEFT)) {
+				// Any D-pad combination that involves left or right being pressed.
+
 				if (controlAngleDelta < ANG180) {
 					if (controlAngleDelta >= SPINDASH_SLOW_ANGLE_INC+4) {
 						player->mo->angle -= SPINDASH_SLOW_ANGLE_INC;
