@@ -738,54 +738,57 @@ static void P_DoSpinDash(player_t *player)
 
 	if (!player->exiting && !(player->mo->state == mobjinfo[player->mo->type].painstate && player->powers[pw_flashing]))
 	{
-		if ((buttons & BT_SPIN) && player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
+		if (buttons & BT_SPIN)
 		{
-			P_ResetScore(player);
-			player->mo->momx = player->cmomx;
-			player->mo->momy = player->cmomy;
-			player->pflags |= PF_STARTDASH;
-			player->pflags |= PF_SPINNING;
-			player->dashSpeed = 1;
-			P_SetMobjState(player->mo, S_PLAY_DASH1);
-			S_StartSound(player->mo, sfx_s3k_ab);
-			player->pflags |= PF_USEDOWN;
-			if (player->pflags & PF_VERTICALFLIP)
-				player->mo->z = player->mo->ceilingz - P_GetPlayerSpinHeight();
-		}
-		else if ((buttons & BT_SPIN) && (player->pflags & PF_STARTDASH))
-		{
-			if (player->speed > 5*FRACUNIT)
+			if (player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
 			{
-				player->pflags &= ~PF_STARTDASH;
+				P_ResetScore(player);
+				player->mo->momx = player->cmomx;
+				player->mo->momy = player->cmomy;
+				player->pflags |= PF_STARTDASH;
 				player->pflags |= PF_SPINNING;
+				player->dashSpeed = 1;
 				P_SetMobjState(player->mo, S_PLAY_DASH1);
-				S_StartSound(player->mo, sfx_s3k_3c);
+				S_StartSound(player->mo, sfx_s3k_ab);
+				player->pflags |= PF_USEDOWN;
 				if (player->pflags & PF_VERTICALFLIP)
 					player->mo->z = player->mo->ceilingz - P_GetPlayerSpinHeight();
-
-				return;
 			}
+			else if (player->pflags & PF_STARTDASH)
+			{
+				if (player->speed > 5*FRACUNIT)
+				{
+					player->pflags &= ~PF_STARTDASH;
+					player->pflags |= PF_SPINNING;
+					P_SetMobjState(player->mo, S_PLAY_DASH1);
+					S_StartSound(player->mo, sfx_s3k_3c);
+					if (player->pflags & PF_VERTICALFLIP)
+						player->mo->z = player->mo->ceilingz - P_GetPlayerSpinHeight();
 
-			int soundplay = (6*player->dashSpeed) / 60;
-			player->dashSpeed++;
-			if (player->dashSpeed > 60)
-				player->dashSpeed = 60;
+					return;
+				}
 
-			if ((6*player->dashSpeed) / 60 != soundplay)
-				S_StartSound(player->mo, sfx_s3k_ab);
-		}
-		// If not moving up or down, and travelling faster than a speed of four while not holding
-		// down the spin button and not spinning.
-		// AKA Just go into a spin on the ground, you idiot. ;)
-		else if ((buttons & BT_SPIN) && !player->mo->momz && onground && player->speed > 5*FRACUNIT && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
-		{
-			P_ResetScore(player);
-			player->pflags |= PF_SPINNING;
-			P_SetMobjState(player->mo, S_PLAY_ATK1);
-			S_StartSound(player->mo, sfx_s3k_3c);
-			player->pflags |= PF_USEDOWN;
-			if (player->pflags & PF_VERTICALFLIP)
-				player->mo->z = player->mo->ceilingz - P_GetPlayerSpinHeight();
+				int soundplay = (6*player->dashSpeed) / 60;
+				player->dashSpeed++;
+				if (player->dashSpeed > 60)
+					player->dashSpeed = 60;
+
+				if ((6*player->dashSpeed) / 60 != soundplay)
+					S_StartSound(player->mo, sfx_s3k_ab);
+			}
+			// If not moving up or down, and travelling faster than a speed of four while not holding
+			// down the spin button and not spinning.
+			// AKA Just go into a spin on the ground, you idiot. ;)
+			else if (!player->mo->momz && onground && player->speed > 5*FRACUNIT && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
+			{
+				P_ResetScore(player);
+				player->pflags |= PF_SPINNING;
+				P_SetMobjState(player->mo, S_PLAY_ATK1);
+				S_StartSound(player->mo, sfx_s3k_3c);
+				player->pflags |= PF_USEDOWN;
+				if (player->pflags & PF_VERTICALFLIP)
+					player->mo->z = player->mo->ceilingz - P_GetPlayerSpinHeight();
+			}
 		}
 
 		if (onground && (player->pflags & PF_SPINNING) && !(player->pflags & PF_STARTDASH)
@@ -1319,7 +1322,71 @@ void P_MovePlayer(player_t *player)
 
 		if (player->pflags & PF_STARTDASH)
 		{
-			player->mo->angle = controlAngle;
+			angle_t controlAngleDelta = (player->mo->angle - controlAngle);
+			angle_t controlAngleDeltaAdjusted = controlAngleDelta;	// Gets adjusted
+
+			// Angle zero is straight forward. Consider these quadrants accordingly.
+			angle_t angleIncQ4;	// right-side of forward
+			angle_t angleIncQ1; // left-side of forward
+			angle_t angleIncQ2; // left-side of backward
+			angle_t angleIncQ3; // right-side of backward
+
+			if ((player->buttons & DPAD_BTNMASK) == BT_UP || (player->buttons & DPAD_BTNMASK) == BT_DOWN)
+			{
+				if ((player->buttons & DPAD_BTNMASK) == BT_UP) {
+					//controlAngleDeltaAdjusted += 0;
+					angleIncQ4 = SPINDASH_SLOW_ANGLE_INC;
+					angleIncQ1 = -SPINDASH_SLOW_ANGLE_INC;
+					angleIncQ2 = -SPINDASH_FAST_ANGLE_INC;
+					angleIncQ3 = SPINDASH_FAST_ANGLE_INC;
+				}
+				else {
+					controlAngleDeltaAdjusted += ANG180;
+					angleIncQ4 = -SPINDASH_FAST_ANGLE_INC;
+					angleIncQ1 = SPINDASH_FAST_ANGLE_INC;
+					angleIncQ2 = SPINDASH_SLOW_ANGLE_INC;
+					angleIncQ3 = -SPINDASH_SLOW_ANGLE_INC;
+				}
+
+				if (controlAngleDelta < SPINDASH_SLOW_ANGLE_INC
+						|| controlAngleDelta >= (~SPINDASH_SLOW_ANGLE_INC)+1) {
+					player->mo->angle = controlAngle;	// Snap into the forward direction.
+				}
+				else if (controlAngleDeltaAdjusted > ANG270) {
+					player->mo->angle += angleIncQ4;
+				}
+				else if (controlAngleDeltaAdjusted < ANG90) {
+					player->mo->angle += angleIncQ1;
+				}
+				else if (controlAngleDeltaAdjusted > ANG90 && controlAngleDeltaAdjusted < ANG180) {
+					player->mo->angle += angleIncQ2;
+				}
+				else if (controlAngleDeltaAdjusted < ANG270 && controlAngleDeltaAdjusted >= ANG180) {
+					player->mo->angle += angleIncQ3;
+				}
+			}
+			else if (player->buttons & (BT_RIGHT|BT_LEFT)) {
+				if (controlAngleDelta < ANG180) {
+					if (controlAngleDelta >= SPINDASH_SLOW_ANGLE_INC+4) {
+						player->mo->angle -= SPINDASH_SLOW_ANGLE_INC;
+					}
+					else if (controlAngleDelta > 4) {
+						player->mo->angle -= (controlAngleDelta - 4);
+					}
+				}
+				else {
+					if (controlAngleDelta <= -(SPINDASH_SLOW_ANGLE_INC+4)) {
+						player->mo->angle += SPINDASH_SLOW_ANGLE_INC;
+					}
+					else if (controlAngleDelta > -4) {
+						player->mo->angle += (controlAngleDelta + 4);
+					}
+				}
+			}
+
+			if (player->buttons & DPAD_BTNMASK) {
+				player->mo->angle ^= 1;	// Prevent camera from moving.
+			}
 		}
 		else if (player->pflags & PF_SPINNING)
 		{
