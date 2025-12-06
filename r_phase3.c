@@ -26,8 +26,8 @@ static void R_PrepMobj(mobj_t *thing)
    vissprite_t  *vis;
    VINT         *sprlump;
    VINT          lump;
-   int        flip;
-   const int doubleWide = (thing->flags2 & MF2_NARROWGFX) ? 2 : 1; // Sprites have half the horizontal resolution (like scenery)
+   VINT        flip;
+   const VINT doubleWide = (thing->flags2 & MF2_NARROWGFX) ? 2 : 1; // Sprites have half the horizontal resolution (like scenery)
    const sector_t *sec = SS_SECTOR(thing->isubsector);
 
    // TODO: This is not technically correct, but is a quick way to remove some draw-through
