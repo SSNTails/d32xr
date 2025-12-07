@@ -741,6 +741,7 @@ static void P_DoSpinDash(player_t *player)
 		if ((buttons & BT_SPIN) && player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
 		{
 			P_ResetScore(player);
+			player->mo->angle = camera.angle;
 			player->mo->momx = player->cmomx;
 			player->mo->momy = player->cmomy;
 			player->pflags |= PF_STARTDASH;
@@ -1309,7 +1310,9 @@ void P_MovePlayer(player_t *player)
 	/* don't let the player control movement if not onground */
 	const boolean onground = (player->mo->z <= player->mo->floorz);
 
-	if (player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL))
+	if (player->pflags & PF_STARTDASH)
+		player->mo->angle -= player->sidemove << 9;
+	else if (player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL))
 	{
 		camera_t *thiscam = &camera;
 		fixed_t controlX = 0;
