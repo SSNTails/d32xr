@@ -1504,8 +1504,9 @@ void P_MovePlayer(player_t *player)
 	{
 		if (player->mo->target)
 		{
-			if (player->mo->target->health <= 0)
+			if (!(player->mo->target->flags & MF_RINGMOBJ) && player->mo->target->health <= 0)
 			{
+				player->mo->target = NULL;
 				player->mo->momx >>= 1;
 				player->mo->momy >>= 1;
 				player->mo->momz >>= 1;
