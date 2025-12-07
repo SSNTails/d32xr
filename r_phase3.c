@@ -85,8 +85,13 @@ static void R_PrepMobj(mobj_t *thing)
 
    if (lump >= numlumps)
    {
+#ifndef SHOW_DISCLAIMER
       // Carmack had a frame validity check in here, so it must be important.
-      CONS_Printf("R_PrepMobj: %d, %d, %d, %d\n %d, %d, %d, %d, %d", thing->type, thing->state, lump, flip, sprlump[0], sprframe->lump, frame, thing->angle, ang);
+      CONS_Printf("R_PrepMobj: %d, %d, %d, %d\n %d, %d, %d, %d, %d\n%d", thing->type, thing->state, lump, flip,
+         sprlump[0], sprframe->lump, frame, thing->angle, ang,
+         sprdef->firstframe);
+#endif
+
       return;
    }
 

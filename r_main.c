@@ -877,12 +877,11 @@ static boolean IsRotatedFlat(uint8_t flatnum)
 */
 void R_SetFlatData(int f, uint8_t *start, int size)
 {
-	int j;
-	int w = CalcFlatSize(size);
+	VINT w = CalcFlatSize(size);
 	uint8_t *data = start;
 
 #ifdef FLATMIPS
-	for (j = 0; j < MIPLEVELS; j++)
+	for (int j = 0; j < MIPLEVELS; j++)
 	{
 		flatpixels[f].data[j] = data;
 		flatpixels[f].size = w;
@@ -900,23 +899,13 @@ void R_SetFlatData(int f, uint8_t *start, int size)
 		}
 	}
 #else
-	for (j = 0; j < 1; j++)
-	{
-		flatpixels[f].data[j] = data;
-		flatpixels[f].size = w;
-		flatpixels[f].flags = 0;
-		if (IsWavyFlat(f))
-			flatpixels[f].flags |= FLF_WAVY;
-		if (IsRotatedFlat(f))
-			flatpixels[f].flags |= FLF_ROTATE;
-		if (texmips) {
-			data += w * w;
-			w >>= 1;
-
-			if (w < 1)
-				w = 1;
-		}
-	}
+	flatpixels[f].data[0] = data;
+	flatpixels[f].size = w;
+	flatpixels[f].flags = 0;
+	if (IsWavyFlat(f))
+		flatpixels[f].flags |= FLF_WAVY;
+	if (IsRotatedFlat(f))
+		flatpixels[f].flags |= FLF_ROTATE;
 #endif
 }
 

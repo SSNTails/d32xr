@@ -200,8 +200,6 @@ typedef struct
 
 typedef struct
 {
-	VINT size;
-	VINT flags;
 #ifdef MARS
 #if FLATMIPS
 	inpixel_t 	*data[MIPLEVELS];
@@ -211,6 +209,8 @@ typedef struct
 #else
 	pixel_t		*data[MIPLEVELS];			/* cached data to draw from */
 #endif
+	VINT size;
+	VINT flags;
 } flattex_t;
 
 /*

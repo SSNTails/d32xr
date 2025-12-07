@@ -303,7 +303,8 @@ void R_InitFlats (void)
 	for (i=0 ; i<numflats ; i++)
 		flattranslation[i] = i;
 
-	flatpixels = Z_Malloc(numflats * sizeof(*flatpixels), PU_STATIC);
+	// TODO: Avoid clubbing spriteframes by doubling this allocation... but WHY?
+	flatpixels = Z_Malloc(numflats * sizeof(*flatpixels) * 2, PU_STATIC);
 
 #if MIPLEVELS > 1 && FLATMIPS
 	// detect mip-maps
