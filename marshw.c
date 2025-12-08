@@ -901,7 +901,8 @@ void pri_vbi_handler(void)
 	}
 
 	// Update copper buffer
-	if (effects_flags & EFFECTS_COPPER_ENABLED && effects_flags & EFFECTS_COPPER_REFRESH)
+	if (effects_flags & EFFECTS_COPPER_ENABLED && effects_flags & EFFECTS_COPPER_REFRESH 
+			&& copper_source_table[copper_table_selection>>4] != NULL)
 	{
 		unsigned short *buffer = copper_buffer;
 
