@@ -300,31 +300,6 @@ void I_Init (void)
 
 	Mars_SetBrightness(1);
 
-	doompalette = W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4), dc_cshift_playpals);
-
-	// look up palette indices for black and white colors
-	// if the black color isn't present, use the darkest one
-	minr = 255;
-	maxr = 0;
-	for (i = 1; i < 256; i++)
-	{
-		unsigned r = doompalette[i * 3 + 0];
-		unsigned g = doompalette[i * 3 + 1];
-		unsigned b = doompalette[i * 3 + 2];
-		if (r != g || r != b) {
-			continue;
-		}
-		if (r <= minr) {
-			minr = r;
-			COLOR_BLACK = i;
-		}
-		if (r > maxr) {
-			maxr = r;
-			COLOR_WHITE = i;
-		}
-	}
-
 	Mars_CommSlaveClearCache();
 }
 
