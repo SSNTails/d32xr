@@ -280,7 +280,6 @@ void I_Init (void)
 {	
 	int	i;
 	unsigned minr, maxr;
-	const byte	*doompalette;
 
 	// init thread-local storage
 	mars_tls_pri.bank = 6;
