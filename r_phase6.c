@@ -718,12 +718,12 @@ void Mars_Sec_R_SegCommands(void)
         }
         if (segl->actionbits & AC_ADDFLOOR)
         {
-            flattex_t *flat = &flatpixels[LOWER8(segl->floorceilpicnum)];
+            flattex_t *flat = &flatpixels[segl->floorpicnum];
             Mars_ClearCacheLines(flat->data, (sizeof(flat->data)+31)/16);
         }
         if (segl->actionbits & AC_ADDCEILING)
         {
-            flattex_t *flat = &flatpixels[UPPER8(segl->floorceilpicnum)];
+            flattex_t *flat = &flatpixels[segl->ceilpicnum];
             Mars_ClearCacheLines(flat->data, (sizeof(flat->data)+31)/16);
         }
     }

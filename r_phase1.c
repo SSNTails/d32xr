@@ -222,21 +222,21 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
   
       if (f_floorpic != 0xff)
       {
-          SETLOWER8(segl->floorceilpicnum, flattranslation[f_floorpic]);
+          segl->floorpicnum = flattranslation[f_floorpic];
           segl->floor_offs = front_sector->floor_xoffs;
       }
       else
       {
-          SETLOWER8(segl->floorceilpicnum, (uint8_t)-1);
+          segl->floorpicnum = (uint8_t)-1;
           segl->floor_offs = 0;
       }
 
       if (f_ceilingpic != 0xff)
       {
-          SETUPPER8(segl->floorceilpicnum, flattranslation[f_ceilingpic]);
+         segl->ceilpicnum = flattranslation[f_ceilingpic];
       }
       else
-          SETUPPER8(segl->floorceilpicnum, (uint8_t)-1);
+         segl->ceilpicnum = (uint8_t)-1;
 
       segl->m_texturenum = (uint8_t)-1;
       segl->fof_texturenum = (uint8_t)-1;

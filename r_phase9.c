@@ -118,7 +118,7 @@ static void R_UpdateCache(void)
 
 //      if (detailmode != detmode_potato)
       {
-        flattex_t *flat = &flatpixels[LOWER8(wall->floorceilpicnum)];
+        flattex_t *flat = &flatpixels[wall->floorpicnum];
 
         if (minplanemip < 0)
           minplanemip = 0;
@@ -131,18 +131,18 @@ static void R_UpdateCache(void)
 
         for (i = minplanemip; i <= maxplanemip; i++) {
             if (!R_TouchIfInTexCache(&r_texcache, flat->data[i]) && (bestmips[i] < 0)) {
-                bestmips[i] = numtextures+LOWER8(wall->floorceilpicnum);
+                bestmips[i] = numtextures+wall->floorpicnum;
             }
         }
 
-        if (UPPER8(wall->floorceilpicnum) == (uint8_t)-1) {
+        if (wall->ceilpicnum == (uint8_t)-1) {
             continue;
         }
 
-        flat = &flatpixels[UPPER8(wall->floorceilpicnum)];
+        flat = &flatpixels[wall->ceilpicnum];
         for (i = minplanemip; i <= maxplanemip; i++) {
             if (!R_TouchIfInTexCache(&r_texcache, flat->data[i]) && (bestmips[i] < 0)) {
-                bestmips[i] = numtextures+UPPER8(wall->floorceilpicnum);
+                bestmips[i] = numtextures+wall->ceilpicnum;
             }
         }
       }

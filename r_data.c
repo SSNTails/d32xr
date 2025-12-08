@@ -304,7 +304,7 @@ void R_InitFlats (void)
 		flattranslation[i] = i;
 
 	// TODO: Avoid clubbing spriteframes by doubling this allocation... but WHY?
-	flatpixels = Z_Malloc(numflats * sizeof(*flatpixels) * 2, PU_STATIC);
+	flatpixels = Z_Malloc(numflats * sizeof(*flatpixels), PU_STATIC);
 
 #if MIPLEVELS > 1 && FLATMIPS
 	// detect mip-maps
@@ -749,6 +749,7 @@ void R_InitSpriteDefs(const char** namelist)
 	}
 
 	spriteframes = Z_Malloc(totalframes * sizeof(spriteframe_t), PU_STATIC);
+//	I_Error(" %x to %x", spriteframes, spriteframes + (totalframes * sizeof(spriteframe_t)));
 	sprtemp = (void*)tempbuf;
 	lumps = Z_Malloc(totallumps * sizeof(*lumps), PU_STATIC);
 	spritelumps = lumps;
