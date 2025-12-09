@@ -864,7 +864,7 @@ void P_DoBossVictory(mobj_t *mo)
 	outer->specialdata = LPTR_TO_SPTR(floor);
 	floor->thinker.function = T_MoveFloor;
 	floor->type = eggCapsuleOuter;
-	floor->crush = false;
+	floor->crush = true;
 	floor->direction = 1;
 	floor->sector = outer;
 	floor->speed = 2*FRACUNIT;
@@ -878,7 +878,7 @@ void P_DoBossVictory(mobj_t *mo)
 	inner->specialdata = LPTR_TO_SPTR(floor);
 	floor->thinker.function = T_MoveFloor;
 	floor->type = eggCapsuleInner;
-	floor->crush = false;
+	floor->crush = true;
 	floor->direction = 1;
 	floor->sector = inner;
 	floor->speed = 2*FRACUNIT;
