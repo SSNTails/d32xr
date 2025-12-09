@@ -225,7 +225,7 @@ static void R_UpdateCache(void)
       if (pixels > 65535 || id - numtextures == 0xff || id < 0)
         continue;
 
-        R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata);
+      R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata);
 
       if (debugmode == DEBUGMODE_TEXCACHE)
         continue;

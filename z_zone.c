@@ -83,8 +83,11 @@ void Z_Init (void)
 =
 ========================
 */
-
+#ifdef MEMDEBUG
 void Z_Free2 (memzone_t *memzone, void *ptr, const char *file, int line)
+#else
+void Z_Free2 (memzone_t *memzone, void *ptr)
+#endif
 {
 	memblock_t	*block, *adj;
 	
@@ -107,9 +110,7 @@ void Z_Free2 (memzone_t *memzone, void *ptr, const char *file, int line)
 		adj->next = block->next;
 #ifdef MEMDEBUG
 		if (memzone != mainzone && adj->next == NULL)
-		{
 			CONS_Printf("Null adj->next for block size %d", block->size);
-		}
 #endif
 		adj->next->prev = adj; // If adj->next is null and not mainzone...
 		adj->size += block->size;
@@ -279,7 +280,13 @@ void Z_FreeTags (memzone_t *memzone)
 		if (!block->tag)
 			continue;			/* free block */
 		if (block->tag == PU_LEVEL || block->tag == PU_LEVSPEC)
+		{
+#ifdef MEMDEBUG
 			Z_Free2 (memzone, (byte *)block+sizeof(memblock_t), __FILE__, __LINE__);
+#else
+			Z_Free2 (memzone, (byte *)block+sizeof(memblock_t));
+#endif
+		}
 	}
 }
 
