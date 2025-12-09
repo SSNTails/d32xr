@@ -254,7 +254,15 @@ void I_Error (char *error, ...)
 	D_vsnprintf(errormessage, sizeof(errormessage), error, ap);
 	va_end(ap);
 
+	h40_sky = 1;	// Get rid of the three-pixel shift.
+
 	I_ClearFrameBuffer();
+	RemoveDistortionFilters();
+	I_Print8 (0,0,errormessage);
+	UpdateBuffer();
+
+	I_ClearFrameBuffer();
+	RemoveDistortionFilters();
 	I_Print8 (0,0,errormessage);
 	I_Update ();
 

@@ -1165,8 +1165,6 @@ void START_Compatibility (void)
 
 	screenCount = 0;
 
-	UpdateBuffer();
-
 	I_SetPalette(dc_playpals);
 
 	R_InitColormap();
