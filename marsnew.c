@@ -278,9 +278,6 @@ int Mars_FRTCounter2Msec(int c)
 
 void I_Init (void) 
 {	
-	int	i;
-	unsigned minr, maxr;
-
 	// init thread-local storage
 	mars_tls_pri.bank = 6;
 	mars_tls_pri.bankpage = 6;
