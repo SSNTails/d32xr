@@ -872,10 +872,10 @@ typedef struct memblock_s
 	int		size;           /* including the header and possibly tiny fragments */
 	short   tag;            /* purgelevel */
 	short   id;             /* should be ZONEID */
-#ifdef MEMDEBUG
-	char file[16];
-	int line;
-#endif
+//#ifdef MEMDEBUG
+//	char file[16];
+//	int line;
+//#endif
 #ifndef MARS
 	int		lockframe;		/* don't purge on the same frame */
 #endif
@@ -905,20 +905,23 @@ int		Z_CalculateAllocSize(int datasize);
 #ifdef MEMDEBUG
 void 	*Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err, const char *file, int line);
 void    *Z_Calloc2 (memzone_t *mainzone, int size, int tag, boolean err, const char *file, int line);
+void 	Z_Free2 (memzone_t *mainzone,void *ptr, const char *file, int line);
 #else
 void 	*Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err);
 void    *Z_Calloc2 (memzone_t *mainzone, int size, int tag, boolean err);
+void    Z_Free2 (memzone_t *mainzone,void *ptr);
 #endif
-void 	Z_Free2 (memzone_t *mainzone,void *ptr);
 
 #ifdef MEMDEBUG
 #define Z_Malloc(x,y) Z_Malloc2(mainzone,x,y,true,__FILE__,__LINE__)
 #define Z_Calloc(x,y) Z_Calloc2(mainzone,x,y,true,__FILE__,__LINE__)
+#define Z_Free(x) Z_Free2(mainzone,x,__FILE__,__LINE__)
 #else
 #define Z_Malloc(x,y) Z_Malloc2(mainzone,x,y,true)
 #define Z_Calloc(x,y) Z_Calloc2(mainzone,x,y,true)
-#endif
 #define Z_Free(x) Z_Free2(mainzone,x)
+#endif
+
 
 #ifdef MEMDEBUG
 void Z_DumpHeap(memzone_t *mainzone, int skipCount);

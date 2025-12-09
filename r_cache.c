@@ -111,7 +111,11 @@ static void R_EvictFromTexCache(void* ptr, void* userp)
 	{
 		c->reqfreed++;
 		*entry->userp = entry->userpold;
+#ifdef MEMDEBUG
+		Z_Free2(c->zone, entry, __FILE__, __LINE__);
+#else
 		Z_Free2(c->zone, entry);
+#endif
 	}
 }
 
@@ -235,7 +239,11 @@ static void R_ForceEvictFromTexCache(void* ptr, void* userp)
 	r_texcache_t* c = userp;
 
 	*entry->userp = entry->userpold;
+#ifdef MEMDEBUG
+	Z_Free2(c->zone, entry, __FILE__, __LINE__);
+#else
 	Z_Free2(c->zone, entry);
+#endif
 }
 
 /*
