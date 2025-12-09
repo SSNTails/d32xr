@@ -647,17 +647,17 @@ typedef struct
 
 	int 		m_texturemid;
 
-	uint8_t 	m_texturenum;
+	VINT 	m_texturenum;
 #if MIPLEVELS > 1
-	uint8_t     newmiplevels; // 0 is lower, 1 is upper
+	VINT     newmiplevels; // 0 is lower, 1 is upper
 #endif
-	uint8_t     fof_texturenum; // wall texture for FOF
-	uint8_t     fof_picnum; // floor or ceiling pic for backsector FOF
-	uint8_t     t_texturenum;
-	uint8_t     b_texturenum;
+	VINT     fof_texturenum; // wall texture for FOF
+	VINT     fof_picnum; // floor or ceiling pic for backsector FOF
+	VINT     t_texturenum;
+	VINT     b_texturenum;
 
-	uint8_t     floorpicnum;
-	uint8_t     ceilpicnum;
+	VINT     floorpicnum;
+	VINT     ceilpicnum;
 
 #ifdef FLOOR_OVER_FLOOR
 	int16_t     fofSector; // backsector FOF
@@ -721,7 +721,7 @@ typedef struct
 	fixed_t    fofInfo;
 } viswallextra_t;
 
-#define	MAXWALLCMDS		168
+#define	MAXWALLCMDS		160
 
 /* A vissprite_t is a thing that will be drawn during a refresh */
 typedef struct vissprite_s

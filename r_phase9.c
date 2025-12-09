@@ -32,7 +32,7 @@ static void R_UpdateCache(void)
 #if MIPLEVELS <= 1
       int minmip = 0, maxmip = 0;
 #else
-      int minmip = wall->newmiplevels & 0xf, maxmip = wall->newmiplevels >> 4;
+      int minmip = wall->newmiplevels & 0xff, maxmip = wall->newmiplevels >> 8;
 #endif
       if (wall->realstart > wall->realstop)
         continue;
@@ -135,7 +135,8 @@ static void R_UpdateCache(void)
             }
         }
 
-        if (wall->ceilpicnum == (uint8_t)-1) {
+        if (wall->ceilpicnum == (uint8_t)-1
+          || wall->floorpicnum == (uint8_t)-1) {
             continue;
         }
 
@@ -220,7 +221,11 @@ static void R_UpdateCache(void)
         continue;
       }
 
-      R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata);
+      // Don't cache invalid IDs, and don't cache gigantic textures
+      if (pixels > 65535 || id - numtextures == 0xff || id < 0)
+        continue;
+
+        R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata);
 
       if (debugmode == DEBUGMODE_TEXCACHE)
         continue;
