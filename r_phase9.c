@@ -222,7 +222,7 @@ static void R_UpdateCache(void)
       }
 
       // Don't cache invalid IDs, and don't cache gigantic textures
-      if (pixels > 65535 || id - numtextures == 0xff || id < 0)
+      if (pixels > 65535 || id - numtextures == 0xff || id < 0 || id > 512)
         continue;
 
       R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata);
