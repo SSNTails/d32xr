@@ -582,10 +582,10 @@ void O_Control (player_t *player)
 
 void O_DrawHelp (VINT yPos)
 {
-	V_DrawStringCenter(&menuFont, 160, yPos - 96, "TIP: Use gas pedal for easier control");
+	V_DrawStringCenter(&menuFont, 160, yPos - 96, "TIP: Use gas pedal to 'drive'");
 
 	V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 32, "SONIC ROBO BLAST 32X", YELLOWTEXTCOLORMAP);
-	V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 20, "v0.2 DEMO", YELLOWTEXTCOLORMAP);
+	V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 20, "v0.3 DEMO", YELLOWTEXTCOLORMAP);
 
 	V_DrawStringRight(&menuFont, 160-8, yPos, "JUMP ");
 	V_DrawStringLeft(&menuFont, 160, yPos, "= B");
@@ -597,7 +597,7 @@ void O_DrawHelp (VINT yPos)
 	V_DrawStringLeft(&menuFont, 160, yPos + (12*3), "= X and Z");
 
 	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5), "INTENDED ONLY FOR NTSC SYSTEMS AND", YELLOWTEXTCOLORMAP);
-	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5) + 8, "PICODRIVE 2.04 & JGENESIS 0.10.0", YELLOWTEXTCOLORMAP);
+	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5) + 8, "PICODRIVE & JGENESIS", YELLOWTEXTCOLORMAP);
 
 	V_DrawStringCenter(&menuFont, 160, yPos + 80, "ssntails.srb2.org/srb32x");
 }

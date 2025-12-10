@@ -36,7 +36,7 @@ CCFLAGS += -DCPUDEBUG
 #CCFLAGS += -DHIDE_PLAYER
 #CCFLAGS += -DKIOSK_MODE
 CCFLAGS += -DSHOW_COMPATIBILITY_PROMPT
-#CCFLAGS += -DSHOW_DISCLAIMER
+CCFLAGS += -DSHOW_DISCLAIMER
 #CCFLAGS += -DBENCHMARK
 CCFLAGS += -DUSE_LZEXE
 LDFLAGS = -T mars-ssf.ld -Wl,-Map=output.map -nostdlib -Wl,--gc-sections,--sort-section=alignment --specs=nosys.specs
