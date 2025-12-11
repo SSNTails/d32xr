@@ -509,6 +509,10 @@ int M_Ticker (void)
 			cursorpos = 0;
 			screenpos = ms_main;
 			if (IsTitleScreen()) {
+				if (cheats_enabled & CHEAT_GAMEMODE_SELECT && buttons & BT_MODE && buttons & BT_C) {
+					overlay_graphics = og_none;
+					return ga_showcredits;
+				}
 				titleTicker = 0;	// Redraw the title emblem.
 				overlay_graphics = og_title;
 				clear_h32_borders = 2;

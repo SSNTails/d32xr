@@ -224,6 +224,7 @@ typedef enum
 	ga_closeprompt,
 	ga_titleexpired,
 	ga_demoending,
+	ga_showcredits,
 } gameaction_t;
 
 #ifdef KIOSK_MODE
@@ -728,6 +729,7 @@ static inline void SetTransition(transitiontype_t type)
 extern uint8_t      cheats_enabled;
 
 #define CHEAT_METRICS			0x01
+#define CHEAT_GAMEMODE_SELECT	0x02
 
 
 

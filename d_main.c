@@ -496,7 +496,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 					cheat_metrics_button_index += 1;
 					if (cheat_metrics_button_index == CHEAT_METRICS_SEQ_LENGTH) {
 						S_StartSoundId(sfx_s3k_33);
-						cheats_enabled |= CHEAT_METRICS;
+						cheats_enabled |= (CHEAT_METRICS | CHEAT_GAMEMODE_SELECT);
 						cheat_metrics_button_index = 0;
 					}
 				}
@@ -1746,7 +1746,7 @@ D_printf ("DM_Main\n");
 	SetDisclaimer();
 	MiniLoop (START_Disclaimer, STOP_Disclaimer, TIC_Disclaimer, DRAW_Disclaimer, UpdateBuffer);
 #else
-	cheats_enabled = CHEAT_METRICS;	// Cheats already active for development builds.
+	cheats_enabled = CHEAT_METRICS | CHEAT_GAMEMODE_SELECT;	// Cheats already active for development builds.
 #endif
 
 #ifdef SHOW_FPS
@@ -1807,6 +1807,10 @@ D_printf ("DM_Main\n");
 						SetDemoMode(DemoMode_None);
 					}
 					break;
+				case ga_showcredits:
+					// Show the credits sequence
+					SetCredits();
+					MiniLoop(F_Start, F_Stop, F_Ticker, F_Drawer, I_Update);
 			}
 		} while (1);
 	}
