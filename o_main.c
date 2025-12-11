@@ -23,7 +23,8 @@ typedef enum
 	mi_game, 
 	mi_audio,
 	mi_video,
-	mi_controls,
+	mi_camerapan,
+	mi_spindash,
 	mi_help,
 
 	mi_soundvol,
@@ -151,13 +152,17 @@ void O_Init (void)
 	menuitem[mi_video].y = STARTY+ITEMSPACE*2;
 	menuitem[mi_video].screen = ms_video;
 
-	menuitem[mi_controls].name = "CAMERA";
-	menuitem[mi_controls].x = ITEMX;
-	menuitem[mi_controls].y = STARTY+ITEMSPACE*3;
+	menuitem[mi_camerapan].name = "CAMERA";
+	menuitem[mi_camerapan].x = ITEMX;
+	menuitem[mi_camerapan].y = STARTY+ITEMSPACE*3;
+
+	menuitem[mi_spindash].name = "SPINDASH";
+	menuitem[mi_spindash].x = ITEMX;
+	menuitem[mi_spindash].y = STARTY+ITEMSPACE*4;
 
 	menuitem[mi_help].name = "HELP / ABOUT";
 	menuitem[mi_help].x = ITEMX;
-	menuitem[mi_help].y = STARTY+ITEMSPACE*4;
+	menuitem[mi_help].y = STARTY+ITEMSPACE*5;
 	menuitem[mi_help].screen = ms_help;
 
 	menuitem[mi_soundvol].name = "Sfx volume";
@@ -430,8 +435,11 @@ void O_Control (player_t *player)
 					anamorphicview = slider->curval;
 					R_SetViewportSize(viewportNum);
 					break;
-				case mi_controls:
+				case mi_camerapan:
 					invertCamera = !invertCamera;
+					break;
+				case mi_spindash:
+					spindashPlayerOriented = !spindashPlayerOriented;
 					break;
 				default:
 					break;
@@ -518,18 +526,24 @@ void O_Control (player_t *player)
 				if (buttons & BT_RIGHT)
 				{
 					switch (itemno) {
-					case mi_controls:
-						invertCamera = !invertCamera;
-						break;
+						case mi_camerapan:
+							invertCamera = !invertCamera;
+							break;
+						case mi_spindash:
+							spindashPlayerOriented = !spindashPlayerOriented;
+							break;
 					}
 				}
 
 				if (buttons & BT_LEFT)
 				{
 					switch (itemno) {
-					case mi_controls:
-						invertCamera = !invertCamera;
-						break;
+						case mi_camerapan:
+							invertCamera = !invertCamera;
+							break;
+						case mi_spindash:
+							spindashPlayerOriented = !spindashPlayerOriented;
+							break;
 					}
 				}
 			}
@@ -707,7 +721,8 @@ void O_Drawer (void)
 
 	if (screenpos == ms_main)
 	{
-		V_DrawStringLeft(&menuFont, menuitem[mi_controls].x + 72, menuitem[mi_controls].y, invertCamera ? "INVERTED" : "NORMAL");
+		V_DrawStringLeft(&menuFont, menuitem[mi_camerapan].x + 80, menuitem[mi_camerapan].y, invertCamera ? ": INVERTED" : ": NORMAL");
+		V_DrawStringLeft(&menuFont, menuitem[mi_spindash].x + 80, menuitem[mi_spindash].y, spindashPlayerOriented ? ": PLAYER" : ": CAMERA");
 	}
 }
 

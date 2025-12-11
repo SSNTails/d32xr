@@ -11,6 +11,8 @@
 #define STOPSPEED FRACUNIT / 16
 #define FRICTION 0xd240
 
+boolean spindashPlayerOriented = false;
+
 void P_KillMobj(mobj_t *source, mobj_t *target);
 
 /*
@@ -741,7 +743,9 @@ static void P_DoSpinDash(player_t *player)
 		if ((buttons & BT_SPIN) && player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
 		{
 			P_ResetScore(player);
-			player->mo->angle = camera.angle;
+			if (!spindashPlayerOriented) {
+				player->mo->angle = camera.angle;
+			}
 			player->mo->momx = player->cmomx;
 			player->mo->momy = player->cmomy;
 			player->pflags |= PF_STARTDASH;

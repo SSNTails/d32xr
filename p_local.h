@@ -57,6 +57,9 @@ typedef enum
 #define	BASETHRESHOLD	100		/* follow a player exlusively for 3 seconds */
 
 
+extern boolean spindashPlayerOriented;
+
+
 
 /*
 ===============================================================================
