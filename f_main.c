@@ -20,7 +20,7 @@ creditcard_t creditCards[] = {
 	{"C_VIC",    "SPECIAL THANKS",       "Viciious",         "Doom 32X:\nResurrection\nDoom CD32X:\nFusion",             "x.com/vluchitz" },
 	{"C_THANKS", "SPECIAL THANKS",       NULL,          "Mittens\n\nChilly Willy\n\nTmEE\n\nJames Groth",                     "" },
 	{"C_STJR",   "BASED ON THE WORK BY", "Sonic Team Jr.",   "www.srb2.org",                        "Shout-outs to:\nAlice Alacroix\nMotor Roach\nNev3r\nGuyWithThePie\nToaster\nAnd so many more!" },
-	{NULL,       "THANKS FOR PLAYING!", "", "", "" },
+	{NULL,       "", "", "", "" },
 	{NULL, NULL, NULL, NULL, NULL },
 };
 
@@ -31,6 +31,8 @@ static VINT cardTimer = 0;
 static VINT curCard = 0;
 
 static VINT trackerCards[7];
+
+static VINT chaosLumps[6];
 
 static void F_DrawBackground(void)
 {
@@ -70,6 +72,12 @@ static boolean F_NextCard()
 
 void F_Start (void)
 {
+	h40_sky = 1;	// Get rid of the three-pixel shift.
+	RemoveDistortionFilters();
+	UpdateBuffer();
+	RemoveDistortionFilters();
+	UpdateBuffer();
+
 	trackerCards[0] = W_GetNumForName("C_TRACK1");
 	trackerCards[1] = W_GetNumForName("C_TRACK2");
 	trackerCards[2] = W_GetNumForName("C_TRACK3");
@@ -77,6 +85,13 @@ void F_Start (void)
 	trackerCards[4] = W_GetNumForName("C_TRACK5");
 	trackerCards[5] = W_GetNumForName("C_TRACK6");
 	trackerCards[6] = W_GetNumForName("C_TRACK7");
+
+	chaosLumps[0] = W_GetNumForName("CHAOS1");
+	chaosLumps[1] = W_GetNumForName("CHAOS2");
+	chaosLumps[2] = W_GetNumForName("CHAOS3");
+	chaosLumps[3] = W_GetNumForName("CHAOS4");
+	chaosLumps[4] = W_GetNumForName("CHAOS5");
+	chaosLumps[5] = W_GetNumForName("CHAOS6");
 
 	S_StartSong(gameinfo.victoryMus, 1, cdtrack_end);
 
@@ -186,6 +201,32 @@ void F_Drawer (void)
 			DrawJagobjLump(cardPFP, 32, 64, NULL, NULL);
 		else
 		{
+			uint8_t emerald_bits = emeralds;
+
+			if (emeralds == 63) {
+				V_DrawStringCenter(&creditFont, 160, 32, "GOT THEM ALL");
+			}
+			else {
+				V_DrawStringCenter(&creditFont, 160, 32, "TRY AGAIN");
+			}
+
+			for (int i=0; i < 6; i++) {
+				if (emerald_bits & 1) {
+					// Make the emerald flash.
+					if (cardTimer & 1) {
+						DrawJagobjLumpWithColormap(chaosLumps[i], 68 + (i<<5), 72, 0, 0, HWLIGHT(192));
+					}
+					else {
+						DrawJagobjLump(chaosLumps[i], 68 + (i<<5), 72, 0, 0);
+					}
+				}
+				else {
+					// Dim the emerald.
+					DrawJagobjLumpWithColormap(chaosLumps[i], 68 + (i<<5), 72, 0, 0, HWLIGHT(64));
+				}
+				emerald_bits >>= 1;
+			}
+			V_DrawStringCenterWithColormap(&menuFont, 160, 124, "THANKS FOR PLAYING!", YELLOWTEXTCOLORMAP);
 			V_DrawStringCenterWithColormap(&menuFont, 160, 142, "Stay tuned for the full version!", YELLOWTEXTCOLORMAP);
 			V_DrawStringCenter(&menuFont, 160, 160, "youtube.com/@ssntails");
 		}
