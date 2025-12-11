@@ -610,8 +610,8 @@ void O_DrawHelp (VINT yPos)
 	V_DrawStringRight(&menuFont, 160-8, yPos + (12*3), "MOVE CAMERA ");
 	V_DrawStringLeft(&menuFont, 160, yPos + (12*3), "= X and Z");
 
-	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5), "INTENDED ONLY FOR NTSC SYSTEMS AND", YELLOWTEXTCOLORMAP);
-	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5) + 8, "PICODRIVE & JGENESIS", YELLOWTEXTCOLORMAP);
+	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5), "OPTIMIZED FOR NTSC SYSTEMS AND", YELLOWTEXTCOLORMAP);
+	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5) + 8, "PICODRIVE 2.04 & JGENESIS 0.10", YELLOWTEXTCOLORMAP);
 
 	V_DrawStringCenter(&menuFont, 160, yPos + 80, "ssntails.srb2.org/srb32x");
 }
