@@ -7,11 +7,12 @@ endif
 LDSCRIPTSDIR = $(ROOTDIR)/ldscripts
 
 LIBPATH = -L$(ROOTDIR)/m68k-elf/lib -L$(ROOTDIR)/m68k-elf/lib/gcc/m68k-elf/12.1.0 -L$(ROOTDIR)/m68k-elf/m68k-elf/lib
-INCPATH = -I$. -I$(ROOTDIR)/m68k-elf/include -I$(ROOTDIR)/m68k-elf/m68k-elf/include -I../liblzss
+INCPATH = -I$. -I$(ROOTDIR)/m68k-elf/include -I$(ROOTDIR)/m68k-elf/m68k-elf/include -I../liblzexe
 
 HWCCFLAGS = -m68000 -Wall -O1 -c -fomit-frame-pointer -fno-lto
 CCFLAGS = -m68000 -Wall -Os -c -fomit-frame-pointer -flto -DUSE_SCD_IN_RAM
 ASFLAGS = -m68000 --register-prefix-optional
+ASFLAGS += --defsym CHECKSUM=1
 LINKFLAGS = -T $(LDSCRIPTSDIR)/mars-md.ld -Wl,-Map=output.map -nostdlib -flto
 
 PREFIX = $(ROOTDIR)/m68k-elf/bin/m68k-elf-
@@ -28,7 +29,7 @@ RM = rm -f
 
 TARGET = m68k
 LIBS = $(LIBPATH) -lc -lgcc -lnosys
-OBJS = crt0.o everdrive.o font.o main.o kos.o cd.o lzss.o megasd.o vgm.o xvprintf.o zfiles.o scd_pcm.o
+OBJS = crt0.o everdrive.o font.o main.o kos.o cd.o lzexe.o megasd.o vgm.o xvprintf.o zfiles.o scd_pcm.o
 
 all: $(TARGET).bin
 
@@ -60,7 +61,7 @@ cd.o: cd.s cd.bin
 %.o: %.c
 	$(CC) $(CCFLAGS) $(INCPATH) $< -o $@
 
-%.o: ../liblzss/%.c
+%.o: ../liblzexe/%.c
 	$(CC) $(CCFLAGS) $(INCPATH) $< -o $@
 
 %.o: %.s

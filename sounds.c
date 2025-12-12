@@ -17,12 +17,15 @@ const char * const S_sfxnames[NUMSFX] =
   "dsarmasg",
   "dsattrsg",
   "dscannon",
+  "dsdeton",
   "dsdwnind",
   "dselemsg",
   "dsforcsg",
   "dsfrcssg",
   "dsghit",
   "dsgspray",
+  "dslitng1",
+  "dslitng2",
   "dslvpass",
   "dsngskid",
   "dspogo",
@@ -36,6 +39,7 @@ const char * const S_sfxnames[NUMSFX] =
   "dstrfire",
   "dstrpowr",
   "dsturhit",
+  "dswbreak",
   "dswdjump",
   "dswirlsg",
   "dswslap",
@@ -50,6 +54,7 @@ const char * const S_sfxnames[NUMSFX] =
   "s3k_3c",
   "s3k_3d",
   "s3k_43",
+  "s3k_4a",
   "s3k_4e",
   "s3k_51",
   "s3k_59",
@@ -64,6 +69,7 @@ const char * const S_sfxnames[NUMSFX] =
   "s3k_6c",
   "s3k_6d",
   "s3k_6e",
+  "s3k_7b",
   "s3k_86",
   "s3k_9e",
   "s3k_a9",
@@ -75,6 +81,8 @@ const char * const S_sfxnames[NUMSFX] =
   "s3k_b4",
   "s3k_b6",
   "s3k_b9",
+  "s3k_c5",
+  "s3k_c9",
   "drcymcr1",   // Drums: Cymbal crash 1
   "drkick1",    // Drums: Kick 1
   "drsnare1",   // Drums: Snare 1
@@ -94,7 +102,15 @@ const char * const S_sfxnames[NUMSFX] =
   "drohat1",
   "drhit1",
   "drhit2",
-  "drclap1"
+  "drclap1",
+  "drhit3",
+  "drtmbrn1",
+  "drchime1",
+  "drtmpni1",
+  "drtmpni2",
+  "drhit4",
+  "drhit5",
+  "drsnare3",
 };
 
 const unsigned char drumsfxmap[] =
@@ -120,6 +136,14 @@ const unsigned char drumsfxmap[] =
   sfx_drhit1,   // 18
   sfx_drhit2,   // 19
   sfx_drclap1,  // 20
+  sfx_drhit3,   // 21
+  sfx_drtmbrn1, // 22
+  sfx_drchime1, // 23
+  sfx_drtmpni1, // 24
+  sfx_drtmpni2, // 25
+  sfx_drhit4,   // 26
+  sfx_drhit5,   // 27
+  sfx_drsnare3, // 28
 };
 
 #ifdef MARS
@@ -140,6 +164,8 @@ sfxinfo_t S_sfx[NUMSFX] =
   SOUND( false, 64 ),
   SOUND( false, 64 ),
   SOUND( false, 96 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
   SOUND( false, 64 ),
   SOUND( false, 64 ),
   SOUND( false, 64 ),
@@ -206,5 +232,23 @@ sfxinfo_t S_sfx[NUMSFX] =
   SOUND( false, 64 ),
   SOUND( false, 64 ),
   SOUND( false, 64 ),
-}; 
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+  SOUND( false, 64 ),
+};
  

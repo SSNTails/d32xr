@@ -13,7 +13,8 @@ void G_DoLoadLevel (void);
 
 
 gameaction_t    gameaction;
-int				gamemaplump;
+byte			gamemode;
+VINT			gamemaplump;
 dmapinfo_t		gamemapinfo;
 dgameinfo_t		gameinfo;
 
@@ -27,17 +28,17 @@ boolean         playeringame[MAXPLAYERS];
 player_t        players[MAXPLAYERS];
 playerresp_t	playersresp[MAXPLAYERS];
 
-int             consoleplayer = 0;          /* player taking events and displaying  */
+VINT            consoleplayer = 0;          /* player taking events and displaying  */
 int             gametic;
 int             leveltime;
 VINT            fadetime;
-VINT           totalitems, totalsecret;    /* for intermission  */
-uint16_t        emeralds;
-uint16_t        token;
-uint16_t        tokenbits;
+uint8_t         totalitems, totalsecret;    /* for intermission  */
+uint8_t			totaltokens;
+uint8_t         emeralds;
+uint8_t         tokens;
+uint8_t         tokenbits;
 
-boolean         demorecording;
-boolean         demoplayback;
+
 
 unsigned char *demo_p = 0;
 unsigned char *demobuffer = 0;
@@ -51,7 +52,8 @@ unsigned char *demobuffer = 0;
 */
 
 extern int              skytexture;
-extern texture_t		*skytexturep;
+//extern texture_t		*skytexturep;
+extern uint8_t			*skytexturep;
 extern texture_t		*textures;
 
 static int G_MapNumForLumpNum(int lump)
@@ -94,12 +96,11 @@ static char* G_GetMapNameForLump(int lump)
 
 void G_DoLoadLevel (void) 
 { 
-	int             i; 
-	int		skytexturel;
+	int             i;
 	int 		gamemap;
 	int			music;
 
-	totalitems = totalsecret = 0;
+	totalitems = totalsecret = totaltokens = 0;
 	for (i=0 ; i<MAXPLAYERS ; i++)
 	{
 		if (playeringame[i]/* && players[i].playerstate == PST_DEAD*/)
@@ -107,7 +108,6 @@ void G_DoLoadLevel (void)
 
 		players[i].killcount = players[i].secretcount
 			= players[i].itemcount = 0;
-		players[i].starpostnum = 0;
 		players[i].pflags = 0;
 		players[i].health = 1;
 		players[i].shield = 0;
@@ -127,7 +127,8 @@ void G_DoLoadLevel (void)
 	Z_CheckHeap (refzone);
 #endif
 
-        Z_FreeTags (mainzone);
+	ClearCopper();
+    Z_FreeTags (mainzone);
 	/*PrintHex (1,1,Z_FreeMemory (mainzone)); */
 /*
  * get lump number for the next map
@@ -137,6 +138,7 @@ void G_DoLoadLevel (void)
 	if (gamemapinfo.data)
 		Z_Free(gamemapinfo.data);
 	gamemapinfo.data = NULL;
+	D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
 
 	if (G_FindMapinfo(gamemaplump, &gamemapinfo, NULL) == 0) {
 		int nextmap;
@@ -151,9 +153,11 @@ void G_DoLoadLevel (void)
 
 		gamemapinfo.sky = NULL;
 		gamemapinfo.skyOffsetY = 0;
+		gamemapinfo.skyBitmapOffsetY = 0;
+		gamemapinfo.skyBitmapScrollRate = 0;
 		#ifdef MDSKY
-		gamemapinfo.skyTopColor = MARS_MD_PIXEL_THRU_INDEX;
-		gamemapinfo.skyBottomColor = MARS_MD_PIXEL_THRU_INDEX;
+		gamemapinfo.skyTopColor = COLOR_THRU;
+		gamemapinfo.skyBottomColor = COLOR_THRU;
 		#else
 		gamemapinfo.skyTopColor = 0;
 		gamemapinfo.skyBottomColor = 0;
@@ -183,9 +187,13 @@ void G_DoLoadLevel (void)
 		sky_32x_layer = false;
 	}
 	else {
-		skytexturel = R_TextureNumForName(gamemapinfo.sky);
- 		skytexturep = &textures[skytexturel];
-		sky_32x_layer = (skytexturel > 0);
+		//int lump = R_TextureNumForName(gamemapinfo.sky);
+ 		//skytexturep = &textures[lump];
+
+		int lump = W_CheckNumForName(gamemapinfo.sky);
+		skytexturep = (uint8_t *)W_POINTLUMPNUM(lump);
+
+		sky_32x_layer = (lump >= 0);
 	}
 
 	P_SetupLevel (gamemaplump);
@@ -195,7 +203,7 @@ void G_DoLoadLevel (void)
 	if (music <= 0)
 		music = S_SongForMapnum(gamemap);
 
-	if (gamemapinfo.mapNumber != 30)
+	if (gamemapinfo.mapNumber != TITLE_MAP_NUMBER)
 	{
 		if (netgame != gt_single && !splitscreen)
 			S_StopSong();
@@ -249,7 +257,7 @@ void G_PlayerFinishLevel (int player)
 	p = &players[player]; 
 	 
 	D_memset (p->powers, 0, sizeof (p->powers)); 
-	p->whiteFlash = 0; 
+	p->whiteFlash = 0;
 
 	if (netgame == gt_deathmatch)
 		return;
@@ -258,6 +266,8 @@ void G_PlayerFinishLevel (int player)
 
 	if (p->health <= 0)
 		return;
+
+	p->starpostnum = 0;
 
 	P_UpdateResp(p);
 } 
@@ -348,40 +358,6 @@ boolean G_CheckSpot (int playernum, mapthing_t *mthing)
 /* 
 ==================== 
 = 
-= G_DeathMatchSpawnPlayer 
-= 
-= Spawns a player at one of the random death match spots 
-= called at level load and each death 
-==================== 
-*/ 
- 
-void G_DeathMatchSpawnPlayer (int playernum) 
-{ 
-	int             i,j; 
-	int				selections;
-	
-	selections = deathmatch_p - deathmatchstarts;
-	if (selections < 4)
-		I_Error ("Only %i deathmatch spots, 4 required", selections);
-		
-	for (j=0 ; j<20 ; j++) 
-	{ 
-		i = P_Random()%selections;
-		if (G_CheckSpot (playernum, &deathmatchstarts[i]) ) 
-		{ 
-			deathmatchstarts[i].type = playernum+1; 
-			P_SpawnPlayer (&deathmatchstarts[i]); 
-			return; 
-		} 
-	} 
- 
-/* no good spot, so the player will probably get stuck  */
-	P_SpawnPlayer (&playerstarts[playernum]); 
-} 
- 
-/* 
-==================== 
-= 
 = G_DoReborn 
 = 
 ==================== 
@@ -401,13 +377,6 @@ void G_DoReborn (int playernum)
 /* respawn this player while the other players keep going */
 /* */
 	players[playernum].mo->player = 0;   /* dissasociate the corpse  */
-		
-	/* spawn at random spot if in death match  */
-	if (netgame == gt_deathmatch) 
-	{ 
-		G_DeathMatchSpawnPlayer (playernum); 
-		return; 
-	} 
 		
 	if (G_CheckSpot (playernum, &playerstarts[playernum]) ) 
 	{ 
@@ -527,7 +496,8 @@ void G_Init(void)
 	}
 
 	gameinfo.borderFlat = W_CheckNumForName("SRB2TILE");
-	gameinfo.titlePage = W_CheckNumForName("title");
+	gameinfo.titlePage = W_CheckNumForName("M_TITLE");
+	gameinfo.titlePage2 = W_CheckNumForName("TITLE");
 	gameinfo.titleTime = 540;
 	gameinfo.endFlat = gameinfo.borderFlat;
 	gameinfo.endShowCast = 1;
@@ -541,7 +511,7 @@ void G_Init(void)
 ==================== 
 */ 
  
-extern mobj_t emptymobj;
+extern consistencymobj_t emptymobj;
  
 void G_InitNew (int map, gametype_t gametype, boolean splitscr)
 { 
@@ -553,6 +523,7 @@ void G_InitNew (int map, gametype_t gametype, boolean splitscr)
 
 	if (gamemapinfo.data)
 		Z_Free(gamemapinfo.data);
+	gamemapinfo.data = NULL;
 	D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
 
 	/* these may be reset by I_NetSetup */
@@ -576,7 +547,7 @@ void G_InitNew (int map, gametype_t gametype, boolean splitscr)
 	}
 
 	for (i=0 ; i<MAXPLAYERS ; i++)
-		players[i].mo = &emptymobj;	/* for net consistency checks */
+		players[i].mo = (mobj_t*)&emptymobj;	/* for net consistency checks */
 
 	G_InitPlayerResp();
 
@@ -584,15 +555,14 @@ void G_InitNew (int map, gametype_t gametype, boolean splitscr)
 	if (netgame != gt_single)
 		playeringame[1] = true;	
 	else
-		playeringame[1] = false;	
+		playeringame[1] = false;
 
-	demorecording = false;
-	demoplayback = false;
+	SetDemoMode(DemoMode_None);
 
 	gamepaused = false;
 	gametic = 0;
 	emeralds = 0;
-	token = 0;
+	tokens = 0;
 	tokenbits = 0;
 } 
 
@@ -628,7 +598,6 @@ void G_RunGame (void)
 
 	while (1)
 	{
-		boolean		finale;
 #ifdef JAGUAR
 		int			nextmap;
 #endif
@@ -648,8 +617,15 @@ startnew:
 				I_NetStop();
 			if (startsave != -1)
 				G_LoadGame(startsave);
-			else
+			else {
 				G_InitNew(startmap, starttype, startsplitscreen);
+				if (startmap >= SSTAGE_START && startmap <= SSTAGE_END) {
+					SetLevel(LevelType_SpecialStage);
+				}
+				else {
+					SetLevel(LevelType_Normal);
+				}
+			}
 			continue;
 		}
 
@@ -664,6 +640,7 @@ startnew:
 
 		if (gameaction == ga_warped)
 		{
+			tokenbits = 0;
 			if (starttype != netgame || startmap != gamemapinfo.mapNumber)
 			{
 				gameaction = ga_startnew;
@@ -672,12 +649,12 @@ startnew:
 			continue;			/* skip intermission */
 		}
 
-		if (token && emeralds < 127) // Got a token, and missing at least one emerald
+		if (tokens && emeralds < 63)//127) // Got a token, and missing at least one emerald // TODO: Restore this for all 7 stages
 		{
 			if (gamemapinfo.mapNumber < SSTAGE_START || gamemapinfo.mapNumber > SSTAGE_END)
 				returnspecstagemapl = gamemapinfo.next; // Save the 'next' regular stage to go to
 
-			token--;
+			tokens--;
 
 			for (i = 0; i < 7; i++)
 			{
@@ -689,15 +666,27 @@ startnew:
 			}
 		}
 		else if (gamemapinfo.mapNumber < SSTAGE_START || gamemapinfo.mapNumber > SSTAGE_END)
+		{
 			nextmapl = gamemapinfo.next;
+			tokenbits = 0;
+		}
 		else
+		{
 			nextmapl = returnspecstagemapl;
+			tokenbits = 0;
+		}
 
-		finale = nextmapl == 0;
+		if (nextmapl == 0) {
+			if (gamemapinfo.mapNumber != 10 && emeralds == 63) {
+				nextmapl = G_LumpNumForMapNum(10);	// Go to CEZ1 (secret level)
+			}
+			else {
+				SetCredits();
+			}
+		}
 
 		if (gameaction == ga_backtotitle)
 		{
-			finale = false;
 			nextmapl = 0;
 			break;
 		}
@@ -719,16 +708,16 @@ startnew:
 #ifdef MARS
 		if (netgame == gt_deathmatch)
 		{
-			if (finale)
+			if (IsCredits())
 			{
 				/* go back to start map */
-				finale = 0;
+				SetLevel(LevelType_Normal);
 				nextmapl = G_LumpNumForMapNum(1);
 			}
 		}
 		else
 		{
-			if (!finale)
+			if (!IsCredits())
 			{
 				/* quick save */
 				int nextmap = G_MapNumForLumpNum(nextmapl);
@@ -738,11 +727,19 @@ startnew:
 #endif
 
 	/* run a stats intermission */
-	if (gameaction == ga_specialstageexit)
+	if (gameaction == ga_specialstageexit) {
+		SetSpecialStageIntermission();
 		MiniLoop (IN_Start, IN_Stop, IN_Ticker, IN_Drawer, UpdateBuffer);
+
+		if (nextmapl == -1) {
+			nextmapl = G_LumpNumForMapNum(1);
+		}
+
+		SetLevel(LevelType_Normal);
+	}
 	
 	/* run the finale if needed */
-		if (finale)
+		if (IsCredits())
 		{
 #ifdef MARS
 			MiniLoop(F_Start, F_Stop, F_Ticker, F_Drawer, I_Update);
@@ -765,14 +762,20 @@ int G_PlayInputDemoPtr (unsigned char *demo)
 
 	demobuffer = demo;
 
-	map = demo[7];
+	map = demo[5];
 	
 	demo_p = demo + 8;
 	
 	G_InitNew (map, gt_single, false);
-	demoplayback = true;
+	if (map >= SSTAGE_START && map <= SSTAGE_END) {
+		SetLevel(LevelType_SpecialStage);
+	}
+	else {
+		SetLevel(LevelType_Normal);
+	}
+	SetDemoMode(DemoMode_Playback);
 	exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	demoplayback = false;
+	SetDemoMode(DemoMode_None);
 	
 	return exit;
 }
@@ -790,9 +793,15 @@ int G_PlayPositionDemoPtr (unsigned char *demo)
 	demo_p = demo + 0xA;
 
 	G_InitNew (map, gt_single, false);
-	demoplayback = true;
+	if (map >= SSTAGE_START && map <= SSTAGE_END) {
+		SetLevel(LevelType_SpecialStage);
+	}
+	else {
+		SetLevel(LevelType_Normal);
+	}
+	SetDemoMode(DemoMode_Playback);
 	exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	demoplayback = false;
+	SetDemoMode(DemoMode_None);
 
 	return exit;
 }
@@ -809,17 +818,28 @@ int G_PlayPositionDemoPtr (unsigned char *demo)
 #ifdef REC_INPUT_DEMO
 void G_RecordInputDemo (void)
 {
-	demo_p = demobuffer = Z_Malloc (0x5000, PU_STATIC);
+	startmap = REC_INPUT_DEMO;
+	demo_p = demobuffer = Z_Malloc (0x200, PU_STATIC);	// More than enough for a 60 second demo.
 	
-	((long *)demo_p)[0] = 0; // startskill
-	((long *)demo_p)[1] = startmap;
-
-	demo_p += 8;
+	*demo_p++ = 'I';
+	*demo_p++ = 'D';
+	*demo_p++ = 'M';
+	*demo_p++ = 'O';
+	*demo_p++ = 0;			// char unused
+	*demo_p++ = startmap;	// char map
+	*demo_p++ = 0;			// short duration (could be larger than the number of frames captured)
+	*demo_p++ = 0;			// ...
 	
 	G_InitNew (startmap, gt_single, false);
-	demorecording = true;
+	if (startmap >= SSTAGE_START && startmap <= SSTAGE_END) {
+		SetLevel(LevelType_SpecialStage);
+	}
+	else {
+		SetLevel(LevelType_Normal);
+	}
+	SetDemoMode(DemoMode_Recording);
 	MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	demorecording = false;
+	SetDemoMode(DemoMode_None);
 
 #ifdef MARS
 	I_Error("%d %p", demo_p - demobuffer, demobuffer);
@@ -852,9 +872,15 @@ void G_RecordPositionDemo (void)
 	*demo_p++ = startmap;	// char map
 	
 	G_InitNew (startmap, gt_single, false);
-	demorecording = true;
+	if (startmap >= SSTAGE_START && startmap <= SSTAGE_END) {
+		SetLevel(LevelType_SpecialStage);
+	}
+	else {
+		SetLevel(LevelType_Normal);
+	}
+	SetDemoMode(DemoMode_Recording);
 	MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
-	demorecording = false;
+	SetDemoMode(DemoMode_None);
 
 #ifdef MARS
 	I_Error("%d %p", demo_p - demobuffer, demobuffer);

@@ -38,7 +38,7 @@
 
 typedef struct {
 	VINT repeat;
-	boolean prev_state;
+	VINT prev_state;
 } btnstate_t;
 
 // !!! if this is changed, it must be changed in asm too!
@@ -52,7 +52,7 @@ typedef struct {
 	void *colormaps;
 } mars_tls_t __attribute__((aligned(16))); // thread local storage
 
-VINT COLOR_WHITE = 0x00;
+VINT COLOR_WHITE = 0xFC;
 VINT COLOR_BLACK = 0x1F;
 
 int8_t	*dc_colormaps;
@@ -62,12 +62,12 @@ boolean	debugscreenupdate = false;
 
 int     ticcount = 0;
 int		lastticcount = 0;
-int		lasttics = 0;
+VINT		lasttics = 0;
 static int8_t fpscount = 0;
 
 VINT 	debugmode = DEBUGMODE_NONE;
 
-extern int 	cy;
+extern VINT 	cy;
 extern int tictics, drawtics, ticstart;
 
 // framebuffer start is after line table AND a single blank line
@@ -76,14 +76,14 @@ static volatile pixel_t *framebufferend = &MARS_FRAMEBUFFER + 0x10000;
 
 #define jo_stbar_height 22
 
-extern int t_ref_bsp[4], t_ref_prep[4], t_ref_segs[4], t_ref_planes[4], t_ref_sprites[4], t_ref_total[4];
+extern int t_ref_bsp[4], t_ref_segs[4], t_ref_planes[4], t_ref_sprites[4], t_ref_total[4];
 
 static volatile mars_tls_t mars_tls_pri, mars_tls_sec;
 static uint32_t mars_rom_bsw_start = 0;
 
 void I_ClearFrameBuffer(void) ATTR_DATA_CACHE_ALIGN;
 
-static int Mars_ConvGamepadButtons(int ctrl)
+int Mars_ConvGamepadButtons(int ctrl)
 {
 	unsigned newc = 0;
 
@@ -115,11 +115,15 @@ static int Mars_ConvGamepadButtons(int ctrl)
 	else
 	{
 		if (ctrl & SEGA_CTRL_A)
-			newc |= configuration[controltype][0];
+#ifdef SHOW_DISCLAIMER
+			newc |= BT_SPIN; //configuration[controltype][0];
+#else
+			newc |= BT_FLIP; //configuration[controltype][0];
+#endif
 		if (ctrl & SEGA_CTRL_B)
-			newc |= configuration[controltype][1];
+			newc |= BT_JUMP; //configuration[controltype][1];
 		if (ctrl & SEGA_CTRL_C)
-			newc |= configuration[controltype][2];
+			newc |= BT_SPIN; //configuration[controltype][2];
 
 		if (ctrl & SEGA_CTRL_X)
 			newc |= BT_CAMLEFT;
@@ -137,7 +141,7 @@ static int Mars_HandleStartHeld(int *ctrl, const int ctrl_start, btnstate_t *sta
 {
 	int morebuttons = 0;
 	boolean start = 0;
-	static const int held_tics = 16;
+	static const VINT held_tics = 16;
 
 	start = (*ctrl & ctrl_start) != 0;
 	if (start ^ startbtn->prev_state) {
@@ -190,31 +194,6 @@ static int Mars_HandleStartHeld(int *ctrl, const int ctrl_start, btnstate_t *sta
 	return morebuttons;
 }
 
-static int Mars_ConvMouseButtons(int mouse)
-{
-	int ctrl = 0;
-	if (mouse & SEGA_CTRL_LMB)
-	{
-		ctrl |= BT_JUMP; // L -> B
-		ctrl |= BT_LMBTN;
-	}
-	if (mouse & SEGA_CTRL_RMB)
-	{
-		ctrl |= BT_SPIN; // R -> C
-		ctrl |= BT_RMBTN;
-	}
-	if (mouse & SEGA_CTRL_MMB)
-	{
-		ctrl |= BT_FLIP; // M -> Y
-		ctrl |= BT_MMBTN;
-	}
-	if (mouse & SEGA_CTRL_STARTMB)
-	{
-		//ctrl |= BT_START;
-	}
-	return ctrl;
-}
-
 void Mars_Secondary(void)
 {
 	// init thread-local storage
@@ -239,15 +218,12 @@ void Mars_Secondary(void)
 	while (1)
 	{
 		int cmd;
-		extern VINT *validcount;
 
 		while ((cmd = MARS_SYS_COMM4) == MARS_SECCMD_NONE);
 
 		switch (cmd) {
 		case MARS_SECCMD_CLEAR_CACHE:
 			Mars_ClearCache();
-			// FIXME: find a better place for this
-			I_SetThreadLocalVar(DOOMTLS_VALIDCOUNT, validcount + numlines + 1);
 			break;
 		case MARS_SECCMD_BREAK:
 			// break current command
@@ -263,19 +239,20 @@ void Mars_Secondary(void)
 			Mars_Sec_R_PreDrawPlanes();
 			break;
 		case MARS_SECCMD_R_DRAW_PLANES:
-			Mars_Sec_R_DrawPlanes();
+			Mars_Sec_R_DrawPlanes(0);
+			break;
+		case MARS_SECCMD_R_DRAW_FOFPLANES:
+			Mars_Sec_R_DrawPlanes(1);
 			break;
 		case MARS_SECCMD_R_DRAW_SPRITES:
 			Mars_Sec_R_DrawSprites(MARS_SYS_COMM6);
 			break;
-		case MARS_SECCMD_M_ANIMATE_FIRE:
-			Mars_Sec_M_AnimateFire();
+		case MARS_SECCMD_ANIMATIONUPDATE:
+			P_AnimateScenery((int8_t)accum_time);
+			P_UpdateSpecials((int8_t)accum_time);
 			break;
 		case MARS_SECCMD_S_INIT_DMA:
 			Mars_Sec_InitSoundDMA(MARS_SYS_COMM6);
-			break;
-		case MARS_SECCMD_P_SIGHT_CHECKS:
-			Mars_Sec_P_CheckSights();
 			break;
 		default:
 			break;
@@ -301,10 +278,6 @@ int Mars_FRTCounter2Msec(int c)
 
 void I_Init (void) 
 {	
-	int	i;
-	unsigned minr, maxr;
-	const byte	*doompalette;
-
 	// init thread-local storage
 	mars_tls_pri.bank = 6;
 	mars_tls_pri.bankpage = 6;
@@ -323,37 +296,12 @@ void I_Init (void)
 
 	Mars_SetBrightness(1);
 
-	doompalette = W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-	I_SetPalette(doompalette+(10*768));
-
-	// look up palette indices for black and white colors
-	// if the black color isn't present, use the darkest one
-	minr = 255;
-	maxr = 0;
-	for (i = 1; i < 256; i++)
-	{
-		unsigned r = doompalette[i * 3 + 0];
-		unsigned g = doompalette[i * 3 + 1];
-		unsigned b = doompalette[i * 3 + 2];
-		if (r != g || r != b) {
-			continue;
-		}
-		if (r <= minr) {
-			minr = r;
-			COLOR_BLACK = i;
-		}
-		if (r > maxr) {
-			maxr = r;
-			COLOR_WHITE = i;
-		}
-	}
-
 	Mars_CommSlaveClearCache();
 }
 
 void I_SetPalette(const byte* palette)
 {
-	mars_newpalette = palette;
+	Mars_SetPalette(palette);
 }
 
 boolean	I_RefreshCompleted (void)
@@ -433,7 +381,7 @@ void* I_RemapLumpPtr(void *ptr)
 ==================== 
 */ 
  
-static char zone[0x33000] __attribute__((aligned(16)));
+static char zone[0x32000] __attribute__((aligned(16)));
 byte *I_ZoneBase (int *size)
 {
 	*size = sizeof(zone);
@@ -465,40 +413,6 @@ int I_ReadControls2(void)
 {
 	static btnstate_t startbtn2 = { 0 };
 	return I_ReadControls_(1, &startbtn2);
-}
-
-int I_ReadMouse(int* pmx, int *pmy)
-{
-	int mval, ctrl;
-	static int oldmval = 0;
-	unsigned val;
-
-	*pmx = *pmy = 0;
-
-	mval = Mars_PollMouse();
-	switch (mval)
-	{
-	case -2:
-		// timeout - return old buttons and no deltas
-		mval = oldmval & 0x00F70000;
-		break;
-	case -1:
-		// no mouse
-		mousepresent = false;
-		oldmval = 0;
-		return 0;
-	default:
-		mousepresent = true;
-		oldmval = mval;
-		break;
-	}
-
-	val = Mars_ParseMousePacket(mval, pmx, pmy);
-
-	ctrl = 0;
-	//ctrl |= Mars_HandleStartHeld(&val, SEGA_CTRL_STARTMB);
-	ctrl |= Mars_ConvMouseButtons(val);
-	return ctrl;
 }
 
 int	I_GetTime (void)
@@ -539,8 +453,15 @@ static byte *workbuf_high = NULL;
 byte *I_WorkBuffer (void)
 {
 	while (!I_RefreshCompleted());
-	if (workbuf_high == NULL)
-		workbuf_high = (byte *)(framebuffer + 320 / 2 * (I_FrameBufferHeight() +1)); // +1 for the blank line
+	if (workbuf_high == NULL) {
+		if (IsLevel()) {
+			// Allow for larger WorkBuffer on levels.
+			workbuf_high = (byte *)(framebuffer + 320 / 2 * (I_FrameBufferHeight() +1 - 11)); // +1 for the blank line
+		}
+		else {
+			workbuf_high = (byte *)(framebuffer + 320 / 2 * (I_FrameBufferHeight() +1)); // +1 for the blank line
+		}
+	}
 	return workbuf_high;
 }
 
@@ -581,11 +502,11 @@ int I_ViewportYPos(void)
 	if (splitscreen)
 		return (fbh - viewportHeight) / 2;
 
-	if (viewportWidth < 160)
-		return (fbh - jo_stbar_height - viewportHeight) / 2;
-	if ((viewportWidth == 160 && lowResMode) || viewportWidth == 320)
+	//if (viewportWidth < (VIEWPORT_WIDTH>>1))
+	//	return (fbh - jo_stbar_height - viewportHeight) / 2;
+	//if ((viewportWidth == (VIEWPORT_WIDTH>>1) && lowResMode) || viewportWidth == 320)
 		return (fbh - jo_stbar_height - viewportHeight);
-	return (fbh - jo_stbar_height - viewportHeight) / 2;
+	//return (fbh - jo_stbar_height - viewportHeight) / 2;
 }
 
 pixel_t	*I_ViewportBuffer (void)
@@ -609,13 +530,27 @@ pixel_t	*I_ViewportBuffer (void)
 	return (pixel_t *)vb;
 }
 
-void I_ClearFrameBuffer (void)
+void I_FillFrameBuffer (unsigned char palette_index)
 {
+	const int long_fill = (palette_index << 24) | (palette_index << 16) | (palette_index << 8) | palette_index;
+	const int line_count = I_FrameBufferHeight()+1 - (IsLevel() ? 11 : 0); // Allow for larger WorkBuffer on levels.
+
 	int* p = (int*)framebuffer;
-	int* p_end = (int*)(framebuffer + 320 / 2 * (I_FrameBufferHeight()+1));
+	int* p_end = (int*)(framebuffer + 320 / 2 * line_count);
 	while (p < p_end)
-		*p++ = 0x1F1F1F1F; // Four bytes of black palette index
+		*p++ = long_fill; // Four bytes of black palette index
 }
+
+inline void I_ClearFrameBuffer (void)
+{
+	I_FillFrameBuffer(0x1F); // Black
+}
+
+#ifdef BENCHMARK
+static int last = 0;
+static VINT numtimes = 0;
+int benchcounter = 0;
+#endif
 
 void I_DebugScreen(void)
 {
@@ -624,10 +559,23 @@ void I_DebugScreen(void)
 	int line = 3;
 	static char buf[19][16];
 
+#ifdef BENCHMARK
+	if (benchcounter == 0)
+	{
+		numtimes = 0;
+		last = I_GetFRTCounter();
+	}
+#endif
+
 	if (debugmode == DEBUGMODE_FPSCOUNT)
 	{
 		D_snprintf(buf[0], sizeof(buf[0]), "fps:%2d", fpscount);
-		I_Print8(x, line++, buf[0]);
+
+		if (IsTitleScreen()) {
+			line = 21;
+			x = 216;
+		}
+		I_Print8(x, line, buf[0]);
 	}
 	else if (debugmode > DEBUGMODE_FPSCOUNT)
 	{
@@ -671,7 +619,14 @@ void I_DebugScreen(void)
 			D_snprintf(buf[15], sizeof(buf[0]), "scenm:%d", numscenerymobjs);
 			D_snprintf(buf[16], sizeof(buf[0]), "ringm:%d", numringmobjs);
 			D_snprintf(buf[17], sizeof(buf[0]), "statm:%d", numstaticmobjs);
+			#ifdef BENCHMARK
+			int newTime = I_GetFRTCounter();
+			benchcounter += newTime - last;
+			last = newTime;
+			D_snprintf(buf[18], sizeof(buf[0]), "bch:%d, %d", benchcounter, numtimes++);
+			#else
 			D_snprintf(buf[18], sizeof(buf[0]), "regm:%d", numregmobjs);
+			#endif
 		}
 
         I_Print8(x, line++, buf[0]);
@@ -717,16 +672,11 @@ void I_Update(void)
 {
 	//int ticcount;
 	static int prevsecticcount = 0;
-	static int framenum = 0;
+	static VINT framenum = 0;
 	const int refreshHZ = Mars_RefreshHZ();
 
-	if (ticsperframe < MINTICSPERFRAME)
-		ticsperframe = MINTICSPERFRAME;
-	else if (ticsperframe > MAXTICSPERFRAME)
-		ticsperframe = MAXTICSPERFRAME;
-
 	if (optionsMenuOn)
-		if ((ticrealbuttons & BT_MODE) && !(oldticrealbuttons & BT_MODE))
+		if (cheats_enabled & CHEAT_METRICS && (ticrealbuttons & BT_MODE) && !(oldticrealbuttons & BT_MODE))
 		{
 			int prevdebugmode;
 
@@ -750,17 +700,44 @@ void I_Update(void)
 	/* */
 	/* wait until on the third tic after last display */
 	/* */
-	const int ticwait = (demoplayback || demorecording ? 4 : ticsperframe); // demos were recorded at 15-20fps
+	const int ticwait = (IsTitleScreen() ? 3 : 2); // run title screen at 20 fps
+
+	// Adjust sky position.
+	unsigned short scroll_y_base = gamemapinfo.skyOffsetY;
+	signed short scroll_y_offset = (vd.viewz >> 16);
+	unsigned short scroll_y_pan = (vd.aimingangle >> 22);
+
+	if (IsLevel()) {
+		scroll_y_base += 22;
+	}
+	else if (IsTitleScreen()) {
+		scroll_y_base += 44;
+	}
+
+	if (effects_flags & EFFECTS_COPPER_ENABLED) {
+		short prev_index = copper_color_index;
+
+		// Scroll the copper background.
+		copper_color_index = (copper_vertical_offset
+				- scroll_y_base - (scroll_y_offset >> (16-copper_vertical_rate)) - scroll_y_pan) & 511;
+
+		if (copper_color_index != prev_index) {
+			// Update the copper table again.
+			effects_flags |= EFFECTS_COPPER_INDEX_CHANGE;
+		}
+		else {
+			effects_flags &= (~EFFECTS_COPPER_INDEX_CHANGE);
+		}
+	}
 
 #ifdef MDSKY
 	if (sky_md_layer) {
-		// Adjust MD sky position.
-		unsigned short scroll_x = (*((unsigned short *)&vd.viewangle) >> 6);
-		scroll_x += (scroll_x >> 2);	// The MD sky scrolls to 1280 pixels.
+		unsigned short scroll_x = vd.viewangle >> 22;
 
-		unsigned short scroll_y_base = gamemapinfo.skyOffsetY;
-		unsigned short scroll_y_offset = (vd.viewz >> 16);
-		unsigned short scroll_y_pan = (vd.aimingangle >> 22);
+		if (h40_sky) {
+			// Use this to scroll the sky 1280 pixels. Works well for 256-width skies.
+			scroll_x += (scroll_x >> 2);
+		}
 
 		Mars_ScrollMDSky(scroll_x, scroll_y_base, scroll_y_offset, scroll_y_pan);
 	}
@@ -772,18 +749,20 @@ void I_Update(void)
 		ticcount = I_GetTime();
 	} while (ticcount - lastticcount < ticwait);
 
+	// What the heck does all this do?
 	lasttics = ticcount - lastticcount;
 	lastticcount = ticcount;
 	if (lasttics > 99) lasttics = 99;
 
+	// This too...
+	framenum++;
 	if (ticcount > prevsecticcount + refreshHZ) {
-		static int prevsecframe;
-		fpscount = (framenum - prevsecframe) * refreshHZ / (ticcount - prevsecticcount);
+		fpscount = (framenum * refreshHZ) / (ticcount - prevsecticcount);
 		debugscreenupdate = true;
 		prevsecticcount = ticcount;
-		prevsecframe = framenum;
+		framenum = 0;
 	}
-	framenum++;
+
 	debugscreenactive = debugmode != DEBUGMODE_NONE;
 
 	cy = 1;
@@ -1047,31 +1026,4 @@ reconnect:
 	gameaction = starttype == gt_single ? ga_startnew : ga_warped;
 	ticbuttons[0] = ticbuttons[1] = oldticbuttons[0] = oldticbuttons[1] = 0;
 	return 0;
-}
-
-void I_StoreScreenCopy(void)
-{
-	int i;
-    for (i = 0; i < 160; i++) {
-		Mars_StoreWordColumnInMDVRAM(i);
-	}
-	Mars_Finish();
-}
-
-void I_RestoreScreenCopy(void)
-{
-	int i;
-    for (i = 0; i < 160; i++) {
-		Mars_LoadWordColumnFromMDVRAM(i, 0, 224);
-	}
-	Mars_Finish();
-}
-
-void I_SwapScreenCopy(void)
-{
-    int i;
-    for (i = 0; i < 160; i++) {
-        Mars_SwapWordColumnWithMDVRAM(i);
-    }
-    Mars_Finish();
 }

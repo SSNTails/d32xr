@@ -29,19 +29,19 @@ static void R_UpdateCache(void)
    maxplanemip = 0;
    for (wall = vd.viswalls; wall < vd.lastwallcmd; wall++)
    {
-#ifdef FLOOR_OVER_FLOOR
+#if MIPLEVELS <= 1
       int minmip = 0, maxmip = 0;
 #else
-      int minmip = LOWER8(wall->newmiplevels), maxmip = UPPER8(wall->newmiplevels);
+      int minmip = wall->newmiplevels & 0xff, maxmip = wall->newmiplevels >> 8;
 #endif
       if (wall->realstart > wall->realstop)
         continue;
 
-      if ((wall->actionbits & (AC_TOPTEXTURE|AC_BOTTOMTEXTURE|AC_MIDTEXTURE)) && (maxmip >= minmip))
+      if ((wall->actionbits & (AC_TOPTEXTURE|AC_BOTTOMTEXTURE|AC_MIDTEXTURE|AC_FOFSIDE)) && (maxmip >= minmip))
       {
         if (wall->actionbits & AC_TOPTEXTURE)
         {
-            texture_t* tex = &textures[UPPER8(wall->tb_texturenum)];
+            texture_t* tex = &textures[wall->t_texturenum];
 #if MIPLEVELS > 1
             int mipcount = tex->mipcount;
 #else
@@ -51,14 +51,14 @@ static void R_UpdateCache(void)
                 if (i >= mipcount)
                   break;
                 if (!R_TouchIfInTexCache(&r_texcache, tex->data[i]) && (bestmips[i] < 0)) {
-                    bestmips[i] = UPPER8(wall->tb_texturenum);
+                    bestmips[i] = wall->t_texturenum;
                 }
             }
         }
 
         if (wall->actionbits & AC_BOTTOMTEXTURE)
         {
-            texture_t* tex = &textures[LOWER8(wall->tb_texturenum)];
+            texture_t* tex = &textures[wall->b_texturenum];
 #if MIPLEVELS > 1
             int mipcount = tex->mipcount;
 #else
@@ -68,7 +68,7 @@ static void R_UpdateCache(void)
                 if (i >= mipcount)
                   break;
                 if (!R_TouchIfInTexCache(&r_texcache, tex->data[i]) && (bestmips[i] < 0)) {
-                    bestmips[i] = LOWER8(wall->tb_texturenum);
+                    bestmips[i] = wall->b_texturenum;
                 }
             }
         }
@@ -90,6 +90,23 @@ static void R_UpdateCache(void)
             }
         }
 
+        if (wall->actionbits & AC_FOFSIDE)
+        {
+            texture_t* tex = &textures[wall->fof_texturenum];
+#if MIPLEVELS > 1
+            int mipcount = tex->mipcount;
+#else
+            int mipcount = 1;
+#endif
+            for (i = minmip; i <= maxmip; i++) {
+                if (i >= mipcount)
+                  break;
+                if (!R_TouchIfInTexCache(&r_texcache, tex->data[0]) && (bestmips[i] < 0)) {
+                    bestmips[i] = wall->fof_texturenum;
+                }
+            }
+        }
+
         // offset the min mip level for planes by -1:
         // assume planes can be slightly closer than 
         // the adjacent walls
@@ -101,7 +118,7 @@ static void R_UpdateCache(void)
 
 //      if (detailmode != detmode_potato)
       {
-        flattex_t *flat = &flatpixels[LOWER8(wall->floorceilpicnum)];
+        flattex_t *flat = &flatpixels[wall->floorpicnum];
 
         if (minplanemip < 0)
           minplanemip = 0;
@@ -114,18 +131,29 @@ static void R_UpdateCache(void)
 
         for (i = minplanemip; i <= maxplanemip; i++) {
             if (!R_TouchIfInTexCache(&r_texcache, flat->data[i]) && (bestmips[i] < 0)) {
-                bestmips[i] = numtextures+LOWER8(wall->floorceilpicnum);
+                bestmips[i] = numtextures+wall->floorpicnum;
             }
         }
 
-        if (UPPER8(wall->floorceilpicnum) == (uint8_t)-1) {
+        if (wall->ceilpicnum == (uint8_t)-1
+          || wall->floorpicnum == (uint8_t)-1) {
             continue;
         }
 
-        flat = &flatpixels[UPPER8(wall->floorceilpicnum)];
+        flat = &flatpixels[wall->ceilpicnum];
         for (i = minplanemip; i <= maxplanemip; i++) {
             if (!R_TouchIfInTexCache(&r_texcache, flat->data[i]) && (bestmips[i] < 0)) {
-                bestmips[i] = numtextures+UPPER8(wall->floorceilpicnum);
+                bestmips[i] = numtextures+wall->ceilpicnum;
+            }
+        }
+      }
+
+      if (wall->fof_picnum != (uint8_t)-1)
+      {
+        flattex_t *flat = &flatpixels[wall->fof_picnum];
+        for (i = minplanemip; i <= maxplanemip; i++) {
+            if (!R_TouchIfInTexCache(&r_texcache, flat->data[i]) && (bestmips[i] < 0)) {
+                bestmips[i] = numtextures+wall->fof_picnum;
             }
         }
       }
@@ -144,7 +172,8 @@ static void R_UpdateCache(void)
 
       masked = false;
 
-      if (id >= numtextures) {
+      if (id >= numtextures)
+      {
 #ifndef FLATMIPS
         if (i > 0)
           continue;
@@ -154,16 +183,21 @@ static void R_UpdateCache(void)
         pdata = (void**)&data[i];
         w = h = flat->size;
         pixels = w * h;
-      } else {
+      }
+      else
+      {
         texture_t* tex = &textures[id];
         int lump = tex->lumpnum;
 
         data = (void **)tex->data;
-        if (lump >= firstsprite && lump < firstsprite + numsprites) {
+        if (lump >= firstsprite && lump < firstsprite + numsprites)
+        {
           masked = true;
           pixels = W_LumpLength(lump+1);
           pdata = (void**)&data[0];
-        } else {
+        }
+        else
+        {
           w = tex->width, h = tex->height;
           pixels = w * h;
           pdata = (void**)&data[i];
@@ -186,6 +220,10 @@ static void R_UpdateCache(void)
       if (R_InTexCache(&r_texcache, *pdata)) {
         continue;
       }
+
+      // Don't cache invalid IDs, and don't cache gigantic textures
+      if (pixels > 65535 || id - numtextures == 0xff || id < 0 || id > 512)
+        continue;
 
       R_AddToTexCache(&r_texcache, id+((unsigned)i<<2), pixels, pdata);
 

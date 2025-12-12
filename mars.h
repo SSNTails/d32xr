@@ -41,15 +41,12 @@ enum
 	MARS_SECCMD_R_WALL_PREP_NODRAW,
 	MARS_SECCMD_R_WALL_PREP,
 	MARS_SECCMD_R_DRAW_PLANES,
+	MARS_SECCMD_R_DRAW_FOFPLANES,
 	MARS_SECCMD_R_DRAW_SPRITES,
 
-	MARS_SECCMD_M_ANIMATE_FIRE,
+	MARS_SECCMD_ANIMATIONUPDATE,
 
 	MARS_SECCMD_S_INIT_DMA,
-
-	MARS_SECCMD_P_SIGHT_CHECKS,
-
-	MARS_SECCMD_MELT_DO_WIPE,
 
 	MARS_SECCMD_NUMCMDS
 };
@@ -59,12 +56,10 @@ void Mars_Secondary(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 void Mars_Sec_R_Setup(void);
 void Mars_Sec_R_WallPrep(void) ATTR_DATA_CACHE_ALIGN;
 void Mars_Sec_R_SegCommands(void) ATTR_DATA_CACHE_ALIGN;
-void Mars_Sec_R_DrawPlanes(void) ATTR_DATA_CACHE_ALIGN;
+void Mars_Sec_R_DrawPlanes(int isFOF) ATTR_DATA_CACHE_ALIGN;
 void Mars_Sec_R_PreDrawPlanes(void) ATTR_DATA_CACHE_ALIGN;
 void Mars_Sec_R_DrawSprites(int sprscreenhalf) ATTR_DATA_CACHE_ALIGN;
-void Mars_Sec_P_CheckSights(void) ATTR_DATA_CACHE_ALIGN;
 
-void Mars_Sec_M_AnimateFire(void) ATTR_OPTIMIZE_EXTREME;
 void Mars_Sec_InitSoundDMA(int initfull);
 void Mars_Sec_ReadSoundCmds(void) ATTR_DATA_OPTIMIZE_NONE;
 
@@ -104,8 +99,27 @@ static inline void Mars_R_BeginDrawPlanes(void)
 	MARS_SYS_COMM4 = MARS_SECCMD_R_DRAW_PLANES;
 }
 
+static inline void Mars_R_BeginDrawFOFPlanes(void)
+{
+	Mars_R_SecWait();
+	MARS_SYS_COMM6 = 0; // next visplane
+	MARS_SYS_COMM4 = MARS_SECCMD_R_DRAW_FOFPLANES;
+}
+
 static inline void Mars_R_EndDrawPlanes(void)
 {
+}
+
+static inline void Mars_P_BeginAnimationUpdate()
+{
+	while (MARS_SYS_COMM4 != 0) {};
+	MARS_SYS_COMM6 = 0;
+	MARS_SYS_COMM4 = MARS_SECCMD_ANIMATIONUPDATE;
+}
+
+static inline void Mars_P_EndAnimationUpdate(void)
+{
+	while (MARS_SYS_COMM4 != 0);
 }
 
 // r_phase8
@@ -120,48 +134,12 @@ static inline void Mars_R_EndDrawSprites(void)
 {
 }
 
-static inline void Mars_M_BeginDrawFire(void)
-{
-	Mars_R_SecWait();
-	MARS_SYS_COMM4 = MARS_SECCMD_M_ANIMATE_FIRE;
-}
-
-static inline void Mars_M_EndDrawFire(void)
-{
-	MARS_SYS_COMM4 = MARS_SECCMD_BREAK;
-	Mars_R_SecWait();
-}
-
 static inline void Mars_InitSoundDMA(int initfull)
 {
 	Mars_R_SecWait();
 	MARS_SYS_COMM6 = initfull;
 	MARS_SYS_COMM4 = MARS_SECCMD_S_INIT_DMA;
 	Mars_R_SecWait();
-}
-
-static inline void Mars_P_BeginCheckSights(void)
-{
-	while (MARS_SYS_COMM4 != 0) {};
-	MARS_SYS_COMM6 = 0;
-	MARS_SYS_COMM4 = MARS_SECCMD_P_SIGHT_CHECKS;
-}
-
-static inline void Mars_P_EndCheckSights(void)
-{
-	while (MARS_SYS_COMM4 != 0);
-}
-
-static inline void Mars_melt_BeginWipe(void)
-{
-	while (MARS_SYS_COMM4 != 0) {};
-	MARS_SYS_COMM6 = 0;
-	MARS_SYS_COMM4 = MARS_SECCMD_MELT_DO_WIPE;
-}
-
-static inline void Mars_melt_EndWipe(void)
-{
-	while (MARS_SYS_COMM4 != 0);
 }
 
 #endif 

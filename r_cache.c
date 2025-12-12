@@ -111,7 +111,11 @@ static void R_EvictFromTexCache(void* ptr, void* userp)
 	{
 		c->reqfreed++;
 		*entry->userp = entry->userpold;
+#ifdef MEMDEBUG
+		Z_Free2(c->zone, entry, __FILE__, __LINE__);
+#else
 		Z_Free2(c->zone, entry);
+#endif
 	}
 }
 
@@ -183,7 +187,11 @@ void R_AddToTexCache(r_texcache_t* c, int id, int pixels, void **userp)
 
 	trynum = 0;
 retry:
+#ifdef MEMDEBUG
+	entry = Z_Malloc2(c->zone, size, PU_LEVEL, false, __FILE__, __LINE__);
+#else
 	entry = Z_Malloc2(c->zone, size, PU_LEVEL, false);
+#endif
 	if (!entry)
 	{
 		if (trynum != 0)
@@ -231,7 +239,11 @@ static void R_ForceEvictFromTexCache(void* ptr, void* userp)
 	r_texcache_t* c = userp;
 
 	*entry->userp = entry->userpold;
+#ifdef MEMDEBUG
+	Z_Free2(c->zone, entry, __FILE__, __LINE__);
+#else
 	Z_Free2(c->zone, entry);
+#endif
 }
 
 /*

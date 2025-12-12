@@ -29,9 +29,10 @@ uint8_t			*texturetranslation;	/* for global animation */
 
 flattex_t		*flatpixels;
 
-texture_t	*skytexturep;
+//texture_t	*skytexturep;
+uint8_t		*skytexturep;
 
-uint8_t		*dc_playpals;
+uint8_t		*dc_playpals, *dc_cshift_playpals;
 
 /*============================================================================ */
 
@@ -260,25 +261,6 @@ void R_InitTextures (void)
 		}
 	}
 
-	/* textures can't have more mip levels than their respective decals */
-	texture = textures;
-	for (i = 0; i < numtextures; i++, texture++)
-	{
-		if (texture->mipcount <= 1)
-			continue;
-		if (texture->decals == 0)
-			continue;
-
-		int i, numdecals = texture->decals & 0x3;
-		int firstdecal = texture->decals >> 2;
-		for (i = 0; i < numdecals; i++) {
-			texdecal_t *decal = &decals[firstdecal + i];
-			texture_t *texture2 = &textures[decal->texturenum];
-			if (texture->mipcount > texture2->mipcount)
-				texture->mipcount = texture2->mipcount;
-		}
-	}
-
 	texture = textures;
 	for (i = 0; i < numtextures; i++, texture++)
 	{
@@ -321,7 +303,8 @@ void R_InitFlats (void)
 	for (i=0 ; i<numflats ; i++)
 		flattranslation[i] = i;
 
-	flatpixels = Z_Malloc(numflats * sizeof(*flatpixels), PU_STATIC);
+	// TODO: Avoid clubbing spriteframes by doubling this allocation... but WHY?
+	flatpixels = Z_Malloc(numflats * sizeof(*flatpixels) * 2, PU_STATIC);
 
 #if MIPLEVELS > 1 && FLATMIPS
 	// detect mip-maps
@@ -370,6 +353,7 @@ void R_InitData (void)
 #endif
 
 	dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
+	dc_cshift_playpals = Z_Malloc(256*3, PU_STATIC);
 
 	firstsprite = W_GetNumForName ("S_START") + 1;
 	numsprites = W_GetNumForName ("S_END") - firstsprite;
@@ -519,7 +503,7 @@ void R_InitMathTables(void)
 		}
 		else {
 			t = FixedMul(finetangent(i), focalLength);
-			t = (centerXFrac - t + FRACUNIT - 1) >> FRACBITS;
+			t = (centerXViewportFrac - t + FRACUNIT - 1) >> FRACBITS;
 			if (t < -1) {
 				t = -1;
 			}
@@ -553,7 +537,7 @@ void R_InitMathTables(void)
 	}
 
 	// Make the yslope table for floor and ceiling textures
-	stretchWidth = viewportWidth / 2 * stretch;
+	stretchWidth = (SCREENWIDTH/2) / 2 * stretch;
 	for (i = 0; i < viewportHeight * 4; i++)
 	{
 		fixed_t y = ((i - viewportHeight*2) << FRACBITS) + FRACUNIT / 2;
@@ -765,6 +749,7 @@ void R_InitSpriteDefs(const char** namelist)
 	}
 
 	spriteframes = Z_Malloc(totalframes * sizeof(spriteframe_t), PU_STATIC);
+//	I_Error(" %x to %x", spriteframes, spriteframes + (totalframes * sizeof(spriteframe_t)));
 	sprtemp = (void*)tempbuf;
 	lumps = Z_Malloc(totallumps * sizeof(*lumps), PU_STATIC);
 	spritelumps = lumps;

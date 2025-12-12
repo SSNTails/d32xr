@@ -28,6 +28,8 @@
 
 #include "doomdef.h"
 #include "p_local.h"
+#include "p_camera.h"
+#include "st_main.h"
 
 #define CLIPRADIUS 23
 
@@ -137,7 +139,6 @@ blockmove:
    }
 }
 
-void GetSectorAABB(sector_t *sector, fixed_t bbox[4]);
 __attribute((noinline))
 void P_SpawnBustables(sector_t *sec, mobj_t *playermo)
 {
@@ -145,14 +146,22 @@ void P_SpawnBustables(sector_t *sec, mobj_t *playermo)
    GetSectorAABB(sec, blockbox);
    const fixed_t spawnInterval = 64<<FRACBITS;
 
-   for (fixed_t z = sec->ceilingheight - spawnInterval/2; z >= sec->floorheight + spawnInterval/2; z -= spawnInterval)
+   for (fixed_t x = blockbox[BOXLEFT]; x <= blockbox[BOXRIGHT]; x += spawnInterval)
    {
-      for (fixed_t x = blockbox[BOXLEFT]; x <= blockbox[BOXRIGHT]; x += spawnInterval)
+      for (fixed_t y = blockbox[BOXBOTTOM]; y <= blockbox[BOXTOP]; y += spawnInterval)
       {
-         for (fixed_t y = blockbox[BOXBOTTOM]; y <= blockbox[BOXTOP]; y += spawnInterval)
+         VINT spawnSubsec = R_PointInSubsector2(x, y);
+         const sector_t *spawnSec = SS_SECTOR(spawnSubsec);
+         if (spawnSec != sec)
+            continue;
+
+         for (fixed_t z = sec->ceilingheight - spawnInterval/2; z >= sec->floorheight + spawnInterval/2; z -= spawnInterval)
          {
-            if (R_PointInSubsector(x, y)->sector == sec)
-               P_SpawnMobj(x, y, z, MT_GFZDEBRIS);               
+            mobj_t *debris = P_SpawnMobjNoSector(x, y, z, MT_GFZDEBRIS);
+            P_SetThingPosition2(debris, spawnSubsec);
+		      debris->floorz = sec->floorheight;
+		      debris->ceilingz = sec->ceilingheight;
+		      debris->z = z;
          }
       }
    }
@@ -182,25 +191,51 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
    }
 
    // see if it can possibly block movement
-   if(ld->sidenum[1] == -1 || (ld->flags & ML_BLOCKING))
+   if(ld->sidenum[1] == -1 || (ldflags[ld-lines] & ML_BLOCKING))
       goto findfrac;
 
    front = LD_FRONTSECTOR(ld);
    back  = LD_BACKSECTOR(ld);
 
-   if (ld->special == 254 && ld->tag > 0 && sw->slidething->player
+   if ((ldflags[ld-lines] & ML_HAS_SPECIAL_OR_TAG) && P_GetLineSpecial(ld) == 254 && P_GetLineTag(ld) > 0 && sw->slidething->player
       && (players[sw->slidething->player-1].pflags & PF_SPINNING)) // Bustable block
    {
-      back->floorheight = P_FindNextLowestFloor(back, back->floorheight);
-      ld->special = 0;
-      ld->tag = 0;
-      S_StartSound(sw->slidething, sfx_s3k_59);
-      P_SpawnBustables(back, sw->slidething);
+      boolean busting = true;
+      ldflags[ld-lines] &= ~ML_HAS_SPECIAL_OR_TAG;
+
+      if (ldflags[ld-lines] & ML_NOCLIMB)
+      {
+         fixed_t nextHighest = P_FindNextHighestCeiling(back, back->ceilingheight)->ceilingheight;
+
+         if (nextHighest == back->ceilingheight)
+            busting = false;
+
+         back->ceilingheight = nextHighest;
+      }
+      else
+      {
+         fixed_t nextLowest = P_FindNextLowestFloor(back, back->floorheight)->floorheight;
+
+         if (nextLowest == back->floorheight)
+            busting = false;
+
+         back->floorheight = nextLowest;
+      }
+
+      if (busting)
+      {
+         S_StartSound(sw->slidething, sfx_s3k_59);
+         P_SpawnBustables(back, sw->slidething);
+      }
    }
-   else if (ld->special == 200 && sw->slidething->player)
+   else if ((ldflags[ld-lines] & ML_HAS_SPECIAL_OR_TAG) && P_GetLineSpecial(ld) == 200 && sw->slidething->player)
    {
-      ld->special = 0;
-      CONS_Printf("Go away! Dave's not here. *B^D");
+      ldflags[ld-lines] &= ~ML_HAS_SPECIAL_OR_TAG;
+
+      if (gamemapinfo.mapNumber == 1)
+         MBrownSequenceStart();
+      else if (gamemapinfo.mapNumber == 2)
+         CONS_Printf("Go away! Dave's not here. *B^D");
    }
 
    if(front->floorheight > back->floorheight)
@@ -268,7 +303,7 @@ findfrac:
 fixed_t P_CompletableFrac(pslidework_t *sw, fixed_t dx, fixed_t dy)
 {
    int xl, xh, yl, yh, bx, by;
-   VINT *lvalidcount;
+   VINT *lvalidcount = validcount;
 
    sw->blockfrac = FRACUNIT;
    sw->slidedx = dx;
@@ -289,7 +324,6 @@ fixed_t P_CompletableFrac(pslidework_t *sw, fixed_t dx, fixed_t dy)
    else
       sw->endbox[BOXBOTTOM] += dy;
 
-   I_GetThreadLocalVar(DOOMTLS_VALIDCOUNT, lvalidcount);
    *lvalidcount = *lvalidcount + 1;
    if (*lvalidcount == 0)
       *lvalidcount = 1;

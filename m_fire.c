@@ -26,51 +26,15 @@
 
 #include "doomdef.h"
 #include "mars.h"
+#include "r_local.h"
 
 // based on work by Samuel Villarreal and Fabien Sanglard
 
 #define FIRE_STOP_TICON 90
 
 static jagobj_t *intro_titlepic;
-
-void Mars_Sec_M_AnimateFire(void)
-{
-	int start;
-
-	Mars_ClearCache();
-
-	start = I_GetTime();
-	while (MARS_SYS_COMM4 == MARS_SECCMD_M_ANIMATE_FIRE)
-	{
-		int duration = I_GetTime() - start;
-		if (duration > FIRE_STOP_TICON - 20)
-		{
-			// Fade to white
-			int palIndex = duration - (FIRE_STOP_TICON - 20);
-			palIndex /= 4;
-			if (palIndex > 5)
-				palIndex = 5;
-
-			const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-			I_SetPalette(dc_playpals+palIndex*768);
-		}
-		else if (duration < 20 && start >= 0)
-		{
-			// Fade in from black
-			int palIndex = 10 - (duration / 4);
-
-			const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-			I_SetPalette(dc_playpals+palIndex*768);
-		}
-		else if (duration < 22 && start >= 0)
-		{
-			const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-			I_SetPalette(dc_playpals);
-		}
-	}
-
-	Mars_ClearCache();
-}
+static jagobj_t *intro_titlepic2;
+static int titlepic_start;
 
 /* 
 ================ 
@@ -79,27 +43,16 @@ void Mars_Sec_M_AnimateFire(void)
 =
 ================ 
 */ 
-void I_InitMenuFire(jagobj_t *titlepic)
+void I_InitMenuFire(jagobj_t *titlepic, jagobj_t *titlepic2)
 {
-	int i;
+	titlepic_start = I_GetTime();
+
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4), dc_cshift_playpals);
 
 	intro_titlepic = titlepic;
+	intro_titlepic2 = titlepic2;
 
-	if (titlepic != NULL)
-	{
-		const int titlepic_pos_x = (320 - titlepic->width) / 2;
-		for (i = 0; i < 2; i++)
-		{
-			DrawJagobj2(titlepic, titlepic_pos_x, 16, 0, 0, titlepic->width, titlepic->height, I_FrameBuffer());
-			UpdateBuffer();
-		}
-	}
-
-	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-	I_SetPalette(dc_playpals+10*768);
-
-	Mars_M_BeginDrawFire();
-	S_StartSong(gameinfo.titleMus, 0, cdtrack_title);
+	clearscreen = 2;
 }
 
 /*
@@ -111,8 +64,6 @@ void I_InitMenuFire(jagobj_t *titlepic)
 */
 void I_StopMenuFire(void)
 {
-	Mars_M_EndDrawFire();
-
 	Mars_ClearCache();
 }
 
@@ -125,6 +76,12 @@ void I_StopMenuFire(void)
 */
 void I_DrawMenuFire(void)
 {
+	if (clearscreen > 0) {
+		I_ResetLineTable();
+		I_ClearFrameBuffer();
+		clearscreen--;
+	}
+
 	const int y = 16;
 	jagobj_t* titlepic = intro_titlepic;
 
@@ -132,9 +89,32 @@ void I_DrawMenuFire(void)
 	if (titlepic != NULL)
 	{
 		const int titlepic_pos_x = (320 - titlepic->width) / 2;
-		DrawJagobj2(titlepic, titlepic_pos_x, y, 0, 0, 0, titlepic->height, I_FrameBuffer());
+		DrawJagobj3(titlepic, titlepic_pos_x, y, 0, 0, 0, titlepic->height, 320, I_OverwriteBuffer());
+
+		if (intro_titlepic2 != NULL)
+			DrawJagobj3(intro_titlepic2, titlepic_pos_x, y, 0, 0, 0, titlepic->height, 320, I_OverwriteBuffer());
 	}
 
-	// draw the fire at the bottom
-	Mars_ClearCache();
+	int duration = I_GetTime() - titlepic_start;
+	if (duration > FIRE_STOP_TICON - 20)
+	{
+		// Fade to white
+		int palIndex = duration - (FIRE_STOP_TICON - 20);
+		palIndex /= 4;
+		if (palIndex > 5)
+			palIndex = 5;
+
+		R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
+	}
+	else if (duration < 20 && titlepic_start >= 0)
+	{
+		// Fade in from black
+		int palIndex = 10 - (duration / 4);
+
+		R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
+	}
+	else if (duration < 22 && titlepic_start >= 0)
+	{
+		I_SetPalette(dc_playpals);
+	}
 }

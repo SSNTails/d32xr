@@ -46,7 +46,7 @@ static void R_StoreWallRange(rbspWork_t *rbsp, int start, int stop) ATTR_DATA_CA
 static void R_RenderBSPNode(rbspWork_t *rbsp, int bspnum, int16_t *outerbbox) ATTR_DATA_CACHE_ALIGN;
 static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    fixed_t *restrict floorheight, fixed_t *restrict floornewheight, 
-   fixed_t *restrict ceilingnewheight, uint32_t *restrict fofInfo) ATTR_DATA_CACHE_ALIGN  __attribute__((noinline));
+   fixed_t *restrict ceilingnewheight, fixed_t *restrict fofInfo) ATTR_DATA_CACHE_ALIGN;
 
 #ifdef MARS
 __attribute__((aligned(4)))
@@ -67,7 +67,7 @@ static VINT checkcoord[12][4] =
    { 0, 0, 0, 0 }
 };
 
-static sector_t emptysector = { 0, 0, -2, -2, -2, 0, 0, 0, 0, -1 };
+static sector_t emptysector = { .floorheight = 0, .ceilingheight = 0, .floorpic = -2, .ceilingpic = -2, .lightlevel = -2, .special = 0, .tag = 0, .flags = 0, .heightsec = -1, .fofsec = -1, .thinglist = (SPTR)0, .specialdata = (SPTR)0, .specline = -1 };
 
 static int R_ClipToViewEdges(angle_t angle1, angle_t angle2)
 {
@@ -181,7 +181,7 @@ static boolean R_CheckBBox(rbspWork_t *rbsp, int16_t bspcoord[4])
 }
 
 static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
-   fixed_t *restrict floorheight, fixed_t *restrict  floornewheight, fixed_t *restrict ceilingnewheight, uint32_t *restrict fofInfo)
+   fixed_t *restrict floorheight, fixed_t *restrict  floornewheight, fixed_t *restrict ceilingnewheight, fixed_t *restrict fofInfo)
 {
    seg_t     *seg  = segl->seg;
    line_t    *li   = rbsp->curldef;
@@ -191,15 +191,19 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    fixed_t    f_floorheight, f_ceilingheight;
    fixed_t    b_floorheight, b_ceilingheight;
    int        f_lightlevel, b_lightlevel, lightshift;
-   short      f_ceilingpic, b_ceilingpic;
-   int        b_texturemid, t_texturemid, m_texturemid;
+   short      f_floorpic, f_ceilingpic;
+   short      b_floorpic, b_ceilingpic;
+   int        b_texturemid, t_texturemid, m_texturemid, fof_texturemid;
+   short      floorskyhack;
    short      skyhack;
    short      actionbits;
    int16_t    rowoffset, textureoffset;
-   const short liflags = li->flags;
+   const short liflags = ldflags[li-lines];
    static sector_t ftempsec;
    static sector_t btempsec;
-   segl->fofSector = -1;
+   #ifdef FLOOR_OVER_FLOOR
+   segl->fofSector = *fofInfo = -1; // fofSector is back sector FOF, fofInfo is front sector FOF
+   #endif
 
    front_sector = R_FakeFlat(front_sector, &ftempsec, false);
 
@@ -210,59 +214,78 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       rowoffset = (si->textureoffset & 0xf000) | ((unsigned)si->rowoffset << 4);
       rowoffset >>= 4; // sign extend
 
+      f_floorpic      = front_sector->floorpic;
       f_ceilingpic    = front_sector->ceilingpic;
       f_lightlevel    = front_sector->lightlevel;
       f_floorheight   = front_sector->floorheight   - vd.viewz;
       f_ceilingheight = front_sector->ceilingheight - vd.viewz;
-
-      SETLOWER8(segl->floorceilpicnum, flattranslation[front_sector->floorpic]);
+  
+      if (f_floorpic != 0xff)
+      {
+          segl->floorpicnum = flattranslation[f_floorpic];
+          segl->floor_offs = front_sector->floor_xoffs;
+      }
+      else
+      {
+          segl->floorpicnum = (uint8_t)-1;
+          segl->floor_offs = 0;
+      }
 
       if (f_ceilingpic != 0xff)
       {
-          SETUPPER8(segl->floorceilpicnum, flattranslation[f_ceilingpic]);
+         segl->ceilpicnum = flattranslation[f_ceilingpic];
       }
       else
-          SETUPPER8(segl->floorceilpicnum, (uint8_t)-1);
+         segl->ceilpicnum = (uint8_t)-1;
 
-      segl->m_texturenum = -1;
+      segl->m_texturenum = (uint8_t)-1;
+      segl->fof_texturenum = (uint8_t)-1;
 
       if (!back_sector)
          back_sector = &emptysector;
       else
          back_sector = R_FakeFlat(back_sector, &btempsec, true);
 
+      b_floorpic      = back_sector->floorpic;
       b_ceilingpic    = back_sector->ceilingpic;
       b_lightlevel    = back_sector->lightlevel;
       b_floorheight   = back_sector->floorheight   - vd.viewz;
       b_ceilingheight = back_sector->ceilingheight - vd.viewz;
 
-      t_texturemid = b_texturemid = m_texturemid = 0;
+      t_texturemid = b_texturemid = m_texturemid = fof_texturemid = 0;
       actionbits = 0;
 
+      if(f_floorpic == (uint8_t)-1 && b_floorpic == (uint8_t)-1) {
+         floorskyhack = true;
+      }
+      else { 
+         floorskyhack = false;
+      }
+
       // deal with sky ceilings (also missing in 3DO)
-      if(f_ceilingpic == (uint8_t)-1 && b_ceilingpic == (uint8_t)-1)
+      if(f_ceilingpic == (uint8_t)-1 && b_ceilingpic == (uint8_t)-1) {
          skyhack = true;
-      else 
+      }
+      else {
          skyhack = false;
+      }
 
       // add floors and ceilings if the wall needs them
-      if(f_floorheight < 0 &&                                // is the camera above the floor?
-         (front_sector->floorpic != back_sector->floorpic || // floor texture changes across line?
+      if(!floorskyhack                                         && // not a sky hack wall
+         (f_floorheight < 0 || f_floorpic == (uint8_t)-1)        && // is the camera above the floor?
+         (f_floorpic      != b_floorpic                   || // floor texture changes across line?
           f_floorheight   != b_floorheight                || // height changes across line?
           f_lightlevel    != b_lightlevel                 || // light level changes across line?
           b_ceilingheight == b_floorheight))                 // backsector is closed?
       {
-         actionbits |= (AC_ADDFLOOR|AC_NEWFLOOR);
+         if(f_floorpic == (uint8_t)-1)
+            actionbits |= (AC_ADDFLOORSKY|AC_NEWFLOOR);
+         else
+            actionbits |= (AC_ADDFLOOR|AC_NEWFLOOR);
       }
-      *floorheight = *floornewheight = f_floorheight;
-#ifdef FLOOR_OVER_FLOOR_CRAZY
-      if (front_sector->fofsec != -1)
-      {
-         SETLOWER16(*fofInfo, (sectors[front_sector->fofsec].ceilingheight) >> FRACBITS);
-         SETUPPER16(*fofInfo, (sectors[front_sector->fofsec].floorheight) >> FRACBITS);
-         segl->fofSector = front_sector->fofsec;
-      }
-#endif
+      segl->floorheight = *floorheight = *floornewheight = f_floorheight;
+
+      segl->t_bottomheight = f_floorheight; // bottom of texturemap
 
       if(!skyhack                                         && // not a sky hack wall
          (f_ceilingheight > 0 || f_ceilingpic == (uint8_t)-1)      && // ceiling below camera, or sky
@@ -280,24 +303,20 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 
       segl->t_topheight = f_ceilingheight; // top of texturemap
 
-      if (!(liflags & ML_TWOSIDED))
+      const sidetex_t *st = SIDETEX(si);
+
+      if (li->sidenum[1] < 0)
       {
          // single-sided line
 //         if (si->midtexture > 0)
          {
-            SETUPPER8(segl->tb_texturenum, texturetranslation[si->midtexture]);
+            segl->t_texturenum = texturetranslation[st->midtexture];
 
             // handle unpegging (bottom of texture at bottom, or top of texture at top)
             if(liflags & ML_DONTPEGBOTTOM)
-#ifdef WALLDRAW2X
-               t_texturemid = f_floorheight + (textures[UPPER8(segl->tb_texturenum)].height << (FRACBITS+1));
-#else
-               t_texturemid = f_floorheight + (textures[UPPER8(segl->tb_texturenum)].height << FRACBITS);
-#endif
+               t_texturemid = f_floorheight + (((textures[segl->t_texturenum].height << 1) + rowoffset) << FRACBITS);
             else
-               t_texturemid = f_ceilingheight;
-
-            t_texturemid += rowoffset<<FRACBITS;                               // add in sidedef texture offset
+               t_texturemid = f_ceilingheight + (rowoffset<<FRACBITS);
 
 #ifdef WALLDRAW2X
             t_texturemid >>= 1;
@@ -305,26 +324,41 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             segl->t_bottomheight = f_floorheight; // set bottom height
             actionbits |= (AC_SOLIDSIL|AC_TOPTEXTURE);                   // solid line; draw middle texture only
          }
+
+#ifdef FLOOR_OVER_FLOOR
+         if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
+         {
+            const sector_t *frontFOF = &sectors[front_sector->fofsec];
+            *fofInfo = front_sector->fofsec;
+
+            if (frontFOF->ceilingheight < vd.viewz)
+            {
+               // Top of FOF is visible
+               actionbits |= AC_FOFTOP;
+            }
+            else if (frontFOF->floorheight > vd.viewz)
+            {
+               // Bottom of FOF is visible
+               actionbits |= AC_FOFBOTTOM;
+            }
+         }
+#endif
       }
       else
       {
          // two-sided line
-//         if (si->midtexture > 0)
+//         if (st->midtexture > 0)
+         if (st->midtexture > 0 && D_abs(vd.viewx_t - ((vertexes[li->v1].x+vertexes[li->v2].x)>>1)) < ((liflags & ML_CULL_MIDTEXTURE) ? 768 : 1536) && D_abs(vd.viewy_t - ((vertexes[li->v1].y+vertexes[li->v2].y)>>1)) < ((liflags & ML_CULL_MIDTEXTURE) ? 768 : 1536)) // Don't draw midtextures when too far away to really matter
          {
-            segl->m_texturenum = texturetranslation[si->midtexture];
+            segl->m_texturenum = texturetranslation[st->midtexture];
             if(liflags & ML_DONTPEGBOTTOM)
             {
                const fixed_t rf_floorheight = rbsp->curfsector->floorheight - vd.viewz;
                const fixed_t rb_floorheight = rbsp->curbsector->floorheight - vd.viewz;
                if(rf_floorheight > rb_floorheight)
-                  m_texturemid = rf_floorheight;
+                  m_texturemid = rf_floorheight + (((textures[segl->m_texturenum].height << 1) + rowoffset) << FRACBITS);
                else
-                  m_texturemid = rb_floorheight;
-#ifdef WALLDRAW2X
-               m_texturemid += (textures[segl->m_texturenum].height << (FRACBITS+1));
-#else
-               m_texturemid += (textures[segl->m_texturenum].height << FRACBITS);
-#endif
+                  m_texturemid = rb_floorheight + (((textures[segl->m_texturenum].height << 1) + rowoffset) << FRACBITS);
             }
             else
             {
@@ -334,20 +368,81 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                   m_texturemid = rf_ceilingheight;
                else
                   m_texturemid = rb_ceilingheight;
+
+               m_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
             }
-            m_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
 #ifdef WALLDRAW2X
             m_texturemid >>= 1;
 #endif
             actionbits |= AC_MIDTEXTURE; // set bottom and top masks
          }
 
+#ifdef FLOOR_OVER_FLOOR
+         if (back_sector->fofsec >= 0 && !(back_sector->flags & SF_FOF_SWAPHEIGHTS))
+         {
+            const sector_t *backFOF = &sectors[back_sector->fofsec];
+            segl->fofSector = back_sector->fofsec;
+            *fofInfo = front_sector->fofsec;
+            actionbits |= AC_FOFSIDE; // Means the backsector has a FOF
+
+            if (backFOF->ceilingheight < vd.viewz)
+               segl->fof_picnum = backFOF->ceilingpic;
+            else if (backFOF->floorheight > vd.viewz)
+               segl->fof_picnum = backFOF->floorpic;
+
+            if (front_sector->fofsec < 0)
+            {
+               const line_t *fofline = &lines[backFOF->specline];
+               const side_t *fofside = &sides[fofline->sidenum[0]];
+               fof_texturemid = backFOF->ceilingheight - vd.viewz;
+               segl->fof_texturenum = texturetranslation[SIDETEX(fofside)->midtexture];
+//               fof_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
+#ifdef WALLDRAW2X
+               fof_texturemid >>= 1;
+#endif
+               if (backFOF->ceilingheight <= front_sector->floorheight || backFOF->floorheight >= front_sector->ceilingheight)
+               {
+                  fof_texturemid = 0;
+                  segl->fof_texturenum = (uint8_t)-1;
+               }
+            }
+            else if (!(front_sector->flags & SF_FOF_SWAPHEIGHTS))
+            {
+               const sector_t *frontFOF = &sectors[front_sector->fofsec];
+               *fofInfo = front_sector->fofsec;
+               if (frontFOF->ceilingheight < vd.viewz)
+               {
+                  // Rendering the ceiling
+                  actionbits |= AC_FOFTOP;
+               }
+               else if (frontFOF->floorheight > vd.viewz)
+               {
+                  actionbits |= AC_FOFBOTTOM;
+               }
+            }
+         }
+         else if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
+         {
+            const sector_t *frontFOF = &sectors[front_sector->fofsec];
+            *fofInfo = front_sector->fofsec;
+            if (frontFOF->ceilingheight < vd.viewz)
+            {
+               // Rendering the ceiling
+               actionbits |= AC_FOFTOP;
+            }
+            else if (frontFOF->floorheight > vd.viewz)
+            {
+               actionbits |= AC_FOFBOTTOM;
+            }
+         }
+#endif
+
          // is bottom texture visible?
-         if(b_floorheight > f_floorheight)
+         if(b_floorheight > f_floorheight && !floorskyhack)
          {
 //            if (si->bottomtexture > 0)
             {
-               SETLOWER8(segl->tb_texturenum, texturetranslation[si->bottomtexture]);
+               segl->b_texturenum = texturetranslation[st->bottomtexture];
                if(liflags & ML_DONTPEGBOTTOM)
                   b_texturemid = f_ceilingheight;
                else
@@ -369,17 +464,11 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
          {
 //            if (si->toptexture > 0)
             {
-               SETUPPER8(segl->tb_texturenum, texturetranslation[si->toptexture]);
+               segl->t_texturenum = texturetranslation[st->toptexture];
                if(liflags & ML_DONTPEGTOP)
-                  t_texturemid = f_ceilingheight;
+                  t_texturemid = f_ceilingheight + (rowoffset<<FRACBITS);
                else
-#ifdef WALLDRAW2X
-                  t_texturemid = b_ceilingheight + (textures[UPPER8(segl->tb_texturenum)].height << (FRACBITS+1));
-#else
-                  t_texturemid = b_ceilingheight + (textures[UPPER8(segl->tb_texturenum)].height << FRACBITS);
-#endif
-
-               t_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
+                  t_texturemid = b_ceilingheight + (((textures[segl->t_texturenum].height << 1) + rowoffset) << FRACBITS);
 
 #ifdef WALLDRAW2X
                t_texturemid >>= 1;
@@ -395,10 +484,13 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             actionbits |= AC_SOLIDSIL;
          else
          {
-            if((b_floorheight >= 0 && b_floorheight > f_floorheight) ||
-               (f_floorheight < 0 && f_floorheight > b_floorheight))
+            if(!floorskyhack)
             {
-               actionbits |= AC_BOTTOMSIL; // set bottom mask
+               if((b_floorheight >= 0 && b_floorheight > f_floorheight) ||
+                  (f_floorheight < 0 && f_floorheight > b_floorheight))
+               {
+                  actionbits |= AC_BOTTOMSIL; // set bottom mask
+               }
             }
 
             if(!skyhack)
@@ -409,6 +501,13 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                   actionbits |= AC_TOPSIL; // set top mask
                }
             }
+         }
+
+         // Special case for closed sectors acting as sky windows
+         if (b_floorheight == b_ceilingheight && b_ceilingpic == (uint8_t)-1 && b_floorpic == (uint8_t)-1)
+         {
+            actionbits &= ~(AC_TOPSIL | AC_BOTTOMSIL | AC_SOLIDSIL | AC_TOPTEXTURE | AC_BOTTOMTEXTURE | AC_MIDTEXTURE | AC_NEWCEILING | AC_NEWFLOOR);
+            actionbits |= AC_ADDSKY;
          }
       }
 
@@ -424,6 +523,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       segl->t_texturemid  = t_texturemid;
       segl->b_texturemid  = b_texturemid;
       segl->m_texturemid  = m_texturemid;
+      segl->fof_texturemid = fof_texturemid;
       segl->seglightlevel = (lightshift << 8) | f_lightlevel;
       segl->offset        = ((fixed_t)textureoffset + offset) << FRACBITS;
    }
@@ -438,7 +538,7 @@ static void R_StoreWallRange(rbspWork_t *rbsp, int start, int stop)
    viswallextra_t *rwex;
    int newstop, split;
    int numwalls = vd.lastwallcmd - vd.viswalls;
-   const int maxlen = centerX/2;
+   const int maxlen = centerX >> 1;
    // split long segments
    int len = stop - start + 1;
 
@@ -606,48 +706,72 @@ crunch:
 sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
                      boolean back)
 {
-   if (sec->fofsec != -1 && (sec->flags & SF_FOF_SWAPHEIGHTS))
+   if (sec->fofsec >= 0 && (sec->flags & SF_FOF_SWAPHEIGHTS))
    {
       // Replace sector being drawn, with a copy to be hacked
       *tempsec = *sec;
 
       const sector_t *fofsec = &sectors[sec->fofsec];
-      const fixed_t midpoint = fofsec->floorheight + (fofsec->ceilingheight - fofsec->floorheight)/2;
 
-      if (vd.viewz <= midpoint)
+      if (sec->heightsec < 0) // Standard midpoint version
       {
-         tempsec->ceilingheight = fofsec->floorheight;
-         tempsec->ceilingpic = fofsec->floorpic;      
+         const fixed_t midpoint = fofsec->floorheight + (fofsec->ceilingheight - fofsec->floorheight)/2;
+
+         if (vd.viewz <= midpoint)
+         {
+            tempsec->ceilingheight = fofsec->floorheight;
+            tempsec->ceilingpic = fofsec->floorpic;      
+         }
+         else if (vd.viewz > midpoint)
+         {
+            tempsec->floorheight = fofsec->ceilingheight;
+            tempsec->floorpic = fofsec->ceilingpic;
+         }
       }
-      else if (vd.viewz > midpoint)
+      else // This one flips depending on water status
       {
-         tempsec->floorheight = fofsec->ceilingheight;
-         tempsec->floorpic = fofsec->ceilingpic;
+         if (vd.underwater)
+         {
+            tempsec->ceilingheight = fofsec->floorheight;
+            tempsec->ceilingpic = fofsec->floorpic;      
+         }
+         else
+         {
+            tempsec->floorheight = fofsec->ceilingheight;
+            tempsec->floorpic = fofsec->ceilingpic;
+         }
       }
 
       sec = tempsec;
    }
-   else if (sec->heightsec != -1)
+   else if (sec->heightsec >= 0)
    {
       const sector_t *watersec = &sectors[sec->heightsec];
-      boolean underwater = vd.viewsubsector->sector->heightsec != -1 && vd.viewz<=sectors[vd.viewsubsector->sector->heightsec].ceilingheight;
 
       // Replace sector being drawn, with a copy to be hacked
       *tempsec = *sec;
 
       // Replace floor and ceiling height with other sector's heights.
-      tempsec->floorheight = watersec->ceilingheight-1;
-      tempsec->floorpic = watersec->ceilingpic;
 
-      if ((underwater && (tempsec->floorheight = sec->floorheight,
-                          tempsec->ceilingheight = watersec->ceilingheight-1,
-                          !back)) || vd.viewz <= watersec->floorheight)
+
+      // I don't think we need to be Boom-accurate here.
+//      if ((underwater && (tempsec->floorheight = sec->floorheight,
+//                          tempsec->ceilingheight = watersec->ceilingheight-1,
+//                          !back)) || vd.viewz <= watersec->floorheight)
+      if (vd.underwater)
       { // head-below-floor hack
+         tempsec->floorheight = sec->floorheight;
+         tempsec->ceilingheight = watersec->ceilingheight - 1;
          tempsec->floorpic    = sec->floorpic;
 //       tempsec->floor_xoffs = s->floor_xoffs;
 //       tempsec->floor_yoffs = s->floor_yoffs;
          tempsec->ceilingpic = watersec->ceilingpic; 
          tempsec->lightlevel = watersec->lightlevel;
+      }
+      else
+      {
+         tempsec->floorheight = watersec->ceilingheight-1;
+         tempsec->floorpic = watersec->ceilingpic;
       }
 
       if (sec->ceilingheight < watersec->ceilingheight)
@@ -675,20 +799,28 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
 {
    angle_t angle1, angle2;
    fixed_t x1, x2;
-   sector_t *frontsector;
-   sector_t *backsector;
-   mapvertex_t *v1 = &vertexes[line->v1], *v2 = &vertexes[line->v2];
+   const mapvertex_t *v1 = &vertexes[line->v1], *v2 = &vertexes[line->v2];
    int side;
    line_t *ldef;
    side_t *sidedef;
    boolean solid;
 
+   if ((ldflags[line->linedef] & ML_UNDERWATERONLY) && !vd.underwater)
+      return;
+
+   if ((ldflags[line->linedef] & ML_CULLING) && (D_abs(vd.viewx_t - v1->x) > 2048 || D_abs(vd.viewy_t - v1->y) > 2048))
+      return;
+
    if (line->v1 == rbsp->lastv2)
       angle1 = rbsp->lastangle2;
+   else if (line->v1 == rbsp->lastv1)
+      angle1 = rbsp->lastangle1;
    else
       angle1 = R_PointToAngle2(vd.viewx, vd.viewy, v1->x << FRACBITS, v1->y << FRACBITS);
    if (line->v2 == rbsp->lastv1)
       angle2 = rbsp->lastangle1;
+   else if (line->v2 == rbsp->lastv2)
+      angle2 = rbsp->lastangle2;
    else
       angle2 = R_PointToAngle2(vd.viewx, vd.viewy, v2->x << FRACBITS, v2->y << FRACBITS);
 
@@ -706,49 +838,40 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    // decide which clip routine to use
    side = line->sideoffset & 1;
    ldef = &lines[line->linedef];
-   if ((ldef->flags & ML_CULLING) && P_AproxDistance(vd.viewx - (v1->x << FRACBITS), vd.viewy - (v1->y << FRACBITS)) > 2048*FRACUNIT)
-      return;
 
-   frontsector = rbsp->curfsector;//R_FakeFlat(rbsp->curfsector, &ftempsec, false);
-   backsector = (ldef->flags & ML_TWOSIDED) ? &sectors[sides[ldef->sidenum[side^1]].sector] : 0;
    sidedef = &sides[ldef->sidenum[side]];
+   const sector_t *frontsector = rbsp->curfsector;
+   sector_t *backsector = (ldef->sidenum[1] >= 0) ? &sectors[sides[ldef->sidenum[side^1]].sector] : NULL;
 
    solid = false;
-   sector_t *oldbsector = backsector;
 
    if (!backsector)
       solid = true;
-   else if (backsector->ceilingpic == (uint8_t)-1 && frontsector->ceilingpic == (uint8_t)-1)
+   else if (backsector->ceilingpic == (uint8_t)-1 || frontsector->ceilingpic == (uint8_t)-1)
    {
       // When both ceilings are skies, consider them always "open" to prevent HOM
       solid = false;
    }
    else if (backsector->ceilingheight <= frontsector->floorheight ||
        backsector->floorheight >= frontsector->ceilingheight)
-       solid = true;
-   else
    {
-      if (backsector->ceilingheight <= frontsector->floorheight ||
-         backsector->floorheight >= frontsector->ceilingheight)
-      {
-         solid = true;
-      }
-      else if (backsector->ceilingheight == frontsector->ceilingheight &&
-         backsector->floorheight == frontsector->floorheight)
-      {
-         // reject empty lines used for triggers and special events
-         if (sidedef->midtexture == 0 &&
-            backsector->ceilingpic == frontsector->ceilingpic &&
-            backsector->floorpic == frontsector->floorpic &&
-            *(int8_t *)&backsector->lightlevel == *(int8_t *)&frontsector->lightlevel) // hack to get rid of the extu.w on SH-2
-            return;
-      }
+       solid = true;
+   }
+   else if (backsector->ceilingheight == frontsector->ceilingheight &&
+        backsector->floorheight == frontsector->floorheight)
+   {
+      // reject empty lines used for triggers and special events
+      if (!(backsector->fofsec || frontsector->fofsec) &&
+         *(int16_t *)&backsector->floorpic == *(int16_t *)&frontsector->floorpic && // compares both floorpic and ceilingpic
+         *(int8_t *)&backsector->lightlevel == *(int8_t *)&frontsector->lightlevel && // hack to get rid of the extu.w on SH-2
+         SIDETEX(sidedef)->midtexture == 0)
+         return;
    }
 
    rbsp->curline = line;
    rbsp->curside = sidedef;
    rbsp->curldef = ldef;
-   rbsp->curbsector = oldbsector;
+   rbsp->curbsector = backsector;
    rbsp->lineangle1 = angle1;
    R_ClipWallSegment(rbsp, x1, x2, solid);
 }
@@ -760,16 +883,17 @@ visplane_t *floorplane, *ceilingplane;
 //
 static void R_Subsector(rbspWork_t *rbsp, int num)
 {
-   subsector_t *sub = &subsectors[num];
-   seg_t       *line, *stopline;
+   const subsector_t *sub = &subsectors[num];
+   seg_t       *line;
    int          count;
-   sector_t    *frontsector = sub->sector;
+   int secnum = sub->isector;
+   sector_t    *frontsector = &sectors[sub->isector];
       
    if (frontsector->thinglist)
    {
-      if(frontsector->validcount != validcount[0]) // not already processed?
+      if(validcount[secnum+1] != validcount[0]) // not already processed?
       {
-         frontsector->validcount = validcount[0];  // mark it as processed
+         validcount[secnum+1] = validcount[0];  // mark it as processed
          if (vd.lastvissector < vd.vissectors + MAXVISSSEC)
          {
            *vd.lastvissector++ = frontsector;
@@ -777,12 +901,11 @@ static void R_Subsector(rbspWork_t *rbsp, int num)
       }
    }
 
-   line     = &segs[sub->firstline];
-   count    = sub->numlines;
-   stopline = line + count;
-
    rbsp->curfsector = frontsector;
-   while(line != stopline)
+   line     = &segs[sub->firstline];
+   count    = P_GetSubsectorNumlines(sub);
+
+   while(--count >= 0)
       R_AddLine(rbsp, line++);
 }
 
@@ -859,7 +982,7 @@ void R_BSP(void)
    rbsp.splitspans = viewportWidth + viewportWidth/2;
    rbsp.lastv1 = -1;
    rbsp.lastv2 = -1;
-
+   
    R_RenderBSPNode(&rbsp, numnodes - 1, worldbbox);
 }
 

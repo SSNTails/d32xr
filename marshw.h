@@ -37,9 +37,12 @@
 
 #define MARS_MAX_CONTROLLERS 2
 
-#ifdef MDSKY
-#define MARS_MD_PIXEL_THRU_INDEX	252
-#endif
+#define LEGACY_EMULATOR_NONE			0
+#define LEGACY_EMULATOR_ARES			1	//TODO: Not really a "legacy" emulator.
+#define LEGACY_EMULATOR_KEGA			2
+#define LEGACY_EMULATOR_GENS			3
+#define LEGACY_EMULATOR_AGES			4
+#define LEGACY_EMULATOR_INCOMPATIBLE	5
 
 void Mars_FlipFrameBuffers(char wait);
 void Mars_WaitFrameBuffersFlip(void);
@@ -49,13 +52,13 @@ void Mars_InitVideo(int lines);
 void Mars_InitLineTable(void);
 void Mars_SetBrightness(int16_t brightness);
 int Mars_BackBuffer(void);
-char Mars_UploadPalette(const uint8_t* palette) MARS_ATTR_DATA_CACHE_ALIGN;
-int Mars_PollMouse(void);
-int Mars_ParseMousePacket(int mouse, int* pmx, int* pmy);
+void Mars_SetPalette(const uint8_t *palette);
 
+extern volatile uint8_t legacy_emulator;
+
+extern volatile unsigned int mars_hblank_count_peak;
 extern volatile unsigned mars_vblank_count;
 extern unsigned mars_frtc2msec_frac;
-extern const uint8_t* mars_newpalette;
 extern uint16_t mars_thru_rgb_reference;
 extern uint16_t mars_cd_ok;
 extern uint16_t mars_num_cd_tracks;
@@ -130,25 +133,28 @@ void Mars_MDPutString(char *str);
 void Mars_SetBankPage(int bank, int page) MARS_ATTR_DATA_CACHE_ALIGN;
 void Mars_SetBankPageSec(int bank, int page) MARS_ATTR_DATA_CACHE_ALIGN;
 int Mars_ReadController(int port);
+int Mars_ConvGamepadButtons(int ctrl);
 
 int Mars_ROMSize(void);
 
+void Mars_WriteMDVDPRegister(int write);
+
+void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size, int bank, int flags);
+
 #ifdef MDSKY
 void Mars_FadeMDPaletteFromBlack(int fade_degree);
+void Mars_CrossfadeMDPalette(int fade_degree);
 void Mars_ScrollMDSky(short scroll_x, short scroll_y_base, short scroll_y_offset, short scroll_y_pan);
+void Mars_SetScrollPositions(
+		short scroll_b_top_y, short scroll_b_bottom_y, short scroll_a_top_y, short scroll_a_bottom_y);
+//		short scroll_b_top_x, short scroll_b_top_y, short scroll_b_bottom_x, short scroll_b_bottom_y,
+//		short scroll_a_top_x, short scroll_a_top_y, short scroll_a_bottom_x, short scroll_a_bottom_y);
 void Mars_LoadMDSky(void *sky_metadata_ptr,
 		void *sky_names_a_ptr, int sky_names_a_size,
 		void *sky_names_b_ptr, int sky_names_b_size,
 		void *sky_palettes_ptr, int sky_palettes_size,
 		void *sky_tiles_ptr, int sky_tiles_size);
 #endif
-
-void Mars_CtlMDVDP(int sel);
-
-void Mars_StoreWordColumnInMDVRAM(int c);
-// both offset and length are in words, not in bytes
-void Mars_LoadWordColumnFromMDVRAM(int c, int offset, int len);
-void Mars_SwapWordColumnWithMDVRAM(int c);
 
 void Mars_Finish(void) MARS_ATTR_DATA_CACHE_ALIGN;
 

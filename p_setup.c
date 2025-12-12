@@ -7,43 +7,43 @@
 #include "st_inter.h"
 
 #define DEFAULT_GAME_ZONE_MARGIN (4*1024)
+#define SPECIAL_STAGE_GAME_ZONE_MARGIN (8*1024)		// Guessing at this number...
 
-int			numvertexes;
+uint16_t			numvertexes;
+uint16_t			numsegs;
+uint16_t			numsectors;
+uint16_t			numsubsectors;
+uint16_t			numnodes;
+uint16_t			numlines;
+uint16_t			numsides;
+
+uint16_t 		numlinetags;
+uint16_t 		*linetags;
+uint16_t        numlinespecials;
+uint16_t        *linespecials;
+
 mapvertex_t	*vertexes;
-
-int			numsegs;
 seg_t		*segs;
-
-int			numsectors;
 sector_t	*sectors;
-
-int			numsubsectors;
 subsector_t	*subsectors;
-
-int			numnodes;
 node_t		*nodes;
-
-int			numlines;
 line_t		*lines;
-
-int			numsides;
+uint16_t    *ldflags;
 side_t		*sides;
+sidetex_t   *sidetexes;
 
 short		*blockmaplump;			/* offsets in blockmap are from here */
-int			bmapwidth, bmapheight;	/* in mapblocks */
+VINT		bmapwidth, bmapheight;	/* in mapblocks */
 fixed_t		bmaporgx, bmaporgy;		/* origin of block map */
-mobj_t		**blocklinks;			/* for thing chains */
+SPTR		*blocklinks;			/* for thing chains */
 
 byte		*rejectmatrix;			/* for fast sight rejection */
-
-mapthing_t	*deathmatchstarts, *deathmatch_p;
 
 VINT		*validcount;			/* increment every time a check is made */
 
 mapthing_t	playerstarts[MAXPLAYERS];
 
-int			numthings;
-spawnthing_t* spawnthings;
+uint16_t		numthings;
 
 int16_t worldbbox[4];
 
@@ -52,6 +52,8 @@ int16_t worldbbox[4];
 #define LOADFLAGS_REJECT 4
 #define LOADFLAGS_NODES 8
 #define LOADFLAGS_SEGS 16
+#define LOADFLAGS_LINEDEFS 32
+#define LOADFLAGS_SUBSECTORS 64
 
 /*
 =================
@@ -109,34 +111,19 @@ void P_LoadSegs (int lump)
 
 void P_LoadSubsectors (int lump)
 {
-	byte			*data;
-	int				i;
-	mapsubsector_t	*ms;
-	mapsubsector_t  *msHead;
-	subsector_t		*ss;
-
 	numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
-	subsectors = Z_Malloc (numsubsectors*sizeof(subsector_t),PU_LEVEL);
-	data = I_TempBuffer ();
-	W_ReadLump (lump,data);
 
-	msHead = ms = (mapsubsector_t *)data;
-	D_memset (subsectors,0, numsubsectors*sizeof(subsector_t));
-	ss = subsectors;
-	for (i=0 ; i<numsubsectors ; i++, ss++, ms++)
+	if (gamemapinfo.loadFlags & LOADFLAGS_SUBSECTORS)
 	{
-		// The segments are already stored in sub sector order,
-		// so the number of segments in sub sector n is actually
-		// just subsector[n+1].firstseg - subsector[n].firsteg
-		ss->firstline = LITTLESHORT(ms->firstseg);
-
-		if (i < numsubsectors - 1)
-			ss->numlines = LITTLESHORT(msHead[i+1].firstseg) - ss->firstline;
-		else
-			ss->numlines = numsegs - ss->firstline;
+		subsectors = Z_Malloc ((numsubsectors)*sizeof(subsector_t) + 16,PU_LEVEL);
+		subsectors = (void*)(((uintptr_t)subsectors + 15) & ~15); // aline on cacheline boundary
+		W_ReadLump(lump, subsectors);
 	}
-}
+	else
+		subsectors = (subsector_t*)W_POINTLUMPNUM(lump);
 
+	numsubsectors--;
+}
 
 /*
 =================
@@ -168,7 +155,7 @@ void P_LoadSectors (int lump)
 		ss->ceilingheight = LITTLESHORT(ms->ceilingheight)<<FRACBITS;
 		ss->floorpic = ms->floorpic;
 		ss->ceilingpic = ms->ceilingpic;
-		ss->thinglist = NULL;
+		ss->thinglist = (SPTR)0;
 
 		ss->lightlevel = ms->lightlevel;
 		ss->special = ms->special;
@@ -176,6 +163,7 @@ void P_LoadSectors (int lump)
 		ss->tag = ms->tag;
 		ss->heightsec = -1; // sector used to get floor and ceiling height
 		ss->fofsec = -1;
+		ss->specline = -1;
 		ss->floor_xoffs = 0;
 		ss->flags = 0;
 
@@ -256,12 +244,12 @@ static void P_SpawnItemRow(mapthing_t *mt, VINT type, VINT count, VINT horizonta
 	{
 		P_ThrustValues(spawnAngle, horizontalSpacing << FRACBITS, &spawnX, &spawnY);
 
-		const subsector_t *ss = R_PointInSubsector(spawnX, spawnY);
+		const sector_t *sec = SS_SECTOR(R_PointInSubsector2(spawnX, spawnY));
 
 		fixed_t curZ = spawnZ + ((i+1) * (verticalSpacing<<FRACBITS)); // Literal height
 
 		// Now we have to work backwards and calculate the mapthing z
-		VINT mapthingZ = (curZ - ss->sector->floorheight) >> FRACBITS;
+		VINT mapthingZ = (curZ - sec->floorheight) >> FRACBITS;
 		mapthingZ <<= 4;
 		dummything.options &= 15; // Clear the top 12 bits
 		dummything.options |= mapthingZ; // Insert our new value
@@ -273,73 +261,222 @@ static void P_SpawnItemRow(mapthing_t *mt, VINT type, VINT count, VINT horizonta
 	}
 }
 
+typedef struct
+{
+	short		x,y;
+	short		angle;
+	short		type;
+	short		options;
+} mapmapthing_t; // Lol, only needed here
+
+static short P_GetMaceLinkCount(mapthing_t *mthing)
+{
+	int tag = mthing->angle;
+	line_t *line = NULL;
+	for (int i = 0; i < numlines; i++)
+	{
+		int lineTag = P_GetLineTag(&lines[i]);
+		int lineSpecial = P_GetLineSpecial(&lines[i]);
+
+		if (lineSpecial == 9 && lineTag == tag)
+		{
+			line = &lines[i];
+			break;
+		}
+	}
+
+	if (!line)
+		return 0;
+
+	if (line->sidenum[1] < 0) // Must be an old unconverted one
+		return 0;
+
+	const mapvertex_t *v1 = &vertexes[line->v1];
+	const mapvertex_t *v2 = &vertexes[line->v2];
+
+	sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
+	VINT mlength = D_abs(v1->x - v2->x);
+
+	VINT msublinks = frontsector->lightlevel; // number of links to subtract from the inside.
+	if (msublinks > mlength)
+		msublinks = mlength;
+
+	return mlength - msublinks; // # of links
+}
+
+static void P_SetupMace(mapthing_t *mthing)
+{
+	VINT args[10];
+	int tag = mthing->angle;
+	line_t *line = NULL;
+	for (int i = 0; i < numlines; i++)
+	{
+		int lineTag = P_GetLineTag(&lines[i]);
+		int lineSpecial = P_GetLineSpecial(&lines[i]);
+
+		if (lineSpecial == 9 && lineTag == tag)
+		{
+			line = &lines[i];
+			break;
+		}
+	}
+
+	if (!line)
+		return;
+
+	if (line->sidenum[1] < 0) // Must be an old unconverted one
+		return;
+
+	D_memset(args, 0, sizeof(args));
+
+	vector3_t axis, rotation;
+
+	sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
+	const mapvertex_t *v1 = &vertexes[line->v1];
+	const mapvertex_t *v2 = &vertexes[line->v2];
+//	const VINT angle = frontsector->ceilingheight >> FRACBITS;
+//	const VINT pitch = frontsector->floorheight >> FRACBITS;
+//	VINT roll = 0;
+	VINT textureoffset = sides[line->sidenum[0]].textureoffset & 0xfff;
+    textureoffset <<= 4; // sign extend
+    textureoffset >>= 4; // sign extend
+    VINT rowoffset = (sides[line->sidenum[0]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[0]].rowoffset << 4);
+    rowoffset >>= 4; // sign extend
+
+	axis.x = textureoffset;
+	axis.y = rowoffset;
+	axis.z = frontsector->floorheight >> FRACBITS;
+
+	args[0] = D_abs(v1->x - v2->x); // # of links
+	args[1] = mthing->type >> 12;
+	args[3] = D_abs(v1->y - v2->y);
+	args[4] = textureoffset;
+	args[7] = frontsector->lightlevel; // number of links to subtract from the inside.
+
+	if (line->sidenum[1] >= 0)
+	{
+		sector_t *backsector = &sectors[sides[line->sidenum[1]].sector];
+		VINT backtextureoffset = sides[line->sidenum[1]].textureoffset & 0xfff;
+		backtextureoffset <<= 4; // sign extend
+		backtextureoffset >>= 4; // sign extend
+		VINT backrowoffset = (sides[line->sidenum[1]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[1]].rowoffset << 4);
+		backrowoffset >>= 4; // sign extend
+
+//		roll = backsector->ceilingheight >> FRACBITS;
+		args[2] = backrowoffset;
+		args[5] = backsector->floorheight >> FRACBITS;
+		args[6] = backtextureoffset;
+		args[9] = backsector->lightlevel << 1; // Swing speed
+
+		rotation.x = backtextureoffset;
+		rotation.y = backrowoffset;
+		rotation.z = backsector->floorheight >> FRACBITS;
+	}
+
+	if (mthing->options & MTF_AMBUSH)
+		args[8] |= TMM_DOUBLESIZE;
+	if (mthing->options & MTF_OBJECTSPECIAL)
+		args[8] |= TMM_SILENT;
+	if (ldflags[line-lines] & ML_NOCLIMB)
+		args[8] |= TMM_ALLOWYAWCONTROL;
+	if (ldflags[line-lines] & ML_CULLING)
+		args[8] |= TMM_SWING;
+	if (ldflags[line-lines] & ML_UNDERWATERONLY)
+		args[8] |= TMM_MACELINKS;
+	if (ldflags[line-lines] & ML_CULL_MIDTEXTURE)
+		args[8] |= TMM_CENTERLINK;
+	if (ldflags[line-lines] & ML_MIDTEXTUREBLOCK)
+		args[8] |= TMM_CLIP;
+	if (ldflags[line-lines] & ML_UNUSED2_WRAPMIDTEX)
+		args[8] |= TMM_ALWAYSTHINK;
+
+//	if (tag == 120)
+//		args[8] |= TMM_ALWAYSTHINK;
+
+	// Whew! We gathered all of the info. Let's do something with it, now.
+	P_AddMaceChain(mthing, &axis, &rotation, args);
+}
+
 void P_LoadThings (int lump)
 {
 	byte			*data;
 	int				i;
 	mapthing_t		*mt;
-	spawnthing_t	*st;
 	short			numthingsreal, numstaticthings, numringthings;
 
-	for (int i = 0; i < NUMMOBJTYPES; i++)
-		ringmobjtics[i] = -1;
+	ringmobjstates = Z_Malloc(sizeof(*ringmobjstates) * NUMMOBJTYPES, PU_LEVEL);
+	ringmobjtics = Z_Malloc(sizeof(*ringmobjtics) * NUMMOBJTYPES, PU_LEVEL);
 
-	data = I_TempBuffer ();
-	W_ReadLump (lump,data);
-	numthings = W_LumpLength (lump) / sizeof(mapthing_t);
+	for (int i = 0; i < NUMMOBJTYPES; i++)
+	{
+		ringmobjstates[i] = mobjinfo[i].spawnstate;
+		ringmobjtics[i] = states[mobjinfo[i].spawnstate].tics;
+	}
+
+	data = I_TempBuffer();
+	numthings = W_LumpLength (lump) / sizeof(mapmapthing_t);
 	numthingsreal = 0;
 	numstaticthings = 0;
 	numringthings = 0;
 	numscenerymobjs = 0;
 
+	mapmapthing_t *mmt = (mapmapthing_t*)(data + (sizeof(mapthing_t) * numthings));
+	W_ReadLump(lump, mmt);
+
+	mt = (mapthing_t *)data;
+	for (i=0 ; i<numthings ; i++, mt++, mmt++)
+	{
+		mt->x = LITTLESHORT(mmt->x);
+		mt->y = LITTLESHORT(mmt->y);
+		mt->angle = LITTLESHORT(mmt->angle);
+		mt->type = LITTLESHORT(mmt->type);
+		mt->options = LITTLESHORT(mmt->options);
+		mt->extrainfo = mt->type >> 12;
+		mt->type &= 4095;
+	}
+
+	int numMaces = 0;
+
 	mt = (mapthing_t *)data;
 	for (i=0 ; i<numthings ; i++, mt++)
 	{
-		mt->x = LITTLESHORT(mt->x);
-		mt->y = LITTLESHORT(mt->y);
-		mt->angle = LITTLESHORT(mt->angle);
-		mt->type = LITTLESHORT(mt->type);
-		mt->options = LITTLESHORT(mt->options);
-	}
-
-	if (netgame == gt_deathmatch)
-	{
-		spawnthings = Z_Malloc(numthings * sizeof(*spawnthings), PU_LEVEL);
-		st = spawnthings;
-		mt = (mapthing_t*)data;
-		for (i = 0; i < numthings; i++, mt++)
+		if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
 		{
-			st->x = mt->x, st->y = mt->y;
-			st->angle = mt->angle;
-			st->type = mt->type;
-			st++;
+			// Determine the # of objects that will be spawned
+			int maceLinkCount = P_GetMaceLinkCount(mt);
+
+			if (maceLinkCount > 0)
+				numringthings += maceLinkCount; // links
+
+			numringthings++; // End of chain (ball)
+			numMaces++;
 		}
-	}
-
-	mt = (mapthing_t *)data;
-	for (i=0 ; i<numthings ; i++, mt++)
-	{
-		switch (P_MapThingSpawnsMobj(mt))
+		else
 		{
-			case 0:
-				break;
-			case 1:
-				numthingsreal++;
-				break;
-			case 2:
-				numstaticthings++;
-				break;
-			case 3:
-				if (mt->type >= 600 && mt->type <= 602)
-					numringthings += 5;
-				else if (mt->type == 603)
-					numringthings += 10;
-				else
-					numringthings++;
-				break;
-			case 4:
-				numscenerymobjs++;
-				break;
+			switch (P_MapThingSpawnsMobj(mt))
+			{
+				case 0:
+					break;
+				case 1:
+					numthingsreal++;
+					if (mt->type == 118)
+						numthingsreal++; // Jet fume
+					break;
+				case 2:
+					numstaticthings++;
+					break;
+				case 3:
+					if (mt->type >= 600 && mt->type <= 602)
+						numringthings += 5;
+					else if (mt->type == 603)
+						numringthings += 10;
+					else
+						numringthings++;
+					break;
+				case 4:
+					numscenerymobjs++;
+					break;
+			}
 		}
 	}
 
@@ -350,10 +487,14 @@ void P_LoadThings (int lump)
 	if (gamemapinfo.act == 3)
 	{
 		// Bosses spawn lots of stuff, so preallocate more.
-		numthingsreal += 96;
-		numstaticthings += 64;
+		numthingsreal += 512;
+		numstaticthings += 256;
 	}
+
 	P_PreSpawnMobjs(numthingsreal, numstaticthings, numringthings, numscenerymobjs);
+
+	// Pre-allocate maces, too.
+	P_PreallocateMaces(numMaces);
 
 	mt = (mapthing_t *)data;
 	for (i=0 ; i<numthings ; i++, mt++)
@@ -366,6 +507,8 @@ void P_LoadThings (int lump)
 			P_SpawnItemRow(mt, mobjinfo[MT_RING].doomednum, 5, 64, 64);
 		else if (mt->type == 603) // 10 diagonal rings (yellow spring)
 			P_SpawnItemRow(mt, mobjinfo[MT_RING].doomednum, 10, 64, 64);
+		else if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
+			P_SetupMace(mt);
 		else
 			P_SpawnMapThing(mt, i);
 	}
@@ -378,8 +521,6 @@ void P_LoadThings (int lump)
 		P_SetStarPosts(players[0].starpostnum + 1);
 }
 
-
-
 /*
 =================
 =
@@ -391,48 +532,111 @@ void P_LoadThings (int lump)
 
 void P_LoadLineDefs (int lump)
 {
-	byte			*data;
 	int				i;
-	maplinedef_t	*mld;
 	line_t			*ld;
 	mapvertex_t		*v1, *v2;
 	
 	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
-	lines = Z_Malloc (numlines*sizeof(line_t)+16,PU_LEVEL);
-	lines = (void*)(((uintptr_t)lines + 15) & ~15); // aline on cacheline boundary
-	D_memset (lines, 0, numlines*sizeof(line_t));
-	data = I_TempBuffer ();
-	W_ReadLump (lump,data);
 
-	mld = (maplinedef_t *)data;
-	ld = lines;
-	for (i=0 ; i<numlines ; i++, mld++, ld++)
+	if (gamemapinfo.loadFlags & LOADFLAGS_LINEDEFS)
 	{
+		lines = Z_Malloc (numlines*sizeof(line_t)+16,PU_LEVEL);
+		lines = (void*)(((uintptr_t)lines + 15) & ~15); // aline on cacheline boundary
+		W_ReadLump(lump, lines);
+	}
+	else
+		lines = (line_t *)W_POINTLUMPNUM(lump);
+
+	// LDFlags always live in RAM. Lump comes directly after LINEDEFS
+	ldflags = Z_Malloc(numlines*sizeof(uint16_t)+16, PU_LEVEL);
+	ldflags = (void*)(((uintptr_t)ldflags + 15) & ~15); // aline on cacheline boundary
+	D_memset (ldflags, 0, numlines*sizeof(uint16_t));
+	byte *ldData = I_TempBuffer ();
+	W_ReadLump (lump + 1, ldData);
+
+	numlinetags = 0;
+	numlinespecials = 0;
+
+	uint16_t *ldFlagsPtr = ldflags;
+	mapldflags_t *mapldFlags = (mapldflags_t*)ldData;
+	ld = lines;
+	for (i=0 ; i<numlines ; i++, ld++, mapldFlags++, ldFlagsPtr++)
+	{
+		uint8_t tag = mapldFlags->tag;
+		uint8_t special = mapldFlags->special;
+		uint16_t flags = mapldFlags->flags;
+
 		fixed_t dx,dy;
-		ld->flags = LITTLESHORT(mld->flags);
-		ld->special = mld->special;
-		ld->tag = mld->tag;
-		ld->v1 = LITTLESHORT(mld->v1);
-		ld->v2 = LITTLESHORT(mld->v2);
-		
 		v1 = &vertexes[ld->v1];
 		v2 = &vertexes[ld->v2];
 		dx = (v2->x - v1->x) << FRACBITS;
 		dy = (v2->y - v1->y) << FRACBITS;
 		if (!dx)
-			ld->flags |= ML_ST_VERTICAL;
+			flags |= ML_ST_VERTICAL;
 		else if (!dy)
-			ld->flags |= ML_ST_HORIZONTAL;
+			flags |= ML_ST_HORIZONTAL;
 		else
 		{
 			if (FixedDiv (dy , dx) > 0)
-				ld->flags |= ML_ST_POSITIVE;
+				flags |= ML_ST_POSITIVE;
 			else
-				ld->flags |= ML_ST_NEGATIVE;
+				flags |= ML_ST_NEGATIVE;
 		}
 
-		ld->sidenum[0] = LITTLESHORT(mld->sidenum[0]);
-		ld->sidenum[1] = LITTLESHORT(mld->sidenum[1]);
+#define ML_TWOSIDED 4
+/*
+		// if the two-sided flag isn't set, set the back side to -1
+		if (ld->sidenum[1] >= 0) {
+			if (!(flags & ML_TWOSIDED)) {
+				ld->sidenum[1] = -1;
+			}
+		}*/
+		flags &= ~ML_TWOSIDED;
+#undef ML_TWOSIDED
+
+		if (tag > 0 || special > 0)
+			flags |= ML_HAS_SPECIAL_OR_TAG;
+
+		if (tag)
+			numlinetags++;
+
+		if (special)
+			numlinespecials++;
+
+		*ldFlagsPtr = flags;
+	}
+
+	if (numlinetags)
+	{
+		linetags = Z_Malloc(sizeof(*linetags)*numlinetags*2, PU_LEVEL);
+		uint16_t *linetagPtr = linetags;
+		mapldFlags = (mapldflags_t*)ldData;
+		for (i=0 ; i<numlines ; i++, mapldFlags++)
+		{
+			uint8_t tag = mapldFlags->tag;
+			if (tag)
+			{
+				*linetagPtr++ = i;
+				*linetagPtr++ = tag;
+			}
+		}
+	}
+
+	if (numlinespecials)
+	{
+		// load specials into hash table
+		linespecials = Z_Malloc(sizeof(*linespecials)*numlinespecials*2, PU_LEVEL);
+		uint16_t *linespecialPtr = linespecials;
+		mapldFlags = (mapldflags_t*)ldData;
+		for (i=0 ; i<numlines ; i++, mapldFlags++)
+		{
+			uint8_t special = mapldFlags->special;
+			if (special)
+			{
+				*linespecialPtr++ = i;
+				*linespecialPtr++ = special;
+			}
+		}
 	}
 }
 
@@ -470,9 +674,7 @@ void P_LoadSideDefs (int lump)
 		sd->sector = LITTLESHORT(msd->sector);
 		sd->rowoffset = msd->rowoffset;
 		sd->textureoffset = LITTLESHORT(msd->textureoffset);
-		sd->toptexture = msd->toptexture;
-		sd->midtexture = msd->midtexture;
-		sd->bottomtexture = msd->bottomtexture;
+		sd->texIndex = msd->texIndex;
 
 #ifndef MARS
 		textures[sd->toptexture].usecount++;
@@ -482,7 +684,13 @@ void P_LoadSideDefs (int lump)
 	}
 }
 
-
+void P_LoadSideTexes(int lump)
+{
+	int numsidetexes = W_LumpLength (lump) / sizeof(sidetex_t);
+	sidetexes = Z_Malloc (numsidetexes*sizeof(sidetex_t)+16,PU_LEVEL);
+	sidetexes = (void*)(((uintptr_t)sidetexes + 15) & ~15); // aline on cacheline boundary
+	W_ReadLump(lump, sidetexes);
+}
 
 /*
 =================
@@ -542,14 +750,15 @@ void P_LoadReject (int lump)
 
 void P_GroupLines (void)
 {
-	VINT		*linebuffer;
-	int			i, total;
-	sector_t	*sector;
-	subsector_t	*ss;
-	seg_t		*seg;
-	line_t		*li;
+//	VINT		*linebuffer;
+//	int			i;//, total;
+//	sector_t	*sector;
+//	subsector_t	*ss;
+//	seg_t		*seg;
+//	line_t		*li;
 
 /* look up sector number for each subsector */
+/*
 	ss = subsectors;
 	for (i=0 ; i<numsubsectors ; i++, ss++)
 	{
@@ -559,10 +768,10 @@ void P_GroupLines (void)
 		seg = &segs[ss->firstline];
 		linedef = &lines[seg->linedef];
 		sidedef = &sides[linedef->sidenum[seg->sideoffset & 1]];
-		ss->sector = &sectors[sidedef->sector];
-	}
-
-/* count number of lines in each sector */
+		ss->isector = sidedef->sector;
+	}*/
+/*
+// count number of lines in each sector
 	li = lines;
 	total = 0;
 	for (i=0 ; i<numlines ; i++, li++)
@@ -579,7 +788,7 @@ void P_GroupLines (void)
 		}
 	}
 	
-/* build line tables for each sector	 */
+// build line tables for each sector
 	linebuffer = Z_Malloc (total*sizeof(*linebuffer), PU_LEVEL);
 	sector = sectors;
 	for (i=0 ; i<numsectors ; i++, sector++)
@@ -598,7 +807,7 @@ void P_GroupLines (void)
 		front->lines[front->linecount++] = i;
 		if (back && back != front)
 			back->lines[back->linecount++] = i;
-	}
+	}*/
 }
 
 /*============================================================================= */
@@ -611,12 +820,16 @@ void P_GroupLines (void)
 =================
 */
 
+#ifdef BENCHMARK
+extern int benchcounter;
+#endif
+
 void P_SetupLevel (int lumpnum)
 {
 #ifndef MARS
 	mobj_t	*mobj;
 #endif
-	extern	int	cy;
+	extern	VINT	cy;
 	int gamezonemargin;
 	
 	M_ClearRandom ();
@@ -635,56 +848,33 @@ D_printf ("P_SetupLevel(%i)\n",lumpnum);
 	P_LoadVertexes (lumpnum+ML_VERTEXES);
 	P_LoadSectors (lumpnum+ML_SECTORS);
 	P_LoadSideDefs (lumpnum+ML_SIDEDEFS);
+	P_LoadSideTexes (lumpnum+ML_SIDETEX);
 	P_LoadLineDefs (lumpnum+ML_LINEDEFS);
 	P_LoadSegs (lumpnum+ML_SEGS);
 	P_LoadSubsectors (lumpnum+ML_SSECTORS);
 	P_LoadNodes (lumpnum+ML_NODES);
 	P_LoadReject(lumpnum+ML_REJECT);
 
-	validcount = Z_Malloc((numlines + 1) * sizeof(*validcount) * 2, PU_LEVEL);
-	D_memset(validcount, 0, (numlines + 1) * sizeof(*validcount) * 2);
+	validcount = Z_Malloc((numlines + 1) * sizeof(*validcount), PU_LEVEL);
+	D_memset(validcount, 0, (numlines + 1) * sizeof(*validcount));
 	validcount[0] = 1; // cpu 0
-	validcount[numlines] = 1; // cpu 1
 
-	P_GroupLines ();
-
-	if (netgame == gt_deathmatch)
-	{
-		deathmatchstarts = Z_Malloc(sizeof(*deathmatchstarts) * MAXDMSTARTS, PU_LEVEL);
-	}
-	else
-	{
-		deathmatchstarts = NULL;
-	}
-
-	deathmatch_p = deathmatchstarts;
-	P_LoadThings (lumpnum+ML_THINGS);
-
-/* */
-/* if deathmatch, randomly spawn the active players */
-/* */
-	if (netgame == gt_deathmatch)
-	{
-		int i;
-		for (i=0 ; i<MAXPLAYERS ; i++)
-			if (playeringame[i])
-			{	/* must give a player spot before deathmatchspawn */
-				mobj_t *mobj = P_SpawnMobj (deathmatchstarts[0].x<<16
-				,deathmatchstarts[0].y<<16,0, MT_PLAYER);
-				players[i].mo = mobj;
-				G_DeathMatchSpawnPlayer (i);
-				P_RemoveMobj (mobj);
-			}
-	}
+	P_GroupLines();
 
 /* set up world state */
 	P_SpawnSpecials ();
+	P_LoadThings (lumpnum+ML_THINGS);
+
 	ST_InitEveryLevel ();
 	
 /*I_Error("free memory: 0x%x\n", Z_FreeMemory(mainzone)); */
 /*printf ("free memory: 0x%x\n", Z_FreeMemory(mainzone)); */
 
 	cy = 4;
+
+#ifdef BENCHMARK
+	benchcounter = 0;
+#endif
 
 #ifdef JAGUAR
 {
@@ -696,10 +886,14 @@ extern byte *debugscreen;
 
 	gamepaused = false;
 
-	gamezonemargin = DEFAULT_GAME_ZONE_MARGIN;
-	R_SetupLevel(gamezonemargin);
+	if (IsLevelType(LevelType_SpecialStage)) {
+		gamezonemargin = SPECIAL_STAGE_GAME_ZONE_MARGIN;
+	}
+	else {
+		gamezonemargin = DEFAULT_GAME_ZONE_MARGIN;
+	}
 
-	I_SetThreadLocalVar(DOOMTLS_VALIDCOUNT, &validcount[0]);
+	R_SetupLevel(gamezonemargin, gamemapinfo.sky);
 
 #ifdef MARS
 	Mars_CommSlaveClearCache();
@@ -719,9 +913,6 @@ void P_Init (void)
 {
 	anims = Z_Malloc(sizeof(*anims) * MAXANIMS, PU_STATIC);
 	linespeciallist = Z_Malloc(sizeof(*linespeciallist) * MAXLINEANIMS, PU_STATIC);
-
-	activeplats = Z_Malloc(sizeof(*activeplats) * MAXPLATS, PU_STATIC);
-	activeceilings = Z_Malloc(sizeof(*activeceilings) * MAXCEILINGS, PU_STATIC);
 
 	P_InitPicAnims ();
 #ifndef MARS

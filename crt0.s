@@ -35,9 +35,9 @@
         .ascii  "Sonic Robo Blast"
         .ascii  " 32X            "
         .ascii  "                "
-        .ascii  "GM 20230824-00"
-        .word   0x0000
-        .ascii  "J6CM            "
+        .ascii  "GM 00000000-00"        /* Serial (insert date) */
+        .word   0x0000                  /* Checksum */
+        .ascii  "J6              "      /* 3 and 6 button controllers */
         .long   0x00000000,0x003FFFFF   /* ROM start, end */
         .long   0x00FF0000,0x00FFFFFF   /* RAM start, end */
 
@@ -105,7 +105,7 @@
 
 ! Standard Mars Header at 0x3C0
 
-        .ascii  "SRB32X v0.1a    "      /* module name */
+        .ascii  "SRB32X v0.2a    "      /* module name */
         .long   0x00000000              /* version */
         .long   __text_end-0x02000000   /* Source (in ROM) */
         .long   0x00000000              /* Destination (in SDRAM) */
@@ -321,6 +321,7 @@ sec_vbr:
         .long   sec_irq         /* V Blank interrupt (Level 12 & 13) */
         .long   sec_irq         /* Reset Button (Level 14 & 15) */
 
+
 !-----------------------------------------------------------------------
 ! The Primary SH2 starts here
 !-----------------------------------------------------------------------
@@ -445,6 +446,8 @@ pri_irq:
         mov.l   r2,@-r15
 
         stc     sr,r1                   /* SR holds IRQ level in I3-I0 */
+        mov     #0x10,r2
+        or      r2,r1                   /* IRQ level for bumped irq */
         mov.w   p_int_off,r2
         ldc     r2,sr                   /* disallow ints */
 
@@ -457,10 +460,10 @@ pri_irq:
         mov     r1,r0
         shlr2   r0
         and     #0x3C,r0                /* int level to table offset */
-        mov.l   p_int_jtable,r1
-        mov.l   @(r0,r1),r0
+        mov.l   p_int_jtable,r2
+        mov.l   @(r0,r2),r0
         jsr     @r0
-        nop
+        ldc     r1,sr                   /* restore IRQ level */
 
         lds.l   @r15+,pr
         mov.l   @r15+,r2
@@ -509,27 +512,6 @@ pri_no_irq:
 !-----------------------------------------------------------------------
 
 pri_v_irq:
-        /*
-        mov.l   r0,@-r15
-        mov.l   r1,@-r15
-
-        mov.l   mars_thru_rgb_reference,r0
-        mov.w   @r0,r1
-        mov.l   phi_mars_color_palette,r0
-        add     r1,r0
-        add     r1,r0
-        mov.w   @r0,r1
-
-        mov.w   phi_mars_color_mask,r0
-        and     r0,r1
-        
-        mov.l   phi_rgb,r0
-        mov.l   r1,@r0
-
-        mov.l   @r15+,r1
-        mov.l   @r15+,r0
-        */
-
         ! bump ints if necessary
         mov.l   pvi_sh2_frtctl,r1
         mov     #0xE2,r0                /* TOCR = select OCRA, output 1 on compare match */
@@ -549,9 +531,60 @@ pri_v_irq:
         sts.l   mach,@-r15
         sts.l   macl,@-r15
 
+
+        ! Enable or disable HINTs depending if copper effects are needed.
+        !mov.l   pvi_effects_flags,r1           ! Test for copper effects being enabled
+        !mov.l   @r1,r2
+        !mov.l   pvi_enable_hints,r1
+        !mov.b   @r1,r0
+        !and     r0,r2
+        shll2   r2
+        mov.w   pvi_int_mask_hint,r0
+        and     r0,r2
+        mov     #1,r2   ! DLG: Temporarily enable HINTs at all times
+        shll2   r2
+
+        mov.l   pvi_mars_adapter,r1
+        mov.b   @(1,r1),r0
+        mov.w   pvi_int_mask_no_hint,r3
+        and     r3,r0
+        or      r2,r0
+        mov.b   r0,@(1,r1)              /* set int enables */
+
+
+        ! Run the handler code
         mov.l   pvbi_handler_ptr,r0
         jsr     @r0
         nop
+
+
+        ! CPU debugger
+        mov     #0,r1
+        mov     r1,r2
+        mov.l   pvi_cpu_pulse_timeout,r3
+        mov.w   @r3,r2
+        cmp/eq  r1,r2
+        bt      2f
+
+        mov.l   pvi_cpu_pulse_count,r0
+        mov.w   @r0,r1
+        add     #1,r1
+
+        cmp/hs  r2,r1
+        bf      1f
+
+        sts     pr,r2
+        mov.l   pvi_cpu_debug_pr,r3
+        mov.l   r2,@r3
+
+        ! Run the debug handler
+        mov.l   pvbi_debug_ptr,r3
+        jsr     @r3
+        nop
+1:
+        mov.b   r1,@r0
+2:
+
 
         ! restore registers
         lds.l   @r15+,macl
@@ -573,22 +606,30 @@ pvbi_handler_ptr:
 pvi_sh2_frtctl:
         .long   0xfffffe10
 
+pvi_cpu_pulse_count:
+        .long   _cpu_pulse_count
+pvi_cpu_pulse_timeout:
+        .long   _cpu_pulse_timeout
+
+pvi_cpu_debug_pr:
+        .long   _cpu_debug_pr
+
+pvbi_debug_ptr:
+        .long   _pri_vbi_debug
+
+pvi_int_mask_no_hint:
+        .short  0xFB
+pvi_int_mask_hint:
+        .short  0x04
+pvi_effects_flags:
+        .long   _effects_flags
+        .align  4
+
 !-----------------------------------------------------------------------
 ! Primary H Blank IRQ handler
 !-----------------------------------------------------------------------
         
 pri_h_irq:
-        /*
-        mov.l   phi_rgb,r1
-        mov.l   @r1,r0
-
-        mov.l   phi_mars_thru_color,r2
-        mov.w   r0,@r2
-
-        add     #1,r0
-        mov.l   r0,@r1
-        */
-
         ! bump ints if necessary
         mov.l   phi_sh2_frtctl,r1
         mov     #0xE2,r0                /* TOCR = select OCRA, output 1 on compare match */
@@ -597,6 +638,83 @@ pri_h_irq:
 
         mov.l   phi_mars_adapter,r1
         mov.w   r0,@(0x18,r1)           /* clear H IRQ */
+
+
+        /* Distortion */
+        mov.l   phi_effects_flags,r1
+        mov.b   @r1,r0
+        tst     #1,r0   ! T=1 if distortion bit is zero
+        movt    r2
+        bt/s    0f
+
+do_distortion:
+        mov.l   phi_line,r1
+        mov.l   @r1,r0
+        shlr2   r0
+        shlr2   r0
+        shlr    r0
+        shll2   r0
+        mov.l   phi_distortion_line_bit_shift,r1
+        add     r0,r1
+        mov.l   @r1,r0
+        rotl    r0
+        mov.l   r0,@r1
+        and     #1,r0
+        mov.l   phi_screen_shift_register,r1
+        mov.w   r0,@r1
+        
+
+
+        /* Copper */
+        mov.l   phi_effects_flags,r1
+        mov.b   @r1,r0
+0:
+        tst     #2,r0   ! T=1 if distortion bit is zero
+        movt    r2
+        bf/s    do_copper
+
+        nop
+        nop
+        nop
+        nop
+
+        ! handle H IRQ (remove nops if more than 8 cycles)
+
+        rts
+        nop
+
+do_copper:
+        mov.l   phi_line,r1
+        mov.l   @r1,r2
+        mov     r2,r0
+        add     r0,r0
+
+        add     #1,r2
+        mov.l   r2,@r1
+
+        mov.l   phi_last_hint,r1
+        cmp/ge  r1,r2
+        bf      1f
+        nop
+
+        mov.l   phi_copper_neutral_color,r1
+        mov.w   @r1,r0
+        
+        bra     2f
+        nop
+
+1:
+        mov.l   phi_copper_buffer,r1
+        mov.l   @r1,r1                  /* Dereference the pointer */
+        mov.w   @(r0,r1),r0
+        mov.w   phi_color_mask,r1
+        and     r1,r0
+
+2:
+        mov.l   phi_mars_thru_color,r1
+        mov.w   r0,@r1
+
+
         nop
         nop
         nop
@@ -608,25 +726,35 @@ pri_h_irq:
         nop
 
         .align  4
-phi_rgb:
-        .long   _phi_line
 phi_mars_adapter:
         .long   0x20004000
-phi_mars_color_palette:
-        .long   0x20004200
-phi_mars_thru_color:
-        .long   0x200043F8
 
 phi_sh2_frtctl:
         .long   0xfffffe10
 
-mars_thru_rgb_reference:
-        .long   _mars_thru_rgb_reference
+phi_last_hint:
+        .long   0xE0
+phi_copper_buffer:
+        .long   _copper_buffer
+phi_copper_neutral_color:
+        .long   _copper_neutral_color
+phi_line:
+        .long   _mars_hblank_count
+phi_mars_thru_color:
+        .long   0x200043FE
 
-phi_mars_thru_bit_mask:
-        .word   0x8000
-phi_mars_color_mask:
-        .word   0x7FFF
+phi_distortion_line_bit_shift:
+        .long   _distortion_line_bit_shift
+phi_screen_shift_register:
+        .long   0x20004102
+phi_effects_flags:
+        .long   _effects_flags
+phi_distortion_filter_index:
+        .long   _distortion_filter_index
+
+phi_color_mask:
+        .short  0x7FFF
+
         .align  4
 
 !-----------------------------------------------------------------------
@@ -1040,6 +1168,8 @@ sec_irq:
         mov.l   r2,@-r15
 
         stc     sr,r1                   /* SR holds IRQ level in I3-I0 */
+        mov     #0x10,r2
+        or      r2,r1                   /* IRQ level for bumped irq */
         mov.w   s_int_off,r2
         ldc     r2,sr                   /* disallow ints */
 
@@ -1052,10 +1182,10 @@ sec_irq:
         mov     r1,r0
         shlr2   r0
         and     #0x3C,r0                /* int level to table offset */
-        mov.l   s_int_jtable,r1
-        mov.l   @(r0,r1),r0
+        mov.l   s_int_jtable,r2
+        mov.l   @(r0,r2),r0
         jsr     @r0
-        nop
+        ldc     r1,sr                   /* restore IRQ level */
 
         lds.l   @r15+,pr
         mov.l   @r15+,r2

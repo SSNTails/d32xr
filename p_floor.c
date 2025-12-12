@@ -1,5 +1,6 @@
 #include "doomdef.h"
 #include "p_local.h"
+#include "p_camera.h"
 
 //e6y
 #define STAIRS_UNINITIALIZED_CRUSH_FIELD_VALUE 10
@@ -20,7 +21,7 @@
 /* */
 /*================================================================== */
 result_e	T_MovePlane(sector_t *sector,fixed_t speed,
-			fixed_t dest,boolean crush,int floorOrCeiling,int direction)
+			fixed_t dest,boolean changeSector,int floorOrCeiling,int direction)
 {
 	boolean	flag;
 	fixed_t	lastpos;
@@ -35,12 +36,15 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->floorheight;
 						sector->floorheight = dest;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+
+						if (changeSector)
 						{
-							sector->floorheight =lastpos;
-							P_ChangeSector(sector,crush);
-							/*return crushed; */
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->floorheight = lastpos;
+								P_ChangeSector(sector,false);
+							}
 						}
 						return pastdest;
 					}
@@ -48,12 +52,15 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->floorheight;
 						sector->floorheight -= speed;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+
+						if (changeSector)
 						{
-							sector->floorheight = lastpos;
-							P_ChangeSector(sector,crush);
-							return crushed;
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->floorheight = lastpos;
+								P_ChangeSector(sector,false);
+							}
 						}
 					}
 					break;
@@ -63,12 +70,14 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->floorheight;
 						sector->floorheight = dest;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+						if (changeSector)
 						{
-							sector->floorheight = lastpos;
-							P_ChangeSector(sector,crush);
-							/*return crushed; */
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->floorheight = lastpos;
+								P_ChangeSector(sector,false);
+							}
 						}
 						return pastdest;
 					}
@@ -76,14 +85,14 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->floorheight;
 						sector->floorheight += speed;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+						if (changeSector)
 						{
-							if (crush == true)
-								return crushed;
-							sector->floorheight = lastpos;
-							P_ChangeSector(sector,crush);
-							return crushed;
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->floorheight = lastpos;
+								P_ChangeSector(sector,false);
+							}
 						}
 					}
 					break;
@@ -98,12 +107,14 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->ceilingheight;
 						sector->ceilingheight = dest;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+						if (changeSector)
 						{
-							sector->ceilingheight = lastpos;
-							P_ChangeSector(sector,crush);
-							/*return crushed; */
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->ceilingheight = lastpos;
+								P_ChangeSector(sector,false);
+							}
 						}
 						return pastdest;
 					}
@@ -111,14 +122,15 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->ceilingheight;
 						sector->ceilingheight -= speed;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+
+						if (changeSector)
 						{
-							if (crush == true)
-								return crushed;
-							sector->ceilingheight = lastpos;
-							P_ChangeSector(sector,crush);
-							return crushed;
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->ceilingheight = lastpos;
+								P_ChangeSector(sector,false);
+							}
 						}
 					}
 					break;
@@ -128,12 +140,14 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->ceilingheight;
 						sector->ceilingheight = dest;
-						flag = P_ChangeSector(sector,crush);
-						if (flag == true)
+						if (changeSector)
 						{
-							sector->ceilingheight = lastpos;
-							P_ChangeSector(sector,crush);
-							/*return crushed; */
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->ceilingheight = lastpos;
+								P_ChangeSector(sector,false);
+							}
 						}
 						return pastdest;
 					}
@@ -141,15 +155,15 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 					{
 						lastpos = sector->ceilingheight;
 						sector->ceilingheight += speed;
-						flag = P_ChangeSector(sector,crush);
-						#if 0
-						if (flag == true)
+						if (changeSector)
 						{
-							sector->ceilingheight = lastpos;
-							P_ChangeSector(sector,crush);
-							return crushed;
+							flag = P_ChangeSector(sector,false);
+							if (flag == true)
+							{
+								sector->ceilingheight = lastpos;
+								P_ChangeSector(sector,false);
+							}
 						}
-						#endif
 					}
 					break;
 			}
@@ -167,15 +181,24 @@ result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 #define ELEVATORSPEED (FRACUNIT / 4)
 void T_MoveFloor(floormove_t *floor)
 {
-	result_e	res;
+	result_e	res = ok;
 
-	if (floor->crush)
+	if (floor->delayTimer)
 	{
-		floor->crush--;
+		floor->delayTimer--;
 		return;
 	}
+	
+	if (floor->type == thz2DropBlock)
+	{
+		floor->speed += GRAVITY/2;
+		res = T_MovePlane(floor->sector,floor->speed,
+				(floor->floordestheight << FRACBITS) + (floor->sector->ceilingheight - floor->sector->floorheight), !floor->dontChangeSector, 1, floor->direction);
 
-	if (floor->type == floorContinuous)
+		res = T_MovePlane(floor->sector,floor->speed,
+			floor->floordestheight << FRACBITS, !floor->dontChangeSector, 0, floor->direction);		
+	}
+	else if (floor->type == floorContinuous || floor->type == bothContinuous)
 	{
 		const fixed_t wh = D_abs(floor->sector->floorheight - (floor->floorwasheight << FRACBITS));
 		const fixed_t dh = D_abs(floor->sector->floorheight - (floor->floordestheight << FRACBITS));
@@ -203,7 +226,10 @@ void T_MoveFloor(floormove_t *floor)
 		}
 
 		res = T_MovePlane(floor->sector,floor->speed,
-				floor->floordestheight << FRACBITS,0,0,floor->direction);
+				floor->floordestheight << FRACBITS, !floor->dontChangeSector, 0, floor->direction);
+
+		if (floor->type == bothContinuous)
+			T_MovePlane(floor->sector, floor->speed, (floor->floordestheight + floor->ceilDiff) << FRACBITS, !floor->dontChangeSector, 1, floor->direction);
 	}
 	else if (floor->type == eggCapsuleInner || floor->type == eggCapsuleOuter
 		|| floor->type == eggCapsuleOuterPop || floor->type == eggCapsuleInnerPop)
@@ -211,51 +237,142 @@ void T_MoveFloor(floormove_t *floor)
 		res = T_MovePlane(floor->sector,floor->speed,
 				floor->floordestheight << FRACBITS,floor->crush,0,floor->direction);
 	}
+	else if (floor->type == moveCeilingByFrontSector || floor->type == continuousMoverCeiling)
+	{
+		res = T_MovePlane(floor->sector,floor->speed,
+				floor->floordestheight << FRACBITS,true,1,floor->direction);
+	}
+	else
+	{
+		res = T_MovePlane(floor->sector,floor->speed,
+				floor->floordestheight << FRACBITS,true,0,floor->direction);
+	}
+
+	if (floor->type == continuousMoverFloor)
+	{
+		const line_t *sourceline = &lines[floor->sourceline];
+		const sector_t *frontsector = LD_FRONTSECTOR(sourceline);
+		const sector_t *backsector = LD_BACKSECTOR(sourceline);
+		const fixed_t origspeed = FixedMul(floor->origSpeed, (FRACUNIT/2));
+		if (frontsector && backsector)
+		{
+			const fixed_t fs = D_abs(floor->sector->floorheight - (frontsector->floorheight));
+			const fixed_t bs = D_abs(floor->sector->floorheight - (backsector->floorheight));
+			if (fs < bs)
+				floor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
+			else
+				floor->speed = FixedDiv(bs,25*FRACUNIT) + FRACUNIT/4;
+
+			floor->speed = FixedMul(floor->speed, origspeed);
+		}
+	}
+	else if (floor->type == continuousMoverCeiling)
+	{
+		const line_t *sourceline = &lines[floor->sourceline];
+		const sector_t *frontsector = LD_FRONTSECTOR(sourceline);
+		const sector_t *backsector = LD_BACKSECTOR(sourceline);
+		const fixed_t origspeed = FixedMul(floor->origSpeed, (FRACUNIT/2));
+		if (frontsector && backsector)
+		{
+			const fixed_t fs = D_abs(floor->sector->ceilingheight - (frontsector->ceilingheight));
+			const fixed_t bs = D_abs(floor->sector->ceilingheight - (backsector->ceilingheight));
+			if (fs < bs)
+				floor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
+			else
+				floor->speed = FixedDiv(bs,25*FRACUNIT) + FRACUNIT/4;
+
+			floor->speed = FixedMul(floor->speed, origspeed);
+		}
+	}
 
 	if (res == pastdest)
 	{
-		if (floor->type == floorContinuous)
+		if (floor->type == floorContinuous || floor->type == bothContinuous)
 		{
 			if (floor->direction > 0)
 			{
 				floor->direction = -1;
 				floor->speed = floor->origSpeed;
 				floor->floorwasheight = floor->floordestheight;
-				floor->floordestheight = P_FindNextLowestFloor(floor->controlSector, floor->sector->floorheight) >> FRACBITS;
+				floor->floordestheight = sectors[floor->lowestSector].floorheight >> FRACBITS;
 			}
 			else
 			{
 				floor->direction = 1;
 				floor->speed = floor->origSpeed;
 				floor->floorwasheight = floor->floordestheight;
-				floor->floordestheight = P_FindNextHighestFloor(floor->controlSector, floor->sector->floorheight) >> FRACBITS;
+				floor->floordestheight = sectors[floor->highestSector].floorheight >> FRACBITS;
 			}
+		}
+		else if (floor->type == continuousMoverFloor)
+		{
+			const sector_t *frontsector = LD_FRONTSECTOR(&lines[floor->sourceline]);
+			const sector_t *backsector = LD_BACKSECTOR((&lines[floor->sourceline]));
+			if ((floor->floordestheight << FRACBITS) == frontsector->floorheight)
+				floor->floordestheight = backsector->floorheight >> FRACBITS;
+			else
+				floor->floordestheight = frontsector->floorheight >> FRACBITS;
+
+			floor->direction = ((floor->floordestheight << FRACBITS) < floor->sector->floorheight) ? -1 : 1;
+			floor->delayTimer = floor->delay;
+		}
+		else if (floor->type == continuousMoverCeiling)
+		{
+			const sector_t *frontsector = LD_FRONTSECTOR(&lines[floor->sourceline]);
+			const sector_t *backsector = LD_BACKSECTOR((&lines[floor->sourceline]));
+			if ((floor->floordestheight << FRACBITS) == frontsector->ceilingheight)
+				floor->floordestheight = backsector->ceilingheight >> FRACBITS;
+			else
+				floor->floordestheight = frontsector->ceilingheight >> FRACBITS;
+
+			floor->direction = ((floor->floordestheight << FRACBITS) < floor->sector->ceilingheight) ? -1 : 1;
+			floor->delayTimer = floor->delay;
 		}
 		else
 		{
-			floor->sector->specialdata = NULL;
-			if (floor->direction == 1)
-				switch(floor->type)
+			floor->sector->specialdata = (SPTR)0;
+			switch(floor->type)
+			{
+				case thz2DropBlock:
 				{
-					case donutRaise:
-						floor->sector->special = floor->newspecial;
-						floor->sector->floorpic = floor->texture;
-						break;
-					case eggCapsuleInner:
+					// Find the turret, destroy it
+					for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+					{
+						if (node->type == MT_TURRET && node->health > 0)
+						{
+							// Spawn MT_EXPLODE at every 45
+							for (VINT ang = 0; ang < 8192; ang += 1024)
+							{
+								fixed_t outX = node->x;
+								fixed_t outY = node->y;
+								P_ThrustValues(ang << ANGLETOFINESHIFT, 112*FRACUNIT, &outX, &outY);
+								P_SpawnMobj(outX, outY, node->z, MT_EXPLODE);
+							}
+
+							P_SetMobjState(node, S_XPLD1);
+							S_StartSound(node, sfx_s3k_3d);
+							break;
+						}
+					}
+					break;
+				}
+				case moveFloorByFrontSector:
+					if (floor->texture < 255)
+						floor->sector->floorpic = (uint8_t)floor->texture;
+					if (floor->tag)
+						P_LinedefExecute(floor->tag, NULL, NULL);
+					break;
+				case moveCeilingByFrontSector:
+					if (floor->texture < 255)
+						floor->sector->ceilingpic = (uint8_t)floor->texture;
+					if (floor->tag)
+						P_LinedefExecute(floor->tag, NULL, NULL);
+					break;
+				case eggCapsuleInner:
 						floor->sector->special = 2;
 						break;
-					default:
-						break;
-				}
-			else if (floor->direction == -1)
-				switch(floor->type)
-				{
-					case lowerAndChange:
-						floor->sector->special = floor->newspecial;
-						floor->sector->floorpic = floor->texture;
-					default:
-						break;
-				}
+			}
+
 			P_RemoveThinker(&floor->thinker);
 		}
 	}
@@ -266,172 +383,195 @@ void T_MoveFloor(floormove_t *floor)
 /*	HANDLE FLOOR TYPES */
 /* */
 /*================================================================== */
-int EV_DoFloor(line_t *line,floor_e floortype)
+int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 {
 	int			secnum;
 	int			rtn;
-	int			i;
 	sector_t	*sec;
 	floormove_t	*floor;
 
 	secnum = -1;
 	rtn = 0;
-	while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+	while ((secnum = P_FindSectorFromLineTagNum(tag,secnum)) >= 0)
 	{
 		sec = &sectors[secnum];
 		
 		/*	ALREADY MOVING?  IF SO, KEEP GOING... */
-		if (sec->specialdata)
-			continue;
+//		if (sec->specialdata)
+//			continue;
 			
 		/* */
 		/*	new floor thinker */
 		/* */
 		rtn = 1;
-		floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
+		floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
 		P_AddThinker (&floor->thinker);
-		sec->specialdata = floor;
+		sec->specialdata = LPTR_TO_SPTR(floor);
 		floor->thinker.function = T_MoveFloor;
 		floor->type = floortype;
 		floor->crush = false;
+		floor->dontChangeSector = false;
+		floor->texture = (uint8_t)-1;
+		floor->tag = 0;
+		floor->sector = sec;
+		floor->delayTimer = floor->delay = 0;
+		floor->sourceline = line - lines;
 		switch(floortype)
 		{
+			case thz2DropBlock:
+			{
+				side_t *side = &sides[line->sidenum[0]];
+				int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
+      			rowoffset >>= 4; // sign extend
+
+				floor->floordestheight = rowoffset;
+				floor->origSpeed = floor->speed = 1;
+				floor->direction = -1;
+				break;
+			}
+			case continuousMoverFloor:
+			case continuousMoverCeiling:
+			{
+				mapvertex_t *v1 = &vertexes[line->v1];
+				mapvertex_t *v2 = &vertexes[line->v2];
+				side_t *side = &sides[line->sidenum[0]];
+				int16_t textureoffset = side->textureoffset & 0xfff;
+				textureoffset <<= 4; // sign extend
+				textureoffset >>= 4; // sign extend
+				int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
+      			rowoffset >>= 4; // sign extend
+
+				// args3 is same as args2
+				// args4 is rowoffset
+				// args5 is textureoffset
+				floor->speed = P_AproxDistance((v1->x - v2->x) << FRACBITS, (v1->y - v2->y) << FRACBITS) >> 2;
+				floor->origSpeed = floor->speed;
+
+				fixed_t destHeight = floortype == continuousMoverCeiling ? LD_FRONTSECTOR(line)->ceilingheight >> FRACBITS
+					: LD_FRONTSECTOR(line)->floorheight >> FRACBITS;
+				fixed_t curHeight = floortype == continuousMoverCeiling ? sec->ceilingheight >> FRACBITS : sec->floorheight >> FRACBITS;
+
+				floor->floordestheight = destHeight;
+
+				if (destHeight >= curHeight)
+					floor->direction = 1; // up
+				else
+					floor->direction = -1; // down
+
+				// Any delay?
+				floor->delay = textureoffset;
+				floor->delayTimer = rowoffset;
+				break;
+			}
+			case moveCeilingByFrontSector:
+			case moveFloorByFrontSector:
+			{
+				mapvertex_t *v1 = &vertexes[line->v1];
+				mapvertex_t *v2 = &vertexes[line->v2];
+				side_t *side = &sides[line->sidenum[0]];
+				int16_t textureoffset = side->textureoffset & 0xfff;
+				textureoffset <<= 4; // sign extend
+				textureoffset >>= 4; // sign extend
+
+				VINT args3 = (ldflags[line-lines] & ML_BLOCKMONSTERS) ? textureoffset : 0; // tag of linedef executor to run on completion
+				VINT args4 = ldflags[line-lines] & ML_NOCLIMB; // change flat?
+
+				floor->speed = P_AproxDistance((v1->x - v2->x) << FRACBITS, (v1->y - v2->y) << FRACBITS) >> 3;
+
+				// chained linedef executing ability
+				floor->tag = args3;
+
+				if (floortype == moveCeilingByFrontSector)
+				{
+					floor->floordestheight = LD_FRONTSECTOR(line)->ceilingheight >> FRACBITS;
+
+					if (floor->floordestheight >= sec->ceilingheight >> FRACBITS)
+						floor->direction = 1; // up
+					else
+						floor->direction = -1; // down
+
+					// Optionally change flat
+					floor->texture = args4 ? LD_FRONTSECTOR(line)->ceilingpic : (uint8_t)-1;
+				}
+				else
+				{
+					floor->floordestheight = LD_FRONTSECTOR(line)->floorheight >> FRACBITS;
+
+					if (floor->floordestheight >= sec->floorheight >> FRACBITS)
+						floor->direction = 1; // up
+					else
+						floor->direction = -1; // down
+
+					// Optionally change flat
+					floor->texture = args4 ? LD_FRONTSECTOR(line)->floorpic : (uint8_t)-1;
+				}
+				break;
+			}
+			case bothContinuous:
+				floor->ceilDiff = (sec->ceilingheight - sec->floorheight) >> FRACBITS;
 			case floorContinuous:
-				floor->sector = sec;
 				floor->controlSector = &sectors[sides[line->sidenum[0]].sector];
 				floor->origSpeed = P_AproxDistance((vertexes[line->v1].x - vertexes[line->v2].x) << FRACBITS,
-												(vertexes[line->v1].y - vertexes[line->v2].y) << FRACBITS) / 4;
+												(vertexes[line->v1].y - vertexes[line->v2].y) << FRACBITS) >> 2;
 				floor->speed = floor->origSpeed;
-				if (line->flags & ML_NOCLIMB)
+				if (ldflags[line-lines] & ML_BLOCKMONSTERS)
+					floor->dontChangeSector = true;
+
+				floor->lowestSector = P_FindNextLowestFloor(floor->controlSector, sec->floorheight) - sectors;
+				floor->highestSector = P_FindNextHighestFloor(floor->controlSector, sec->floorheight) - sectors;
+
+				if (ldflags[line-lines] & ML_NOCLIMB)
 				{
 					floor->direction = 1;
-					floor->floordestheight = P_FindNextHighestFloor(floor->controlSector, sec->floorheight) >> FRACBITS;
+					floor->floordestheight = sectors[floor->highestSector].floorheight >> FRACBITS;
 				}
 				else
 				{
 					floor->direction = -1;
-					floor->floordestheight = P_FindNextLowestFloor(floor->controlSector, sec->floorheight) >> FRACBITS;
+					floor->floordestheight = sectors[floor->lowestSector].floorheight >> FRACBITS;
 				}
 
 				floor->floorwasheight = sec->floorheight >> FRACBITS;
-				floor->crush = sides[line->sidenum[0]].rowoffset; // initial delay
+
+				side_t *side = &sides[line->sidenum[0]];
+				int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
+      			rowoffset >>= 4; // sign extend
+
+				floor->delay = rowoffset; // initial delay
+				floor->delayTimer = floor->delay;
 				break;
 			case lowerFloor:
 				floor->direction = -1;
-				floor->sector = sec;
 				floor->speed = FLOORSPEED;
 				floor->floordestheight = 
-					P_FindHighestFloorSurrounding(sec);
+					P_FindHighestFloorSurrounding(sec)->floorheight >> FRACBITS;
 				break;
 			case lowerFloorToLowest:
 				floor->direction = -1;
-				floor->sector = sec;
 				floor->speed = FLOORSPEED;
 				floor->floordestheight = 
-					P_FindLowestFloorSurrounding(sec);
+					P_FindLowestFloorSurrounding(sec)->floorheight >> FRACBITS;
 				break;
 			case turboLower:
 				floor->direction = -1;
-				floor->sector = sec;
 				floor->speed = FLOORSPEED * 4;
-				floor->floordestheight = (8*FRACUNIT) + 
-						P_FindHighestFloorSurrounding(sec);
+				floor->floordestheight = (8) + 
+						(P_FindHighestFloorSurrounding(sec)->floorheight >> FRACBITS);
 				break;
-			case raiseFloorCrush:
-				floor->crush = true;
 			case raiseFloor:
 				floor->direction = 1;
-				floor->sector = sec;
 				floor->speed = FLOORSPEED;
 				floor->floordestheight = 
-					P_FindLowestCeilingSurrounding(sec);
+					P_FindLowestCeilingSurrounding(sec)->ceilingheight >> FRACBITS;
 				if (floor->floordestheight > sec->ceilingheight)
 					floor->floordestheight = sec->ceilingheight;
 				break;
 			case raiseFloorToNearest:
 				floor->direction = 1;
-				floor->sector = sec;
 				floor->speed = FLOORSPEED;
 				floor->floordestheight = 
-					P_FindNextHighestFloor(sec,sec->floorheight);
+					P_FindNextHighestFloor(sec,sec->floorheight)->floorheight >> FRACBITS;
 				break;
-			case raiseFloor24:
-				floor->direction = 1;
-				floor->sector = sec;
-				floor->speed = FLOORSPEED;
-				floor->floordestheight = floor->sector->floorheight +
-						24 * FRACUNIT;
-				break;
-			case raiseFloor512:
-				floor->direction = 1;
-				floor->sector = sec;
-				floor->speed = FLOORSPEED;
-				floor->floordestheight = floor->sector->floorheight +
-					512 * FRACUNIT;
-				break;
-			case raiseFloor24AndChange:
-				floor->direction = 1;
-				floor->sector = sec;
-				floor->speed = FLOORSPEED;
-				floor->floordestheight = floor->sector->floorheight +
-						24 * FRACUNIT;
-				sec->floorpic = LD_FRONTSECTOR(line)->floorpic;
-				sec->special = LD_FRONTSECTOR(line)->special;
-				break;
-			case raiseToTexture:
-				{
-					int	minsize = D_MAXINT;
-					side_t	*side;
-				
-					floor->direction = 1;
-					floor->sector = sec;
-					floor->speed = FLOORSPEED;
-					for (i = 0; i < sec->linecount; i++)
-						if (twoSided (secnum, i) )
-						{
-							side = getSide(secnum,i,0);
-							if (side->bottomtexture != 0xff)
-								if (
-					(textures[side->bottomtexture].height<<FRACBITS)  < 
-									minsize)
-									minsize = 
-										(textures[side->bottomtexture].height<<FRACBITS);
-							side = getSide(secnum,i,1);
-							if (side->bottomtexture != 0xff)
-								if ((textures[side->bottomtexture].height<<FRACBITS) < 
-									minsize)
-									minsize = 
-										(textures[side->bottomtexture].height<<FRACBITS);
-						} 
-					floor->floordestheight = floor->sector->floorheight + 
-						minsize;
-				}
-				break;
-			case lowerAndChange:
-				floor->direction = -1;
-				floor->sector = sec;
-				floor->speed = FLOORSPEED;
-				floor->floordestheight = 
-					P_FindLowestFloorSurrounding(sec);
-				floor->texture = sec->floorpic;
-				for (i = 0; i < sec->linecount; i++)
-					if ( twoSided(secnum, i) )
-					{
-						if (getSide(secnum,i,0)->sector == secnum)
-						{
-							sec = getSector(secnum,i,1);
-							floor->texture = sec->floorpic;
-							floor->newspecial = sec->special;
-							break;
-						}
-						else
-						{
-							sec = getSector(secnum,i,0);
-							floor->texture = sec->floorpic;
-							floor->newspecial = sec->special;
-							break;
-						}
-					}
 			default:
 				break;
 		}
@@ -439,116 +579,7 @@ int EV_DoFloor(line_t *line,floor_e floortype)
 	return rtn;
 }
 
-/*================================================================== */
-/* */
-/*	BUILD A STAIRCASE! */
-/* */
-/*================================================================== */
-int EV_BuildStairs(line_t *line, int type)
+int EV_DoFloor(line_t *line,floor_e floortype)
 {
-	int		secnum;
-	int		height;
-	int		i;
-	int		newsecnum;
-	int		texture;
-	int		ok;
-	int		rtn;
-	fixed_t speed, stairsize;
-	sector_t	*sec, *tsec;
-	floormove_t	*floor;
-
-	secnum = -1;
-	rtn = 0;
-	while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
-	{
-		sec = &sectors[secnum];
-		
-		/* ALREADY MOVING?  IF SO, KEEP GOING... */
-		if (sec->specialdata)
-			continue;
-			
-		/* */
-		/* new floor thinker */
-		/* */
-		rtn = 1;
-		floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
-		P_AddThinker (&floor->thinker);
-		sec->specialdata = floor;
-		floor->thinker.function = T_MoveFloor;
-		floor->direction = 1;
-		floor->sector = sec;
-		switch (type)
-		{
-		case build8:
-		default:
-			speed = FLOORSPEED / 2;
-			stairsize = 8 * FRACUNIT;
-			break;
-		case turbo16:
-			speed = FLOORSPEED;
-			stairsize = 16 * FRACUNIT;
-			break;
-		}
-		height = sec->floorheight + stairsize;
-		floor->speed = speed;
-		floor->floordestheight = height;
-        // Initialize
-        floor->type = lowerFloor;
-        // e6y
-        // Uninitialized crush field will not be equal to 0 or 1 (true)
-        // with high probability. So, initialize it with any other value
-	    floor->crush = STAIRS_UNINITIALIZED_CRUSH_FIELD_VALUE;
-		
-		texture = sec->floorpic;
-
-		/* */
-		/* Find next sector to raise */
-		/* 1.	Find 2-sided line with same sector side[0] */
-		/* 2.	Other side is the next sector to raise */
-		/* */
-		do
-		{
-			ok = 0;
-			for (i = 0;i < sec->linecount;i++)
-			{
-				line_t *check = lines + sec->lines[i];
-				if ( !(check->flags & ML_TWOSIDED) )
-					continue;
-					
-				newsecnum = sides[check->sidenum[0]].sector;
-				tsec = &sectors[newsecnum];
-				if (secnum != newsecnum)
-					continue;
-				newsecnum = sides[check->sidenum[1]].sector;
-				tsec = &sectors[newsecnum];
-				if (tsec->floorpic != texture)
-					continue;
-					
-				height += stairsize;
-				if (tsec->specialdata)
-					continue;
-					
-				sec = tsec;
-				secnum = newsecnum;
-				floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
-				P_AddThinker (&floor->thinker);
-				sec->specialdata = floor;
-				floor->thinker.function = T_MoveFloor;
-				floor->direction = 1;
-				floor->sector = sec;
-				floor->speed = speed;
-				floor->floordestheight = height;
-                // Initialize
-                floor->type = lowerFloor;
-	            // e6y
-                // Uninitialized crush field will not be equal to 0 or 1 (true)
-                // with high probability. So, initialize it with any other value
-	            floor->crush = STAIRS_UNINITIALIZED_CRUSH_FIELD_VALUE;
-				ok = 1;
-				break;
-			}
-		} while(ok);
-	}
-	return rtn;
+	return EV_DoFloorTag(line, floortype, P_GetLineTag(line));
 }
-

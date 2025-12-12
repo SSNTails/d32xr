@@ -1,10 +1,7 @@
 /* m_main.c -- main menu */
 
 #include "doomdef.h"
-
-#ifdef MDSKY
 #include "marshw.h"
-#endif
 
 #include "v_font.h"
 #include "r_local.h"
@@ -47,14 +44,13 @@ typedef struct
 	VINT	x;
 	uint8_t	y;
 	char	screen;
-	char 	name[16];
+	const char 	*name;
 } mainitem_t;
 
 typedef struct
 {
 	VINT firstitem;
 	VINT numitems;
-	char name[12];
 } mainscreen_t;
 
 typedef enum
@@ -73,7 +69,7 @@ static mainitem_t mainitem[NUMMAINITEMS];
 static mainscreen_t mainscreen[NUMMAINSCREENS];
 
 //static const char* playmodes[NUMMODES] = { "Single", "Coop", "Deathmatch" };
-jagobj_t* m_doom;
+jagobj_t* m_title;
 
 static VINT m_skull1lump;
 static VINT numslump;
@@ -93,6 +89,8 @@ static char fistCounter = 5;
 static char sBlinkCounter = 110;
 static char tBlinkCounter = 25;
 static char kBlinkCounter = 76;
+static VINT titleTicker = 0;
+static VINT titleSmallTicker = 0;
 
 static VINT	cursorframe;
 static VINT cursordelay;
@@ -108,7 +106,7 @@ static VINT saveslot;
 static VINT savecount;
 static VINT prevsaveslot;
 static VINT saveslotmap;
-static VINT saveslotskill;
+//static VINT saveslotskill;
 static VINT saveslotmode;
 
 static char displaymapname[32];
@@ -117,6 +115,10 @@ static VINT displaymapnum;
 static boolean startup;
 VINT	uchar;
 
+#ifdef KIOSK_MODE
+static VINT rwx_logo;
+#endif
+
 void M_Start2 (boolean startup_)
 {
 	int i;
@@ -124,12 +126,30 @@ void M_Start2 (boolean startup_)
 /* cache all needed graphics	 */
 	m_skull1lump = W_CheckNumForName("M_CURSOR");
 
+#ifdef KIOSK_MODE
+	rwx_logo = W_GetNumForName("RWX");
+#endif
+
 	startup = startup_;
-	m_doom = NULL;
+	m_title = NULL;
+	titleTicker = 0;
+	titleSmallTicker = 0;
 	if (startup)
 	{
 		i = W_CheckNumForName("M_TITLE");
-		m_doom = i != -1 ? W_CacheLumpNum(i, PU_STATIC) : NULL;
+		m_title = i != -1 ? W_CacheLumpNum(i, PU_STATIC) : NULL;
+
+		if (legacy_emulator == LEGACY_EMULATOR_KEGA) {
+			// Kega Fusion doesn't support copper. Use solid orange for the "32X" logo instead.
+			int total_pixels = m_title->width * m_title->height;
+			uint8_t *pixels = m_title->data;
+			for (int i=0; i < total_pixels; i++) {
+				if (*pixels == 0xFF) {
+					*pixels = 0x35;
+				}
+				pixels++;
+			}
+		}
 
 		for (i = 0; i < NUMHANDFRAMES; i++)
 		{
@@ -217,43 +237,43 @@ void M_Start2 (boolean startup_)
 	mainscreen[ms_help].firstitem = mi_help;
 	mainscreen[ms_help].numitems = 1;
 
-	D_memcpy(mainitem[mi_newgame].name, "START GAME", 11);
+	mainitem[mi_newgame].name = "START GAME";
 	mainitem[mi_newgame].x = ITEMX;
 	mainitem[mi_newgame].y = CURSORY(0);
 	mainitem[mi_newgame].screen = ms_gametype;
 
-	D_memcpy(mainitem[mi_loadgame].name, "ABOUT", 6);
+	mainitem[mi_loadgame].name = "ABOUT";
 	mainitem[mi_loadgame].x = ITEMX;
 	mainitem[mi_loadgame].y = CURSORY(1);
 	mainitem[mi_loadgame].screen = ms_help;
 	mainscreen[ms_main].numitems++;
 
-	D_memcpy(mainitem[mi_level].name, "Select Act", 11);
+	mainitem[mi_level].name = "Select Act";
 	mainitem[mi_level].x = ITEMX;
 	mainitem[mi_level].y = CURSORY(0);
 	mainitem[mi_level].screen = ms_none;
 
-	D_memcpy(mainitem[mi_gamemode].name, "Game Mode", 10);
+	mainitem[mi_gamemode].name = "Game Mode";
 	mainitem[mi_gamemode].x = ITEMX;
 	mainitem[mi_gamemode].y = CURSORY((mainscreen[ms_new].numitems - 2) * 2);
 	mainitem[mi_gamemode].screen = ms_none;
 
-	D_memcpy(mainitem[mi_savelist].name, "Checkpoints", 12);
+	mainitem[mi_savelist].name = "Checkpoints";
 	mainitem[mi_savelist].x = ITEMX;
 	mainitem[mi_savelist].y = CURSORY(0);
 	mainitem[mi_savelist].screen = ms_none;
 
-	D_memcpy(mainitem[mi_singleplayer].name, "SINGLE PLAYER", 14);
+	mainitem[mi_singleplayer].name = "SINGLE PLAYER";
 	mainitem[mi_singleplayer].x = ITEMX;
 	mainitem[mi_singleplayer].y = CURSORY(0);
 	mainitem[mi_singleplayer].screen = ms_new;
 
-	D_memcpy(mainitem[mi_splitscreen].name, "Split-Screen", 13);
+	mainitem[mi_splitscreen].name = "Split-Screen";
 	mainitem[mi_splitscreen].x = ITEMX;
 	mainitem[mi_splitscreen].y = CURSORY(1);
 	mainitem[mi_splitscreen].screen = ms_new;
 
-	D_memcpy(mainitem[mi_network].name, "Multiplayer", 13);
+	mainitem[mi_network].name = "Multiplayer";
 	mainitem[mi_network].x = ITEMX;
 	mainitem[mi_network].y = CURSORY(2);
 	mainitem[mi_network].screen = ms_new;
@@ -278,10 +298,10 @@ void M_Stop (void)
 
 /* free all loaded graphics */
 
-	if (m_doom != NULL)
+	if (m_title != NULL)
 	{
-		Z_Free (m_doom);
-		m_doom = NULL;
+		Z_Free (m_title);
+		m_title = NULL;
 	}
 
 	if (startup)
@@ -359,7 +379,7 @@ static char* M_MapName(VINT mapnum)
 	return displaymapname;
 }
 
-static void M_UpdateSaveInfo(void)
+/*static void M_UpdateSaveInfo(void)
 {
 	if (prevsaveslot != saveslot) {
 		prevsaveslot = saveslot;
@@ -368,7 +388,7 @@ static void M_UpdateSaveInfo(void)
 		saveslotmode = gt_single;
 		GetSaveInfo(saveslot, &saveslotmap, &saveslotskill, &saveslotmode);
 	}
-}
+}*/
 
 /*
 =================
@@ -377,12 +397,19 @@ static void M_UpdateSaveInfo(void)
 =
 =================
 */
+boolean unlockcez = false;
 
 int M_Ticker (void)
 {
+	if (IsTitleScreen() && screenpos == ms_gametype) {
+		// Skip sub-menus on the title screen.
+		return ga_startnew;
+	}
+
 	int		buttons, oldbuttons;
 	mainscreen_t* menuscr;
 	boolean newcursor = false;
+	boolean goto_prev_screen = false;
 	int sound = sfx_None;
 
 	if (cursorframe == -1)
@@ -394,7 +421,11 @@ int M_Ticker (void)
 	if (screenpos == ms_none)
 	{
 		screenpos = ms_main;
-		S_StartSound(NULL, sfx_None);
+		if (IsTitleScreen()) {
+			titleTicker = 0;	// Redraw the title emblem.
+			overlay_graphics = og_title;
+		}
+		//S_StartSound(NULL, sfx_None);
 	}
 
 	menuscr = &mainscreen[screenpos];
@@ -402,53 +433,74 @@ int M_Ticker (void)
 	if (!gamemapnumbers)
 		return ga_startnew;
 
-/* animate skull */
-	if (gametic & 1)
-	{
-		cursorframe++;
+	titleTicker++;
+	cursorframe++;
+
+	if (screenpos != ms_help) {
+	//	if (cursorframe & 1)	// For 30 fps
+		if (cursorframe % 3)	// For 20 fps
+	//	if (titleTicker & 1)	// For 15 fps
+		{
+			titleSmallTicker++;
+		}
 	}
 
-	M_UpdateSaveInfo();
+	//M_UpdateSaveInfo();
 
 	buttons = ticrealbuttons & MENU_BTNMASK;
 	oldbuttons = oldticrealbuttons & MENU_BTNMASK;
 
-	if ((gamemapinfo.mapNumber == 30 && (buttons & (BT_B | BT_LMBTN | BT_START)) && !(oldbuttons & (BT_B | BT_LMBTN | BT_START)))
-		|| (gamemapinfo.mapNumber != 30 && (buttons & (BT_B | BT_LMBTN)) && !(oldbuttons & (BT_B | BT_LMBTN))))
+	// Handle navigation to the next menu screen
+	if (((buttons & (BT_B | BT_LMBTN | BT_START)) && !(oldbuttons & (BT_B | BT_LMBTN | BT_START)))
+		|| ((buttons & (BT_B | BT_LMBTN)) && !(oldbuttons & (BT_B | BT_LMBTN))))
 	{
-		int itemno = menuscr->firstitem + cursorpos;
+		if (screenpos == ms_help) {
+			// Navigate to the previous menu screen instead.
+			// Prevents title emblem redraw issues.
+			goto_prev_screen = true;
+		}
+		else {
+			int itemno = menuscr->firstitem + cursorpos;
 
-		int nextscreen = mainitem[itemno].screen;
-		if (nextscreen == ms_save && (startup || netgame == gt_deathmatch))
-			nextscreen = ms_none;
+			int nextscreen = mainitem[itemno].screen;
+			if (nextscreen == ms_save && (startup || netgame == gt_deathmatch))
+				nextscreen = ms_none;
 
-		if (nextscreen != ms_none)
-		{
-			movecount = 0;
-			cursorpos = 0;
-			switch (itemno) {
-				case mi_splitscreen:
-				case mi_network:
-					if (currentplaymode == single)
-						currentplaymode++;
-					currentgametype = itemno;
-					break;
-				case mi_singleplayer:
-				default:
-					currentplaymode = single;
-					currentgametype = itemno;
-					break;
+			if (nextscreen != ms_none)
+			{
+				movecount = 0;
+				cursorpos = 0;
+				switch (itemno) {
+					case mi_splitscreen:
+					case mi_network:
+						if (currentplaymode == single)
+							currentplaymode++;
+						currentgametype = itemno;
+						break;
+					case mi_singleplayer:
+					default:
+						currentplaymode = single;
+						currentgametype = itemno;
+						break;
+				}
+				screenpos = nextscreen;
+				if (nextscreen == ms_help) {
+					titleTicker = 0;	// Redraw the title emblem.
+					overlay_graphics = og_about;
+				}
+				/*if (nextscreen != ms_main) {
+					clearscreen = 2;
+				}*/
+				prevsaveslot = -1;
+				saveslot = screenpos == ms_save;
+				//S_StartSound(NULL, sfx_None);
+				return ga_nothing;
 			}
-			screenpos = nextscreen;
-			clearscreen = 2;
-			prevsaveslot = -1;
-			saveslot = screenpos == ms_save;
-			S_StartSound(NULL, sfx_None);
-			return ga_nothing;
 		}
 	}
 
-	if ((buttons & (BT_A | BT_C | BT_RMBTN)) && !(oldbuttons & (BT_A | BT_C | BT_RMBTN)))
+	// Handle navigation to the previous menu screen.
+	if (goto_prev_screen || ((buttons & (BT_A | BT_C | BT_RMBTN)) && !(oldbuttons & (BT_A | BT_C | BT_RMBTN))))
 	{
 		if (screenpos != ms_main)
 		{
@@ -457,6 +509,18 @@ int M_Ticker (void)
 
 			cursorpos = 0;
 			screenpos = ms_main;
+			if (IsTitleScreen()) {
+				if (cheats_enabled & CHEAT_GAMEMODE_SELECT && buttons & BT_MODE && buttons & BT_C) {
+					overlay_graphics = og_none;
+					return ga_showcredits;
+				}
+				titleTicker = 0;	// Redraw the title emblem.
+				overlay_graphics = og_title;
+				clear_h32_borders = 2;
+			}
+			else if (overlay_graphics == og_about) {
+				overlay_graphics = og_none;		// May want "og_hud" in the future.
+			}
 
 			for (i =0; i < NUMMAINITEMS; i++)
 			{
@@ -473,8 +537,10 @@ int M_Ticker (void)
 			}
 
 			movecount = 0;
-			clearscreen = 2;
-			S_StartSound(NULL, sfx_None);
+			if (!IsTitleScreen()) {
+				clearscreen = 2;
+			}
+			//S_StartSound(NULL, sfx_None);
 			return 0;
 		}
 		else
@@ -508,7 +574,7 @@ int M_Ticker (void)
 				I_NetSetup();
 				if (starttype != gt_single)
 					return ga_startnew;
-				clearscreen = 2;
+				//clearscreen = 2;
 				return ga_nothing;
 			}
 		}
@@ -525,7 +591,7 @@ int M_Ticker (void)
 
 		if (screenpos == ms_save)
 		{
-			S_StartSound(NULL, sfx_None);
+			//S_StartSound(NULL, sfx_None);
 			SaveGame(saveslot);
 			prevsaveslot = -1;
 			return ga_died;
@@ -599,7 +665,7 @@ int M_Ticker (void)
 							playermap = 1;
 
 #ifdef SHOW_DISCLAIMER
-						while (gamemapnumbers[playermap-1] == 30 || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
+						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || (gamemapnumbers[playermap-1] == 10 && !unlockcez) || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
 						{
 							if (++playermap == gamemapcount + 1)
 								playermap = 1;
@@ -611,7 +677,7 @@ int M_Ticker (void)
 						if(--playermap == 0)
 							playermap = gamemapcount;
 #ifdef SHOW_DISCLAIMER
-						while (gamemapnumbers[playermap-1] == 30 || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
+						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || (gamemapnumbers[playermap-1] == 10 && !unlockcez) || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
 						{
 							if(--playermap == 0)
 								playermap = gamemapcount;
@@ -647,12 +713,6 @@ int M_Ticker (void)
 	if (sound != sfx_None)
 		S_StartSound(NULL, sound);
 
-	if (newcursor || sound != sfx_None)
-	{
-		/* long menu item names can spill onto the screen border */
-		clearscreen = 2;
-	}
-
 	return ga_nothing;
 }
 
@@ -674,65 +734,142 @@ void M_Drawer (void)
 	mainitem_t* items = &mainitem[menuscr->firstitem];
 	int y, y_offset = 0;
 
-	if (demoplayback && gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
-		// Fill the area above the viewport with the sky color.
-		DrawFillRect(0, 0, 320, 44, gamemapinfo.skyTopColor);
+	if (IsTitleScreen()) {
+		if (scrpos == ms_gametype) {
+			// Don't display sub-menus on the title screen.
+			return;
+		}
 	}
 
 /* Draw main menu */
-	if (m_doom && (scrpos == ms_main || scrpos == ms_gametype))
+	if (m_title)
 	{
-		VINT logoPos = 160 - (m_doom->width / 2);
-		DrawJagobj(m_doom, logoPos, 16);
-		y_offset = m_doom->height + 16 - STARTY;
+		const VINT logoPos = 160 - (m_title->width / 2);
 
-		DrawJagobj(m_hand[cursorframe % NUMHANDFRAMES], 160 + 3, 16 + 32);
+		if (scrpos == ms_help) {
+			if (titleTicker < 4) {
+				const int colormap = 12*256;	// 75% dark
+				const int fillcolor = 0x8B;		// Dark blue
 
-		DrawJagobj(m_tailwag[cursorframe % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
+				// Clear the entire screen.
+				I_FillFrameBuffer(fillcolor);
 
-		if (gametic & 1)
-		{
-			fistCounter--;
+				// Draw the entire emblem with an alternate colormap.
+				DrawJagobjWithColormap(m_title, logoPos, 16,
+						0, 0, 0, 0, I_OverwriteBuffer(), colormap);
 
-			if (fistCounter <= -NUMKFISTFRAMES)
-				fistCounter = 15 + (M_Random() & 7);
+				// Draw animations with an alternate colormap.
+				DrawJagobjWithColormap(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32,
+						0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+				DrawJagobjWithColormap(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2,
+						0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+
+				if (fistCounter < 0)
+					DrawJagobjWithColormap(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43,
+							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+				else
+					DrawJagobjWithColormap(m_kfist[0], logoPos + 188, 16 + 43,
+							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+
+				if (sBlinkCounter < 0)
+					DrawJagobjWithColormap(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27,
+							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+
+				if (tBlinkCounter < 0)
+					DrawJagobjWithColormap(m_tblink[D_abs(tBlinkCounter)], logoPos + 54, 16 + 40,
+							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+
+				if (kBlinkCounter < 0)
+					DrawJagobjWithColormap(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37,
+							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+				
+				// Erase the odd lines.
+				for (int x=1; x < 320; x += 2) {
+					DrawLine(x, 0, 224, fillcolor, true);
+				}
+			}
+		}
+		else if (scrpos == ms_main) {
+			if (titleTicker < 4) {
+				// Fill the area above the viewport with the sky color.
+				DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 88, gamemapinfo.skyTopColor);
+
+				// Draw the entire logo emblem.
+				DrawJagobj(m_title, logoPos, 16);
+			}
+
+			// Cover up animation trails.
+			DrawFillRect(48, 18, 58, 24, gamemapinfo.skyTopColor);	// two tails (top)
+			DrawFillRect(44, 46, 12, 42, gamemapinfo.skyTopColor);	// two tails (side/bottom)
+			DrawFillRect(262, 76, 8, 6, gamemapinfo.skyTopColor);	// fist
+
+			// Draw the logo emblem in pieces (helps get PicoDrive very close to 20 fps).
+			DrawJagobj3(m_title, logoPos+4, 16, 4, 0, 62, 28, 320, I_OverwriteBuffer());
+			DrawJagobj3(m_title, logoPos, 16+28, 0, 28, m_title->width, 58, 320, I_OverwriteBuffer());
+			DrawJagobj3(m_title, logoPos+24, 16+86, 24, 86, 10, 15, 320, I_OverwriteBuffer());
+			DrawJagobj3(m_title, logoPos+206, 16+86, 206, 86, 10, 13, 320, I_OverwriteBuffer());
+			DrawJagobj3(m_title, logoPos+34, 16+99, 34, 99, 174, 9, 320, I_OverwriteBuffer());
+			
+			DrawJagobj3(m_title, logoPos, 16+108, 0, 108, m_title->width, m_title->height - 108, 320, I_OverwriteBuffer());
+			
+			//DrawJagobj3(m_title, logoPos, 16+108, 0, 108, 34, 47, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos+34, 16+108, 34, 108, 18, 38, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos+188, 16+108, 188, 108, 18, 38, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos+206, 16+108, 206, 108, 34, 47, 320, I_OverwriteBuffer());
+
+			DrawJagobj(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32);
+			DrawJagobj(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
+
+			if (titleTicker & 1) {
+				sBlinkCounter--;
+				if (sBlinkCounter <= -NUMSBLINKFRAMES)
+					sBlinkCounter = M_Random() & 127;
+				tBlinkCounter--;
+				if (tBlinkCounter <= -NUMTBLINKFRAMES)
+					tBlinkCounter = M_Random() & 127;
+				kBlinkCounter--;
+				if (kBlinkCounter <= -NUMKBLINKFRAMES)
+					kBlinkCounter = M_Random() & 127;
+
+				fistCounter--;
+				if (fistCounter <= -NUMKFISTFRAMES)
+					fistCounter = 20 + (M_Random() % 21);
+			}
+
+			if (fistCounter < 0)
+				DrawJagobj(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
+			else
+				DrawJagobj(m_kfist[0], logoPos + 188, 16 + 43);
+
+			if (sBlinkCounter < 0)
+				DrawJagobj(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27);
+
+			if (tBlinkCounter < 0)
+				DrawJagobj(m_tblink[D_abs(tBlinkCounter)], logoPos + 54, 16 + 40);
+
+			if (kBlinkCounter < 0)
+				DrawJagobj(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37);
 		}
 
-		if (fistCounter < 0)
-			DrawJagobj(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
-		else
-			DrawJagobj(m_kfist[0], logoPos + 188, 16 + 43);
-
-		sBlinkCounter--;
-		if (sBlinkCounter <= -NUMSBLINKFRAMES)
-			sBlinkCounter = M_Random() & 127;
-		tBlinkCounter--;
-		if (tBlinkCounter <= -NUMTBLINKFRAMES)
-			tBlinkCounter = M_Random() & 127;
-		kBlinkCounter--;
-		if (kBlinkCounter <= -NUMKBLINKFRAMES)
-			kBlinkCounter = M_Random() & 127;
-
-		if (sBlinkCounter < 0)
-			DrawJagobj(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27);
-
-		if (tBlinkCounter < 0)
-			DrawJagobj(m_tblink[D_abs(tBlinkCounter)], logoPos + 54, 16 + 40);
-
-		if (kBlinkCounter < 0)
-			DrawJagobj(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37);
+		y_offset = m_title->height + 24 - STARTY;
+	}
+	else {
+		y_offset = 0;
 	}
 
-/* erase old skulls */
-#ifndef MARS
-	EraseBlock (CURSORX, m_doom_height,m_skull1->width, CURSORY(menuscr->numitems)- CURSORY(0));
-#endif
-
-	if (scrpos == ms_help)
-	{
+	if (scrpos == ms_help) {
 		O_DrawHelp(80);
 		return;
 	}
+
+#ifdef KIOSK_MODE
+	DrawJagobjLump(rwx_logo, (320-144-12), 224-8-32, NULL, NULL);
+#endif
+
+/* erase old skulls */
+#ifndef MARS
+	EraseBlock (CURSORX, m_doom_height, m_skull1->width, CURSORY(menuscr->numitems)- CURSORY(0));
+#endif
 
 /* draw menu items */
 	int selectedPos = 0;
@@ -781,9 +918,11 @@ void M_Drawer (void)
 #ifndef MARS
 		EraseBlock(80, m_doom_height + CURSORY(NUMMAINITEMS - 2) + ITEMSPACE + 2, 320, nums[0]->height);
 #endif
-		D_snprintf(mapNum, sizeof(mapNum), "%d", mapnumber);
+		D_snprintf(mapNum, sizeof(mapNum), "%d", ((mapnumber-1)%3)+1);
 
-		V_DrawStringLeft(&titleNumberFont, item->x + 96, y + 2, mapNum);
+		if (mapnumber < TITLE_MAP_NUMBER) {
+			V_DrawStringLeft(&titleNumberFont, item->x + 96, y + 2, mapNum);
+		}
 
 		V_DrawStringLeft(&menuFont, (320 - (tmplen * 14)) >> 1, y + ITEMSPACE + 2, tmp);
 
@@ -796,7 +935,7 @@ void M_Drawer (void)
 		item = &mainitem[mi_savelist];
 		y = y_offset + item->y;
 
-		M_UpdateSaveInfo();
+		//M_UpdateSaveInfo();
 
 		if (savecount > 0)
 		{

@@ -10,31 +10,46 @@
 
 #include <string.h>
 
+#ifdef SKYDEBUG
+uint8_t load_sky_lump_scroll_a = 0;
+uint8_t load_sky_lump_scroll_b = 0;
+uint8_t load_sky_lump_copper = 0;
+uint8_t load_sky_lump_metadata = 0;
+uint8_t load_sky_lump_palette = 0;
+uint8_t load_sky_lump_tiles = 0;
+#endif
+
+#ifdef CPUDEBUG
+uint16_t cpu_pulse_count = 0;
+uint16_t cpu_pulse_timeout = 0;
+
+uint32_t cpu_debug_pr = 0;
+#endif
+
+uint8_t cheats_enabled = 0;
+
+uint8_t cheat_metrics_button_index = 0;
+
+#define CHEAT_METRICS_SEQ_LENGTH	5
+const uint8_t cheat_metrics_sequence[CHEAT_METRICS_SEQ_LENGTH] = { BT_UP, BT_DOWN, BT_DOWN, BT_DOWN, BT_UP };
+
 boolean		splitscreen = false;
 VINT		controltype = 0;		/* determine settings for BT_* */
 
 boolean		sky_md_layer = false;
 boolean		sky_32x_layer = false;
 
-unsigned int	phi_line;
+boolean		h40_sky = false;
 
-int			gamevbls;		/* may not really be vbls in multiplayer */
-int			vblsinframe;		/* range from ticrate to ticrate*2 */
+VINT			gamevbls;		/* may not really be vbls in multiplayer */
+VINT			vblsinframe;		/* range from ticrate to ticrate*2 */
 
-VINT		ticsperframe = MINTICSPERFRAME;
-
-int			maxlevel;			/* highest level selectable in menu (1-25) */
-jagobj_t	*backgroundpic;
+VINT		maxlevel;			/* highest level selectable in menu (1-25) */
 
 int 		ticstart;
 
 #ifdef PLAY_POS_DEMO
 	int			realtic;
-	fixed_t prev_rec_values[4];
-#else 
-#ifdef REC_POS_DEMO
-	fixed_t prev_rec_values[4];
-#endif
 #endif
 
 unsigned configuration[NUMCONTROLOPTIONS][3] =
@@ -217,8 +232,9 @@ unsigned char rndtable[256] = {
 	197, 242,  98,  43,  39, 175, 254, 145, 190,  84, 118, 222, 187, 136 ,
 	120, 163, 236, 249 
 };
-int	rndindex = 0;
-int prndindex = 0;
+VINT	rndindex = 0;
+VINT prndindex = 0;
+uint32_t rng_seed = 0;
 
 int P_Random (void)
 {
@@ -250,6 +266,27 @@ void M_ClearRandom (void)
 void P_RandomSeed(int seed)
 {
 	prndindex = seed & 0xff;
+}
+
+uint16_t P_Random16()
+{
+	unsigned int d0 = rng_seed;
+
+	if (d0 == 0) {
+		d0 = 0x2A6D365B;
+	}
+
+	unsigned int d1 = d0 * 41;
+
+	d0 = (d0 & 0xFFFF0000) | (d1 & 0xFFFF);
+	d1 = (d1 << 16) | ((d1 >> 16) & 0xFFFF);
+	d0 += (d1 & 0xFFFF);
+	d1 = (d1 & 0xFFFF0000) | (d0 & 0xFFFF);
+	d1 = (d1 << 16) | ((d1 >> 16) & 0xFFFF);
+
+	rng_seed = d1;
+
+	return d0;
 }
 
 
@@ -287,21 +324,26 @@ static inline unsigned NetToLocal (unsigned cmd)
  
 /*=============================================================================  */
 
-int		accum_time;
-int		frames_to_skip = 0;
-int		ticrate = 4;
-int		ticsinframe;	/* how many tics since last drawer */
+#ifndef SHOW_DISCLAIMER
+VINT debugCounter = 0;
+#endif
+VINT		accum_time;
+VINT		frames_to_skip = 0;
+VINT		ticrate = 4;
+VINT		ticsinframe;	/* how many tics since last drawer */
 int		ticon;
 int		frameon;
 int		ticbuttons[MAXPLAYERS];
 int		oldticbuttons[MAXPLAYERS];
-int		ticmousex[MAXPLAYERS], ticmousey[MAXPLAYERS];
 int		ticrealbuttons, oldticrealbuttons;
-boolean	mousepresent;
 
-extern	int	lasttics;
+#ifdef KIOSK_MODE
+uint16_t kiosk_timeout_count;
+#endif
 
-mobj_t	emptymobj;
+extern	VINT	lasttics;
+
+consistencymobj_t	emptymobj;
  
 /*
 ===============
@@ -310,91 +352,6 @@ mobj_t	emptymobj;
 =
 ===============
 */
-#ifdef MDSKY
-__attribute((noinline))
-static void D_LoadMDSky(void)
-{
-	// Retrieve lumps for drawing the sky on the MD.
-	uint8_t *sky_metadata_ptr;
-	uint8_t *sky_names_a_ptr;
-	uint8_t *sky_names_b_ptr;
-	uint8_t *sky_palettes_ptr;
-	uint8_t *sky_tiles_ptr;
-
-	//uint32_t sky_metadata_size;
-	uint32_t sky_names_a_size;
-	uint32_t sky_names_b_size;
-	uint32_t sky_palettes_size;
-	uint32_t sky_tiles_size;
-	
-	int lump;
-
-	char lumpname[9];
-
-	D_snprintf(lumpname, 8, "%sMD", gamemapinfo.sky);
-	lump = W_CheckNumForName(lumpname);
-	if (lump != -1) {
-		// This map uses an MD sky.
-		sky_md_layer = true;
-		sky_metadata_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
-		//sky_metadata_size = W_LumpLength(lump);
-	}
-	else {
-		// This map uses a 32X sky.
-		sky_md_layer = false;
-		return;
-	}
-
-	D_snprintf(lumpname, 8, "%sA", gamemapinfo.sky);
-	lump = W_CheckNumForName(lumpname);
-	if (lump != -1) {
-		sky_names_a_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
-		sky_names_a_size = W_LumpLength(lump);
-	}
-	else {
-		return;
-	}
-
-	D_snprintf(lumpname, 8, "%sB", gamemapinfo.sky);
-	lump = W_CheckNumForName(lumpname);
-	if (lump != -1) {
-		sky_names_b_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
-		sky_names_b_size = W_LumpLength(lump);
-	}
-	else {
-		return;
-	}
-
-	D_snprintf(lumpname, 8, "%sPAL", gamemapinfo.sky);
-	lump = W_CheckNumForName(lumpname);
-	if (lump != -1) {
-		sky_palettes_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
-		sky_palettes_size = W_LumpLength(lump);
-	}
-	else {
-		return;
-	}
-
-	D_snprintf(lumpname, 8, "%sTIL", gamemapinfo.sky);
-	lump = W_CheckNumForName(lumpname);
-	if (lump != -1) {
-		sky_tiles_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
-		sky_tiles_size = W_LumpLength(lump);
-	}
-	else {
-		return;
-	}
-
-	// Get the thru-pixel color from the metadata.
-	mars_thru_rgb_reference = sky_metadata_ptr[0];
-
-	Mars_LoadMDSky(sky_metadata_ptr,
-			sky_names_a_ptr, sky_names_a_size, 
-			sky_names_b_ptr, sky_names_b_size, 
-			sky_palettes_ptr, sky_palettes_size, 
-			sky_tiles_ptr, sky_tiles_size);
-}
-#endif
 
 int last_frt_count = 0;
 int total_frt_count = 0;
@@ -408,7 +365,6 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 	int		i;
 	int		exit;
 	int		buttons;
-	int		mx, my;
 	boolean firstdraw = true;
 
 /* */
@@ -430,15 +386,11 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 	last_frt_count = 0;
 	total_frt_count = 0;
 
-	ticbuttons[0] = ticbuttons[1] = oldticbuttons[0] = oldticbuttons[1] = 0;
-	ticmousex[0] = ticmousex[1] = ticmousey[0] = ticmousey[1] = 0;
+#ifdef KIOSK_MODE
+	kiosk_timeout_count = 0;
+#endif
 
-	#ifdef MDSKY
-	if (leveltime == 0)
-	{
-		D_LoadMDSky();
-	}
-	#endif
+	ticbuttons[0] = ticbuttons[1] = oldticbuttons[0] = oldticbuttons[1] = 0;
 
 	do
 	{
@@ -465,13 +417,20 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 			total_frt_count -= frametime;
 		}
 
+		if (accum_time > 3)
+			accum_time = 3;
+
 		last_frt_count = frt_count;
 
-		if (optionsMenuOn || gamemapinfo.mapNumber == TITLE_MAP_NUMBER || leveltime < TICRATE / 4) // Don't include map loading times into frameskip calculation
+		if (optionsMenuOn || IsTitleScreen() || leveltime < TICRATE / 4) // Don't include map loading times into frameskip calculation
 		{
 			accum_time = 1;
 			total_frt_count = 0;
 		}
+
+#ifdef CPUDEBUG
+		cpu_pulse_count = 0;
+#endif
 
 		/* */
 		/* get buttons for next tic */
@@ -481,228 +440,103 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		oldticrealbuttons = ticrealbuttons;
 
 		buttons = I_ReadControls();
-		buttons |= I_ReadMouse(&mx, &my);
-		if (demoplayback)
-		{
-			ticmousex[consoleplayer] = 0;
-			ticmousey[consoleplayer] = 0;
-		}
-		else
-		{
-			ticmousex[consoleplayer] = mx;
-			ticmousey[consoleplayer] = my;
-		}
 
+#ifdef SKYDEBUG
+		if (!gamepaused && oldticrealbuttons == BT_MODE && buttons & BT_MODE) {
+			if (buttons & BT_A) {
+				load_sky_lump_scroll_a++;
+				if (load_sky_lump_scroll_a > 6) {
+					load_sky_lump_scroll_a = 0;
+				}
+			}
+			if (buttons & BT_B) {
+				load_sky_lump_scroll_b++;
+				if (load_sky_lump_scroll_b > 6) {
+					load_sky_lump_scroll_b = 0;
+				}
+			}
+			if (buttons & BT_C) {
+				load_sky_lump_copper++;
+				if (load_sky_lump_copper > 6) {
+					load_sky_lump_copper = 0;
+				}
+			}
+			if (buttons & BT_X) {
+				load_sky_lump_palette++;
+				if (load_sky_lump_palette > 6) {
+					load_sky_lump_palette = 0;
+				}
+			}
+			if (buttons & BT_Y) {
+				load_sky_lump_tiles++;
+				if (load_sky_lump_tiles > 6) {
+					load_sky_lump_tiles = 0;
+				}
+			}
+			if (buttons & BT_Z) {
+				load_sky_lump_metadata++;
+				if (load_sky_lump_metadata > 6) {
+					load_sky_lump_metadata = 0;
+				}
+			}
+		}
+#endif
+
+		if (IsDemoModeType(DemoMode_Playback) && buttons & BT_START) {
+			exit = ga_exitdemo;
+			break;
+		}
+		
 		ticbuttons[consoleplayer] = buttons;
 		ticrealbuttons = buttons;
 
-		if (demoplayback)
-		{
-	#ifndef MARS
-			if (buttons & (BT_ATTACK|BT_SPEED|BT_USE) )
-			{
-				exit = ga_exitdemo;
+		if (IsTitleIntro()) {
+			if (oldticbuttons[0] == 0) {
+				if (buttons == cheat_metrics_sequence[cheat_metrics_button_index]) {
+					cheat_metrics_button_index += 1;
+					if (cheat_metrics_button_index == CHEAT_METRICS_SEQ_LENGTH) {
+						S_StartSoundId(sfx_s3k_33);
+						cheats_enabled |= (CHEAT_METRICS | CHEAT_GAMEMODE_SELECT);
+						cheat_metrics_button_index = 0;
+					}
+				}
+				else if (buttons != 0) {
+					cheat_metrics_button_index = 0;
+				}
+			}
+		}
+		else if (IsTitleScreen()) {
+			int timeleft = ((gameinfo.titleTime << 1) / 3) - leveltime;
+			if (timeleft <= 0) {
+				R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+				Mars_FadeMDPaletteFromBlack(0);
+				copper_table_brightness = -31;
+				effects_flags |= EFFECTS_COPPER_REFRESH;
+				exit = ga_titleexpired;
 				break;
 			}
-	#endif
-
-			#ifdef PLAY_POS_DEMO
-			if (demo_p == demobuffer + 0xA) {
-				// This is the first frame, so grab the initial values.
-				prev_rec_values[0] = players[0].mo->x;
-				prev_rec_values[1] = players[0].mo->y;
-				prev_rec_values[2] = players[0].mo->z;
-				prev_rec_values[3] = players[0].mo->angle >> ANGLETOFINESHIFT;
-
-				demo_p += 16;
+			if (timeleft <= 5) {
+				int palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + (5 - timeleft);
+				//int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + ((5 - timeleft) << 2);
+				R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
+				R_FadeMDPaletteFromBlack(timeleft << 2);
+				copper_table_brightness = -31 + (timeleft * 6);
+				effects_flags |= EFFECTS_COPPER_REFRESH;
 			}
-			else {
-				// Beyond the first frame, we update only the values that
-				// have changed.
-				unsigned char key = *demo_p++;
-
-				int rec_value;
-				unsigned char *prev_rec_values_bytes;
-
-				for (int i=0; i < 4; i++) {
-					// Check to see which values have changed and save them
-					// in 'prev_rec_values' so the next frame's comparisons
-					// can be done against the current frame.
-					prev_rec_values_bytes = &prev_rec_values[i];
-					rec_value = 0;
-
-					switch (key&3) {
-						case 3: // Long -- update the value as recorded (i.e. no delta).
-							rec_value = *demo_p++;
-							rec_value <<= 8;
-							rec_value |= *demo_p++;
-							rec_value <<= 8;
-							rec_value |= *demo_p++;
-							rec_value <<= 8;
-							rec_value |= *demo_p++;
-							prev_rec_values[i] = rec_value;
-							break;
-
-						case 2: // Short -- add the difference to the current value.
-							rec_value = *demo_p++;
-							rec_value <<= 8;
-							rec_value |= *demo_p++;
-							prev_rec_values[i] += (signed short)rec_value;
-							break;
-
-						case 1: // Byte -- add the difference to the current value.
-							rec_value = *demo_p++;
-							prev_rec_values[i] += (signed char)rec_value;
-					}
-
-					// Advance the key so the next two bits can be read to
-					// check for updates.
-					key >>= 2;
-				}
-
-				// Update the player variables with the newly updated
-				// frame values.
-				players[0].mo->x = prev_rec_values[0];
-				players[0].mo->y = prev_rec_values[1];
-				players[0].mo->z = prev_rec_values[2];
-				players[0].mo->angle = prev_rec_values[3] << ANGLETOFINESHIFT;
-			}
-	#endif
-
-	#ifndef PLAY_POS_DEMO
-			if (gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
-				// Rotate on the title screen.
-				ticbuttons[consoleplayer] = buttons = 0;
-				players[0].mo->angle += TITLE_ANGLE_INC;
-			}
-			else {
-				// This is for reading conventional input-based demos.
-				ticbuttons[consoleplayer] = buttons = *((long *)demobuffer);
-				demobuffer += 4;
-			}
-			#endif
+			// Rotate on the title screen.
+			ticbuttons[consoleplayer] = buttons = 0;
+			players[0].mo->angle += TITLE_ANGLE_INC;
 		}
 
-		#ifdef PLAY_POS_DEMO
-		if (demoplayback) {
+#ifdef PLAY_POS_DEMO
+		if (IsDemoModeType(DemoMode_Playback)) {
 			players[0].mo->momx = 0;
 			players[0].mo->momy = 0;
 			players[0].mo->momz = 0;
 		}
-		#endif
+#endif
 
 		gamevbls += vblsinframe;
-
-		if (demorecording) {
-			#ifdef REC_POS_DEMO
-			if (((short *)demobuffer)[3] == -1) {
-				// This is the first frame, so record the initial values in full.
-				prev_rec_values[0] = players[0].mo->x;
-				prev_rec_values[1] = players[0].mo->y;
-				prev_rec_values[2] = players[0].mo->z;
-				prev_rec_values[3] = players[0].mo->angle >> ANGLETOFINESHIFT;
-
-				char *values_p = prev_rec_values;
-				for (int i=0; i < 4; i++) {
-					*demo_p++ = *values_p++;
-					*demo_p++ = *values_p++;
-					*demo_p++ = *values_p++;
-					*demo_p++ = *values_p++;
-				}
-
-				((short *)demobuffer)[2] += 16; // 16 bytes written.
-			}
-			else {
-				// Beyond the first frame, we record only the values that
-				// have changed.
-				unsigned char frame_bytes = 1; // At least one byte will be written.
-
-				// Calculate the difference between values in the current
-				// frame and previous frame.
-				fixed_t delta[4];
-				delta[0] = players[0].mo->x - prev_rec_values[0];
-				delta[1] = players[0].mo->y - prev_rec_values[1];
-				delta[2] = players[0].mo->z - prev_rec_values[2];
-				delta[3] = (players[0].mo->angle >> ANGLETOFINESHIFT) - prev_rec_values[3];
-
-				// Save the current frame's values in 'prev_rec_values' so
-				// the next frame's comparisons can be done against the
-				// current frame.
-				prev_rec_values[0] = players[0].mo->x;
-				prev_rec_values[1] = players[0].mo->y;
-				prev_rec_values[2] = players[0].mo->z;
-				prev_rec_values[3] = players[0].mo->angle >> ANGLETOFINESHIFT;
-
-				unsigned char key = 0;
-
-				// Record the values that have changed and the minimum number
-				// of bytes needed to represent the deltas.
-				for (int i=0; i < 4; i++) {
-					key >>= 2;
-
-					fixed_t d = delta[i];
-					if (d != 0) {
-						if (d <= 0x7F && d >= -0x80) {
-							key |= 0x40; // Byte
-							frame_bytes++;
-						}
-						else if (d <= 0x7FFF && d >= -0x8000) {
-							key |= 0x80; // Short
-							frame_bytes += 2;
-						}
-						else {
-							key |= 0xC0; // Long
-							frame_bytes += 4;
-						}
-					}
-				}
-
-				unsigned char *delta_bytes;
-				unsigned char *prev_rec_values_bytes;
-
-				*demo_p++ = key;
-
-				// Based on the sizes put into the key, we record either the
-				// deltas (in the case of char and short) or the full value.
-				// Values with no difference will not be recorded.
-				for (int i=0; i < 4; i++) {
-					delta_bytes = &delta[i];
-					prev_rec_values_bytes = &prev_rec_values[i];
-					switch (key & 3) {
-						case 3: // Long
-							*demo_p++ = *prev_rec_values_bytes++;
-							*demo_p++ = *prev_rec_values_bytes++;
-							*demo_p++ = *prev_rec_values_bytes++;
-							*demo_p++ = *prev_rec_values_bytes++;
-							break;
-
-						case 2: // Short
-							*demo_p++ = delta_bytes[2];
-							// fall-thru
-
-						case 1: // Byte
-							*demo_p++ = delta_bytes[3];
-					}
-
-					// Advance the key so the next two bits can be read to
-					// check for updated values.
-					key >>= 2;
-				}
-
-				((short *)demobuffer)[2] += frame_bytes;	// Increase data length.
-			}
-
-			((short *)demobuffer)[3] += 1;	// Increase frame count.
-#endif
-
-#ifdef REC_INPUT_DEMO
-			*((long *)demo_p) = buttons;
-			demo_p += 4;
-#endif
-		}
-			
-		if ((demorecording || demoplayback) && (buttons & BT_PAUSE) )
-			exit = ga_completed;
 
 		if (gameaction == ga_warped || gameaction == ga_startnew)
 		{
@@ -752,13 +586,13 @@ while (!I_RefreshCompleted ())
 		while ( DSPRead(&dspfinished) != 0xdef6 )
 		;
 #endif
-	} while (!exit);
+	} while (exit == ga_nothing || exit == ga_demoending);
 
 	stop ();
 	S_Clear ();
 	
 	for (i = 0; i < MAXPLAYERS; i++)
-		players[i].mo = &emptymobj;	/* for net consistency checks */
+		players[i].mo = (mobj_t*)&emptymobj;	/* for net consistency checks */
 
 	return exit;
 } 
@@ -771,29 +605,727 @@ void ClearEEProm (void);
 void DrawSinglePlaque (jagobj_t *pl);
 
 jagobj_t	*titlepic;
+jagobj_t    *titlepic2;
 
 int TIC_Abortable (void)
 {
-	if (ticon >= gameinfo.titleTime)
-		return 1;		/* go on to next demo */
+	if (ticon >= 90)
+		return 1;
 
 	return 0;
 }
 
 /*============================================================================= */
 
+unsigned short screenCount = 0;
+unsigned int frame_sync = 0;
+int8_t selected_map = 0;
+dmapinfo_t selected_map_info;
+
+static jagobj_t *lvlsel_pic = NULL;
+static jagobj_t *lvlsel_static[3] = { NULL, NULL, NULL };
+static jagobj_t *arrowl_pic = NULL;
+static jagobj_t *arrowr_pic = NULL;
+static jagobj_t *chevblk_pic = NULL;
+
 #ifdef SHOW_DISCLAIMER
-VINT disclaimerCount = 0;
+	#define SELECTABLE_MAP_COUNT	7
+	const int8_t selectable_maps[SELECTABLE_MAP_COUNT] = {0, 1, 2, 3, 4, 5, 6};
+#else
+	#define SELECTABLE_MAP_COUNT	gamemapcount
+#endif
+
+static VINT lvlsel_lump = -1;
+
+int TIC_LevelSelect (void)
+{
+	int exit = ga_nothing;
+
+	uint8_t effects_flags_queue = 0;
+
+	screenCount++;
+
+	if (gameaction == ga_nothing && !IsTransitionType(TransitionType_Leaving)) {
+		if ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
+			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B)))
+		{
+			fadetime = 0;
+			SetTransition(TransitionType_Leaving);
+		}
+#ifdef KIOSK_MODE
+		else if (screenCount >= KIOSK_LEVELSELECT_TIMEOUT) {
+			fadetime = 0;
+			SetTransition(TransitionType_Leaving);
+		}
+#endif
+	}
+
+	if (IsTransitionType(TransitionType_Entering)) {
+		if (fadetime < 21) {
+			int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20 - fadetime;
+			R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
+			R_FadeMDPaletteFromBlack(fadetime);
+			copper_table_brightness = -31 + fadetime + (fadetime >> 1);
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
+			fadetime++;
+		}
+		else {
+			I_SetPalette(dc_playpals);
+			Mars_FadeMDPaletteFromBlack(0xEEE);
+			copper_table_brightness = 0;
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
+			SetTransition(TransitionType_None);
+		}
+	}
+	else if (IsTransitionType(TransitionType_Leaving)) {
+		if (fadetime < 21) {
+			int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + fadetime;
+			R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
+			R_FadeMDPaletteFromBlack(21 - fadetime);
+			copper_table_brightness = 0 - fadetime - (fadetime >> 1);
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
+			fadetime++;
+		}
+		else {
+			R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+			Mars_FadeMDPaletteFromBlack(0);
+			copper_table_brightness = -31;
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
+			exit = ga_startnew;
+		}
+	}
+	else {
+		int prev_selected_map = selected_map;
+
+		if (ticrealbuttons & BT_LEFT && !(oldticrealbuttons & BT_LEFT)) {
+			selected_map -= 1;
+			if (selected_map < 0) {
+				selected_map = SELECTABLE_MAP_COUNT-1;
+			}
+#ifdef SHOW_DISCLAIMER
+			if (emeralds != 63 && selected_map == 6) {
+				// Skip CEZ1
+				selected_map -= 1;
+			}
+#endif
+		}
+		else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
+			selected_map += 1;
+#ifdef SHOW_DISCLAIMER
+			if (emeralds != 63 && selected_map == 6) {
+				// Skip CEZ1
+				selected_map += 1;
+			}
+#endif
+			if (selected_map == SELECTABLE_MAP_COUNT) {
+				selected_map = 0;
+			}
+		}
+
+		if (selected_map != prev_selected_map) {
+#ifdef SHOW_DISCLAIMER
+			// Show a filtered list of stages.
+			startmap = gamemapnumbers[selectable_maps[selected_map]];
+#else
+			// Show all the stages.
+			startmap = gamemapnumbers[selected_map];
+#endif
+
+			char lvlsel_name[9] = { 'L','V','L','S','E','L','0','0','\0' };
+
+			lvlsel_name[6] += (startmap / 10);
+			lvlsel_name[7] += (startmap % 10);
+
+			lvlsel_lump = W_CheckNumForName(lvlsel_name);
+			if (lvlsel_lump != -1)
+				W_ReadLump(lvlsel_lump, lvlsel_pic);
+
+			if (gamemapinfo.data)
+				Z_Free(gamemapinfo.data);
+			gamemapinfo.data = NULL;
+			D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
+
+			char buf[512];
+			G_FindMapinfo(G_LumpNumForMapNum(startmap), &selected_map_info, buf);
+
+			if (copper_table_selection & 0xF) {
+				copper_table_selection ^= 0x10;
+			}
+
+			int next_bank = (copper_table_selection >> 4) ^ 1;
+			if (R_SetupCopperTable("MENU", selected_map_info.zone, next_bank) == -1)
+			{
+				R_SetupCopperTable("MENU", 0, next_bank);
+			}
+			if (R_SetupMDPalettes("MENU", selected_map_info.zone, 1, 0) == -1)
+			{
+				R_SetupMDPalettes("MENU", 0, 1, 0);
+			}
+
+			// Some stage selections cause the wrong neutral color to be used. Why??
+			// TODO: Do we actually need to keep two neutral colors in memory?
+			copper_neutral_color[next_bank^1] = copper_neutral_color[next_bank];
+
+			Mars_FadeMDPaletteFromBlack(0xEEE);
+
+			copper_table_selection &= 0x10;
+
+			copper_table_selection++;
+
+			Mars_CrossfadeMDPalette(copper_table_selection & 0xF);
+
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
+		}
+		else if (copper_table_selection & 0xF) {
+			copper_table_selection++;
+
+			if (!(copper_table_selection & 0xF)) {
+				copper_table_selection &= 0x10;
+				Mars_CrossfadeMDPalette(0x10);
+			}
+			else {
+				Mars_CrossfadeMDPalette(copper_table_selection & 0xF);
+			}
+
+			effects_flags_queue = EFFECTS_COPPER_REFRESH;
+		}
+	}
+
+	effects_flags |= effects_flags_queue;
+
+	return exit;
+}
+
+void START_LevelSelect (void)
+{
+	DoubleBufferSetup();	// Clear frame buffers to black.
+
+	screenCount = 0;
+
+	fadetime = 0;
+
+	startmap = 1;
+
+	I_SetPalette(dc_playpals);
+
+	R_InitColormap();
+
+	R_SetupBackground("MENU", 1, 1);
+	R_SetupCopperTable("MENU", 1, 1);
+
+	// Set to totally black
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+	Mars_FadeMDPaletteFromBlack(0);
+	copper_table_brightness = -31;
+	effects_flags |= EFFECTS_COPPER_REFRESH;
+
+	SetTransition(TransitionType_Entering);
+
+	lvlsel_lump = W_CheckNumForName("LVLSEL01");
+	lvlsel_pic = W_CacheLumpNum(lvlsel_lump, PU_STATIC);
+	lvlsel_static[0] = W_CacheLumpName("LVLSELS1", PU_STATIC);
+	lvlsel_static[1] = W_CacheLumpName("LVLSELS2", PU_STATIC);
+	lvlsel_static[2] = W_CacheLumpName("LVLSELS3", PU_STATIC);
+
+	arrowl_pic = W_CacheLumpName("ARROWL", PU_STATIC);
+	arrowr_pic = W_CacheLumpName("ARROWR", PU_STATIC);
+	chevblk_pic = W_CacheLumpName("CHEVBLK", PU_STATIC);
+	
+#ifdef KIOSK_MODE
+	hudNumberFont.charCacheLength = 6;
+	hudNumberFont.charCache = Z_Calloc(sizeof(void*) * 6, PU_STATIC);
+	hudNumberFont.charCache[1] = W_CacheLumpName("STTNUM1", PU_STATIC);
+	hudNumberFont.charCache[2] = W_CacheLumpName("STTNUM2", PU_STATIC);
+	hudNumberFont.charCache[3] = W_CacheLumpName("STTNUM3", PU_STATIC);
+	hudNumberFont.charCache[4] = W_CacheLumpName("STTNUM4", PU_STATIC);
+	hudNumberFont.charCache[5] = W_CacheLumpName("STTNUM5", PU_STATIC);
+#endif
+
+	if (gamemapinfo.data)
+		Z_Free(gamemapinfo.data);
+	gamemapinfo.data = NULL;
+	D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
+	
+	char buf[512];
+	G_FindMapinfo(G_LumpNumForMapNum(1), &selected_map_info, buf);
+
+	clearscreen = 2;
+
+	for (int i = 0; i < 2; i++)
+	{
+		I_FillFrameBuffer(COLOR_THRU);
+		UpdateBuffer();
+	}
+}
+
+#ifdef MEMDEBUG
+boolean debugStop = false;
+#endif
+
+void STOP_LevelSelect (void)
+{
+	DoubleBufferSetup();	// Clear frame buffers to black.
+
+	Z_Free(lvlsel_pic);
+
+	for (int i = 0; i < 3; i++)
+		Z_Free(lvlsel_static[i]);
+
+	Z_Free(arrowl_pic);
+	Z_Free(arrowr_pic);
+	Z_Free(chevblk_pic);
+
+#ifdef KIOSK_MODE
+	for (int i = 5; i > 0; i--) {
+		Z_Free(hudNumberFont.charCache[i]);
+	}
+	Z_Free(hudNumberFont.charCache);
+	hudNumberFont.charCache = NULL;
+	hudNumberFont.charCacheLength = 0;
+#endif
+
+	ClearCopper();
+}
+
+void ClearCopper()
+{
+	if (copper_source_table[0])
+	{
+		Z_Free(copper_source_table[0]);
+		copper_source_table[0] = NULL;
+	}
+
+	if (copper_source_table[1])
+	{
+		Z_Free(copper_source_table[1]);
+		copper_source_table[1] = NULL;
+	}
+
+	if (copper_buffer)
+	{
+		Z_Free(copper_buffer);
+		copper_buffer = NULL;
+	}
+}
+
+void DRAW_LevelSelect (void)
+{
+	while (frame_sync == mars_vblank_count);
+	frame_sync = mars_vblank_count;
+	
+	if (clearscreen > 0) {
+		I_ResetLineTable();
+
+		uint16_t *lines = Mars_FrameBufferLines();
+		uint16_t pixel_offset = (512>>1);
+		for (int i=0; i <= 17; i++) {
+			lines[i] = pixel_offset;
+			lines[223-i] = pixel_offset;
+			pixel_offset += (352>>1);
+		}
+
+		clearscreen--;
+	}
+
+	if (screenCount < 4) {
+		for (int i=0; i < 0x160; i += 0x20) {
+			DrawJagobj2(chevblk_pic, i, 0, 352);
+		}
+
+		// Draw text
+		V_DrawStringCenterWithColormap(&menuFont, 160, 32, "SELECT A STAGE", YELLOWTEXTCOLORMAP);
+
+		// Draw black lines
+		DrawLine(86, 58, 152, 0x1F, false);
+		DrawLine(86, 193, 152, 0x1F, false);
+		DrawLine(86, 59, 134, 0x1F, true);
+		DrawLine(237, 59, 134, 0x1F, true);
+
+		// Draw red lines
+		DrawLine(84, 56, 152, 0x23, false);
+		DrawLine(84, 191, 152, 0x23, false);
+		DrawLine(84, 57, 134, 0x23, true);
+		DrawLine(235, 57, 134, 0x23, true);
+
+		// Draw level picture
+		DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
+	}
+
+	Mars_SetScrollPositions(0, screenCount >> 1, 0, 0);
+
+	// Scroll chevrons
+	uint16_t *lines = Mars_FrameBufferLines();
+	uint16_t pixel_offset = (512>>1);
+	for (int i=0; i < 16; i++) {
+		lines[i] = pixel_offset + (15 - ((screenCount>>1) & 15));
+		lines[223-i] = pixel_offset + ((screenCount>>1) & 15);
+		pixel_offset += (352>>1);
+	}
+
+	// Move arrows
+	int arrow_offset = ((screenCount>>2) & 7) * (((screenCount>>2) & 0x8) == 0);
+	if (arrow_offset > 3) {
+		arrow_offset = 7 - arrow_offset;
+	}
+
+	pixel_t* background;
+
+	if ((((screenCount & 0x20) == 0) && ((screenCount & 0x2) == 0)) ||
+		(((screenCount & 0x20) != 0) && ((screenCount & 0x1E) == 0)))
+	{
+		// Clear left arrow
+		background = I_FrameBuffer() + (((320*112) + ((320-16)>>1)-96-4) >> 1);
+
+		for (int y=0; y < 29; y++) {
+			for (int x=0; x < (24>>3); x++) {
+				// Write 8 thru pixels
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+			}
+
+			background += (296>>1);
+		}
+
+		// Clear right arrow
+		background = I_FrameBuffer() + (((320*112) + ((320-16)>>1)+96-4) >> 1);
+
+		for (int y=0; y < 29; y++) {
+			for (int x=0; x < (24>>3); x++) {
+				// Write 8 thru pixels
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+			}
+
+			background += (296>>1);
+		}
+
+		// Draw arrows
+		DrawJagobj(arrowl_pic, ((320-16)>>1)-96 - arrow_offset, 112);
+		DrawJagobj(arrowr_pic, ((320-16)>>1)+96 + arrow_offset, 112);
+	}
+
+	if (screenCount < 4 || ((copper_table_selection & 0xF) && (copper_table_selection & 0xF) < 3)) {
+		// Clear level name text
+		background = I_FrameBuffer() + (((320*160) + ((320>>1)-64)) >> 1);
+
+		for (int y=0; y < 20; y++) {
+			for (int x=0; x < (128>>3); x++) {
+				// Write 8 thru pixels
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+			}
+
+			background += (192>>1);
+		}
+
+		// Draw text
+		V_DrawStringCenterWithColormap(&menuFont, 160, 160, selected_map_info.name, YELLOWTEXTCOLORMAP);
+
+		if (selected_map_info.act > 0) {
+			char act_string[6] = { 'A','C','T',' ','0','\0' };
+			act_string[4] += selected_map_info.act;
+			V_DrawStringCenterWithColormap(&menuFont, 160, 172, act_string, YELLOWTEXTCOLORMAP);
+		}
+	}
+
+	// Draw level picture
+	if (lvlsel_lump < 0) {
+		if ((copper_table_selection & 0xF) && (copper_table_selection & 0xF) < 3) {
+			background = I_FrameBuffer() + (((320*(72-2)) + ((320-96)>>1)-3) >> 1);
+
+			for (int y=0; y < 76; y++) {
+				for (int x=0; x < (104>>3); x++) {
+					// Write 8 thru pixels
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+				}
+
+				background += (216>>1);
+			}
+		}
+
+		DrawJagobj(lvlsel_static[((screenCount >> 2) % 3)], (320-96)>>1, 72);
+	}
+	else if ((copper_table_selection & 0xF) && (copper_table_selection & 0xF) < 8) {
+		uint16_t size_table[5] = { 2048, 3547, 4096, 3547, 2048 };
+		uint8_t x_offset_table[5] = { 2, 2, 3, 2, 2 };
+		uint8_t y_offset_table[5] = { 1, 2, 2, 2, 1 };
+
+		int size_index = (copper_table_selection & 0xF) - 1;
+		
+		if (size_index < 5) {
+			int x = ((320-96)>>1) - x_offset_table[size_index];
+			int y = 72 - y_offset_table[size_index];
+			fixed_t size_scale = FRACUNIT + size_table[size_index];
+
+			// 98 x 74
+			// 100 x 75
+			// 102 x 76
+			if (size_index >= 3) {
+				background = I_FrameBuffer() + (((320*(72-2)) + ((320-96)>>1)-3) >> 1);
+
+				for (int y=0; y < 76; y++) {
+					for (int x=0; x < (104>>3); x++) {
+						// Write 8 thru pixels
+						*background++ = COLOR_THRU_2;
+						*background++ = COLOR_THRU_2;
+						*background++ = COLOR_THRU_2;
+						*background++ = COLOR_THRU_2;
+					}
+
+					background += (216>>1);
+				}
+			}
+
+			DrawScaledJagobj(lvlsel_pic, x, y, size_scale, size_scale, I_OverwriteBuffer());
+		}
+		else {
+			background = I_FrameBuffer() + (((320*(72-2)) + ((320-96)>>1)-3) >> 1);
+
+			for (int y=0; y < 76; y++) {
+				for (int x=0; x < (104>>3); x++) {
+					// Write 8 thru pixels
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+				}
+
+				background += (216>>1);
+			}
+
+			DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
+		}
+	}
+
+#ifdef KIOSK_MODE
+	// Clear countdown digits
+	background = I_FrameBuffer() + (((320*177) + 272) >> 1);
+
+	for (int y=0; y < 31; y++) {
+		for (int x=0; x < (24>>3); x++) {
+			// Write 8 thru pixels
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+		}
+
+		background += (296>>1);
+	}
+
+	int countdown = (KIOSK_LEVELSELECT_TIMEOUT/60) - (screenCount/60);
+	if (countdown > 5) {
+		V_DrawValueLeft(&hudNumberFont, 280, 184, (KIOSK_LEVELSELECT_TIMEOUT/60) - (screenCount/60));
+	}
+	else if (countdown > 0) {
+		int size_index = (((screenCount<<4) / 15) & 63);
+		fixed_t size_scale = FRACUNIT + (2048 * (63 - size_index));
+		DrawScaledJagobj(
+				hudNumberFont.charCache[countdown],
+				280-8+(size_index>>2)-(size_index>>3),
+				184-7+(size_index>>3),
+				size_scale,
+				size_scale,
+				I_OverwriteBuffer());
+	}
+#endif
+}
+
+/*============================================================================= */
+
+#ifdef SHOW_COMPATIBILITY_PROMPT
+int TIC_Compatibility(void)
+{
+	screenCount++;
+
+	// Read directly from the controller. Works better in this function. Don't know why!
+	if ((Mars_ReadController(0) & BT_START)) {
+		return ga_closeprompt;
+	}
+
+	return ga_nothing;
+}
+
+void START_Compatibility (void)
+{
+	for (int i = 0; i < 2; i++)
+	{
+		I_ClearFrameBuffer();
+		UpdateBuffer();
+	}
+
+	screenCount = 0;
+
+	I_SetPalette(dc_playpals);
+
+	R_InitColormap();
+}
+
+void STOP_Compatibility (void)
+{
+	// Set to totally black
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+}
+
+void DRAW_Compatibility (void)
+{
+	const char *ares[6] = {
+		"This emulator exhibits certain",
+		"undesirable graphical glitches.",
+		"While it should play fine otherwise,",
+		"you may want to consider one of",
+		"these alternatives for the best",
+		"experience:"
+	};
+
+	const char *kega[6] = {
+		"This emulator does not support",
+		"certain features used by this game.",
+		"While we do our best to support it,",
+		ares[3],	// "you may want to consider one of",
+		ares[4],	// "these alternatives for the best",
+		ares[5]		// "experience:"
+	};
+
+	const char *gens[4] = {
+		kega[0],	// "This emulator does not support",
+		kega[1],	// "certain features used by this game.",
+		"It is therefore not recommended. We",
+		"suggest one of these alternatives:"
+	};
+
+	const char *ages[4] = {
+		"This emulator has a large number of",
+		"severe graphical and audio issues",
+		"and is strongly discouraged. We",
+		gens[3]		// "suggest one of these alternatives:"
+	};
+
+	const char *incompatible[3] = {
+		"This emulator is not compatible with",
+		"this game. We suggest one of these",
+		"alternatives:"
+	};
+
+	const char *emulators[2] = {
+		"* Jgenesis 0.10.0",
+		"* PicoDrive 2.04",
+	};
+
+	const uint8_t compatibility_color[6] = { 0x70, 0xBC, 0x49, 0x36, 0x47, 0x23 };
+
+	while (frame_sync == mars_vblank_count);
+	frame_sync = mars_vblank_count;
+
+	viewportbuffer = (pixel_t*)I_FrameBuffer();
+
+	h40_sky = 1;	// Make sure the screen isn't shifted three pixels.
+
+	if (screenCount < 4)
+	{
+		RemoveDistortionFilters();	// Normalize the line table to get rid of the three-pixel shift.
+
+		I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
+
+		DrawFillRect(0, 0, 320, 8, compatibility_color[legacy_emulator]);
+		DrawFillRect(0, 216, 320, 8, compatibility_color[legacy_emulator]);
+		DrawFillRect(0, 8, 8, 208, compatibility_color[legacy_emulator]);
+		DrawFillRect(312, 8, 8, 208, compatibility_color[legacy_emulator]);
+
+		V_DrawValueRight(&menuFont, 296, 16, legacy_emulator);
+
+		V_DrawStringCenterWithColormap(&menuFont, 160, 24, "*** NOTICE ***", YELLOWTEXTCOLORMAP);
+
+		switch (legacy_emulator)
+		{
+			case LEGACY_EMULATOR_ARES:
+				for (int i=0; i < 6; i++) {
+					V_DrawStringCenter(&menuFont, 160, 42+(i*12), ares[i]);
+				}
+				for (int i=0; i < 2; i++) {
+					V_DrawStringLeft(&menuFont, 100, 132+(i*12), emulators[i]);
+				}
+				break;
+
+			case LEGACY_EMULATOR_KEGA:
+				for (int i=0; i < 6; i++) {
+					V_DrawStringCenter(&menuFont, 160, 42+(i*12), kega[i]);
+				}
+				for (int i=0; i < 2; i++) {
+					V_DrawStringLeft(&menuFont, 100, 132+(i*12), emulators[i]);
+				}
+				break;
+
+			case LEGACY_EMULATOR_GENS:
+				for (int i=0; i < 4; i++) {
+					V_DrawStringCenter(&menuFont, 160, 42+(i*12), gens[i]);
+				}
+				for (int i=0; i < 2; i++) {
+					V_DrawStringLeft(&menuFont, 100, 108+(i*12), emulators[i]);
+				}
+				break;
+
+			case LEGACY_EMULATOR_AGES:
+				for (int i=0; i < 4; i++) {
+					V_DrawStringCenter(&menuFont, 160, 42+(i*12), ages[i]);
+				}
+				for (int i=0; i < 2; i++) {
+					V_DrawStringLeft(&menuFont, 100, 108+(i*12), emulators[i]);
+				}
+				break;
+
+			case LEGACY_EMULATOR_INCOMPATIBLE:
+				for (int i=0; i < 3; i++) {
+					V_DrawStringCenter(&menuFont, 160, 48+(i*12), incompatible[i]);
+				}
+				for (int i=0; i < 2; i++) {
+					V_DrawStringLeft(&menuFont, 100, 96+(i*12), emulators[i]);
+				}
+				//break;
+		}
+
+		V_DrawStringCenterWithColormap(&menuFont, 160, 192, "PRESS START TO CONTINUE", YELLOWTEXTCOLORMAP);
+	}
+
+	uint16_t *lines = Mars_FrameBufferLines();
+	short pixel_offset;
+	if (screenCount & 0x20) {
+		// Show "PRESS START" message.
+		pixel_offset = (((320*192)+512)/2);
+	}
+	else {
+		// Hide "PRESS START" message.
+		pixel_offset = (((320*200)+512)/2);
+	}
+
+	for (int i=192; i < 200; i++) {
+		lines[i] = pixel_offset;
+		pixel_offset += (320/2);
+	}
+}
+#endif
+
+/*============================================================================= */
+
+#ifdef SHOW_DISCLAIMER
 int TIC_Disclaimer(void)
 {
-	if (++disclaimerCount > 300)
+	if (++screenCount > 600)
 		return 1;
 
-	if (disclaimerCount == 270)
+	if (screenCount == 540)
 	{
 		// Set to totally black
-		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-		I_SetPalette(dc_playpals+10*768);
+		R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
 	}
 
 	return 0;
@@ -809,11 +1341,11 @@ void START_Disclaimer(void)
 		UpdateBuffer();
 	}
 
-	disclaimerCount = 0;
+	screenCount = 0;
 
 	UpdateBuffer();
 
-	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
+	const byte *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	I_SetPalette(dc_playpals);
 
 	S_StartSong(gameinfo.gameoverMus, 0, cdtrack_gameover);
@@ -946,52 +1478,66 @@ void BufferedDrawSprite (int sprite, int frame, int rotation, int top, int left,
 
 void DRAW_Disclaimer (void)
 {
-	unsigned char text1[] = { 0x2C, 0x59, 0xFF, 0x79, 0x68, 0x2D, 0x71, 0xEA, 0x3D, 0x31, 0xE5, 0x62, 0x07, 0x3F, 0x7C, 0xE3, 0x78};
-	unsigned char text2[] = { 0x36, 0x5E, 0xE2, 0x0A, 0x0A, 0x2F, 0x10, 0xF4, 0x37, 0x5D, 0xF2, 0x2A};
-	unsigned char text3[] = { 0x10, 0x65, 0xC2, 0x5A, 0x3B, 0x50, 0x1F, 0x88, 0x0B, 0x62, 0xD8, 0x5E, 0x29, 0x03, 0x5C, 0xD4, 0x56, 0x62, 0xC4, 0x48, 0x7A, 0x44, 0x5F, 0xD5, 0x1F, 0x3E, 0xC5, 0x58, 0x2A, 0x59, 0x02, 0xDF, 0x78 };
-	const VINT stext1 = 16;
-	const VINT stext2 = 11;
-	const VINT stext3 = 32;
+	while (frame_sync == mars_vblank_count);
+	frame_sync = mars_vblank_count;
 
-	int sum = 0;
-	for (int i = 0; i < stext1; i++)
-		sum += text1[i] / 2;
-	for (int i = 0; i < stext2; i++)
-		sum += text2[i] / 2;
-	for (int i = 0; i < stext3; i++)
-		sum += text3[i] / 2;
+	if (screenCount < 4) {
+		unsigned char text1[] = { 0x2C, 0x59, 0xFF, 0x79, 0x68, 0x2D, 0x71, 0xEA, 0x3D, 0x31, 0xE5, 0x62, 0x07, 0x3F, 0x7C, 0xE3, 0x78};
+		unsigned char text2[] = { 0x36, 0x5E, 0xE2, 0x0A, 0x0A, 0x2F, 0x10, 0xF4, 0x37, 0x5D, 0xF2, 0x2A};
+		unsigned char text3[] = { 0x10, 0x65, 0xC2, 0x5A, 0x3B, 0x50, 0x1F, 0x88, 0x0B, 0x62, 0xD8, 0x5E, 0x29, 0x03, 0x5C, 0xD4, 0x56, 0x62, 0xC4, 0x48, 0x7A, 0x44, 0x5F, 0xD5, 0x1F, 0x3E, 0xC5, 0x58, 0x2A, 0x59, 0x02, 0xDF, 0x78 };
+		const VINT stext1 = 16;
+		const VINT stext2 = 11;
+		const VINT stext3 = 32;
 
-	if (sum != keyValue)
-		I_Error("");
+		int sum = 0;
+		for (int i = 0; i < stext1; i++)
+			sum += text1[i] / 2;
+		for (int i = 0; i < stext2; i++)
+			sum += text2[i] / 2;
+		for (int i = 0; i < stext3; i++)
+			sum += text3[i] / 2;
 
-	parse_data(text1, stext1+1);
-	parse_data(text2, stext2+1);
-	parse_data(text3, stext3+1);
+		if (sum != keyValue)
+			I_Error("");
 
-	DrawFillRect(0, 0, 320, viewportHeight, COLOR_BLACK);
+		parse_data(text1, stext1+1);
+		parse_data(text2, stext2+1);
+		parse_data(text3, stext3+1);
 
-	if (disclaimerCount < 240)
-	{
-		viewportbuffer = (pixel_t*)I_FrameBuffer();
-		I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
-		BufferedDrawSprite(SPR_PLAY, 1 + ((disclaimerCount / 8) & 1), 0, 80, 160, false);
+		DrawFillRect(0, 0, 320, viewportHeight, COLOR_BLACK);
+
+		V_DrawStringCenter(&creditFont, 160, 64+32, (const char*)text1);
+		V_DrawStringCenter(&creditFont, 160, 88+32, (const char*)text2);
+
+		V_DrawStringCenter(&menuFont, 160, 128+32, (const char*)text3);
 	}
-	else if (disclaimerCount < 250)
+
+	if (screenCount < 500)
 	{
-		DrawJagobjLump(W_GetNumForName("ZOOM"), 136, 80-56, NULL, NULL);
+		DrawFillRect((320>>1)-(56>>1), 24, 56, 64, COLOR_BLACK);
+
+		if (screenCount < 480)
+		{
+			viewportbuffer = (pixel_t*)I_FrameBuffer();
+			I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
+			BufferedDrawSprite(SPR_PLAY, 1 + ((screenCount>>4) & 1), 0, 80, 160, false);
+		}
+		else
+		{
+			DrawJagobjLump(W_GetNumForName("ZOOM"), 136, 80-56, NULL, NULL);
+		}
 	}
 	else
 	{
-		VINT Xpos = disclaimerCount - 250;
+		VINT Xpos = screenCount - 500;
+
+		DrawFillRect((320>>1)-(80>>1) + (Xpos<<3), 20, 80, 64, COLOR_BLACK);
+
 		viewportbuffer = (pixel_t*)I_FrameBuffer();
 		I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
-		BufferedDrawSprite(SPR_PLAY, 11 + ((disclaimerCount / 2) % 4), 2, 80, 160  + (Xpos * 16), true);
+		BufferedDrawSprite(SPR_PLAY, 11 + ((screenCount>>2) & 3), 2, 80, 160 + (Xpos<<3), true);
 	}
 
-	V_DrawStringCenter(&creditFont, 160, 64+32, (const char*)text1);
-	V_DrawStringCenter(&creditFont, 160, 88+32, (const char*)text2);
-
-	V_DrawStringCenter(&menuFont, 160, 128+32, (const char*)text3);
 	Mars_ClearCache();
 }
 #endif
@@ -1009,54 +1555,56 @@ void START_Title(void)
 		UpdateBuffer();
 	}
 #else
-	backgroundpic = W_POINTLUMPNUM(W_GetNumForName("M_TITLE"));
 	DoubleBufferSetup();
 #endif
 
+	/*
+	if (gamemapinfo.data)
+		Z_Free(gamemapinfo.data);
+	gamemapinfo.data = NULL;
+	D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
+
+	char buf[512];
+	G_FindMapinfo(G_LumpNumForMapNum(TITLE_MAP_NUMBER), &gamemapinfo, buf);
+
+	R_SetupMDSky(gamemapinfo.sky, 1);
+	*/
+
+	R_SetupMDSky("sky1", 1); // TODO: //DLG: Load MAP30 gamemapinfo to get the sky name.
+
 	titlepic = gameinfo.titlePage != -1 ? W_CacheLumpNum(gameinfo.titlePage, PU_STATIC) : NULL;
+	titlepic2 = gameinfo.titlePage2 != -1 ? W_CacheLumpNum(gameinfo.titlePage2, PU_STATIC) : NULL;
 
 	ticon = 0;
 
-#ifdef MARS
-	I_InitMenuFire(titlepic);
-#else
+	I_InitMenuFire(titlepic, titlepic2);
+
 	S_StartSong(gameinfo.titleMus, 0, cdtrack_title);
-#endif
 }
 
 void STOP_Title (void)
 {
 	if (titlepic != NULL)
+	{
 		Z_Free (titlepic);
-#ifdef MARS
+		titlepic = NULL;
+	}
+
+	if (titlepic2 != NULL)
+	{
+		Z_Free (titlepic2);
+		titlepic2 = NULL;
+	}
+
 	I_StopMenuFire();
-#else
-	S_StopSong();
-#endif
 }
 
 void DRAW_Title (void)
 {
-#ifdef MARS
 	I_DrawMenuFire();
-#endif
 }
 
 /*============================================================================= */
-
-void RunMenu (void);
-
-void RunTitle (void)
-{
-	startmap = 1;
-	starttype = gt_single;
-	consoleplayer = 0;
-
-#ifdef SHOW_DISCLAIMER
-	MiniLoop (START_Disclaimer, STOP_Disclaimer, TIC_Disclaimer, DRAW_Disclaimer, UpdateBuffer);
-#endif
-	MiniLoop (START_Title, STOP_Title, TIC_Abortable, DRAW_Title, UpdateBuffer);
-}
 
 int RunInputDemo (char *demoname)
 {
@@ -1073,19 +1621,17 @@ int RunInputDemo (char *demoname)
 	// this will cause shrinking of the zone area available
 	// for the level data after each demo playback and eventual
 	// Z_Malloc failure
+	ClearCopper();
 	Z_FreeTags(mainzone);
 
 	demo = W_CacheLumpNum(lump, PU_STATIC);
 	exit = G_PlayInputDemoPtr (demo);
 	Z_Free(demo);
 
-#ifndef MARS
-	if (exit == ga_exitdemo)
-		RunMenu ();
-#endif
 	return exit;
 }
 
+#ifdef PLAY_POS_DEMO
 int RunPositionDemo (char *demoname)
 {
 	unsigned *demo;
@@ -1101,71 +1647,16 @@ int RunPositionDemo (char *demoname)
 	// this will cause shrinking of the zone area available
 	// for the level data after each demo playback and eventual
 	// Z_Malloc failure
+	ClearCopper();
 	Z_FreeTags(mainzone);
 
 	demo = W_CacheLumpNum(lump, PU_STATIC);
 	exit = G_PlayPositionDemoPtr ((unsigned char*)demo);
 	Z_Free(demo);
 
-#ifndef MARS
-	if (exit == ga_exitdemo)
-		RunMenu ();
-#endif
 	return exit;
 }
-
-
-void RunMenu (void)
-{
-#ifdef MARS
-	int exit = ga_exitdemo;
-
-	M_Start();
-	if (!gameinfo.noAttractDemo) {
-		do {
-			int i;
-			char demo[9];
-
-			for (i = 1; i < 10; i++)
-			{
-				int lump;
-
-				D_snprintf(demo, sizeof(demo), "DEMO%1d", i);
-				lump = W_CheckNumForName(demo);
-				if (lump == -1)
-					break;
-
-				exit = RunInputDemo(demo);
-				if (exit == ga_exitdemo)
-					break;
-			}
-		} while (exit != ga_exitdemo);
-	}
-	M_Stop();
-#else
-reselect:
-	MiniLoop(M_Start, M_Stop, M_Ticker, M_Drawer, NULL);
 #endif
-
-	if (consoleplayer == 0)
-	{
-		if (starttype != gt_single && !startsplitscreen)
-		{
-			I_NetSetup();
-#ifndef MARS
-			if (starttype == gt_single)
-				goto reselect;		/* aborted net startup */
-#endif
-		}
-	}
-
-	if (startsave != -1)
-		G_LoadGame(startsave);
-	else
-		G_InitNew(startmap, starttype, startsplitscreen);
-
-	G_RunGame ();
-}
 
 /*============================================================================ */
 
@@ -1179,13 +1670,17 @@ reselect:
 ============= 
 */ 
 
-int			startmap = 1;
+VINT			startmap = 1;
 gametype_t	starttype = gt_single;
-int			startsave = -1;
+VINT			startsave = -1;
 boolean 	startsplitscreen = 0;
 
+boolean clearedGame = false;
+
 void D_DoomMain (void) 
-{    
+{
+	effects_flags = EFFECTS_COPPER_ENABLED;	// This allows for testing of dropped interrupts.
+
 D_printf ("C_Init\n");
 	C_Init ();		/* set up object list / etc	  */
 D_printf ("Z_Init\n");
@@ -1195,9 +1690,9 @@ D_printf ("W_Init\n");
 D_printf ("I_Init\n");
 	I_Init (); 
 D_printf ("R_Init\n");
-	R_Init (); 
+	R_Init ();
 D_printf ("P_Init\n");
-	P_Init (); 
+	P_Init ();
 D_printf ("S_Init\n");
 	S_Init ();
 D_printf("ST_Init\n");
@@ -1206,6 +1701,7 @@ D_printf("O_Init\n");
 	O_Init ();
 D_printf("G_Init\n");
 	G_Init();
+	
 
 /*========================================================================== */
 
@@ -1229,40 +1725,110 @@ D_printf ("DM_Main\n");
 	G_RecordPositionDemo();
 #endif
 
-/*	MiniLoop (F_Start, F_Stop, F_Ticker, F_Drawer, UpdateBuffer); */
-
-/*G_InitNew (startmap, gt_deathmatch, false); */
-/*G_RunGame (); */
-
-#ifdef NeXT
-	if (M_CheckParm ("-dm") )
-	{
-		I_NetSetup ();
-		G_InitNew (startmap, gt_deathmatch, false);
+	if (legacy_emulator == LEGACY_EMULATOR_GENS && mars_hblank_count_peak == 224) {
+		// This is probably AGES.
+		legacy_emulator = LEGACY_EMULATOR_AGES;
 	}
-	else if (M_CheckParm ("-dial") || M_CheckParm ("-answer") )
-	{
-		I_NetSetup ();
-		G_InitNew (startmap, gt_coop, false);
+	if (I_GetFRTCounter() <= 256) {
+		// Likely an old version of PicoDrive with incorrect WDT handling.
+		// This will also fail for RetroDrive.
+		legacy_emulator = LEGACY_EMULATOR_INCOMPATIBLE;
 	}
-	else
-		G_InitNew (startmap, gt_single, false);
-	G_RunGame ();
+
+#ifdef SHOW_COMPATIBILITY_PROMPT
+	if (legacy_emulator) {
+		SetCompatibility();
+		MiniLoop (START_Compatibility, STOP_Compatibility, TIC_Compatibility, DRAW_Compatibility, UpdateBuffer);
+	}
 #endif
 
-#ifdef MARS
-	while (1)
-	{
-		RunTitle();
-		RunMenu();
-	}
+#ifdef SHOW_DISCLAIMER
+	SetDisclaimer();
+	MiniLoop (START_Disclaimer, STOP_Disclaimer, TIC_Disclaimer, DRAW_Disclaimer, UpdateBuffer);
 #else
-	while (1)
-	{
-		RunTitle();
-		RunInputDemo("DEMO1");
-		RunCredits ();
-		RunInputDemo("DEMO2");
-	}
+	cheats_enabled = CHEAT_METRICS | CHEAT_GAMEMODE_SELECT;	// Cheats already active for development builds.
 #endif
+
+#ifdef SHOW_FPS
+	debugmode = DEBUGMODE_FPSCOUNT;
+#endif
+
+	startmap = 1;
+	starttype = gt_single;
+	consoleplayer = 0;
+
+	char demo_name[6] = { 'D', 'E', 'M', 'O', '0', '\0' };
+	int exit = ga_titleexpired;
+
+	if (!gameinfo.noAttractDemo) {
+		do {
+			// Title intro
+			G_InitNew (TITLE_MAP_NUMBER, gt_single, false);
+			SetTitleIntro();
+			MiniLoop (START_Title, STOP_Title, TIC_Abortable, DRAW_Title, UpdateBuffer);
+#ifdef CPUDEBUG
+			cpu_pulse_timeout = 300;	// 5 seconds
+#endif
+
+			// Title with menu
+			M_Start();
+			SetTitleScreen();
+			exit = MiniLoop (P_Start, P_Stop, P_Ticker, P_Drawer, P_Update);
+			//M_Stop();
+
+			switch (exit) {
+				case ga_startnew:
+					// Level selection screen
+					SetLevelSelect();
+					exit = MiniLoop (START_LevelSelect, STOP_LevelSelect, TIC_LevelSelect, DRAW_LevelSelect, UpdateBuffer);
+
+					// Start a new game
+					G_InitNew(startmap, starttype, startsplitscreen);
+					if (startmap >= SSTAGE_START && startmap <= SSTAGE_END) {
+						SetLevel(LevelType_SpecialStage);
+					}
+					else {
+						SetLevel(LevelType_Normal);
+					}
+					G_RunGame();
+					break;
+				case ga_titleexpired:
+					// Run a demo
+					{
+						demo_name[4]++;	// Point to the next demo.
+						
+						int lump = W_CheckNumForName(demo_name);
+						if (lump == -1) {
+							demo_name[4] = '1';	// Assume we at least have a DEMO1 lump.
+						}
+						
+						SetDemoMode(DemoMode_Playback);
+						exit = RunInputDemo(demo_name);
+						SetDemoMode(DemoMode_None);
+					}
+					break;
+				case ga_showcredits:
+					// Show the credits sequence
+					SetCredits();
+					MiniLoop(F_Start, F_Stop, F_Ticker, F_Drawer, I_Update);
+			}
+		} while (1);
+	}
+
+	/*
+	if (consoleplayer == 0)
+	{
+		if (starttype != gt_single && !startsplitscreen)
+		{
+			I_NetSetup();
+		}
+	}
+
+	if (startsave != -1)
+		G_LoadGame(startsave);
+	else
+		G_InitNew(startmap, starttype, startsplitscreen);
+
+	G_RunGame ();
+	*/
 }

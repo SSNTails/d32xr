@@ -35,6 +35,8 @@ memzone_t *Z_InitZone (byte *base, int size)
 	memzone_t *zone;
 	
 	zone = (memzone_t *)base;
+
+	D_memset(zone, 0, size);
 	
 	zone->size = size;
 	zone->rover = &zone->blocklist;
@@ -81,8 +83,11 @@ void Z_Init (void)
 =
 ========================
 */
-
-void Z_Free2 (memzone_t *mainzone, void *ptr)
+#ifdef MEMDEBUG
+void Z_Free2 (memzone_t *memzone, void *ptr, const char *file, int line)
+#else
+void Z_Free2 (memzone_t *memzone, void *ptr)
+#endif
 {
 	memblock_t	*block, *adj;
 	
@@ -93,15 +98,24 @@ void Z_Free2 (memzone_t *mainzone, void *ptr)
 	block->tag = 0;
 	block->id = 0;
 
+#ifdef MEMDEBUG
+	if (memzone == mainzone)
+		CONS_Printf("Freeing block of size %d\n%s: %d", block->size, file, line);
+#endif
+
 	// merge with adjacent blocks
 	adj = block->prev;
 	if (adj && !adj->tag)
 	{
 		adj->next = block->next;
-		adj->next->prev = adj;
+#ifdef MEMDEBUG
+		if (memzone != mainzone && adj->next == NULL)
+			CONS_Printf("Null adj->next for block size %d", block->size);
+#endif
+		adj->next->prev = adj; // If adj->next is null and not mainzone...
 		adj->size += block->size;
-		if (mainzone->rover == block)
-			mainzone->rover = adj;
+		if (memzone->rover == block)
+			memzone->rover = adj;
 		block = adj;
 	}
 
@@ -112,8 +126,8 @@ void Z_Free2 (memzone_t *mainzone, void *ptr)
 		if (block->next)
 			block->next->prev = block;
 		block->size += adj->size;
-		if (mainzone->rover == adj)
-			mainzone->rover = block;
+		if (memzone->rover == adj)
+			memzone->rover = block;
 	}
 }
 
@@ -126,15 +140,33 @@ void Z_Free2 (memzone_t *mainzone, void *ptr)
 ========================
 */
 
+int Z_CalculateAllocSize(int datasize)
+{
+	int allocsize = datasize+1;
+	allocsize += sizeof(memblock_t);	/* account for size of block header */
+	allocsize = (allocsize+3)&~3;		/* longword align everything */
+
+	return allocsize;
+}
+
 #define MINFRAGMENT	64
 
-void *Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err)
+#ifdef MEMDEBUG
+void *Z_Malloc2 (memzone_t *memzone, int size, int tag, boolean err, const char *file, int line)
+#else
+void *Z_Malloc2 (memzone_t *memzone, int size, int tag, boolean err)
+#endif
 {
 	int		extra;
 	memblock_t	*start, *rover, *new, *base;
 
+#ifdef MEMDEBUG
+	if (memzone == mainzone)
+		CONS_Printf("Had to malloc %d from %s:%d", size, file, line);
+#endif
+
 #if 0
-Z_CheckHeap (mainzone);	/* DEBUG */
+Z_CheckHeap (memzone);	/* DEBUG */
 #endif
 
 /* */
@@ -142,9 +174,9 @@ Z_CheckHeap (mainzone);	/* DEBUG */
 /* of sufficient size, throwing out any purgable blocks along the way */
 /* */
 	size += sizeof(memblock_t);	/* account for size of block header */
-	size = (size+3)&~3;			/* word align everything */
+	size = (size+3)&~3;			/* longword align everything */
 	
-	start = base = mainzone->rover;
+	start = base = memzone->rover;
 	
 	while (base->tag || base->size < size)
 	{
@@ -163,13 +195,18 @@ Z_CheckHeap (mainzone);	/* DEBUG */
 			if (!base)
 			{
 backtostart:
-				base = &mainzone->blocklist;
+				base = &memzone->blocklist;
 			}
 			
 			if (base == start)	/* scaned all the way around the list */
 			{
+#if MEMDEBUG
 				if (err)
-					I_Error("Z_Malloc: failed on %i (LFB:%i)", size, Z_LargestFreeBlock(mainzone));
+					I_Error("Z_Malloc: failed on %i (LFB:%i)\n%s:%d", size, Z_LargestFreeBlock(memzone), file, line);
+#else
+				if (err)
+					I_Error("Z_Malloc: failed on %i (LFB:%i)", size, Z_LargestFreeBlock(memzone));
+#endif
 				return NULL;
 			}
 			continue;
@@ -193,18 +230,37 @@ backtostart:
 		base->size = size;
 	}
 	
+//#ifdef MEMDEBUG
+//	D_strncpy(base->file, file, 16);
+//	base->line = line;
+//#endif
 	base->tag = tag;
 	base->id = ZONEID;
 #ifndef MARS
 	base->lockframe = -1;
 #endif	
-	mainzone->rover = base->next;	/* next allocation will start looking here */
-	if (!mainzone->rover)
-		mainzone->rover = &mainzone->blocklist;
+	memzone->rover = base->next;	/* next allocation will start looking here */
+	if (!memzone->rover)
+		memzone->rover = &memzone->blocklist;
 		
 	return (void *) ((byte *)base + sizeof(memblock_t));
 }
 
+#ifdef MEMDEBUG
+void *Z_Calloc2 (memzone_t *memzone, int size, int tag, boolean err, const char *file, int line)
+{
+	void *p = Z_Malloc2(memzone, size, tag, err, file, line);
+	D_memset(p, 0, size);
+	return p;
+}
+#else
+void *Z_Calloc2 (memzone_t *memzone, int size, int tag, boolean err)
+{
+	void *p = Z_Malloc2(memzone, size, tag, err);
+	D_memset(p, 0, size);
+	return p;
+}
+#endif
 
 /*
 ========================
@@ -214,17 +270,23 @@ backtostart:
 ========================
 */
 
-void Z_FreeTags (memzone_t *mainzone)
+void Z_FreeTags (memzone_t *memzone)
 {
 	memblock_t	*block, *next;
 	
-	for (block = &mainzone->blocklist ; block ; block = next)
+	for (block = &memzone->blocklist ; block ; block = next)
 	{
 		next = block->next;		/* get link before freeing */
 		if (!block->tag)
 			continue;			/* free block */
 		if (block->tag == PU_LEVEL || block->tag == PU_LEVSPEC)
-			Z_Free2 (mainzone, (byte *)block+sizeof(memblock_t));
+		{
+#ifdef MEMDEBUG
+			Z_Free2 (memzone, (byte *)block+sizeof(memblock_t), __FILE__, __LINE__);
+#else
+			Z_Free2 (memzone, (byte *)block+sizeof(memblock_t));
+#endif
+		}
 	}
 }
 
@@ -239,15 +301,15 @@ void Z_FreeTags (memzone_t *mainzone)
 
 memblock_t	*checkblock;
 
-void Z_CheckHeap (memzone_t *mainzone)
+void Z_CheckHeap (memzone_t *memzone)
 {
 	
-	for (checkblock = &mainzone->blocklist ; checkblock; checkblock = checkblock->next)
+	for (checkblock = &memzone->blocklist ; checkblock; checkblock = checkblock->next)
 	{
 		if (!checkblock->next)
 		{
-			if ((byte *)checkblock + checkblock->size - (byte *)mainzone
-			!= mainzone->size)
+			if ((byte *)checkblock + checkblock->size - (byte *)memzone
+			!= memzone->size)
 				I_Error ("Z_CheckHeap: zone size changed\n");
 			continue;
 		}
@@ -259,6 +321,46 @@ void Z_CheckHeap (memzone_t *mainzone)
 	}
 }
 
+#ifdef MEMDEBUG
+/*void Z_DumpHeap(memzone_t *memzone, int skipCount)
+{
+	char memmap[2048];
+	memmap[0] = '\0';
+	char *mapPtr = memmap;
+	int numblocks = 0;
+
+	int i = 0;
+
+	memblock_t *block;
+	for (block = &memzone->blocklist; block; block = block->next)
+	{
+		if (i < skipCount)
+		{
+			i++;
+			continue;
+		}
+		char appendMe[32];
+
+		if (block->tag)
+			D_snprintf(appendMe, 32, "%s:%d:%d", block->file, block->line, block->size);
+		else
+			D_snprintf(appendMe, 32, "Free:%d", block->size);
+
+		for (int i = 0; i < 32; i++)
+		{
+			if (appendMe[i] == '\0')
+				break;
+			*mapPtr++ = appendMe[i];
+		}
+		*mapPtr++ = '\n';
+		numblocks++;
+		i++;
+	}
+
+	*mapPtr++ = '\0';
+	I_Error("%d blocks:\n%s", numblocks, memmap);
+}*/
+#endif
 
 /*
 ========================
@@ -287,13 +389,13 @@ void Z_ChangeTag (void *ptr, int tag)
 ========================
 */
 
-int Z_FreeMemory (memzone_t *mainzone)
+int Z_FreeMemory (memzone_t *memzone)
 {
 	memblock_t	*block;
 	int			free;
 	
 	free = 0;
-	for (block = &mainzone->blocklist ; block ; block = block->next)
+	for (block = &memzone->blocklist ; block ; block = block->next)
 		if (!block->tag)
 			free += block->size;
 	return free;
@@ -306,13 +408,13 @@ int Z_FreeMemory (memzone_t *mainzone)
 =
 ========================
 */
-int Z_LargestFreeBlock(memzone_t *mainzone)
+int Z_LargestFreeBlock(memzone_t *memzone)
 {
 	memblock_t	*block;
 	int			free;
 	
 	free = 0;
-	for (block = &mainzone->blocklist ; block ; block = block->next)
+	for (block = &memzone->blocklist ; block ; block = block->next)
 		if (!block->tag)
 			if (block->size > free) free = block->size;
 	return free;
@@ -325,11 +427,11 @@ int Z_LargestFreeBlock(memzone_t *mainzone)
 =
 ========================
 */
-void Z_ForEachBlock(memzone_t *mainzone, memblockcall_t cb, void *p)
+void Z_ForEachBlock(memzone_t *memzone, memblockcall_t cb, void *p)
 {
 	memblock_t	*block, *next;
 
-	for (block = &mainzone->blocklist ; block ; block = next)
+	for (block = &memzone->blocklist ; block ; block = next)
 	{
 		next = block->next;
 		if (block->tag)
@@ -344,12 +446,12 @@ void Z_ForEachBlock(memzone_t *mainzone, memblockcall_t cb, void *p)
 =
 ========================
 */
-int Z_FreeBlocks(memzone_t* mainzone)
+int Z_FreeBlocks(memzone_t* memzone)
 {
 	int total = 0;
 	memblock_t* block, * next;
 
-	for (block = &mainzone->blocklist; block; block = next)
+	for (block = &memzone->blocklist; block; block = next)
 	{
 		next = block->next;
 		if (!block->tag)
@@ -368,13 +470,13 @@ int Z_FreeBlocks(memzone_t* mainzone)
 
 #ifdef NeXT
 
-void Z_DumpHeap (memzone_t *mainzone)
+void Z_DumpHeap (memzone_t *memzone)
 {
 	memblock_t	*block;
 	
-	printf ("zone size: %i  location: %p\n",mainzone->size,mainzone);
+	printf ("zone size: %i  location: %p\n",memzone->size,memzone);
 	
-	for (block = &mainzone->blocklist ; block ; block = block->next)
+	for (block = &memzone->blocklist ; block ; block = block->next)
 	{
 		printf ("block:%p    size:%7i    tag:%3i    frame:%i\n",
 			block, block->size, block->tag,block->lockframe);

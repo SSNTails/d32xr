@@ -9,8 +9,6 @@
 /*================================================================== */
 /*================================================================== */
 
-ceiling_t	**activeceilings/*[MAXCEILINGS]*/ = NULL;
-
 /*================================================================== */
 /* */
 /*	T_MoveCeiling */
@@ -19,76 +17,44 @@ ceiling_t	**activeceilings/*[MAXCEILINGS]*/ = NULL;
 void T_MoveCeiling (ceiling_t *ceiling)
 {
 	result_e	res;
-	
+
 	switch(ceiling->direction)
 	{
 		case 0:		/* IN STASIS */
 			break;
 		case 1:		/* UP */
-			res = T_MovePlane(ceiling->sector,ceiling->speed,
-					ceiling->topheight,false,1,ceiling->direction);
-			if (!(gametic&7))
-			{
-				switch (ceiling->type)
-				{
-				case silentCrushAndRaise:
-					break;
-				default:
-					break;
-				}
-				}
+			res = T_MovePlane(ceiling->sector,ceiling->upspeed,
+					ceiling->topheight << FRACBITS,false,1,ceiling->direction);
+
 			if (res == pastdest)
 				switch(ceiling->type)
 				{
-					case raiseToHighest:
-						P_RemoveActiveCeiling(ceiling);
-						break;
-					case silentCrushAndRaise:
-					case fastCrushAndRaise:
 					case crushAndRaise:
+					case raiseAndCrush:
 						ceiling->direction = -1;
+						break;
+					case raiseCeiling:
+						// Remove it
+						P_RemoveThinker(&ceiling->thinker);
 						break;
 					default:
 						break;
 				}
 			break;
 		case -1:	/* DOWN */
-			res = T_MovePlane(ceiling->sector,ceiling->speed,
-				ceiling->bottomheight,ceiling->crush,1,ceiling->direction);
-			if (!(gametic&7))
-			{
-				switch (ceiling->type)
-				{
-				case silentCrushAndRaise:
-					break;
-				default:
-					break;
-				}
-			}
+			res = T_MovePlane(ceiling->sector,ceiling->downspeed,
+				ceiling->bottomheight << FRACBITS,ceiling->crush,1,ceiling->direction);
+
 			if (res == pastdest)
 				switch(ceiling->type)
 				{
-					case silentCrushAndRaise:
 					case crushAndRaise:
-						ceiling->speed = CEILSPEED;
-					case fastCrushAndRaise:
+					case raiseAndCrush:
 						ceiling->direction = 1;
 						break;
-					case lowerAndCrush:
-					case lowerToFloor:
-						P_RemoveActiveCeiling(ceiling);
-						break;
-					default:
-						break;
-				}
-			else
-			if (res == crushed)
-				switch(ceiling->type)
-				{
-					case silentCrushAndRaise:
-					case crushAndRaise:
-					case lowerAndCrush:
-						ceiling->speed = CEILSPEED / 8;
+					case raiseCeiling:
+						// Remove it
+						P_RemoveThinker(&ceiling->thinker);
 						break;
 					default:
 						break;
@@ -112,20 +78,8 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 	secnum = -1;
 	rtn = 0;
 	
-	/* */
-	/*	Reactivate in-stasis ceilings...for certain types. */
-	/* */
-	switch(type)
-	{
-		case silentCrushAndRaise:
-		case fastCrushAndRaise:
-		case crushAndRaise:
-			P_ActivateInStasisCeiling(line);
-		default:
-			break;
-	}
-	
-	while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+	uint8_t tag = P_GetLineTag(line);
+	while ((secnum = P_FindSectorFromLineTagNum(tag,secnum)) >= 0)
 	{
 		sec = &sectors[secnum];
 		if (sec->specialdata)
@@ -135,119 +89,46 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 		/* new door thinker */
 		/* */
 		rtn = 1;
-		ceiling = Z_Malloc (sizeof(*ceiling), PU_LEVSPEC);
+		ceiling = Z_Calloc (sizeof(*ceiling), PU_LEVSPEC);
 		P_AddThinker (&ceiling->thinker);
-		sec->specialdata = ceiling;
+		sec->specialdata = LPTR_TO_SPTR(ceiling);
 		ceiling->thinker.function = T_MoveCeiling;
 		ceiling->sector = sec;
 		ceiling->crush = false;
-		switch(type)
+
 		{
-			case fastCrushAndRaise:
-				ceiling->crush = true;
-				ceiling->topheight = sec->ceilingheight;
-				ceiling->bottomheight = sec->floorheight;
-				ceiling->direction = -1;
-				ceiling->speed = CEILSPEED * 2;
-				break;
-			case silentCrushAndRaise:
-			case crushAndRaise:
-				ceiling->crush = true;
-				ceiling->topheight = sec->ceilingheight;
-			case lowerAndCrush:
-			case lowerToFloor:
-				ceiling->bottomheight = sec->floorheight;
-				ceiling->direction = -1;
-				ceiling->speed = CEILSPEED;
-				break;
-			case raiseToHighest:
-				ceiling->topheight = P_FindHighestCeilingSurrounding(sec);
+			mapvertex_t *v1 = &vertexes[line->v1];
+			mapvertex_t *v2 = &vertexes[line->v2];
+			fixed_t arg2, arg3;
+			if (ldflags[line-lines] & ML_MIDTEXTUREBLOCK)
+			{
+				arg2 = D_abs(v2->x - v1->x);
+				arg3 = arg2;
+			}
+			else
+			{
+				arg2 = R_PointToDist2((v2->x << FRACBITS) - (v1->x << FRACBITS), (v2->y << FRACBITS) - (v1->y << FRACBITS)) >> (FRACBITS + 1);
+				arg3 = arg2 >> 2;
+			}
+
+			ceiling->upspeed = arg2 << (FRACBITS - 2);
+			ceiling->crush = true;
+			ceiling->bottomheight = (sec->floorheight >> FRACBITS) + 1;
+			ceiling->downspeed = arg3 << (FRACBITS - 2);
+
+			if (type == raiseAndCrush)
+			{
+				ceiling->topheight = P_FindHighestCeilingSurrounding(sec)->ceilingheight >> FRACBITS;
 				ceiling->direction = 1;
-				ceiling->speed = CEILSPEED;
-				break;
+			}
+			else
+			{
+				ceiling->topheight = sec->ceilingheight >> FRACBITS;
+				ceiling->direction = -1;
+			}
 		}
 		
-		ceiling->tag = sec->tag;
 		ceiling->type = type;
-		P_AddActiveCeiling(ceiling);
 	}
-	return rtn;
-}
-
-/*================================================================== */
-/* */
-/*		Add an active ceiling */
-/* */
-/*================================================================== */
-void P_AddActiveCeiling(ceiling_t *c)
-{
-	int		i;
-	for (i = 0; i < MAXCEILINGS;i++)
-		if (activeceilings[i] == NULL)
-		{
-			activeceilings[i] = c;
-			return;
-		}
-}
-
-/*================================================================== */
-/* */
-/*		Remove a ceiling's thinker */
-/* */
-/*================================================================== */
-void P_RemoveActiveCeiling(ceiling_t *c)
-{
-	int		i;
-	
-	for (i = 0;i < MAXCEILINGS;i++)
-		if (activeceilings[i] == c)
-		{
-			activeceilings[i]->sector->specialdata = NULL;
-			P_RemoveThinker (&activeceilings[i]->thinker);
-			activeceilings[i] = NULL;
-			break;
-		}
-}
-
-/*================================================================== */
-/* */
-/*		Restart a ceiling that's in-stasis */
-/* */
-/*================================================================== */
-void P_ActivateInStasisCeiling(line_t *line)
-{
-	int	i;
-	
-	for (i = 0;i < MAXCEILINGS;i++)
-		if (activeceilings[i] && (activeceilings[i]->tag == line->tag) &&
-			(activeceilings[i]->direction == 0))
-		{
-			activeceilings[i]->direction = activeceilings[i]->olddirection;
-			activeceilings[i]->thinker.function = T_MoveCeiling;
-		}
-}
-
-/*================================================================== */
-/* */
-/*		EV_CeilingCrushStop */
-/*		Stop a ceiling from crushing! */
-/* */
-/*================================================================== */
-int	EV_CeilingCrushStop(line_t	*line)
-{
-	int		i;
-	int		rtn;
-	
-	rtn = 0;
-	for (i = 0;i < MAXCEILINGS;i++)
-		if (activeceilings[i] && (activeceilings[i]->tag == line->tag) &&
-			(activeceilings[i]->direction != 0))
-		{
-			activeceilings[i]->olddirection = activeceilings[i]->direction;
-			activeceilings[i]->thinker.function = NULL;
-			activeceilings[i]->direction = 0;		/* in-stasis */
-			rtn = 1;
-		}
-
 	return rtn;
 }

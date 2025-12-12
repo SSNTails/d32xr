@@ -98,7 +98,7 @@ boolean PIT_RadiusAttack (mobj_t *thing, pradiusattack_t *ra)
 	if (dist >= ra->dist || dz >= ra->dist)
 		return true;		/* out of range */
 /* FIXME?	if ( P_CheckSight (thing, bombspot) )	// must be in direct path */
-		P_DamageMobj (thing, ra->bombspot, ra->bombsource, (ra->bombdamage - dist) >> FRACBITS);
+		P_DamageMobj (thing, ra->bombspot, ra->bombsource, 1);
 	return true;
 }
 
@@ -117,7 +117,7 @@ void P_RadiusAttack (mobj_t *spot, mobj_t *source, int damage)
 	int			x,y, xl, xh, yl, yh;
 	pradiusattack_t ra;
 	
-	ra.dist = (damage+MAXRADIUS)<<FRACBITS;
+	ra.dist = (damage)<<FRACBITS;
 	yh = spot->y + ra.dist - bmaporgy;
 	yl = spot->y - ra.dist - bmaporgy;
 	xh = spot->x + ra.dist - bmaporgx;
@@ -160,7 +160,7 @@ boolean PIT_RingMagnet(mobj_t *thing, mobj_t *spot)
 
 	ringmobj_t *ring = (ringmobj_t*)thing;
 
-	const fixed_t dist = P_AproxDistance(P_AproxDistance((ring->x << FRACBITS) - spot->x, (ring->y << FRACBITS) - spot->y), (ring->z << FRACBITS) - spot->z);
+	const fixed_t dist = P_AproxDistance3D((ring->x << FRACBITS) - spot->x, (ring->y << FRACBITS) - spot->y, (ring->z << FRACBITS) - spot->z);
 
 	if (dist > RING_DIST)
 		return true;
@@ -208,8 +208,6 @@ void P_RingMagnet(mobj_t *spot)
 
 
 /*============================================================================ */
-
-void P_Shoot2 (lineattack_t *la);
 
 #ifdef JAGUAR
 

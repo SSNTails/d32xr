@@ -33,6 +33,12 @@
 #define	MELEERANGE		(70*FRACUNIT)
 #define	MISSILERANGE	(32*64*FRACUNIT)
 
+enum
+{
+	TMGD_BACK = 0,
+	TMGD_RIGHT = 1,
+	TMGD_LEFT = 2
+};
 
 typedef enum
 {
@@ -49,6 +55,9 @@ typedef enum
 } dirtype_t;
 
 #define	BASETHRESHOLD	100		/* follow a player exlusively for 3 seconds */
+
+
+extern boolean spindashPlayerOriented;
 
 
 
@@ -75,13 +84,16 @@ void P_RemoveThinker (thinker_t *thinker);
 ===============================================================================
 */
 
+fixed_t P_GetPlayerSpinHeight();
 void P_ThrustValues(angle_t angle, fixed_t move, fixed_t *outX, fixed_t *outY);
 void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move);
 fixed_t P_ReturnThrustX(angle_t angle, fixed_t move);
 fixed_t P_ReturnThrustY(angle_t angle, fixed_t move);
+fixed_t P_GetPlayerHeight();
 void P_RestoreMusic(player_t *player);
 boolean P_IsReeling(player_t *player);
 void    P_AddPlayerScore(player_t *player, int amount);
+void    P_ResetScore(player_t *player);
 void    P_ResetPlayer(player_t *player);
 void    P_PlayerRingBurst(player_t *player, int damage);
 void    P_GivePlayerRings(player_t *player, int num_rings);
@@ -109,27 +121,33 @@ extern VINT numringmobjs;
 extern VINT numstaticmobjs;
 extern VINT numregmobjs;
 
+extern VINT scenerymobjcount;
+extern VINT ringmobjcount;
+
+extern sectorBBox_t sectorBBoxes;
+
 extern	int			activethinkers;	/* debug count */
 extern	int			activemobjs;	/* debug count */
 extern  int         thingmem; // bytes in use for things (at spawn)
 
-extern VINT ringmobjstates[NUMMOBJTYPES];
-extern VINT ringmobjtics[NUMMOBJTYPES];
+extern VINT *ringmobjstates;
+extern int8_t *ringmobjtics;
 
 #define ONFLOORZ	D_MININT
 #define	ONCEILINGZ	D_MAXINT
 
-fixed_t FloorZAtPos(sector_t *sec, fixed_t z, fixed_t height);
-fixed_t CeilingZAtPos(sector_t *sec, fixed_t z, fixed_t height);
+fixed_t FloorZAtPos(const sector_t *sec, fixed_t z, fixed_t height) ATTR_DATA_CACHE_ALIGN;
+fixed_t CeilingZAtPos(const sector_t *sec, fixed_t z, fixed_t height) ATTR_DATA_CACHE_ALIGN;
 
 mobj_t *P_FindFirstMobjOfType(uint16_t type);
 void P_BlackOw(player_t *player);
 void P_Attract(mobj_t *source, mobj_t *dest);
-fixed_t GetWatertopSec(const sector_t *sector);
-fixed_t GetWatertopMo(const mobj_t *mo);
+fixed_t GetWatertopSec(const sector_t *sector) ATTR_DATA_CACHE_ALIGN;
+fixed_t GetWatertopMo(const mobj_t *mo) ATTR_DATA_CACHE_ALIGN;
 
 boolean Mobj_HasFlags2(mobj_t *mo, VINT value) ATTR_DATA_CACHE_ALIGN;
-void P_SetObjectMomZ(mobj_t *mo, fixed_t value, boolean relative);
+void P_SetObjectMomZ(mobj_t *mo, fixed_t value, boolean relative) ATTR_DATA_CACHE_ALIGN;
+mobj_t *P_SpawnMobjNoSector (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
 mobj_t *P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
 
 void 	P_RemoveMobj (mobj_t *th);
@@ -138,9 +156,9 @@ boolean	P_SetMobjState (mobj_t *mobj, statenum_t state) ATTR_DATA_CACHE_ALIGN;
 void 	P_MobjThinker (mobj_t *mobj);
 void 	P_PreSpawnMobjs(int count, int staticcount, int ringcount, int scenerycount);
 
-void	P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type);
-void	P_SpawnPlayerMissile (mobj_t *source, mobjtype_t type);
+mobj_t *P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type);
 
+void    P_AnimateScenery(int8_t numframes);
 void	P_RunMobjBase2 (void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 void	P_RunMobjLate(void) ATTR_DATA_CACHE_ALIGN;
 
@@ -154,8 +172,8 @@ void P_ExplodeMissile (mobj_t *mo);
 int 	P_MapThingSpawnsMobj(mapthing_t* mthing); /* 0 -- skip, 1 -- real thing, 2 -- static */
 void	P_SpawnMapThing(mapthing_t* mthing, int thingid);
 
-fixed_t Mobj_GetHeight(mobj_t *mo);
-fixed_t Mobj_GetHalfHeight(mobj_t *mo);
+fixed_t Mobj_GetHeight(mobj_t *mo) ATTR_DATA_CACHE_ALIGN;
+fixed_t Mobj_GetHalfHeight(mobj_t *mo) ATTR_DATA_CACHE_ALIGN;
 
 /*
 ===============================================================================
@@ -184,6 +202,7 @@ typedef struct
 
 
 fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
+fixed_t P_AproxDistance3D (fixed_t dx, fixed_t dy, fixed_t dz);
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, divline_t *line);
 int     P_DivlineSide(fixed_t x, fixed_t y, divline_t *node);
@@ -201,9 +220,13 @@ boolean P_BlockThingsIterator (int x, int y, blockthingsiter_t, void *userp );
 
 void 	P_UnsetThingPosition (mobj_t *thing);
 void	P_SetThingPosition (mobj_t *thing);
-void	P_SetThingPosition2 (mobj_t *thing, subsector_t *ss);
+void	P_SetThingPosition2 (mobj_t *thing, VINT iss);
+void    P_SetThingPositionConditionally(mobj_t *thing, fixed_t x, fixed_t y, VINT iss);
 
-void	P_PlayerLand (mobj_t *mo);
+uint8_t P_GetLineTag(line_t *line);
+uint8_t P_GetLineSpecial(line_t *line);
+
+#define P_GetSubsectorNumlines(ss) (((ss)+1)->firstline - (ss)->firstline)
 
 /*
 ===============================================================================
@@ -212,6 +235,7 @@ void	P_PlayerLand (mobj_t *mo);
 
 ===============================================================================
 */
+void GetSectorAABB(sector_t *sector, fixed_t bbox[4]) ATTR_DATA_CACHE_ALIGN;
 
 boolean P_CheckSight (mobj_t *t1, mobj_t *t2);
 void 	P_UseLines (player_t *player);
@@ -234,12 +258,16 @@ typedef struct
    fixed_t  shootx, shooty, shootz; // location for puff/blood
 } lineattack_t;
 
-__attribute((noinline))
-fixed_t P_AimLineAttack (lineattack_t *la, mobj_t *t1, angle_t angle, fixed_t distance);
-
-void P_RadiusAttack (mobj_t *spot, mobj_t *source, int damage) ATTR_DATA_CACHE_ALIGN;
+void P_RadiusAttack (mobj_t *spot, mobj_t *source, int damage);
 void P_XYMovement(mobj_t* mo) ATTR_DATA_CACHE_ALIGN;
 void P_ZMovement(mobj_t* mo) ATTR_DATA_CACHE_ALIGN;
+
+/*
+===============================================================================
+							P_SIGHT
+===============================================================================
+*/
+void P_CheckSights (void);
 
 /*
 ===============================================================================
@@ -251,14 +279,15 @@ void P_ZMovement(mobj_t* mo) ATTR_DATA_CACHE_ALIGN;
 
 extern	byte		*rejectmatrix;			/* for fast sight rejection */
 extern	short		*blockmaplump;		/* offsets in blockmap are from here */
-extern	int			bmapwidth, bmapheight;	/* in mapblocks */
+extern	VINT		bmapwidth, bmapheight;	/* in mapblocks */
 extern	fixed_t		bmaporgx, bmaporgy;		/* origin of block map */
-extern	mobj_t		**blocklinks;			/* for thing chains */
+extern	SPTR		*blocklinks;			/* for thing chains */
 
-extern	int			numthings;
-extern	spawnthing_t* spawnthings;
+extern	uint16_t			numthings;
 
 extern	VINT		*validcount;		/* (0 - increment every time a check is made, [1..numlines]) x 2 */
+
+fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mthing, const fixed_t x, const fixed_t y, const fixed_t z);
 
 /*
 ===============================================================================
@@ -343,6 +372,7 @@ typedef struct
 	fixed_t tmdropoffz; // lowest point contacted
 
 	subsector_t *newsubsec; // destination subsector
+	sector_t *newsec; // destination sector
 } pmovework_t;
 
 typedef struct

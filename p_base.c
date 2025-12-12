@@ -38,7 +38,7 @@ typedef struct
    mobj_t      *checkthing, *hitthing;
    fixed_t      testx, testy;
    fixed_t      testfloorz, testceilingz, testdropoffz;
-   subsector_t *testsubsec;
+   VINT         testsubsec;
    line_t      *ceilingline;
    fixed_t      testbbox[4];
 } pmovetest_t;
@@ -49,18 +49,17 @@ static boolean PB_CheckLine(line_t* ld, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_CrossCheck(line_t* ld, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_CheckPosition(pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_TryMove(pmovetest_t *mt, mobj_t* mo, fixed_t tryx, fixed_t tryy) ATTR_DATA_CACHE_ALIGN;
-static void P_FloatChange(mobj_t* mo);
 void P_MobjThinker(mobj_t* mobj) ATTR_DATA_CACHE_ALIGN;
 
 // P_FloorzAtPos
 // Returns the floorz of the XYZ position
 // Tails 05-26-2003
-fixed_t FloorZAtPos(sector_t *sec, fixed_t z, fixed_t height)
+fixed_t FloorZAtPos(const sector_t *sec, fixed_t z, fixed_t height)
 {
    fixed_t floorz = sec->floorheight;
    const fixed_t thingtop = z + height;
 
-   if (sec->fofsec != -1)
+   if (sec->fofsec >= 0)
    {
       sector_t *fof = &sectors[sec->fofsec];
 
@@ -72,12 +71,12 @@ fixed_t FloorZAtPos(sector_t *sec, fixed_t z, fixed_t height)
 
    return floorz;
 }
-fixed_t CeilingZAtPos(sector_t *sec, fixed_t z, fixed_t height)
+fixed_t CeilingZAtPos(const sector_t *sec, fixed_t z, fixed_t height)
 {
    fixed_t ceilingz = sec->ceilingheight;
    const fixed_t thingtop = z + height;
 
-   if (sec->fofsec != -1)
+   if (sec->fofsec >= 0)
    {
       sector_t *fof = &sectors[sec->fofsec];
 
@@ -169,7 +168,7 @@ static boolean PB_BoxCrossLine(line_t *ld, pmovetest_t *mt)
       return false;
    }
 
-   if(ld->flags & ML_ST_POSITIVE)
+   if(ldflags[ld-lines] & ML_ST_POSITIVE)
    {
       x1 = mt->testbbox[BOXLEFT ];
       x2 = mt->testbbox[BOXRIGHT];
@@ -209,7 +208,10 @@ static boolean PB_CheckLine(line_t *ld, pmovetest_t *mt)
    if(ld->sidenum[1] == -1)
       return false; // one-sided line
 
-   if(!(mt->checkthing->flags2 & MF2_MISSILE) && (ld->flags & (ML_BLOCKING|ML_BLOCKMONSTERS)))
+   if (ldflags[ld-lines] & ML_BLOCKING)
+      return false;
+
+   if(!(mt->checkthing->flags2 & MF2_MISSILE) && (ldflags[ld-lines] & ML_BLOCKMONSTERS))
       return false; // explicitly blocking
 
    front = LD_FRONTSECTOR(ld);
@@ -268,7 +270,7 @@ static boolean PB_CrossCheck(line_t *ld, pmovetest_t *mt)
 static boolean PB_CheckPosition(pmovetest_t *mt)
 {
    int xl, xh, yl, yh, bx, by;
-   VINT *lvalidcount;
+   VINT *lvalidcount = validcount;
    mobj_t *mo = mt->checkthing;
 
    mt->testbbox[BOXTOP   ] = mt->testy + mobjinfo[mo->type].radius;
@@ -278,11 +280,11 @@ static boolean PB_CheckPosition(pmovetest_t *mt)
 
    // the base floor / ceiling is from the subsector that contains the point.
    // Any contacted lines the step closer together will adjust them.
-   mt->testsubsec   = R_PointInSubsector(mt->testx, mt->testy);
-   mt->testfloorz   = mt->testdropoffz = FloorZAtPos(mt->testsubsec->sector, mt->checkthing->z, mt->checkthing->theight << FRACBITS);
-   mt->testceilingz = CeilingZAtPos(mt->testsubsec->sector, mt->checkthing->z, mt->checkthing->theight << FRACBITS);
+   mt->testsubsec   = R_PointInSubsector2(mt->testx, mt->testy);
+   const sector_t *testsec = SS_SECTOR(mt->testsubsec);
+   mt->testfloorz   = mt->testdropoffz = FloorZAtPos(testsec, mt->checkthing->z, mt->checkthing->theight << FRACBITS);
+   mt->testceilingz = CeilingZAtPos(testsec, mt->checkthing->z, mt->checkthing->theight << FRACBITS);
 
-   I_GetThreadLocalVar(DOOMTLS_VALIDCOUNT, lvalidcount);
    *lvalidcount = *lvalidcount + 1;
    if (*lvalidcount == 0)
       *lvalidcount = 1;
@@ -357,7 +359,7 @@ static boolean PB_TryMove(pmovetest_t *mt, mobj_t *mo, fixed_t tryx, fixed_t try
          return false; // too big a step up
       if (!((mt->checkthing->flags2 & MF2_FLOAT) || mt->checkthing->type == MT_PLAYER) && mt->testfloorz - mt->testdropoffz > 24*FRACUNIT)
          return false; // don't stand over a dropoff
-      if (mt->checkthing->type == MT_SKIM && mt->testsubsec->sector->heightsec == -1)
+      if (mt->checkthing->type == MT_SKIM && SS_SECTOR(mt->testsubsec)->heightsec <= 0)
          return false; // Skim can't go out of water
    }
 
@@ -379,8 +381,35 @@ static void P_BounceMove(mobj_t *mo)
    mo->momy = -mo->momy;
 }
 
-#define STOPSPEED 0x1000
-#define FRICTION  0xd240
+#define STOPSPEED FRACUNIT/TICRATE
+#define FRICTION  0xd240//69290
+
+//
+// Do horizontal movement.
+//
+void P_ApplyFriction(mobj_t *mo)
+{
+   if(mo->momx > -STOPSPEED && mo->momx < STOPSPEED &&
+      mo->momy > -STOPSPEED && mo->momy < STOPSPEED)
+   {
+      mo->momx = 0;
+      mo->momy = 0;
+   }
+   else
+   {
+#if 0
+      mo->momx = (mo->momx>>8)*(FRICTION>>8);
+      mo->momy = (mo->momy>>8)*(FRICTION>>8);
+#else
+      // the original code doesn't produce identical
+      // results in most cases, but is much slower on
+      // the SH-2 as it involves calling gcc's builtin
+      // functions for the >> 8's
+      mo->momx = FixedMul(mo->momx, FRICTION);
+      mo->momy = FixedMul(mo->momy, FRICTION);
+#endif      
+   }
+}
 
 //
 // Do horizontal movement.
@@ -408,15 +437,6 @@ void P_XYMovement(mobj_t *mo)
       if(!PB_TryMove(&mt, mo, mo->x + xuse, mo->y + yuse))
       {
          // blocked move
-
-         // flying skull?
-/*         if(mo->flags & MF_SKULLFLY)
-         {
-            mo->extradata = (intptr_t)mt.hitthing;
-            mo->latecall = L_SkullBash;
-            return;
-         }*/
-
         if (mo->type == MT_FLINGRING)
         {
             P_BounceMove(mo);
@@ -426,13 +446,13 @@ void P_XYMovement(mobj_t *mo)
          // explode a missile?
          if(mo->flags2 & MF2_MISSILE)
          {
-            if(mt.ceilingline && mt.ceilingline->sidenum[1] != -1 && LD_BACKSECTOR(mt.ceilingline)->ceilingpic == (uint8_t)-1)
+            if(mt.ceilingline && mt.ceilingline->sidenum[1] >= 0 && LD_BACKSECTOR(mt.ceilingline)->ceilingpic == (uint8_t)-1)
             {
-               mo->latecall = P_RemoveMobj;
+               mo->latecall = LC_REMOVE_MOBJ;
                return;
             }
-            mo->extradata = (intptr_t)mt.hitthing;
-            mo->latecall = L_MissileHit;
+            mo->extradata = LPTR_TO_SPTR(mt.hitthing);
+            mo->latecall = LC_MISSILE_HIT;
             return;
          }
 
@@ -452,44 +472,7 @@ void P_XYMovement(mobj_t *mo)
    if(mo->z > mo->floorz)
       return; // no friction when airborne
 
-   if(mo->momx > -STOPSPEED && mo->momx < STOPSPEED &&
-      mo->momy > -STOPSPEED && mo->momy < STOPSPEED)
-   {
-      mo->momx = 0;
-      mo->momy = 0;
-   }
-   else
-   {
-      mo->momx = (mo->momx >> 8) * (FRICTION >> 8);
-      mo->momy = (mo->momy >> 8) * (FRICTION >> 8);
-   }
-}
-
-//
-// Float a flying monster up or down.
-//
-__attribute((noinline))
-static void P_FloatChange(mobj_t *mo)
-{
-   mobj_t *target;
-   fixed_t dist, delta;
-
-   if (mo->type == MT_SKIM || mo->type == MT_EGGMOBILE2)
-      return;
-
-   target = mo->target;                              // get the target object
-   delta  = (target->z + (mo->theight >> (FRACBITS-1))) - mo->z; // get the height difference
-   
-   dist   = P_AproxDistance(target->x - mo->x, target->y - mo->y);
-   delta *= 3;
-
-   if(delta < 0)
-   {
-      if(dist < -delta)
-         mo->z -= FLOATSPEED; // adjust height downward
-   }
-   else if(dist < delta)
-      mo->z += FLOATSPEED;    // adjust height upward
+   P_ApplyFriction(mo);
 }
 
 //
@@ -498,13 +481,13 @@ static void P_FloatChange(mobj_t *mo)
 void P_ZMovement(mobj_t *mo)
 {
    mo->z += mo->momz;
-
+/*
    if((mo->flags2 & MF2_FLOAT) && (mo->flags2 & MF2_ENEMY) && mo->target)
    {
       // float toward target if too close
       P_FloatChange(mo);
    }
-
+*/
    // clip movement
    if(mo->z <= mo->floorz)
    {
@@ -513,11 +496,11 @@ void P_ZMovement(mobj_t *mo)
 
       if (mo->type == MT_FLINGRING)
       {
-         mo->momz = -FixedMul(mo->momz, FixedDiv(17*FRACUNIT, 20*FRACUNIT));
+         mo->momz = -FixedMul(mo->momz, 55705); //FixedDiv(17*FRACUNIT, 20*FRACUNIT));
       }
       else if (mo->type == MT_GFZDEBRIS)
       {
-         P_RemoveMobj(mo);
+         mo->latecall = LC_REMOVE_MOBJ;
       }
       else if (mo->type == MT_MEDIUMBUBBLE)
       {
@@ -536,12 +519,12 @@ void P_ZMovement(mobj_t *mo)
          explodemo->momx -= (P_Random() % 96) * FRACUNIT/8;
          explodemo->momy -= (P_Random() % 96) * FRACUNIT/8;
 
-         P_RemoveMobj(mo);
+         mo->latecall = LC_REMOVE_MOBJ;
       }
       else if (mo->type == MT_SMALLBUBBLE)
       {
          // Hit the floor, so POP!
-         P_RemoveMobj(mo);
+         mo->latecall = LC_REMOVE_MOBJ;
       }
       else if (mo->type == MT_SIGN)
       {
@@ -549,13 +532,19 @@ void P_ZMovement(mobj_t *mo)
          P_SetMobjState(mo, mobjinfo[mo->type].deathstate);
          S_StartSound(mo, mobjinfo[mo->type].deathsound);
       }
+      else if (mo->type == MT_GOOP)
+      {
+         mo->momx = mo->momy = mo->momz = 0;
+         P_SetMobjState(mo, mobjinfo[mo->type].meleestate);
+         S_StartSound(mo, mobjinfo[mo->type].painsound);
+      }
       else
       {
          if(mo->momz < 0)
             mo->momz = 0;
          if(mo->flags2 & MF2_MISSILE)
          {
-            mo->latecall = P_ExplodeMissile;
+            mo->latecall = LC_EXPLODE_MISSILE;
             return;
          }
       }
@@ -563,7 +552,7 @@ void P_ZMovement(mobj_t *mo)
    else if(!(mo->flags & MF_NOGRAVITY))
    {
       // apply gravity
-      if (subsectors[mo->isubsector].sector->heightsec != -1
+      if (SS_SECTOR(mo->isubsector)->heightsec >= 0
          && GetWatertopMo(mo) > mo->z + (mo->theight << (FRACBITS-1)))
          mo->momz -= GRAVITY/2/3; // Less gravity underwater.
       else
@@ -576,12 +565,12 @@ void P_ZMovement(mobj_t *mo)
 
       if (mo->type == MT_FLINGRING && false) // TODO: MF_VERTICALFLIP
       {
-         mo->momz = -FixedMul(mo->momz, FixedDiv(17*FRACUNIT, 20*FRACUNIT));
+         mo->momz = -FixedMul(mo->momz, 55705); // FixedDiv(17*FRACUNIT, 20*FRACUNIT));
       }
       else if (mo->type == MT_SMALLBUBBLE || mo->type == MT_MEDIUMBUBBLE
          || mo->type == MT_EXTRALARGEBUBBLE)
       {
-         P_RemoveMobj(mo);
+         mo->latecall = LC_REMOVE_MOBJ;
       }
       else
       {
@@ -589,7 +578,7 @@ void P_ZMovement(mobj_t *mo)
             mo->momz = 0;
 
          if(mo->flags2 & MF2_MISSILE)
-            mo->latecall = P_ExplodeMissile;
+            mo->latecall = LC_EXPLODE_MISSILE;
       }
    }
 }
@@ -605,7 +594,7 @@ static void P_Boss1Thinker(mobj_t *mobj)
    {
       if (mobj->extradata)
       {
-         mobj->extradata = (int)mobj->extradata - 1;
+         mobj->extradata--;
          if (!mobj->extradata)
          {
             if (mobj->target)
@@ -646,9 +635,13 @@ static void P_Boss1Thinker(mobj_t *mobj)
 			mobj->momz = FixedMul(mobj->momz, FRACUNIT - (dist>>12));
 
       mobj_t *ghost = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_GHOST);
-      P_SetMobjState(ghost, mobj->state);
-      ghost->angle = mobj->angle;
-		ghost->reactiontime = 12;
+      mobj_t *ghostmech = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_GHOST);
+      ghost->flags2 |= MF2_FORWARDOFFSET;
+      ghost->state = mobj->state;
+      ghostmech->state = mobjinfo[MT_EGGMOBILE_MECH].spawnstate;
+      ghostmech->tics = ghost->tics = -1;
+      ghostmech->angle = ghost->angle = mobj->angle;
+		ghostmech->reactiontime = ghost->reactiontime = 12;
 	}
 
    if (!(mobj->flags2 & MF2_SPAWNEDJETS))
@@ -691,7 +684,7 @@ static void P_Boss2Thinker(mobj_t *mobj)
    {
       if (mobj->extradata)
       {
-         mobj->extradata = (int)mobj->extradata - 1;
+         mobj->extradata--;
          if (!mobj->extradata)
          {
             if (mobj->target)
@@ -742,7 +735,7 @@ static void P_Boss2Thinker(mobj_t *mobj)
 
    if (mobj->state == mobjInfo->spawnstate && mobj->health > mobjInfo->damage)
 	   A_Boss2Chase(mobj, 0, 0);
- /*  else if (mobj->state == S_EGGMOBILE2_POGO1
+   else if (mobj->state == S_EGGMOBILE2_POGO1
       || mobj->state == S_EGGMOBILE2_POGO2
       || mobj->state == S_EGGMOBILE2_POGO3
       || mobj->state == S_EGGMOBILE2_POGO4
@@ -750,7 +743,7 @@ static void P_Boss2Thinker(mobj_t *mobj)
    {
       mobj->flags &= ~MF_NOGRAVITY;
       A_Boss2Pogo(mobj, 0, 0);
-   }*/
+   }
 }
 
 static boolean P_JetFume1Think(mobj_t *mobj)
@@ -759,11 +752,11 @@ static boolean P_JetFume1Think(mobj_t *mobj)
 
 	if (!mobj->target) // if you have no target
 	{
-		P_RemoveMobj(mobj); // then remove yourself as well!
+		mobj->latecall = LC_REMOVE_MOBJ; // then remove yourself as well!
 		return false;
 	}
 
-   if (leveltime & 1)
+   if (gametic & 1)
       mobj->flags2 |= MF2_DONTDRAW;
    else
       mobj->flags2 &= ~MF2_DONTDRAW;
@@ -780,19 +773,40 @@ static boolean P_JetFume1Think(mobj_t *mobj)
 	}
 	else if (mobj->movecount == 2) // Second
 	{
-		mobj->x = jetx + P_ReturnThrustX(mobj->target->angle - ANG90, 24*FRACUNIT);
-		mobj->y = jety + P_ReturnThrustY(mobj->target->angle - ANG90, 24*FRACUNIT);
+      mobj->x = jetx;
+      mobj->y = jety;
+      P_ThrustValues(mobj->target->angle - ANG90, 24*FRACUNIT, &mobj->x, &mobj->y);
 		mobj->z = mobj->target->z + 12*FRACUNIT;
 	}
 	else if (mobj->movecount == 3) // Third
 	{
-		mobj->x = jetx + P_ReturnThrustX(mobj->target->angle + ANG90, 24*FRACUNIT);
-		mobj->y = jety + P_ReturnThrustY(mobj->target->angle + ANG90, 24*FRACUNIT);
+      mobj->x = jetx;
+      mobj->y = jety;
+      P_ThrustValues(mobj->target->angle + ANG90, 24<<FRACBITS, &mobj->x, &mobj->y);
 		mobj->z = mobj->target->z + 12*FRACUNIT;
 	}
+   else if (mobj->movecount == 4) // Castlebot Facestabber
+   {
+      mobj->x = mobj->target->x;
+      mobj->y = mobj->target->y;
+      P_ThrustValues(mobj->target->angle + ANG180, 36<<FRACBITS, &mobj->x, &mobj->y);
+
+      if (mobj->target->state == S_FACESTABBER_CHARGE3)
+         mobj->z = mobj->target->z + (72<<FRACBITS);
+      else
+         mobj->z = mobj->target->z + (36<<FRACBITS);
+
+      if (mobj->target->state < S_FACESTABBER_CHARGE1 || mobj->target->state > S_FACESTABBER_CHARGE3)
+         mobj->flags2 |= MF2_DONTDRAW;
+      else if (gametic & 1)
+         mobj->flags2 &= ~MF2_DONTDRAW;
+      
+      if (mobj->target->health <= 0)
+         mobj->target = NULL;
+   }
 	mobj->floorz = mobj->z;
 	mobj->ceilingz = mobj->z + (mobj->theight << FRACBITS);
-	P_SetThingPosition(mobj);
+	P_SetThingPosition2(mobj, mobj->target->isubsector);
 	
 	return true;
 }
@@ -802,14 +816,11 @@ static boolean P_DrownNumbersThink(mobj_t *mobj)
    player_t *player = &players[mobj->target->player - 1];
    if (!(player->powers[pw_underwater]) || player->powers[pw_spacetime])
    {
-      P_RemoveMobj(mobj);
+      mobj->latecall = LC_REMOVE_MOBJ;
       return false;
    }
 
-   P_UnsetThingPosition(mobj);
-   mobj->x = mobj->target->x;
-   mobj->y = mobj->target->y;
-   P_SetThingPosition(mobj);
+   P_SetThingPositionConditionally(mobj, mobj->target->x, mobj->target->y, mobj->target->isubsector);
 
    if (player->pflags & PF_VERTICALFLIP)
       mobj->z = mobj->target->z - 16*FRACUNIT - (mobj->theight << FRACBITS);
@@ -833,14 +844,14 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
       {
          case MT_FLINGRING:
             mobj->threshold--;
-            if (mobj->threshold < 3*TICRATE && (mobj->threshold & 1))
+            if (mobj->threshold < 3*TICRATE && (gametic & 1))
                mobj->flags2 |= MF2_DONTDRAW;
             else
                mobj->flags2 &= ~MF2_DONTDRAW;
 
             if (mobj->threshold == 0)
             {
-               P_RemoveMobj(mobj);
+               mobj->latecall = LC_REMOVE_MOBJ;
                return false;
             }
             break;
@@ -877,7 +888,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                      P_SetMobjState(mobj, S_FORCB1);
                   else if (!(player->shield == SH_FORCE1 || player->shield == SH_FORCE2))
                   {
-                     P_RemoveMobj(mobj);
+                     mobj->latecall = LC_REMOVE_MOBJ;
                      return false;
                   }
                }
@@ -891,16 +902,13 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                   
                    if (player->shield != mobjinfo[mobj->type].painchance)
                    {
-                       P_RemoveMobj(mobj);
+                       mobj->latecall = LC_REMOVE_MOBJ;
                        return false;
                    }
                }
 
-               P_UnsetThingPosition(mobj);
-               mobj->x = mobj->target->x;
-               mobj->y = mobj->target->y;
                mobj->z = mobj->target->z;
-               P_SetThingPosition(mobj);
+               P_SetThingPositionConditionally(mobj, mobj->target->x, mobj->target->y, mobj->target->isubsector);
             }
             break;
          case MT_GOOP:
@@ -920,13 +928,26 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                      }
                   }
 
-                  P_RemoveMobj(mobj);
+                  mobj->latecall = LC_REMOVE_MOBJ;
                   return false;
                }
             }
             break;
          case MT_EGGMOBILE:
             P_Boss1Thinker(mobj);
+            break;
+         case MT_EGGMOBILE_MECH:
+         case MT_EGGMOBILE2_MECH:
+            mobj->angle = mobj->target->angle;
+            P_UnsetThingPosition(mobj);
+            mobj->x = mobj->target->x;
+            mobj->y = mobj->target->y;
+            mobj->z = mobj->target->z;
+            P_SetThingPosition(mobj);
+            if (mobj->target->flags2 & MF2_FRET)
+               mobj->flags2 |= MF2_FRET;
+            else
+               mobj->flags2 &= ~MF2_FRET;
             break;
          case MT_EGGMOBILE2:
             P_Boss2Thinker(mobj);
@@ -943,7 +964,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                flingring->momy = mobj->momy;
                flingring->momz = mobj->momz;
                flingring->threshold = 8*TICRATE;
-               P_RemoveMobj(mobj);
+               mobj->latecall = LC_REMOVE_MOBJ;
                return false;
             }
             else
@@ -973,7 +994,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                      if (i == -1)
                         chosen = MT_EXPLODE;
 
-                     fixed_t z = subsectors[mobj->isubsector].sector->floorheight - 80*FRACUNIT;
+                     fixed_t z = sectors[subsectors[mobj->isubsector].isector].floorheight - 80*FRACUNIT;
                      z += (P_Random() & 31) << FRACBITS;
 
                      mobj_t *flicky = P_SpawnMobj(
@@ -981,11 +1002,13 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                         mobj->y + P_ReturnThrustY(mobj->angle, i * radius),
                         z,
                         chosen);
-                     flicky->target = players[consoleplayer].mo;
+
+                     if (chosen != MT_EXPLODE)
+                        flicky->target = players[consoleplayer].mo;
                   }
                   S_StartSound(mobj, sfx_s3k_3d);
-               }
             }
+         }
             break;
          default:
             break;
@@ -1032,7 +1055,7 @@ void P_MobjThinker(mobj_t *mobj)
    }
 
    // cycle through states
-   if (mobj->tics != -1)
+   if (mobj->tics >= 0)
    {
        mobj->tics--;
 
@@ -1040,6 +1063,34 @@ void P_MobjThinker(mobj_t *mobj)
        if (!mobj->tics)
            P_SetMobjState(mobj, states[mobj->state].nextstate);
    }
+}
+
+void P_AnimateScenery(int8_t numframes)
+{
+   // First, handle the ringmobj animations
+    for (int i = 0; i < NUMMOBJTYPES; i++)
+    {
+      if (ringmobjtics[i] != -1)
+      {
+         // cycle through states
+         ringmobjtics[i] -= numframes;
+
+         // you can cycle through multiple states in a tic
+         if (ringmobjtics[i] <= 0)
+         {
+            do
+            {
+               const statenum_t nextstate = states[ringmobjstates[i]].nextstate;
+               const state_t *st = &states[nextstate];
+
+               ringmobjstates[i] = nextstate;
+               ringmobjtics[i] += st->tics;
+
+               // Sprite and frame can be derived
+            } while (ringmobjtics[i] <= 0);
+         }
+      }
+    }
 }
 
 //
@@ -1050,54 +1101,35 @@ void P_RunMobjBase2(void)
     mobj_t* mo;
     mobj_t* next;
 
-    // First, handle the ringmobj animations
-    for (int i = 0; i < NUMMOBJTYPES; i++)
-    {
-      if (ringmobjtics[i] == -1)
-         continue; // Early out
-
-      // cycle through states
-      ringmobjtics[i]--;
-
-      // you can cycle through multiple states in a tic
-      if (!ringmobjtics[i])
-      {
-         do
-         {
-            const statenum_t nextstate = states[ringmobjstates[i]].nextstate;
-            const state_t *st = &states[nextstate];
-
-            ringmobjstates[i] = nextstate;
-            ringmobjtics[i] = st->tics;
-
-            // Sprite and frame can be derived
-         } while (!ringmobjtics[i]);
-      }
-    }
-
     for (mo = mobjhead.next; mo != (void*)&mobjhead; mo = next)
     {
-        next = mo->next;	// in case mo is removed this time
+      next = mo->next;	// in case mo is removed this time
 /*
          if (mo->flags & MF_RINGMOBJ) // rings or scenery (they don't think, they don't uniquely animate)
             continue;
 */
-        if (!mo->player)
-        {
-#ifdef MARS
-        // clear cache for mobj flags following the sight check as 
-        // the other CPU might have modified the MF_SEETARGET state
-        if (mo->tics == 1)
-            Mars_ClearCacheLine(&mo->flags);
-#endif
-            P_MobjThinker(mo);
+      if (mo->player)
+         continue;
 
-            if (!(mo->flags & MF_STATIC) && mo->latecall && mo->latecall != (latecall_t)-1)
-            {
-                  mo->latecall(mo);
-                  mo->latecall = NULL;
-            }
-        }
+      P_MobjThinker(mo);
+
+      if (!(mo->flags & MF_STATIC) && mo->latecall != LC_NONE)
+      {
+         switch(mo->latecall)
+         {
+            case LC_MISSILE_HIT:
+               L_MissileHit(mo);
+               break;
+            case LC_EXPLODE_MISSILE:
+               P_ExplodeMissile(mo);
+               break;
+            case LC_REMOVE_MOBJ:
+               P_RemoveMobj(mo);
+               break;
+         }
+
+         mo->latecall = LC_NONE;
+      }
     }
 }
 

@@ -28,7 +28,7 @@
 #include "doomdef.h"
 #include "mars.h"
 #include "r_local.h"
-#include "lzss.h"
+#include "lz.h"
 
 /*
 ==============================================================================
@@ -51,8 +51,6 @@ void I_DrawColumnC(int dc_x, int dc_yl, int dc_yh, int light, fixed_t frac_,
 	fixed_t fracstep, inpixel_t* dc_source, int dc_texheight) ATTR_DATA_CACHE_ALIGN;
 void I_DrawColumnNPo2C(int dc_x, int dc_yl, int dc_yh, int light, fixed_t frac_,
 	fixed_t fracstep, inpixel_t* dc_source, int dc_texheight) ATTR_DATA_CACHE_ALIGN;
-void I_DrawSpanC(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
-	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight) ATTR_DATA_CACHE_ALIGN;
 
 /*
 ==================
@@ -337,53 +335,6 @@ void I_DrawColumnNPo2C(int dc_x, int dc_yl, int dc_yh, int light, fixed_t frac_,
 #undef DO_PIXEL
 }
 
-void I_DrawSpanC(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
-	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight)
-{
-	unsigned xfrac, yfrac;
-	int8_t  *dest;
-	int		spot;
-	unsigned count, n;
-	int8_t* dc_colormap;
-	unsigned xmask, ymask;
-
-#ifdef RANGECHECK
-	if (ds_x2 < ds_x1 || ds_x1<0 || ds_x2 >= viewportWidth || ds_y>viewportHeight)
-		I_Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
-#endif 
-
-	count = ds_x2 - ds_x1 + 1;
-	xfrac = ds_xfrac, yfrac = ds_yfrac;
-
-	xmask = dc_texheight - 1;
-	ymask = (dc_texheight-1)*dc_texheight;
-
-	dest = (int8_t *)viewportbuffer + ds_y * 320 + ds_x1;
-	dc_colormap = (int8_t *)(dc_colormaps + light);
-
-#define DO_PIXEL() do { \
-		spot = ((yfrac >> 16) & ymask) + ((xfrac >> 16) & xmask); \
-		*dest++ = dc_colormap[(int8_t)ds_source[spot]] & 0xff; \
-		xfrac += ds_xstep, yfrac += ds_ystep; \
-	} while(0)
-
-	n = (count + 7) >> 3;
-	switch (count & 7)
-	{
-	case 0: do { DO_PIXEL();
-	case 7:      DO_PIXEL();
-	case 6:      DO_PIXEL();
-	case 5:      DO_PIXEL();
-	case 4:      DO_PIXEL();
-	case 3:      DO_PIXEL();
-	case 2:      DO_PIXEL();
-	case 1:      DO_PIXEL();
-	} while (--n > 0);
-	}
-
-#undef DO_PIXEL
-}
-
 #endif
 
 #ifdef POTATO_MODE
@@ -419,57 +370,6 @@ void I_DrawSpanPotatoLow(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_x
 		*dest++ = pix;
 	} while (--count > 0);
 }
-
-/*
-================
-=
-= I_DrawSpanPotato
-=
-================
-*/
-void I_DrawSpanPotato(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
-	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight)
-{
-	byte *udest, upix;
-	unsigned count, scount;
-	int8_t* dc_colormap;
-
-#ifdef RANGECHECK
-	if (ds_x2 < ds_x1 || ds_x1<0 || ds_x2 >= viewportWidth || ds_y>viewportHeight)
-		I_Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
-#endif
-
-	if (ds_x2 < ds_x1)
-		return;
-
-	count = ds_x2 - ds_x1 + 1;
-
-	udest = (byte *)viewportbuffer + ds_y * 320 + ds_x1;
-	dc_colormap = (int8_t *)(dc_colormaps + light);
-	upix = dc_colormap[ds_source[513]] & 0xff;
-
-	if (ds_x1 & 1) {
-		*udest++ = upix;
-		count--;
-	}
-
-	scount = count >> 1;
-	if (scount > 0)
-	{
-		pixel_t spix = (upix << 8) | upix;
-		pixel_t *sdest = (pixel_t*)udest;
-
-		do {
-			*sdest++ = spix;
-		} while (--scount > 0);
-
-		udest = (byte*)sdest;
-	}
-
-	if (count & 1) {
-		*udest = upix;
-	}
-}
 #endif
 
 void I_DrawColumnNoDraw(int dc_x, int dc_yl, int dc_yh, int light, fixed_t frac_,
@@ -504,8 +404,10 @@ void I_DrawSkyColumnNoDraw(int dc_x, int dc_yl, int dc_yh)
 
 void GetJagobjSize(int lumpnum, int* ow, int *oh)
 {
-	lzss_state_t gfx_lzss;
-	uint8_t lzss_buf[LZSS_BUF_SIZE];
+	LZSTATE gfx_lz;
+
+	uint8_t lz_buf[LZ_BUF_SIZE];
+
 	byte* lump;
 	jagobj_t* jo;
 
@@ -520,11 +422,12 @@ void GetJagobjSize(int lumpnum, int* ow, int *oh)
 	}
 	else // decompress
 	{
-		lzss_setup(&gfx_lzss, lump, lzss_buf, LZSS_BUF_SIZE);
-		if (lzss_read(&gfx_lzss, 16) != 16)
+
+		LzSetup(&gfx_lz, lump, lz_buf, LZ_BUF_SIZE);
+		if (LzReadPartial(&gfx_lz, 16) != 16)
 			return;
 
-		jo = (jagobj_t*)gfx_lzss.buf;
+		jo = (jagobj_t*)gfx_lz.output;
 	}
 
 	if (ow) *ow = BIGSHORT(jo->width);
@@ -533,8 +436,8 @@ void GetJagobjSize(int lumpnum, int* ow, int *oh)
 
 void DrawJagobjLump(int lumpnum, int x, int y, int* ow, int* oh)
 {
-	lzss_state_t gfx_lzss;
-	uint8_t lzss_buf[LZSS_BUF_SIZE];
+	LZSTATE gfx_lz;
+	uint8_t lz_buf[LZ_BUF_SIZE];
 	byte* lump;
 	jagobj_t* jo;
 	int width, height;
@@ -553,11 +456,11 @@ void DrawJagobjLump(int lumpnum, int x, int y, int* ow, int* oh)
 		return;
 	}
 
-	lzss_setup(&gfx_lzss, lump, lzss_buf, LZSS_BUF_SIZE);
-	if (lzss_read(&gfx_lzss, 16) != 16)
+	LzSetup(&gfx_lz, lump, lz_buf, LZ_BUF_SIZE);
+	if (LzReadPartial(&gfx_lz, 16) != 16)
 		return;
 
-	jo = (jagobj_t*)gfx_lzss.buf;
+	jo = (jagobj_t*)gfx_lz.output;
 	width = BIGSHORT(jo->width);
 	height = BIGSHORT(jo->height);
 
@@ -578,7 +481,7 @@ void DrawJagobjLump(int lumpnum, int x, int y, int* ow, int* oh)
 		pixel_t* ob;
 		unsigned p;
 
-		source = gfx_lzss.buf;
+		source = gfx_lz.output;
 		p = 16;
 
 		fb = (byte*)I_FrameBuffer();
@@ -589,11 +492,11 @@ void DrawJagobjLump(int lumpnum, int x, int y, int* ow, int* oh)
 		{
 			int i;
 
-			lzss_read(&gfx_lzss, width);
+			LzReadPartial(&gfx_lz, width);
 
 			i = 0;
-			if (p + width > LZSS_BUF_SIZE) {
-				int rem = LZSS_BUF_SIZE - p;
+			if (p + width > LZ_BUF_SIZE) {
+				int rem = LZ_BUF_SIZE - p;
 				for (; i < rem; i++)
 					dest[i] = source[p++];
 				p = 0;
@@ -726,8 +629,8 @@ void DrawJagobjWithColormap(jagobj_t* jo, int x, int y,
 void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int colormap)
 {
 	int16_t *dc_colormap = (int16_t*)dc_colormaps + colormap;
-	lzss_state_t gfx_lzss;
-	uint8_t lzss_buf[LZSS_BUF_SIZE];
+	LZSTATE gfx_lz;
+	uint8_t lz_buf[LZ_BUF_SIZE];
 	byte* lump;
 	jagobj_t* jo;
 	int width, height;
@@ -746,11 +649,11 @@ void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int
 		return;
 	}
 
-	lzss_setup(&gfx_lzss, lump, lzss_buf, LZSS_BUF_SIZE);
-	if (lzss_read(&gfx_lzss, 16) != 16)
+	LzSetup(&gfx_lz, lump, lz_buf, LZ_BUF_SIZE);
+	if (LzReadPartial(&gfx_lz, 16) != 16)
 		return;
 
-	jo = (jagobj_t*)gfx_lzss.buf;
+	jo = (jagobj_t*)gfx_lz.output;
 	width = BIGSHORT(jo->width);
 	height = BIGSHORT(jo->height);
 
@@ -770,7 +673,7 @@ void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int
 		byte* fb;
 		unsigned p;
 
-		source = gfx_lzss.buf;
+		source = gfx_lz.output;
 		p = 16;
 
 		fb = (byte*)I_FrameBuffer();
@@ -780,11 +683,11 @@ void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int
 		{
 			int i;
 
-			lzss_read(&gfx_lzss, width);
+			LzReadPartial(&gfx_lz, width);
 
 			i = 0;
-			if (p + width > LZSS_BUF_SIZE) {
-				int rem = LZSS_BUF_SIZE - p;
+			if (p + width > LZ_BUF_SIZE) {
+				int rem = LZ_BUF_SIZE - p;
 				for (; i < rem; i++)
 					dest[i] = dc_colormap[source[p++]];
 				p = 0;
@@ -801,7 +704,7 @@ void DrawJagobjLumpWithColormap(int lumpnum, int x, int y, int* ow, int* oh, int
 /*
 Draw the text banner on the left side of the screen. Used for the title card.
 */
-void DrawScrollingBanner(short ltzz_lump, int x, int y_shift)
+void DrawScrollingBanner(short ltzz_lump, int x_pos, int y_shift)
 {
 	const jagobj_t *jo = (jagobj_t*)W_POINTLUMPNUM(ltzz_lump);
 	pixel_t *fb = I_OverwriteBuffer();
@@ -809,13 +712,19 @@ void DrawScrollingBanner(short ltzz_lump, int x, int y_shift)
 	const pixel_t *source;
 	const short height = jo->height;
 
-	x &= ~0x01;	// No odd positions allowed!
+	x_pos &= ~0x01;	// No odd positions allowed!
 	short source_offset;
 	if (y_shift >= 0) {
-		source_offset = ((height - (y_shift % height)) << 4) - x;
+		source_offset = ((height - (y_shift % height)) << 4) - x_pos;
 	}
 	else {
-		source_offset = ((-y_shift % height) << 4) - x;
+		source_offset = ((-y_shift % height) << 4) - x_pos;
+	}
+
+	if (viewportNum == VIEWPORT_H32) {
+		source_offset += (VIEWPORT_OVERDRAW_AREA >> 1);
+		dest += ((VIEWPORT_OVERDRAW_AREA >> 1) >> 1);
+		x_pos -= (VIEWPORT_OVERDRAW_AREA >> 1);
 	}
 
 	for (int dest_row=0; dest_row < 224-44; dest_row++)
@@ -825,7 +734,7 @@ void DrawScrollingBanner(short ltzz_lump, int x, int y_shift)
 
 		source = (pixel_t *)(jo->data + source_offset);
 
-		switch(x) {
+		switch(x_pos) {
 			case 0:
 				*dest++ = *source++;
 			case -2:
@@ -844,14 +753,14 @@ void DrawScrollingBanner(short ltzz_lump, int x, int y_shift)
 				*dest = *source;
 		}
 
-		dest += (320 - 16 - x + 2) / 2;
+		dest += (320 - 16 - x_pos + 2) / 2;
 	}
 }
 
 /*
 Draw the chevrons on the left side of the screen. Used for the title card.
 */
-void DrawScrollingChevrons(short chev_lump, int x, int y_shift)
+void DrawScrollingChevrons(short chev_lump, int x_pos, int y_shift)
 {
 	const jagobj_t *jo = (jagobj_t*)W_POINTLUMPNUM(chev_lump);
 	pixel_t *fb = I_OverwriteBuffer();
@@ -859,7 +768,7 @@ void DrawScrollingChevrons(short chev_lump, int x, int y_shift)
 	const pixel_t *source;
 	const short height = 32;
 
-	x &= ~0x01;	// No odd positions allowed!
+	x_pos &= ~0x01;	// No odd positions allowed!
 	short source_offset;
 	if (y_shift >= 0) {
 		source_offset = ((height - (y_shift % height)) * 26);
@@ -868,19 +777,25 @@ void DrawScrollingChevrons(short chev_lump, int x, int y_shift)
 		source_offset = ((-y_shift % height) * 26);
 	}
 
-	if (x < 0) {
-		source_offset -= x;
+	if (x_pos <= 0) {
+		source_offset -= x_pos;
+
+		if (viewportNum == VIEWPORT_H32) {
+			source_offset += (VIEWPORT_OVERDRAW_AREA >> 1);
+			dest += ((VIEWPORT_OVERDRAW_AREA >> 1) >> 1);
+			x_pos -= (VIEWPORT_OVERDRAW_AREA >> 1);
+		}
 	}
-	else if (x > 0) {
-		dest += (x >> 1);
-		x = 0;
+	else if (x_pos > 0) {
+		dest += (x_pos >> 1);
+		x_pos = 0;
 	}
 
 	for (int dest_row=0; dest_row < 224-44; dest_row++)
 	{
 		source = (pixel_t *)(jo->data + source_offset);
 
-		switch(x) {
+		switch(x_pos) {
 			case 0:
 				*dest++ = *source++;
 			case -2:
@@ -909,7 +824,7 @@ void DrawScrollingChevrons(short chev_lump, int x, int y_shift)
 				*dest = *source;
 		}
 
-		dest += (320 - 26 - x + 2) / 2;
+		dest += (320 - 26 - x_pos + 2) / 2;
 
 		source_offset += 26;
 		source_offset %= (height*26);
@@ -931,7 +846,7 @@ void DrawTiledLetterbox2(int flat)
 		return;
 
 	int			yt;
-	const int	w = CalcFlatSize(W_LumpLength(flat)), top_h = 21, bottom_h = 21;
+	const int	w = CalcFlatSize(W_LumpLength(flat)), top_h = 21, bottom_h = 21-10;
 	const int	hw = w / 2;
 	const int xtiles = (320 + w - 1) / w;
 	pixel_t* bdest;
@@ -940,7 +855,7 @@ void DrawTiledLetterbox2(int flat)
 	// Draw the top letterbox.
 	bsrc = (const pixel_t*)W_POINTLUMPNUM(flat);
 	bdest = I_FrameBuffer();
-	const pixel_t* source = bsrc + ((w-21)*hw);
+	const pixel_t* source = bsrc + ((32-21)*hw);
 	const short two_black_pixels = (COLOR_BLACK<<8)|COLOR_BLACK;
 
 	for (yt = 0; yt < top_h; yt++)
@@ -960,10 +875,7 @@ void DrawTiledLetterbox2(int flat)
 
 	// Draw the bottom letterbox.
 	bdest += ((320*180)/2);
-	source -= (w*hw);
-	
-	for (int xt = 0; xt < 320/2; xt++)
-		*bdest++ = two_black_pixels;
+	source = bsrc;
 
 	for (yt = 0; yt < bottom_h; yt++)
 	{
@@ -984,6 +896,50 @@ void DrawTiledLetterbox(void)
 	if (gamemapinfo.borderFlat > 0) {
 		DrawTiledLetterbox2(gamemapinfo.borderFlat);
 	}
+}
+
+void ClearViewportOverdraw(void)
+{
+	pixel_t *framebuffer = I_OverwriteBuffer();
+
+	// For levels, the last 11 lines are free memory; don't overwrite!
+	const int lines_used = IsLevel() ? 224-11 : 224;
+
+#if (VIEWPORT_OVERDRAW_AREA & 0xF) == 0
+	const int overdraw_width = VIEWPORT_OVERDRAW_AREA >> 4;
+	for (int y=0; y < lines_used; y++) {
+		for (int x=0; x < overdraw_width; x++) {
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+		}
+
+		framebuffer += ((SCREENWIDTH >> 1) - (((VIEWPORT_OVERDRAW_AREA + 2) >> 1) & 0x1FE));
+
+		for (int x=0; x < overdraw_width; x++) {
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+		}
+	}
+#elif (VIEWPORT_OVERDRAW_AREA & 0x7) == 0
+	const int overdraw_width = VIEWPORT_OVERDRAW_AREA >> 3;
+	for (int y=0; y < lines_used; y++) {
+		for (int x=0; x < overdraw_width; x++) {
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+		}
+
+		framebuffer += ((SCREENWIDTH >> 1) - (((VIEWPORT_OVERDRAW_AREA + 2) >> 1) & 0x1FE));
+
+		for (int x=0; x < overdraw_width; x++) {
+			*framebuffer++ = 0x1F1F;
+			*framebuffer++ = 0x1F1F;
+		}
+	}
+#endif
 }
 
 /*
@@ -1050,8 +1006,115 @@ void EraseBlock(int x, int y, int width, int height)
 {
 }
 
-void DrawJagobj2(jagobj_t* jo, int x, int y, 
-	int src_x, int src_y, int src_w, int src_h, pixel_t *fb)
+void DrawScaledJagobj(jagobj_t* jo, int x, int y, 
+	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb)
+{
+	int		srcx, srcy;
+	int		width, height;//, flags, index;
+	fixed_t	total_scaled_w, total_scaled_h;
+	int		rowsize;
+	fixed_t	inc_x, inc_y;
+	uint8_t	*dest, *source;
+
+	rowsize = BIGSHORT(jo->width);
+	width = BIGSHORT(jo->width);
+	height = BIGSHORT(jo->height);
+//	flags = BIGSHORT(jo->flags);
+//	index = BIGSHORT(jo->index);
+
+	/*
+	if (src_w > 0)
+		width = src_w;
+	else if (src_w < 0)
+		width += src_w;
+
+	if (src_h > 0)
+		height = src_h;
+	else if (src_h < 0)
+		height += src_h;
+	*/
+
+	srcx = 0;
+	srcy = 0;
+
+	if (x < 0)
+	{
+		width += x;
+		srcx = -x;
+		x = 0;
+	}
+	//srcx += src_x;
+
+	if (y < 0)
+	{
+		srcy = -y;
+		height += y;
+		y = 0;
+	}
+	//srcy += src_y;
+
+	if (x + width > 320)
+		width = 320 - x;
+	if (y + height > mars_framebuffer_height)
+		height = mars_framebuffer_height - y;
+
+	if (width < 1 || height < 1)
+		return;
+
+	total_scaled_w = FixedMul((width << 16), ratio_w) >> 17;
+	total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
+
+	ratio_w = FixedDiv(FRACUNIT, ratio_w);
+	ratio_h = FixedDiv(FRACUNIT, ratio_h);
+
+	inc_x = 0;
+	inc_y = 0;
+
+	dest = (byte*)fb + y * 320 + x;
+	source = jo->data + srcx + srcy * rowsize;
+
+	//if ((x & 1) == 0 && (width & 1) == 0 && (rowsize & 1) == 0)
+	{
+		pixel_t* dest2 = (pixel_t*)dest;
+
+		uint8_t* source2 = source;
+		uint8_t* source3 = source;
+
+		for (; total_scaled_h; total_scaled_h--)
+		{
+			for (int n = total_scaled_w; n > 0; n--)
+			{
+				pixel_t word = (*source2) << 8;
+
+				inc_x += ratio_w;
+				source2 += (inc_x >> 16);
+				inc_x &= 0xFFFF;
+
+				word |= (*source2);
+				*dest2++ = word;
+
+				inc_x += ratio_w;
+				source2 += (inc_x >> 16);
+				inc_x &= 0xFFFF;
+			}
+
+			dest2 += (160 - total_scaled_w);
+
+			inc_y += ratio_h;
+			source3 += (width * (inc_y >> 16));
+			source2 = source3;
+			inc_y &= 0xFFFF;
+
+			inc_x = 0;
+		}
+
+		return;
+	}
+}
+
+void DrawJagobj3(jagobj_t* jo, int x, int y, 
+	int src_x, int src_y, int src_w, int src_h,
+	const int canvas_width, pixel_t *fb)
 {
 	int		srcx, srcy;
 	int		width, height, depth, flags, index, hw;
@@ -1094,8 +1157,8 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 	}
 	srcy += src_y;
 
-	if (x + width > 320)
-		width = 320 - x;
+	if (x + width > canvas_width)
+		width = canvas_width - x;
 	if (y + height > mars_framebuffer_height)
 		height = mars_framebuffer_height - y;
 	inc = rowsize - width;
@@ -1113,7 +1176,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 		index = (index << 1) + (flags & 2 ? 1 : 0);
 	}
 
-	dest = (byte*)fb + y * 320 + x;
+	dest = (byte*)fb + y * canvas_width + x;
 	source = jo->data + srcx + srcy * rowsize;
 
 	if (depth == 2)
@@ -1122,6 +1185,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 		{
 			pixel_t* dest2 = (pixel_t *)dest, *source2 = (pixel_t*)source;
 			index = ((unsigned)index << 8) | index;
+			int canvas_inc = (canvas_width >> 1) - hw;
 
 			inc >>= 1;
 			for (; height; height--)
@@ -1136,7 +1200,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 				} while (--n > 0);
 				}
 				source2 += inc;
-				dest2 += 160 - hw;
+				dest2 += canvas_inc;
 			}
 
 			return;
@@ -1154,7 +1218,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 			} while (--n > 0);
 			}
 			source += inc;
-			dest += 320 - width;
+			dest += canvas_width - width;
 		}
 		return;
 	}
@@ -1162,6 +1226,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 	if ((x & 1) == 0 && (width & 1) == 0 && (rowsize & 1) == 0)
 	{
 		pixel_t* dest2 = (pixel_t*)dest, * source2 = (pixel_t*)source;
+		int canvas_inc = (canvas_width >> 1) - hw;
 
 		inc >>= 1;
 		for (; height; height--)
@@ -1176,7 +1241,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 			} while (--n > 0);
 			}
 			source2 += inc;
-			dest2 += 160 - hw;
+			dest2 += canvas_inc;
 		}
 
 		return;
@@ -1194,17 +1259,24 @@ void DrawJagobj2(jagobj_t* jo, int x, int y,
 		} while (--n > 0);
 		}
 		source += rowsize - width;
-		dest += 320 - width;
+		dest += canvas_width - width;
 	}
 }
 
 void DrawJagobj(jagobj_t* jo, int x, int y)
 {
-	DrawJagobj2(jo, x, y, 0, 0, 0, 0, I_OverwriteBuffer());
+	DrawJagobj3(jo, x, y, 0, 0, 0, 0, 320, I_OverwriteBuffer());
+}
+
+void DrawJagobj2(jagobj_t* jo, int x, int y, int canvas_width)
+{
+	DrawJagobj3(jo, x, y, 0, 0, 0, 0, canvas_width, I_OverwriteBuffer());
 }
 
 void DrawFillRect(int x, int y, int w, int h, int c)
 {
+	// Note: This function does not correctly handle odd widths.
+
 	int i;
 
 	if (x + w > 320)
@@ -1234,6 +1306,50 @@ void DrawFillRect(int x, int y, int w, int h, int c)
 	}
 }
 
+void DrawLine(int x, int y, int length, int c, boolean vertical)
+{
+	// Note: If drawing horizontal lines, this function does not correctly handle odd widths.
+
+	if (vertical) {
+		if (y + length > mars_framebuffer_height) {
+			length = mars_framebuffer_height - y;
+		}
+
+		if (!(x & 1)) {
+			// Offset is even.
+			c <<= 8;
+		}
+
+		pixel_t* dest = I_OverwriteBuffer() + y * 160 + (x>>1);
+		for (int i = 0; i < length; i++) {
+			*dest = c;
+			dest += 160;
+		}
+	}
+	else { // horizontal
+		if (x + length > 320) {
+			length = 320 - x;
+		}
+
+		int hw = length >> 1;
+
+		c = (c << 8) | c;
+
+		pixel_t* dest = I_FrameBuffer() + y * 160 + (x>>1);
+
+		int n = (hw + 3) >> 2;
+
+		switch (hw & 3)
+		{
+			case 0: do { *dest++ = c;
+			case 3:      *dest++ = c;
+			case 2:      *dest++ = c;
+			case 1:      *dest++ = c;
+			} while (--n > 0);
+		}
+	}
+}
+
 const int8_t water_filter[128] =
 {
 	 0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,
@@ -1249,14 +1365,22 @@ const int8_t water_filter[128] =
 void ApplyHorizontalDistortionFilter(int filter_offset)
 {
 	uint16_t *lines = Mars_FrameBufferLines();
-	short pixel_offset = (512/2);
+	short pixel_offset = (512/2) + ((~h40_sky)&1);
 
-	for (int i=0; i < 224; i++) {
+	for (int i=0; i < 7; i++) {
+		distortion_line_bit_shift[i] = 0;
+	}
+
+	for (int i=0; i < 202; i++) {
 		signed char shift_value;
+
+		distortion_line_bit_shift[i>>5] <<= 1;
 
 		if (i >= 22 && i < 224-22) {
 			// Only shift lines within the viewport.
 			shift_value = water_filter[(filter_offset + i) & 127];
+			distortion_line_bit_shift[i>>5] |= (water_filter[(filter_offset + i - 3) & 127] & 1);
+			//DLG: Why doesn't 'shift_value' work correctly with HINT pixel shifts?
 		}
 		else {
 			// Letter box area should be left alone.
@@ -1268,20 +1392,58 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 		pixel_offset += (320/2);
 	}
 
-	phi_effects = true;
-}
+	// Reuse the black pixels from the top of the screen for the next line.
+	lines[202] = lines[21];
 
-void RemoveDistortionFilters()
-{
-	phi_effects = false;
-
-	uint16_t *lines = Mars_FrameBufferLines();
-	short pixel_offset = (512/2);
-
-	for (int i=0; i < 224; i++) {
+	// The next eleven lines are unique.
+	pixel_offset = (((320*202)+512)/2) + ((~h40_sky)&1);
+	for (int i=203; i < 214; i++) {
 		lines[i] = pixel_offset;
 		pixel_offset += (320/2);
 	}
 
-	MARS_VDP_SCRSHFT = 0;
+	// The remaining lines reuse pixels from the top border.
+	for (int i=214; i < 224; i++) {
+		lines[i] = lines[i-214];
+	}
+
+	effects_flags |= EFFECTS_DISTORTION_ENABLED;
+}
+
+void RemoveDistortionFilters()
+{
+	effects_flags &= (~EFFECTS_DISTORTION_ENABLED);
+
+	uint16_t *lines = Mars_FrameBufferLines();
+	short pixel_offset = (512/2) + ((~h40_sky)&1);
+
+	if (IsLevel()) {
+		// Set line offsets for the entire viewport (180 pixels) and top border (22 pixels)
+		for (int i=0; i < 202; i++) {
+			lines[i] = pixel_offset;
+			pixel_offset += (320/2);
+		}
+
+		// Reuse the black pixels from the top of the screen for the next line.
+		lines[202] = lines[21];
+		
+		// The next eleven lines are unique.
+		for (int i=203; i < 214; i++) {
+			lines[i] = pixel_offset;
+			pixel_offset += (320/2);
+		}
+
+		// The remaining lines reuse pixels from the top border.
+		for (int i=214; i < 224; i++) {
+			lines[i] = lines[i-214];
+		}
+	}
+	else {
+		for (int i=0; i < 224; i++) {
+			lines[i] = pixel_offset;
+			pixel_offset += (320/2);
+		}
+	}
+
+	MARS_VDP_SCRSHFT = ((~h40_sky)&1);
 }

@@ -17,7 +17,7 @@ Most monsters are spawned unaware of all players, but some can be made preaware
 
 boolean P_CheckMeleeRange (mobj_t *actor, fixed_t range);
 boolean P_CheckMissileRange (mobj_t *actor);
-boolean P_Move (mobj_t *actor) ATTR_DATA_CACHE_ALIGN;
+boolean P_Move (mobj_t *actor, fixed_t speed) ATTR_DATA_CACHE_ALIGN;
 boolean P_TryWalk (mobj_t *actor) ATTR_DATA_CACHE_ALIGN;
 void P_NewChaseDir (mobj_t *actor) ATTR_DATA_CACHE_ALIGN;
 void A_Look (mobj_t *actor, int16_t var1, int16_t var2) ATTR_DATA_CACHE_ALIGN;
@@ -95,7 +95,7 @@ boolean P_CheckMissileRange (mobj_t *actor)
 fixed_t	xspeed[8] = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000};
 fixed_t yspeed[8] = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000};
 
-boolean P_Move (mobj_t *actor)
+boolean P_Move(mobj_t *actor, fixed_t speed)
 {
 	fixed_t	tryx, tryy;
 	boolean		good;
@@ -104,8 +104,8 @@ boolean P_Move (mobj_t *actor)
 	if (actor->movedir == DI_NODIR)
 		return false;
 	
-	tryx = actor->x + mobjinfo[actor->type].speed*xspeed[actor->movedir];
-	tryy = actor->y + mobjinfo[actor->type].speed*yspeed[actor->movedir];
+	tryx = actor->x + speed*xspeed[actor->movedir];
+	tryy = actor->y + speed*yspeed[actor->movedir];
 	
 	if (!P_TryMove (&tm, actor, tryx, tryy) )
 	{	/* open any specials */
@@ -151,7 +151,7 @@ boolean P_Move (mobj_t *actor)
 
 boolean P_TryWalk (mobj_t *actor)
 {	
-	if (!P_Move (actor))
+	if (!P_Move (actor, mobjinfo[actor->type].speed))
 		return false;
 
 	actor->movecount = P_Random()&15;
@@ -335,7 +335,7 @@ newtarget:
 	if (!mo || mo->health <= 0)
 		goto newtarget;
 
-	if (distLimit > 0 && P_AproxDistance(P_AproxDistance(actor->x - mo->x, actor->y - mo->y), actor->z - mo->z) > distLimit)
+	if (distLimit > 0 && (D_abs(actor->z - mo->z) > distLimit || P_AproxDistance(actor->x - mo->x, actor->y - mo->y) > distLimit))
 		return false;
 		
 	if (!allaround)
@@ -482,7 +482,7 @@ void A_Chase (mobj_t *actor, int16_t var1, int16_t var2)
 /* */
 /* chase towards player */
 /* */
-	if (--actor->movecount<0 || !P_Move (actor))
+	if (--actor->movecount<0 || !P_Move (actor, ainfo->speed))
 		P_NewChaseDir (actor);
 }
 
@@ -515,8 +515,8 @@ void A_BuzzFly(mobj_t *actor, int16_t var1, int16_t var2)
 
 		realspeed = mobjinfo[actor->type].speed;
 
-		dist = P_AproxDistance(P_AproxDistance(actor->target->x - actor->x,
-			actor->target->y - actor->y), actor->target->z - actor->z);
+		dist = P_AproxDistance3D(actor->target->x - actor->x,
+			actor->target->y - actor->y, actor->target->z - actor->z);
 
 		if (dist < 1)
 			dist = 1;
@@ -585,7 +585,7 @@ void A_JetJawChomp(mobj_t *actor, int16_t var1, int16_t var2)
 /* */
 /* chase towards player */
 /* */
-	if (--actor->movecount<0 || !P_Move(actor))
+	if (--actor->movecount<0 || !P_Move(actor, ainfo->speed))
 		P_NewChaseDir(actor);
 
 	fixed_t watertop = GetWatertopMo(actor);
@@ -613,7 +613,7 @@ void A_MineRange(mobj_t *actor, int16_t var1, int16_t var2)
 	if (!actor->target)
 		return;
 
-	if (P_AproxDistance(P_AproxDistance(actor->x - actor->target->x, actor->y - actor->target->y), actor->z - actor->target->z)>>FRACBITS < var1)
+	if (P_AproxDistance3D(actor->x - actor->target->x, actor->y - actor->target->y, actor->z - actor->target->z)>>FRACBITS < var1)
 		P_SetMobjState(actor, mobjinfo[actor->type].meleestate);
 }
 
@@ -621,7 +621,7 @@ void A_MineExplode(mobj_t *actor, int16_t var1, int16_t var2)
 {
 	S_StartSound(actor, mobjinfo[actor->type].deathsound);
 
-	P_RadiusAttack(actor, actor, 128);
+	P_RadiusAttack(actor, actor, mobjinfo[actor->type].damage);
 	actor->flags |= MF_NOGRAVITY|MF_NOCLIP;
 	P_SpawnMobj(actor->x, actor->y, actor->z, mobjinfo[actor->type].mass);
 	S_StartSound(actor, sfx_s3k_6c);
@@ -777,7 +777,7 @@ void A_Fall (mobj_t *actor, int16_t var1, int16_t var2)
 	// Also want to set these
 	P_UnsetThingPosition(actor);
 	actor->flags |= MF_NOBLOCKMAP|MF_NOCLIP|MF_NOGRAVITY;
-	P_SetThingPosition(actor);
+	P_SetThingPosition2(actor, actor->isubsector);
 
 	if (var1)
 		actor->extradata = var1;
@@ -818,7 +818,7 @@ void A_BossScream(mobj_t *actor, int16_t var1, int16_t var2)
 	mobj_t *mo = P_SpawnMobj(x, y, z, explodetype);
 
 	if (mobjinfo[actor->type].deathsound)
-		S_StartSound(mo, mobjinfo[actor->type].deathsound);
+		S_StartSound(actor, mobjinfo[actor->type].deathsound);
 
 	if (var1 > 0)
 	{
@@ -859,12 +859,12 @@ void P_DoBossVictory(mobj_t *mo)
 	inner->heightsec = -1;
 
 	// Move the outer
-	floormove_t *floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
+	floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
 	P_AddThinker (&floor->thinker);
-	outer->specialdata = floor;
+	outer->specialdata = LPTR_TO_SPTR(floor);
 	floor->thinker.function = T_MoveFloor;
 	floor->type = eggCapsuleOuter;
-	floor->crush = false;
+	floor->crush = true;
 	floor->direction = 1;
 	floor->sector = outer;
 	floor->speed = 2*FRACUNIT;
@@ -872,12 +872,13 @@ void P_DoBossVictory(mobj_t *mo)
 		(outer->floorheight>>FRACBITS) + 128;
 
 	// Move the inner
-	floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
+	floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
+	D_memset(floor, 0, sizeof(*floor));
 	P_AddThinker (&floor->thinker);
-	inner->specialdata = floor;
+	inner->specialdata = LPTR_TO_SPTR(floor);
 	floor->thinker.function = T_MoveFloor;
 	floor->type = eggCapsuleInner;
-	floor->crush = false;
+	floor->crush = true;
 	floor->direction = 1;
 	floor->sector = inner;
 	floor->speed = 2*FRACUNIT;
@@ -970,7 +971,7 @@ static void P_DoBossDefaultDeath(mobj_t *mo)
 	P_UnsetThingPosition(mo);
 	mo->flags |= MF_NOBLOCKMAP|MF_NOGRAVITY|MF_NOCLIP;
 	mo->flags2 |= MF2_FLOAT;
-	P_SetThingPosition(mo);
+	P_SetThingPosition2(mo, mo->isubsector);
 
 	mo->movedir = 0;
 	mo->extradata = 2*TICRATE;
@@ -1007,7 +1008,7 @@ void A_FishJump(mobj_t *mo, int16_t var1, int16_t var2)
 {
 	fixed_t watertop = mo->floorz;
 
-	if (subsectors[mo->isubsector].sector->heightsec != -1)
+	if (SS_SECTOR(mo->isubsector)->heightsec >= 0)
 		watertop = GetWatertopMo(mo) - (64<<FRACBITS);
 
 	if ((mo->z <= mo->floorz) || (mo->z <= watertop))
@@ -1019,7 +1020,7 @@ void A_FishJump(mobj_t *mo, int16_t var1, int16_t var2)
 		else
 			jumpval = 16 << FRACBITS;
 
-		jumpval = FixedMul(jumpval, FixedDiv(30 << FRACBITS, 35 << FRACBITS));
+		jumpval = FixedMul(jumpval, 56173/* 30 / 35 */);
 
 		mo->momz = jumpval;
 		P_SetMobjState(mo, mobjinfo[mo->type].seestate);
@@ -1042,11 +1043,9 @@ void A_MonitorPop(mobj_t *actor, int16_t var1, int16_t var2)
 
 	// We're dead now. De-solidify.
 	actor->health = 0;
-	P_UnsetThingPosition(actor);
 	actor->flags &= ~MF_SOLID;
 	actor->flags2 &= ~MF2_SHOOTABLE;
 	actor->flags |= MF_NOCLIP;
-	P_SetThingPosition(actor);
 
 	iconItem = mobjinfo[actor->type].damage;
 
@@ -1146,13 +1145,13 @@ void A_FlickyFly(mobj_t *actor, int16_t var1, int16_t var2)
 
 	actor->reactiontime--;
 	if (actor->reactiontime == 0)
-		P_RemoveMobj(actor);
+		actor->latecall = LC_REMOVE_MOBJ;
 }
 
 void A_BubbleRise(mobj_t *actor, int16_t var1, int16_t var2)
 {
 	if (actor->type == MT_EXTRALARGEBUBBLE)
-		actor->momz = FixedDiv(6*FRACUNIT, 5*FRACUNIT);
+		actor->momz = 78643; // 6 / 5
 	else
 		actor->momz += FRACUNIT / 32;
 
@@ -1163,9 +1162,9 @@ void A_BubbleRise(mobj_t *actor, int16_t var1, int16_t var2)
 		P_InstaThrust(actor, P_Random() & 1 ? actor->angle - ANG90 : actor->angle - ANG180,
 			(P_Random() & 1) ? FRACUNIT/2 : -FRACUNIT/2);
 
-	if (subsectors[actor->isubsector].sector->heightsec == -1
+	if (sectors[subsectors[actor->isubsector].isector].heightsec < 0
 		|| actor->z + (actor->theight << (FRACBITS-1)) > GetWatertopMo(actor))
-		P_RemoveMobj(actor);
+		actor->latecall = LC_REMOVE_MOBJ;
 }
 
 // Boss 1 Stuff
@@ -1273,7 +1272,7 @@ nomissile:
 	}
 
 	// chase towards player
-	if (--actor->movecount < 0 || !P_Move(actor))
+	if (--actor->movecount < 0 || !P_Move(actor, mobjinfo[actor->type].speed))
 		P_NewChaseDir(actor);
 }
 
@@ -1294,10 +1293,10 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 		dur = actor->tics;
 	else
 	{
-		if ((upperend & 1) && ((int32_t)actor->extradata > 1))
-			actor->extradata = ((int32_t)actor->extradata) - 1;
+		if ((upperend & 1) && (actor->extradata > 1))
+			actor->extradata--;
 
-		dur = (int32_t)actor->extradata;
+		dur = actor->extradata;
 	}
 
 	switch (var2)
@@ -1350,7 +1349,7 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 	const int iterations = 24;
 	point->target = actor;
 	point->angle = actor->angle;
-	speed = mobjinfo[point->type].radius + (mobjinfo[point->type].radius / 2);
+	speed = mobjinfo[point->type].radius + (mobjinfo[point->type].radius >> 1);
 	point->momz = FixedMul(finecosine(angle>>ANGLETOFINESHIFT), speed);
 	point->momx = FixedMul(finesine(angle>>ANGLETOFINESHIFT), FixedMul(finecosine(point->angle>>ANGLETOFINESHIFT), speed));
 	point->momy = FixedMul(finesine(angle>>ANGLETOFINESHIFT), FixedMul(finesine(point->angle>>ANGLETOFINESHIFT), speed));
@@ -1358,13 +1357,14 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 	const mobjinfo_t *pointInfo = &mobjinfo[point->type];
 	for (i = 0; i < iterations; i++)
 	{
-		mobj_t *mo = P_SpawnMobj(point->x, point->y, point->z, point->type);
+		mobj_t *mo = P_SpawnMobjNoSector(point->x, point->y, point->z, point->type);
+		P_SetThingPosition2(mo, point->isubsector);
+		mo->floorz = point->floorz;
+		mo->ceilingz = point->ceilingz;
+		mo->z = point->z;
 		mo->target = actor;
 
 		mo->angle = point->angle;
-//		P_UnsetThingPosition(mo);
-//		mo->flags = MF_NOCLIP|MF_NOGRAVITY;
-//		P_SetThingPosition(mo);
 
 		if ((dur & 1) && pointInfo->missilestate)
 			P_SetMobjState(mo, pointInfo->missilestate);
@@ -1376,7 +1376,8 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 
 	x += point->momx;
 	y += point->momy;
-	floorz = R_PointInSubsector(x, y)->sector->floorheight;
+	const sector_t *pointSector = SS_SECTOR(R_PointInSubsector2(x, y));
+	floorz = pointSector->floorheight;
 	if (z - floorz < (mobjinfo[MT_EGGMOBILE_FIRE].height>>1) && (dur & 1))
 	{
 		point = P_SpawnMobj(x, y, floorz, MT_EGGMOBILE_FIRE);
@@ -1384,9 +1385,7 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 		point->angle = actor->angle;
 		point->target = actor;
 
-		const sector_t *pointSector = subsectors[point->isubsector].sector;
-
-		if (pointSector->heightsec != -1 && point->z <= GetWatertopSec(pointSector))
+		if (pointSector->heightsec >= 0 && point->z <= GetWatertopSec(pointSector))
 		{
 //			for (i = 0; i < 2; i++)
 			{
@@ -1424,19 +1423,13 @@ static void A_GooSpray(mobj_t *actor, int speedvar)
 		const fixed_t ns = 3 * FRACUNIT;
 		mobj_t *goop;
 		fixed_t fz = actor->z+(actor->theight<<FRACBITS)+56*FRACUNIT;
-		angle_t fa = 0;
-		// actor->movedir is used to determine the last
-		// direction goo was sprayed in. There are 8 possible
-		// directions to spray. (45-degree increments)
 
-		actor->movedir++;
-		actor->movedir &= 7;
-//		fa = (actor->movedir*FINEANGLES/8) & FINEMASK;
+		const angle_t fa = P_Random() << 24;
 
 		goop = P_SpawnMobj(actor->x, actor->y, fz, mobjinfo[actor->type].painchance);
 		P_ThrustValues(fa, ns, &goop->momx, &goop->momy);
 		goop->momz = 4*FRACUNIT;
-		goop->reactiontime = TICRATE;
+		goop->reactiontime = 255;
 //		goop->reactiontime = 30+(P_Random()/32);
 
 		S_StartSound(actor, mobjinfo[actor->type].attacksound);
@@ -1458,8 +1451,6 @@ static void A_GooSpray(mobj_t *actor, int speedvar)
 
 void A_Boss2Chase(mobj_t *actor, int16_t var1, int16_t var2)
 {
-	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
-
 	if (actor->health <= 0)
 		return;
 
@@ -1488,16 +1479,13 @@ void A_Boss2Chase(mobj_t *actor, int16_t var1, int16_t var2)
 	const fixed_t radius = mobjinfo[actor->target->type].radius;
 	actor->target->angle += FixedDiv(FixedMul(ANG45/15,actor->movecount*actor->health), speedvar);
 
-	P_UnsetThingPosition(actor);
 	{
 		fixed_t fx = 0;
 		fixed_t fy = 0;
 		P_ThrustValues(actor->target->angle, radius, &fx, &fy);
 		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x + fx, actor->target->y + fy);
-		actor->x = actor->target->x + fx;
-		actor->y = actor->target->y + fy;
+		P_SetThingPositionConditionally(actor, actor->target->x + fx, actor->target->y + fy, R_PointInSubsector2(actor->x, actor->y));
 	}
-	P_SetThingPosition(actor);
 
 	// Spray goo once every second
 	A_GooSpray(actor, speedvar);
@@ -1532,7 +1520,7 @@ void A_Boss2Pogo(mobj_t *actor, int16_t var1, int16_t var2)
 			goop->momy = FixedMul(finesine(fa),ns);
 			goop->momz = 4*FRACUNIT;
 
-			goop->reactiontime = 30+(P_Random()/32);
+			goop->reactiontime = 255;
 		}
 		actor->reactiontime = 0; // we already shot goop, so don't do it again!
 		if (aInfo->attacksound)
@@ -1543,12 +1531,62 @@ void A_Boss2Pogo(mobj_t *actor, int16_t var1, int16_t var2)
 
 void A_Boss2PogoTarget(mobj_t *actor, int16_t var1, int16_t var2)
 {
+	if (!actor->target)
+		return;
 
+	player_t *player = &players[actor->target->player - 1];
+	fixed_t locvar1 = var1 << FRACBITS;
+	fixed_t locvar2 = var2 << FRACBITS;
+	const fixed_t dist = P_AproxDistance(actor->x-actor->target->x, actor->y-actor->target->y);
+
+	// Target hit, retreat!
+	if ((player->powers[pw_flashing] > TICRATE) || (actor->flags2 & MF2_FRET))
+	{
+		int prandom = P_Random();
+		actor->z++; // unstick from the floor
+		actor->momz = locvar1; // Bounce up in air
+		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y) + (P_Random() & 1 ? -prandom : +prandom); // Pick a direction, and randomize it.
+		P_InstaThrust(actor, actor->angle+ANG180, mobjinfo[actor->type].speed * locvar2); // Move at wandering speed
+	}
+	// Try to land on top of the player.
+	else if (dist < 512*FRACUNIT)
+	{
+		fixed_t airtime, gravityadd, zoffs, height;
+
+		// check gravity in the sector (for later math)
+		gravityadd = GRAVITY >> 1;
+
+		actor->z++; // unstick from the floor
+		actor->momz = locvar1 + (locvar1>>2); // Bounce up in air
+
+		height = P_GetPlayerHeight() >> 1;
+
+		zoffs = height + (actor->target->floorz - actor->floorz); // offset by the difference in floor height plus half the player height,
+		airtime = FixedDiv((-actor->momz - FixedSqrt(FixedMul(actor->momz,actor->momz)+zoffs)), gravityadd)<<1; // to try and land on their head rather than on their feet
+
+		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
+		P_InstaThrust(actor, actor->angle, -FixedDiv(dist, airtime));
+	}
+	// Wander semi-randomly towards the player to get closer.
+	else
+	{
+		int prandom = P_Random();
+		actor->z++; // unstick from the floor
+		actor->momz = locvar1; // Bounce up in air
+		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y) + ((P_Random() & 1 ? -(prandom >> 2) : (prandom >> 2)) * ANGLE_1); // Pick a direction, and randomize it.
+		P_InstaThrust(actor, actor->angle, mobjinfo[actor->type].speed * locvar2); // Move at wandering speed
+	}
+
+	// Boing!
+	S_StartSound(actor, mobjinfo[actor->type].activesound);
+
+	actor->reactiontime = 1;
 }
 
 void A_Boss2TakeDamage(mobj_t *actor, int16_t var1, int16_t var2)
 {
-
+	A_Pain(actor, var1, var2);
+	actor->reactiontime = 1;
 }
 
 void A_PrepareRepeat(mobj_t *actor, int16_t var1, int16_t var2)
@@ -1558,10 +1596,10 @@ void A_PrepareRepeat(mobj_t *actor, int16_t var1, int16_t var2)
 
 void A_Repeat(mobj_t *actor, int16_t var1, int16_t var2)
 {
-	if (var1 && (!actor->extradata || (int32_t)actor->extradata > var1))
+	if (var1 && (!actor->extradata || actor->extradata > var1))
 		actor->extradata = var1;
 
-	actor->extradata = (int)actor->extradata - 1;
+	actor->extradata--;
 	if (actor->extradata > 0)
 		P_SetMobjState(actor, var2);
 }
@@ -1572,12 +1610,10 @@ void A_Repeat(mobj_t *actor, int16_t var1, int16_t var2)
 //
 void A_ChangeHeight(mobj_t *actor, int16_t var1, int16_t var2)
 {
-	P_UnsetThingPosition(actor);
 	actor->theight = var1;
-	P_SetThingPosition(actor);
 }
 
-void A_UnidusBall(mobj_t *actor)
+void A_UnidusBall(mobj_t *actor, int16_t var1, int16_t var2)
 {
 	actor->angle += ANG180 / 16;
 
@@ -1590,20 +1626,19 @@ void A_UnidusBall(mobj_t *actor)
 
 	if (!actor->target || !actor->target->health)
 	{
-		P_RemoveMobj(actor);
+		actor->latecall = LC_REMOVE_MOBJ;
 		return;
 	}
 
-	P_UnsetThingPosition(actor);
 	{
 		const angle_t angle = actor->movedir + ANGLE_1 * (mobjinfo[actor->type].speed*(leveltime%360));
 		const uint16_t fa = angle>>ANGLETOFINESHIFT;
 
-		actor->x = actor->target->x + FixedMul(finecosine(fa),actor->threshold);
-		actor->y = actor->target->y + FixedMul(  finesine(fa),actor->threshold);
 		actor->z = actor->target->z + (actor->target->theight << (FRACBITS-1)) - (actor->theight << (FRACBITS-1));
+		P_SetThingPositionConditionally(actor, actor->target->x + FixedMul(finecosine(fa),actor->threshold),
+			actor->target->y + FixedMul(  finesine(fa),actor->threshold),
+			R_PointInSubsector2(actor->x, actor->y));
 	}
-	P_SetThingPosition(actor);
 }
 
 // Function: A_BubbleSpawn
@@ -1612,7 +1647,7 @@ void A_UnidusBall(mobj_t *actor)
 //
 void A_BubbleSpawn(mobj_t *actor, int16_t var1, int16_t var2)
 {
-	if (subsectors[actor->isubsector].sector->heightsec != -1
+	if (SS_SECTOR(actor->isubsector)->heightsec >= 0
 		&& actor->z < GetWatertopMo(actor) - 32*FRACUNIT)
 	{
 		int i;
@@ -1663,6 +1698,616 @@ void A_SignSpin(mobj_t *actor, int16_t var1, int16_t var2)
 	}
 }
 
+void A_SteamBurst(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	const mobjinfo_t *info = &mobjinfo[actor->type];
+
+	if (!(P_Random() & 7))
+	{
+		if (info->deathsound)
+			S_StartSound(actor, info->deathsound); // Hiss!
+	}
+	else
+	{
+		if (info->painsound)
+			S_StartSound(actor, info->painsound);
+	}
+
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (playeringame[i])
+		{
+			player_t *player = &players[i];
+			const mobjinfo_t *playerInfo = &mobjinfo[player->mo->type];
+
+			if (player->mo->z > actor->z + 8*FRACUNIT
+				|| player->mo->z < actor->z)
+				continue;
+
+			if (P_AproxDistance(player->mo->x - actor->x, player->mo->y - actor->y) > info->radius + playerInfo->radius)
+				continue;
+
+			if (player && player->mo->state == playerInfo->painstate) // can't use gas jets when player is in pain!
+				return;
+
+			fixed_t speed = info->mass << FRACBITS; // gas jets use this for the vertical thrust
+			int8_t flipval = 1;//P_MobjFlip(special); // virtually everything here centers around the thruster's gravity, not the object's!
+
+			player->mo->momz = flipval * speed;
+
+			P_ResetPlayer(player);
+			P_SetMobjState(player->mo, S_PLAY_FALL1);
+		}
+	}
+}
+
+// 'Lob' the arrow in a parabola towards the target
+static void P_ParabolicMove(mobj_t *actor, fixed_t x, fixed_t y, fixed_t z, fixed_t speed)
+{
+	fixed_t dh;
+
+	x -= actor->x;
+	y -= actor->y;
+	z -= actor->z;
+
+	dh = P_AproxDistance(x, y);
+
+	actor->momx = FixedMul(FixedDiv(x, dh), speed);
+	actor->momy = FixedMul(FixedDiv(y, dh), speed);
+
+	fixed_t gravity = GRAVITY >> 1;
+	if (!gravity)
+		return;
+
+	dh = FixedDiv(FixedMul(dh, gravity), speed);
+	actor->momz = (dh>>1) + FixedDiv(z, dh<<1);
+}
+
+// Function: A_HoodFire
+//
+// Description: Firing Robo-Hood
+//
+// var1 = object type to fire
+// var2 = unused
+//
+void A_HoodFire(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	mobj_t *arrow;
+
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	// Check target first.
+	if (!actor->target)
+	{
+		actor->reactiontime = aInfo->reactiontime;
+		P_SetMobjState(actor, aInfo->spawnstate);
+		return;
+	}
+
+	A_FaceTarget(actor, 0, 0);
+
+	if (!(arrow = P_SpawnMissile(actor, actor->target, (mobjtype_t)var1)))
+		return;
+
+	const mobjinfo_t *arrowInfo = &mobjinfo[arrow->type];
+
+	// Set a parabolic trajectory for the arrow.
+	P_ParabolicMove(arrow, actor->target->x, actor->target->y, actor->target->z, arrowInfo->speed);
+}
+
+// Function: A_HoodThink
+//
+// Description: Thinker for Robo-Hood
+//
+// var1 = unused
+// var2 = unused
+//
+void A_HoodThink(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	fixed_t dx, dy, dz, dm;
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	// Check target first.
+	if (!actor->target)
+	{
+		actor->reactiontime = aInfo->reactiontime;
+		P_SetMobjState(actor, aInfo->spawnstate);
+		return;
+	}
+
+	dx = (actor->target->x - actor->x), dy = (actor->target->y - actor->y), dz = (actor->target->z - actor->z);
+	dm = P_AproxDistance(dx, dy);
+	// Target dangerously close to robohood, retreat then.
+	if ((dm < 256<<FRACBITS) && (D_abs(dz) < 128<<FRACBITS) && !(actor->flags2 & MF2_SPAWNEDJETS))
+	{
+		S_StartSound(actor, aInfo->attacksound);
+		A_FaceTarget(actor, 0, 0);
+		actor->angle = -actor->angle; // Do a 180
+		P_SetObjectMomZ(actor, 6*FRACUNIT, false);
+		P_InstaThrust(actor, actor->angle, 6*FRACUNIT);
+		P_SetMobjState(actor, S_ROBOHOOD_JUMP1);
+		return;
+	}
+
+	// If target on sight, look at it.
+	if (actor->target)
+	{
+		angle_t dang = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
+		if (actor->angle >= ANG180)
+			actor->angle = InvAngle(InvAngle(actor->angle)>>1);
+		else
+			actor->angle >>= 1;
+
+		if (dang >= ANG180)
+			dang = InvAngle(InvAngle(dang)>>1);
+		else
+			dang >>= 1;
+
+		actor->angle += dang;
+	}
+
+	// Check whether to do anything.
+	if ((--actor->reactiontime) <= 0)
+	{
+		actor->reactiontime = aInfo->reactiontime;
+
+		// If way too far, don't shoot.
+		if ((dm < (3072<<FRACBITS)) && actor->target)
+		{
+			P_SetMobjState(actor, aInfo->missilestate);
+			S_StartSound(actor, aInfo->activesound);
+			return;
+		}
+	}
+}
+
+// Function: A_HoodFall
+//
+// Description: Falling Robo-Hood
+//
+// var1 = unused
+// var2 = unused
+//
+void A_HoodFall(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	if (!P_IsObjectOnGround(actor))
+		return;
+
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	actor->momx = actor->momy = 0;
+	actor->reactiontime = aInfo->reactiontime;
+	P_SetMobjState(actor, aInfo->seestate);
+}
+
+static void P_SharpDust(mobj_t *actor, mobjtype_t type, angle_t ang)
+{
+	mobj_t *dust;
+
+	if (!type || !P_IsObjectOnGround(actor))
+		return;
+
+	dust = P_SpawnMobj(actor->x - P_ReturnThrustX(ang, 16<<FRACBITS), actor->y - P_ReturnThrustY(ang, 16<<FRACBITS), actor->z, type);
+	P_SetObjectMomZ(dust, (1+(P_Random() & 3))<<FRACBITS, false);
+}
+
+// Function: A_FaceStabRev
+//
+// Description: Facestabber rev action
+//
+// var1 = effective duration
+// var2 = effective nextstate
+//
+void A_FaceStabRev(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	if (!actor->target)
+	{
+		P_SetMobjState(actor, aInfo->spawnstate);
+		return;
+	}
+
+	actor->extradata = 0;
+
+	if (!actor->reactiontime)
+	{
+		actor->reactiontime = var1;
+		S_StartSound(actor, aInfo->activesound);
+	}
+	else
+	{
+		if ((--actor->reactiontime) == 0)
+		{
+			S_StartSound(actor, aInfo->attacksound);
+			P_SetMobjState(actor, var2);
+		}
+		else
+		{
+			ptrymove_t tm;
+			P_TryMove(&tm, actor, actor->x - P_ReturnThrustX(actor->angle, 2<<FRACBITS), actor->y - P_ReturnThrustY(actor->angle, 2<<FRACBITS));
+//			P_FaceStabFlume(actor);
+		}
+	}
+}
+
+// Function: A_FaceStabHurl
+//
+// Description: Facestabber hurl action
+//
+// var1 = homing strength (recommended strength between 0-8)
+// var2 = effective nextstate
+//
+void A_FaceStabHurl(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	if (actor->target)
+	{
+		angle_t visang = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
+		// Calculate new direction.
+		angle_t dirang = actor->angle;
+		angle_t diffang = visang - dirang;
+
+		if (var1) // Allow homing?
+		{
+			if (diffang > ANG180)
+			{
+				angle_t workang = (int32_t)var1*(InvAngle(diffang)>>5);
+				diffang += InvAngle(workang);
+			}
+			else
+				diffang += (int32_t)var1*(diffang>>5);
+		}
+		diffang += ANG45;
+
+		// Check the sight cone.
+		if (diffang < ANG90)
+		{
+			actor->angle = dirang;
+
+			int16_t extravalue2 = UPPER8(actor->extradata);
+
+			if (++extravalue2 < 4)
+				extravalue2 = 4;
+			else if (extravalue2 > 26)
+				extravalue2 = 26;
+
+			SETUPPER8(actor->extradata, extravalue2);
+
+			ptrymove_t pt;
+
+			if (P_TryMove(&pt, actor,
+				actor->x + P_ReturnThrustX(actor->angle, extravalue2<<FRACBITS),
+				actor->y + P_ReturnThrustY(actor->angle, extravalue2<<FRACBITS)))
+			{
+				return;
+			}
+		}
+	}
+
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+	actor->reactiontime = aInfo->reactiontime;
+	P_SetMobjState(actor, var2);
+}
+
+// Function: A_FaceStabMiss
+//
+// Description: Facestabber miss action
+//
+// var1 = unused
+// var2 = effective nextstate
+//
+void A_FaceStabMiss(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	int16_t extravalue1 = LOWER8(actor->extradata);
+	int16_t extravalue2 = UPPER8(actor->extradata);
+
+	if (++extravalue1 >= 3)
+	{
+		extravalue2 -= 2;
+		extravalue1 = 0;
+//		S_StartSound(actor, sfx_s3k_47);
+		P_SharpDust(actor, MT_DUST, actor->angle);
+	}
+
+	ptrymove_t pt;
+	if (extravalue2 <= 0 || !P_TryMove(&pt, actor,
+		actor->x + P_ReturnThrustX(actor->angle, extravalue2<<FRACBITS),
+		actor->y + P_ReturnThrustY(actor->angle, extravalue2<<FRACBITS)))
+	{
+		extravalue2 = 0;
+		P_SetMobjState(actor, var2);
+	}
+
+	SETLOWER8(actor->extradata, extravalue1);
+	SETUPPER8(actor->extradata, extravalue2);
+	actor->reactiontime = 0;
+}
+
+void A_FaceStabUnPain(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	actor->flags2 &= ~MF2_FRET;
+}
+
+// Function: A_GuardChase
+//
+// Description: Modified A_Chase for Egg Guard
+//
+// var1 = unused
+// var2 = unused
+//
+void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	int32_t delta;
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	if (actor->reactiontime)
+		actor->reactiontime--;
+
+	if (actor->threshold != 42) // In formation...
+	{
+		fixed_t speed;
+		ptrymove_t tm;
+
+		speed = LOWER8(actor->extradata) << FRACBITS;
+
+		if (actor->flags2 & MF2_SPAWNEDJETS)
+			speed <<= 1;
+
+		if (speed
+		&& !P_TryMove(&tm, actor,
+			actor->x + P_ReturnThrustX(actor->angle, speed),
+			actor->y + P_ReturnThrustY(actor->angle, speed))
+		&& speed > 0) // can't be the same check as previous so that P_TryMove gets to happen.
+		{
+			int32_t direction = UPPER8(actor->extradata);
+
+			switch (direction)
+			{
+				case TMGD_BACK:
+				default:
+					actor->angle += ANG180;
+					break;
+				case TMGD_RIGHT:
+					actor->angle -= ANG90;
+					break;
+				case TMGD_LEFT:
+					actor->angle += ANG90;
+					break;
+			}
+		}
+
+		if (LOWER8(actor->extradata) < aInfo->speed)
+		{
+			const uint8_t newvalue = LOWER8(actor->extradata) + 1;
+			SETLOWER8(actor->extradata, newvalue);
+		}
+	}
+	else if (actor->target) // Break ranks!
+	{
+		actor->flags2 |= MF2_SHOOTABLE;
+
+		// turn towards movement direction if not there yet
+		if (actor->movedir < 8)
+		{
+			actor->angle &= (7<<29);
+			delta = actor->angle - (actor->movedir << 29);
+
+			if (delta > 0)
+				actor->angle -= ANG45;
+			else if (delta < 0)
+				actor->angle += ANG45;
+		}
+
+		// chase towards player
+		if (--actor->movecount < 0 || !P_Move(actor, (actor->flags2 & MF2_SPAWNEDJETS) ? aInfo->speed * 2 : aInfo->speed))
+		{
+			P_NewChaseDir(actor);
+//			actor->movecount += 5; // Increase tics before change in direction allowed.
+		}
+	}
+
+	// Shields should think and move on their own.
+	// They are spawned immediately after the guard, so it will think
+	// next all by itself, no need to call it here.
+
+/*
+	// Now that we've moved, its time for our shield to move!
+	// Otherwise it'll never act as a proper overlay.
+	if (actor->tracer && actor->tracer->state
+	&& actor->tracer->state->action.acp1)
+	{
+		var1 = actor->tracer->state->var1, var2 = actor->tracer->state->var2;
+		actor->tracer->state->action.acp1(actor->tracer);
+	}*/
+}
+
+// Function: A_EggShield
+//
+// Description: Modified A_Chase for Egg Guard's shield
+//
+// var1 = unused
+// var2 = unused
+//
+void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	fixed_t blockdist;
+	fixed_t newx, newy;
+	fixed_t movex, movey;
+	angle_t angle;
+	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
+
+	if (!actor->target || !actor->target->health)
+	{
+		actor->latecall = LC_REMOVE_MOBJ;
+		return;
+	}
+
+	newx = actor->target->x + P_ReturnThrustX(actor->target->angle, FRACUNIT);
+	newy = actor->target->y + P_ReturnThrustY(actor->target->angle, FRACUNIT);
+
+	movex = newx - actor->x;
+	movey = newy - actor->y;
+
+	actor->angle = actor->target->angle;
+	actor->z = actor->target->z;
+
+	actor->floorz = actor->target->floorz;
+	actor->ceilingz = actor->target->ceilingz;
+
+	if (!movex && !movey)
+		return;
+
+	P_SetThingPositionConditionally(actor, newx, newy, R_PointInSubsector2(actor->x, actor->y));
+
+	// Search for players to push
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		const player_t *player = &players[i];
+
+		if (!player->mo)
+			continue;
+
+		if (player->mo->z > actor->z + (actor->theight << FRACBITS))
+			continue;
+
+		if (player->mo->z + (player->mo->theight << FRACBITS) < actor->z)
+			continue;
+
+		const mobjinfo_t *pInfo = &mobjinfo[MT_PLAYER];
+
+		blockdist = aInfo->radius + pInfo->radius;
+
+		if (D_abs(actor->x - player->mo->x) >= blockdist || D_abs(actor->y - player->mo->y) >= blockdist)
+			continue; // didn't hit it
+
+		angle = R_PointToAngle2(actor->x, actor->y, player->mo->x, player->mo->y) - actor->angle;
+
+		if (angle > ANG90 && angle < ANG270)
+			continue;
+
+		// Blocked by the shield
+		player->mo->momx += movex;
+		player->mo->momy += movey;
+		return;
+	}
+}
+
+void A_EggShieldBroken(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	mobj_t *guard = actor->target;
+
+	if (!guard || guard->health == 0)
+		return;
+
+	// Lost the shield, so get mad!!!
+	actor->target = NULL;
+	guard->threshold = 42;
+	P_SetMobjState(guard, mobjinfo[guard->type].painstate);
+	guard->flags2 |= MF2_SHOOTABLE;
+}
+
+void A_TurretPower(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	actor->target = NULL;
+
+	// Find closest player
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		if (players[i].playerstate != PST_LIVE)
+			continue;
+
+		if (P_AproxDistance(actor->x - players[i].mo->x, actor->y - players[i].mo->y) < 2048*FRACUNIT)
+		{
+			actor->target = players[i].mo;
+			break;
+		}
+	}
+
+	if (!actor->target)
+		return;
+
+	S_StartSound(actor, mobjinfo[actor->type].activesound);
+	actor->reactiontime = TICRATE >> 1;
+}
+
+void A_TurretFire(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	if (actor->reactiontime > 0)
+	{
+		actor->reactiontime--;
+		if (actor->reactiontime == 0)
+		{
+			P_SetMobjState(actor, mobjinfo[actor->type].spawnstate);
+			return;
+		}
+	}
+	if (actor->reactiontime == 0)
+		actor->reactiontime = TICRATE >> 1;
+
+	actor->target = NULL;
+
+	// Find closest player
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		if (players[i].playerstate != PST_LIVE)
+			continue;
+
+		if (P_AproxDistance(actor->x - players[i].mo->x, actor->y - players[i].mo->y) < 2048*FRACUNIT)
+		{
+			actor->target = players[i].mo;
+			break;
+		}
+	}
+
+	if (!actor->target)
+		return;
+
+	// Shoot at them
+	P_SpawnMissile(actor, actor->target, mobjinfo[actor->type].mass);
+	S_StartSound(actor, mobjinfo[actor->type].attacksound);
+}
+
+void A_DetonChase(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	fixed_t xyspeed;
+	fixed_t speed = mobjinfo[actor->type].speed;
+
+	actor->flags2 &= ~MF2_ENEMY;
+	actor->flags2 |= MF2_MISSILE;
+
+	fixed_t xydist = P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y);
+	angle_t exact = R_PointToAngle2(0, 0, xydist, actor->target->z - actor->z)>>ANGLETOFINESHIFT;
+	xyspeed = FixedMul(FixedMul(speed,3*FRACUNIT/4), finecosine(exact));
+	actor->momz = FixedMul(FixedMul(speed,3*FRACUNIT/4), finesine(exact));
+
+	if (actor->target && actor->target->health > 0)
+		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
+
+	P_InstaThrust(actor, actor->angle, xyspeed);
+
+	// Variable re-use
+	xyspeed = (P_AproxDistance(actor->target->x - actor->x, P_AproxDistance(actor->target->y - actor->y, actor->target->z - actor->z))>>(FRACBITS+6));
+
+	if (xyspeed < 1)
+		xyspeed = 1;
+
+	// Beep faster the closer you get
+	if (xydist < 256*FRACUNIT && (leveltime % xyspeed == 0))
+		S_StartSound(actor, sfx_deton);
+
+	if (xydist < 16*FRACUNIT)
+		P_SetMobjState(actor, mobjinfo[actor->type].deathstate);
+}
+
 /*============================================================================= */
 
 /* a move in p_base.c caused a missile to hit another thing or wall */
@@ -1672,7 +2317,7 @@ void L_MissileHit (mobj_t *mo)
 	mobj_t	*missilething;
 	const mobjinfo_t* moinfo = &mobjinfo[mo->type];
 
-	missilething = (mobj_t *)mo->extradata;
+	missilething = (mobj_t *)SPTR_TO_LPTR(mo->extradata);
 	if (missilething)
 	{
 		mo->extradata = 0;

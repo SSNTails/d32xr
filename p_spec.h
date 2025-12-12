@@ -14,10 +14,10 @@
 typedef struct
 {
 	char	istexture;
-	VINT	picnum;
-	VINT	basepic;
-	VINT	numpics;
-	VINT	current;
+	char	numpics;
+	uint8_t	picnum;
+	uint8_t	basepic;
+	char	current;
 } anim_t;
 
 /* */
@@ -39,8 +39,8 @@ extern	anim_t	*anims/*[MAXANIMS]*/, * lastanim;
 /*	Animating line specials */
 /* */
 #define	MAXLINEANIMS		64
-extern	int		numlinespecials;
-extern	line_t	**linespeciallist/*[MAXLINEANIMS]*/;
+extern	VINT		numlineanimspecials;
+extern	VINT	*linespeciallist/*[MAXLINEANIMS]*/;
 
 
 /*	Define values for map objects */
@@ -54,28 +54,24 @@ void	P_InitPicAnims (void);
 void	P_SpawnSpecials (void);
 
 /* every tic */
-void 	P_UpdateSpecials (void);
+void 	P_UpdateSpecials (int8_t numframes);
 
 void 	P_PlayerInSpecialSector (player_t *player);
 
-int		twoSided(int sector,int line);
 sector_t *getSector(int currentSector,int line,int side);
 side_t	*getSide(int currentSector,int line, int side);
-fixed_t	P_FindLowestFloorSurrounding(sector_t *sec);
-fixed_t	P_FindHighestFloorSurrounding(sector_t *sec);
-fixed_t	P_FindNextHighestFloor(sector_t *sec,int currentheight);
-fixed_t	P_FindNextLowestFloor(sector_t *sec,int currentheight);
-fixed_t	P_FindLowestCeilingSurrounding(sector_t *sec);
-fixed_t	P_FindHighestCeilingSurrounding(sector_t *sec);
+sector_t *P_FindLowestFloorSurrounding(sector_t *sec);
+sector_t *P_FindHighestFloorSurrounding(sector_t *sec);
+sector_t *P_FindNextHighestFloor(sector_t *sec, fixed_t currentheight);
+sector_t *P_FindNextLowestFloor(sector_t *sec, fixed_t currentheight);
+sector_t *P_FindNextHighestCeiling(sector_t *sec, fixed_t currentheight);
+sector_t *P_FindLowestCeilingSurrounding(sector_t *sec);
+sector_t *P_FindHighestCeilingSurrounding(sector_t *sec);
 VINT P_FindSectorWithTag(VINT tag, int start);
 int		P_FindSectorFromLineTag(line_t	*line,int start);
+int     P_FindSectorFromLineTagNum(uint8_t tag,int start);
 int		P_FindMinSurroundingLight(sector_t *sector,int max);
 sector_t *getNextSector(line_t *line,sector_t *sec);
-
-/* */
-/*	SPECIAL */
-/* */
-int EV_DoDonut(line_t *line);
 
 /*
 ===============================================================================
@@ -185,14 +181,8 @@ typedef struct
 #define	PLATSPEED	(FRACUNIT*THINKERS_TICS)
 #define	MAXPLATS	16
 
-extern	plat_t	**activeplats/*[MAXPLATS]*/;
-
 void	T_PlatRaise(plat_t	*plat);
 int		EV_DoPlat(line_t *line,plattype_e type,int amount);
-void	P_AddActivePlat(plat_t *plat);
-void	P_RemoveActivePlat(plat_t *plat);
-void	EV_StopPlat(line_t *line);
-void	P_ActivateInStasis(int tag);
 
 /*
 ===============================================================================
@@ -203,26 +193,79 @@ void	P_ActivateInStasis(int tag);
 */
 typedef enum
 {
-	lowerToFloor,
-	raiseToHighest,
-	lowerAndCrush,
 	crushAndRaise,
-	fastCrushAndRaise,
-	silentCrushAndRaise
+	raiseAndCrush,
+	raiseCeiling,
 } ceiling_e;
 
 typedef struct
 {
 	thinker_t	thinker;
-	ceiling_e	type;
 	sector_t	*sector;
-	fixed_t		bottomheight, topheight;
-	fixed_t		speed;
-	VINT		crush;
-	VINT		direction;		/* 1 = up, 0 = waiting, -1 = down */
-	VINT		olddirection;
-	VINT		tag;			/* ID */
+	VINT		bottomheight, topheight;
+	fixed_t     downspeed;
+	fixed_t     upspeed;
+	uint8_t		type;
+	uint8_t		crush;
+	int8_t		direction;		/* 1 = up, 0 = waiting, -1 = down */
 } ceiling_t;
+
+typedef struct
+{
+	thinker_t thinker;
+	sector_t *fofSector;
+	sector_t *watersec;
+	sector_t *targetSector;
+	fixed_t speed;
+	fixed_t distance;
+	fixed_t floorwasheight;
+	fixed_t ceilingwasheight;
+	boolean low;
+} bouncecheese_t;
+
+void EV_BounceSector(sector_t *fofsec, sector_t *targetSector, fixed_t momz, VINT heightsec);
+
+typedef struct
+{
+	thinker_t thinker;
+	VINT *lines;
+	VINT numlines;
+	VINT totalLines;
+	sector_t *ctrlSector;
+} scrolltex_t;
+
+typedef struct {
+	thinker_t thinker;
+	VINT *sectors;
+	VINT numsectors;
+	VINT totalSectors;
+	line_t *ctrlLine;
+	boolean carry;
+} scrollflat_t;
+
+typedef struct {
+	thinker_t thinker;
+	VINT *sectorData;
+	VINT numsectors;
+	VINT timer;
+} lightningspawn_t;
+
+void P_SpawnLightningStrike(boolean close);
+
+typedef enum
+{
+	TMM_DOUBLESIZE      = 1,
+	TMM_SILENT          = 1<<1,
+	TMM_ALLOWYAWCONTROL = 1<<2,
+	TMM_SWING           = 1<<3,
+	TMM_MACELINKS       = 1<<4,
+	TMM_CENTERLINK      = 1<<5,
+	TMM_CLIP            = 1<<6,
+	TMM_ALWAYSTHINK     = 1<<7,
+} textmapmaceflags_t;
+
+void P_PreallocateMaces(int numMaces);
+void P_AddMaceChain(mapthing_t *point, vector3_t *axis, vector3_t *rotation, VINT *args);
 
 #define	CEILSPEED		FRACUNIT*THINKERS_TICS
 #define MAXCEILINGS		16
@@ -231,10 +274,6 @@ extern	ceiling_t	**activeceilings/*[MAXCEILINGS]*/;
 
 int		EV_DoCeiling (line_t *line, ceiling_e  type);
 void	T_MoveCeiling (ceiling_t *ceiling);
-void	P_AddActiveCeiling(ceiling_t *c);
-void	P_RemoveActiveCeiling(ceiling_t *c);
-int		EV_CeilingCrushStop(line_t	*line);
-void	P_ActivateInStasisCeiling(line_t *line);
 
 /*
 ===============================================================================
@@ -253,33 +292,40 @@ typedef enum
 	raiseToTexture,		/* raise floor to shortest height texture around it */
 	lowerAndChange,		/* lower floor to lowest surrounding floor and change */
 						/* floorpic */
-	raiseFloor24,
-	raiseFloor24AndChange,
-	raiseFloorCrush,
-	raiseFloorTurbo,	/* raise to next highest floor, turbo-speed */
-	donutRaise,
-	raiseFloor512,
 	floorContinuous,
+	bothContinuous,
+	continuousMoverFloor,
+	continuousMoverCeiling,
 	eggCapsuleOuter,
 	eggCapsuleInner,
 	eggCapsuleOuterPop,
 	eggCapsuleInnerPop,
+	moveFloorByFrontSector,
+	moveCeilingByFrontSector,
+	thz2DropBlock,
 } floor_e;
 
 typedef struct
 {
 	thinker_t	thinker;
-	VINT		type;
-	VINT		crush;
 	sector_t	*sector;
 	sector_t    *controlSector;
-	int			newspecial;
-	VINT		direction;
-	VINT		texture;
-	VINT        floorwasheight;
-	VINT		floordestheight;
 	fixed_t     origSpeed;
 	fixed_t		speed;
+	VINT		sourceline;
+	VINT        lowestSector;
+	VINT        highestSector;
+	VINT        dontChangeSector;
+	VINT        floorwasheight;
+	VINT		floordestheight;
+	VINT        ceilDiff;
+	VINT        delay; // like 'origSpeed'... set only at start
+	VINT        delayTimer; // the actual counter
+	VINT		type;
+	uint8_t		crush;
+	int8_t		direction;
+	uint8_t		texture;
+	uint8_t     tag;
 } floormove_t;
 
 typedef enum
@@ -293,15 +339,14 @@ typedef enum
 typedef enum
 {
 	ok,
-	crushed,
 	pastdest
 } result_e;
 
 result_e	T_MovePlane(sector_t *sector,fixed_t speed,
-			fixed_t dest,boolean crush,int floorOrCeiling,int direction);
+			fixed_t dest,boolean changeSector,int floorOrCeiling,int direction);
 
-int		EV_BuildStairs(line_t *line, int type);
 int		EV_DoFloor(line_t *line,floor_e floortype);
+int		EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag);
 void	T_MoveFloor(floormove_t *floor);
 
-
+void P_LinedefExecute(uint8_t tag, player_t *player, sector_t *caller);

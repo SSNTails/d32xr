@@ -20,6 +20,8 @@ typedef struct localplane_s
     fixed_t height;
     angle_t angle;
     fixed_t x, y;
+    uint16_t xoff;
+    uint16_t yoff;
     boolean wavy;
 #ifndef SIMPLELIGHT
     int lightmin;
@@ -31,7 +33,11 @@ typedef struct localplane_s
     fixed_t basexscale, baseyscale;
 
 #ifdef MARS
+#ifdef FLATMIPS
     inpixel_t* ds_source[MIPLEVELS];
+#else
+    inpixel_t* ds_source[1];
+#endif
 #else
     pixel_t* ds_source[MIPLEVELS];
 #endif
@@ -41,12 +47,10 @@ typedef struct localplane_s
 #endif
 } localplane_t;
 
-static void (*mapplane)(localplane_t*, int, int, int);
-
 static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2) ATTR_DATA_CACHE_ALIGN;
 static void R_MapColorPlane(localplane_t* lpl, int y, int x, int x2) ATTR_DATA_CACHE_ALIGN;
 static void R_PlaneLoop(localplane_t* lpl) ATTR_DATA_CACHE_ALIGN;
-static void R_DrawPlanes2(void) ATTR_DATA_CACHE_ALIGN;
+static void R_DrawPlanes2(int isFOF) ATTR_DATA_CACHE_ALIGN;
 
 static int  R_TryLockPln(void) ATTR_DATA_CACHE_ALIGN;
 static void R_LockPln(void) ATTR_DATA_CACHE_ALIGN;
@@ -69,7 +73,6 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
 {
     int remaining;
     fixed_t distance;
-    fixed_t ds;
     fixed_t length, xfrac, yfrac, xstep, ystep;
     angle_t angle;
 #ifdef SIMPLELIGHT
@@ -87,14 +90,25 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
 
     distance = FixedMul(lpl->height, yslope[y]);
 
-    ds = distscale[x];
-    ds <<= 1;
-    length = FixedMul(distance, ds);
+#if (MARS && !SIMPLELIGHT)
+    volatile int32_t t;
+    __asm volatile (
+        "mov #-128, r0\n\t"
+        "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+        "mov #0, %0\n\t"
+        "mov.l %2, @(16, r0) /* set high bits of the 64-bit dividend */ \n\t"
+        "mov.l %1, @(0, r0) /* set 32-bit divisor */ \n\t"
+        "mov #0, %0\n\t"
+        "mov.l %0, @(20, r0) /* set low  bits of the 64-bit dividend, start divide */\n\t"
+        : "=&r" (t) : "r" (distance), "r"(lpl->lightcoef) : "r0");
+#endif
+
+    length = FixedMul(distance, distscale[x] << 1);
 
     xstep = FixedMul(distance, lpl->basexscale);
     ystep = FixedMul(distance, lpl->baseyscale);
 
-    const int flatnum = lpl->pl->flatandlight&0xffff;
+    const int flatnum = lpl->pl->flatandlight&0xff;
 
 #if MIPLEVELS > 1 && FLATMIPS
     miplevel = (unsigned)distance / MIPSCALE;
@@ -109,14 +123,14 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     angle = (lpl->angle + (xtoviewangle[x]<<FRACBITS)) >> ANGLETOFINESHIFT;
 
     xfrac = FixedMul(finecosine(angle), length);
-    xfrac = lpl->x + xfrac;
+    xfrac = lpl->x + xfrac - (lpl->xoff << FRACBITS);
     yfrac = FixedMul(finesine(angle), length);
-    yfrac = lpl->y - yfrac;
+    yfrac = lpl->y - yfrac + (lpl->yoff << FRACBITS);
 #ifdef MARS
     yfrac *= flatpixels[flatnum].size;
 #endif
 
-#if MIPLEVELS > 1
+#if MIPLEVELS > 1 && FLATMIPS
     if (miplevel > 0) {
         unsigned m = miplevel;
         do {
@@ -156,7 +170,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     }
 #endif
 
-    if (flatpixels[flatnum].wavy)
+    if (flatpixels[flatnum].flags & FLF_WAVY)
     {
         const int wtofs = 75 * gametic;
         const int peck = (wtofs + (distance >> 10)) & 8191;
@@ -200,6 +214,7 @@ static void R_PlaneLoop(localplane_t *lpl)
     unsigned t1, t2, b1, b2, pl_oldtop, pl_oldbottom;
     int16_t spanstart[SCREENHEIGHT];
     visplane_t* pl = lpl->pl;
+    void (*mapplane)(localplane_t*, int, int, int);
 
     pl_x       = pl->minx;
     pl_stopx   = pl->maxx;
@@ -210,12 +225,15 @@ static void R_PlaneLoop(localplane_t *lpl)
 
     pl_openptr = &pl->open[pl_x];
 
+//    if (pl->isFOF)
+//        CONS_Printf("Top: %d, Bottom: %d", UPPER8(pl->open[pl_x]), LOWER8(pl->open[pl_x]));
+
     t1 = OPENMARK;
     b1 = t1 & 0xff;
     t1 >>= 8;
     t2 = *pl_openptr;
 
-    unsigned short flatnum = lpl->pl->flatandlight;
+    uint8_t flatnum = lpl->pl->flatandlight&0xff;
     if (flatpixels[flatnum].size <= 2) {
         mapplane = &R_MapColorPlane;
     }
@@ -318,12 +336,13 @@ static visplane_t *R_GetNextPlane(uint16_t *sortedvisplanes)
 #endif
 }
 
-static void R_DrawPlanes2(void)
+static void R_DrawPlanes2(int isFOF)
 {
     angle_t angle;
     localplane_t lpl;
     visplane_t* pl;
-    int extralight;
+    fixed_t basexscale, baseyscale;
+    fixed_t basexscale2, baseyscale2;
 
 #ifdef MARS
     Mars_ClearCacheLine(&vd.lastvisplane);
@@ -334,41 +353,66 @@ static void R_DrawPlanes2(void)
     if (vd.gsortedvisplanes == NULL)
         return;
 
-#ifdef FLATDRAW2X
-    lpl.x = vd.viewx/2;
-    lpl.y = -vd.viewy/2;
-#else
-    lpl.x = vd.viewx;
-    lpl.y = -vd.viewy;
-#endif
-
-    lpl.angle = vd.viewangle;
-    angle = (lpl.angle - ANG90) >> ANGLETOFINESHIFT;
-
-    lpl.basexscale = FixedDiv(finecosine(angle), centerXFrac);
-    lpl.baseyscale = -FixedDiv(finesine(angle), centerXFrac);
-#ifdef MARS
-    fixed_t baseyscale = lpl.baseyscale;
-#endif
-    extralight = vd.extralight;
+    angle = (vd.viewangle - ANG90) >> ANGLETOFINESHIFT;
+    basexscale = FixedDiv(finecosine(angle), centerXFrac);
+    baseyscale = -FixedDiv(finesine(angle), centerXFrac);
+    angle = (vd.viewangle) >> ANGLETOFINESHIFT;
+    basexscale2 = FixedDiv(finecosine(angle), centerXFrac);
+    baseyscale2 = -FixedDiv(finesine(angle), centerXFrac);
 
     while ((pl = R_GetNextPlane((uint16_t *)vd.gsortedvisplanes)) != NULL)
     {
         int light;
 
+        if (!isFOF && (pl->flags & VPFLAGS_ISFOF))
+            continue;
+        else if (isFOF && !(pl->flags & VPFLAGS_ISFOF))
+            continue;
+        
 #ifdef MARS
         Mars_ClearCacheLines(pl, (sizeof(visplane_t) + 31) / 16);
 #endif
-
+        
         if (pl->minx > pl->maxx)
             continue;
 
-        const int flatnum = pl->flatandlight&0xffff;
+        const int flatnum = pl->flatandlight&0xff;
 
-        lpl.wavy = flatpixels[flatnum].wavy;
+        if (flatpixels[flatnum].flags & FLF_ROTATE)
+        {
+#ifdef FLATDRAW2X
+            lpl.x = -(vd.viewy >> 1);
+            lpl.y = -(vd.viewx >> 1);
+#else
+            lpl.x = -vd.viewy;
+            lpl.y = -vd.viewx;
+#endif
+            lpl.angle = vd.viewangle + ANG90;
+            lpl.basexscale = basexscale2;
+            lpl.baseyscale = baseyscale2;
+            lpl.xoff = LOWER8(pl->offs);
+            lpl.yoff = UPPER8(pl->offs);
+        }
+        else
+        {
+#ifdef FLATDRAW2X
+            lpl.x = vd.viewx >> 1;
+            lpl.y = -(vd.viewy >> 1);
+#else
+            lpl.x = vd.viewx;
+            lpl.y = -vd.viewy;
+#endif
+            lpl.angle = vd.viewangle;
+            lpl.basexscale = basexscale;
+            lpl.baseyscale = baseyscale;
+            lpl.xoff = UPPER8(pl->offs);
+            lpl.yoff = LOWER8(pl->offs);
+        }
+
+        lpl.wavy = flatpixels[flatnum].flags & FLF_WAVY;
 
 #ifdef MARS
-        lpl.baseyscale = baseyscale * flatpixels[flatnum].size;
+        lpl.baseyscale *= flatpixels[flatnum].size;
 #endif
 
         I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
@@ -408,18 +452,17 @@ static void R_DrawPlanes2(void)
         else
         {
 #ifdef SIMPLELIGHT
-            light = ((unsigned)pl->flatandlight>>16);
-            lpl.lightmax = HWLIGHT((unsigned)((light + extralight) & 0xff));
+            light = ((unsigned)pl->flatandlight>>8);
+            lpl.lightmax = HWLIGHT((unsigned)((light) & 0xff));
 #else
-            light = ((unsigned)pl->flatandlight>>16);
-            lpl.lightmax = (light + extralight) & 0xff;
+            light = ((unsigned)pl->flatandlight>>8);
+            lpl.lightmax = (light) & 0xff;
 
 #ifdef MARS
-            light = light - ((255 - light - light/2) << 1);
+            light = light - ((255 - light - light/2) * 2);
 #else
-            light = light - ((255 - light) << 1);
+            light = light - ((255 - light) * 2);
 #endif
-            light += extralight;
             if (light < MINLIGHT)
                 light = MINLIGHT;
             if (light > lpl.lightmax)
@@ -455,9 +498,9 @@ static void R_DrawPlanes2(void)
 static void Mars_R_SplitPlanes(void) ATTR_DATA_CACHE_ALIGN;
 static void Mars_R_SortPlanes(void) ATTR_DATA_CACHE_ALIGN;
 
-void Mars_Sec_R_DrawPlanes(void)
+void Mars_Sec_R_DrawPlanes(int isFOF)
 {
-    R_DrawPlanes2();
+    R_DrawPlanes2(isFOF);
 }
 
 static void Mars_R_SplitPlanes(void)
@@ -500,6 +543,8 @@ static void Mars_R_SplitPlanes(void)
             newpl->open = pl->open;
             newpl->height = pl->height;
             newpl->flatandlight = pl->flatandlight;
+            newpl->flags = pl->flags;
+            newpl->offs = pl->offs;
             newpl->minx = start + 1;
             newpl->maxx = newstop;
 
@@ -525,14 +570,14 @@ static void Mars_R_SortPlanes(void)
     numplanes = 0;
     for (pl = vd.visplanes + 1; pl < vd.lastvisplane; pl++)
     {
-        // composite sort key: 1b - sign bit, 3b - negated span length, 12b - flat+light
-        unsigned key = (unsigned)(pl->maxx - pl->minx - 1) >> 6;
-        if (key > 5) {
-            key = 5;
+        // composite sort key: 1b - sign bit, 1b - !isFOF, 6b - negated span length, 8b - flat
+        unsigned key = (unsigned)(pl->maxx - pl->minx - 1) >> 5;
+        if (key > 63) {
+            key = 63;
         }
         // to minimize pipeline stalls, the larger planes must be drawn first, hence length negation
-        key = (5 - key) << 12;
-        key |= (pl->flatandlight & 0xFFF);
+        key = (63 - key) << 8;
+        key |= (pl->flatandlight & 0xFF);
         sortbuf[i + 0] = key;
         sortbuf[i + 1] = ++numplanes;
         i += 2;
@@ -595,9 +640,13 @@ void R_DrawPlanes(void)
 
     Mars_R_BeginDrawPlanes();
 
-    R_DrawPlanes2();
+    R_DrawPlanes2(0);
 
-    Mars_R_EndDrawPlanes();
+//    Mars_R_EndDrawPlanes();
+
+    // Wait for secondary CPU here
+    Mars_R_BeginDrawFOFPlanes();
+    R_DrawPlanes2(1);
 #else
     R_DrawPlanes2();
 #endif

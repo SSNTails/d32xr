@@ -133,7 +133,7 @@ _start:
 
 | 0x880880 - 68000 Level 4 interrupt handler - HBlank IRQ
 
-        rte
+        jmp     horizontal_blank    /* This jump is only used by Gens */
 
         .align  64
 
@@ -185,18 +185,18 @@ init_hardware:
         move.w  #0x8004,(a0) /* reg 0 = /IE1 (no HBL INT), /M3 (enable read H/V cnt) */
         move.w  #0x8114,(a0) /* reg 1 = /DISP (display off), /IE0 (no VBL INT), M1 (DMA enabled), /M2 (V28 mode) */
         move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
-        move.w  #0x832C,(a0) /* reg 3 = Name Tbl W = 0xB000 */
+        move.w  #0x8328,(a0) /* reg 3 = Name Tbl W = 0xA000 */
         move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        move.w  #0x8554,(a0) /* reg 5 = Sprite Attr Tbl = 0xA800 */
+        move.w  #0x8504,(a0) /* reg 5 = Sprite Attr Tbl = 0x0800 */
         move.w  #0x8600,(a0) /* reg 6 = always 0 */
         move.w  #0x8700,(a0) /* reg 7 = BG color */
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
         move.w  #0x8900,(a0) /* reg 9 = always 0 */
         move.w  #0x8A00,(a0) /* reg 10 = HINT = 0 */
-        |move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
-        move.w  #0x8D2B,(a0) /* reg 13 = HScroll Tbl = 0xAC00 */
+        move.w  #0x8D00,(a0) /* reg 13 = HScroll Tbl = 0x0000 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
         move.w  #0x8F01,(a0) /* reg 15 = data INC = 1 */
         move.w  #0x9010,(a0) /* reg 16 = Scroll Size = 32x64 */
@@ -213,8 +213,8 @@ init_hardware:
         dbra    d1,0b
 
 | The VDP state at this point is: Display disabled, ints disabled, Name Tbl A at 0xC000,
-| Name Tbl B at 0xE000, Name Tbl W at 0xB000, Sprite Attr Tbl at 0xA800, HScroll Tbl at 0xAC00,
-| H40 V28 mode, and Scroll size is 64x32.
+| Name Tbl B at 0xE000, Sprite Attr Tbl at 0x0800, HScroll Tbl at 0x0000, H40 V28 mode,
+| and Scroll size is 64x32.
 
 | Clear CRAM
         move.l  #0x81048F01,(a0)        /* set reg 1 and reg 15 */
@@ -238,7 +238,7 @@ init_hardware:
         move.l  #0x00000000,(a1)        /* set background color to black */
 
 | init controllers
-        jsr     chk_ports
+        |jsr     chk_ports
 
 | setup Z80 for FM music
         move.w  #0x0100,0xA11100        /* Z80 assert bus request */
@@ -350,7 +350,97 @@ read_long:
 do_main:
 | make sure save ram is disabled
         move.w  #0x2700,sr          /* disable ints */
+        clr_rv
+
+.ifdef CHECKSUM
+calculate_checksum:
+        move.w  0x88018E,d5
+        |cmpi.w  #0,d5               /* should we skip the checksum routine? */
+        |beq.w   checksum_pass
+
+        lea     0x880200,a1         /* skip the ROM header */
+        move.w  #0xFFBF,d1          /* read 512 bytes less for the first bank */
+
+        moveq   #0,d0               /* initialize the word accumulator */
+
+        move.w  0x8801A4,d2         /* get the upper word of the ROM size */
+        lsr.w   #3,d2               /* last bank */
+        move.w  d2,d3
+        cmpi.w  #8,d2
+        blo.s   0f
+        move.b  #7,d2
+
+| Handle the first page (512KB) of ROM with RV=0 to avoid hardware bugs with ROM reads.
+0:
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        dbra    d1,0b
+
+        move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
+        subq    #1,d2
         set_rv
+        lea     0x80000,a1          /* start at the second page with remapped memory */
+
+| Handle the next seven pages (3.5MB) of ROM with RV=1
+1:
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        dbra    d1,1b
+
+        move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
+        dbra    d2,1b
+
+        cmpi.b  #8,d3               /* are there fewer than 8 banks total? */
+        blo.b   checksum_validation
+
+| Handle bytes beyond the first 4MB of ROM
+        move.w  d3,d2               /* bank counter */
+        sub.b   #8,d2               /* skip the first 8 banks */
+
+        lea     0xA130FD,a0         /* switch banks on offset 0x300000 */
+2:
+        lea     0x300000,a1         /* go back to the start of the bank */
+        move.b  d3,d4
+        sub.b   d2,d4
+        move.b  d4,(a0)             /* point to the next bank */
+3:
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        dbra    d1,3b
+
+        move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
+        dbra    d2,2b
+
+        move.b  #6,(a0)             /* reset bank */
+
+checksum_validation:
+        cmp.w   d0,d5               /* is the checksum correct? */
+        beq.s   checksum_pass
+
+checksum_fail:
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.l  #0xC0000000,(a0)    /* write CRAM address 0 */
+        move.w  #0x000E,(a1)        /* set background color to red */
+checksum_fail_lock:
+        bra.s   checksum_fail_lock  /* forever loop */
+
+checksum_pass:
+
+.else
+        set_rv
+.endif
+
+setup_horizontal_interrupt:
+        move.l  #horizontal_blank,0x70  /* Stay within RAM */
+
+| check flash cart status
         cmpi.w  #2,megasd_ok
         beq.b   1f
         tst.w   everdrive_ok
@@ -368,7 +458,60 @@ do_main:
         clr_rv
         move.w  #0x2000,sr          /* enable ints */
 
+check_emulator:
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        | Clear the first word in VRAM
+        move.w  #0x8174,(a0)
+        move.l  #0x40200000,(a0)        /* Write VRAM address 0 */
+        move.w  #0x0000,(a1)
+0:
+        move.w  (a0),d0                 /* Wait for VBlank */
+        btst    #3,d0
+        beq.s   0b
+1:
+        move.w  (a0),d0                 /* Wait for VBlank to end */
+        btst    #3,d0
+        bne.s   1b
+
+        | Write a word to VRAM with 128KB mode
+        move.w  #0x81F4,(a0)
+        move.l  #0x40200000,(a0)        /* Write VRAM address 0x0020 */
+        move.w  #0x0102,(a1)
+2:
+        move.w  (a0),d0                 /* Wait for VBlank */
+        btst    #3,d0
+        beq.s   2b
+3:
+        move.w  (a0),d0                 /* Wait for VBlank to end */
+        btst    #3,d0
+        bne.s   3b
+
+        | Disable 128KB VRAM mode
+        move.w  #0x8174,(a0)
+        move.l  #0x00200000,(a0)        /* Read VRAM address 0x0020 */
+        move.w  (a1),d0
+
+        | Determine if this is an older emulator
+        move.b  #0,legacy_emulator
+        cmpi.w  #0x0002,d0
+        beq.s   main_loop_start
+
+        | 128KB VRAM Mode is unsupported by this emulator
+        move.b  #2,legacy_emulator      /* Assume Kega Fusion, but could be Gens */
+
+        | Check what value is returned from the debug register
+        lea     0xC0001C,a0
+        move    (a0),d0
+        cmpi.w  #0xFFFF,d0
+        beq.s   main_loop_start
+
+        | The debug register did not return -1
+        move.b  #3,legacy_emulator      /* Emulator determined to be Gens */
+
 main_loop_start:
+        move.b  legacy_emulator,0xA1512F    /* Allow the SH-2s to see this */
         move.w  0xA15100,d0
         or.w    #0x8000,d0
         move.w  d0,0xA15100         /* set FM - allow SH2 access to MARS hw */
@@ -379,6 +522,8 @@ main_loop:
         beq.b   main_loop_bump_fm
         move.b  #0,need_ctrl_int
         /* send controller values to primary sh2 */
+        nop                         /* prevent soft lock in Gens (why does this work?) */
+        nop                         /* prevent soft lock in Gens (why does this work?) */
         move.w  #0x0001,0xA15102    /* assert CMD INT to primary SH2 */
 10:
         move.w  0xA15120,d0         /* wait on handshake in COMM0 */
@@ -429,20 +574,16 @@ main_loop_handle_req:
         move.b  #60,hotplug_cnt
 
         move.w  ctrl1_val,d0
-        cmpi.w  #0xF001,d0
-        beq.b   0f                  /* mouse in port 1, check port 2 */
         cmpi.w  #0xF000,d0
         beq.b   1f                  /* no pad in port 1, do hot-plug check */
 0:
         tst.b   net_type
         bne.w   main_loop           /* networking enabled, ignore port 2 */
         move.w  ctrl2_val,d0
-        cmpi.w  #0xF001,d0
-        beq.w   main_loop           /* mouse in port 2, exit */
         cmpi.w  #0xF000,d0
         bne.w   main_loop           /* pad in port 2, exit */
 1:
-        bsr     chk_ports
+        |bsr     chk_ports
         bra.w   main_loop
 
 | process request from Master SH2
@@ -465,7 +606,7 @@ no_cmd:
         dc.w    write_sram - prireqtbl            /* 0x02 */
         dc.w    start_music - prireqtbl           /* 0x03 */
         dc.w    stop_music - prireqtbl            /* 0x04 */
-        dc.w    read_mouse - prireqtbl            /* 0x05 */
+        dc.w    crossfade_md_palette - prireqtbl  /* 0x05 */
         dc.w    read_cdstate - prireqtbl          /* 0x06 */
         dc.w    set_usecd - prireqtbl             /* 0x07 */
         dc.w    set_crsr - prireqtbl              /* 0x08 */
@@ -485,10 +626,10 @@ no_cmd:
         dc.w    set_bank_page - prireqtbl         /* 0x16 */
         dc.w    net_set_link_timeout - prireqtbl  /* 0x17 */
         dc.w    set_music_volume - prireqtbl      /* 0x18 */
-        dc.w    ctl_md_vdp - prireqtbl            /* 0x19 */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1A */ /* DLG: */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1B */ /* DLG: */
-        dc.w    /* cpy_md_vram */ no_cmd - prireqtbl           /* 0x1C */ /* DLG: */
+        dc.w    set_gamemode - prireqtbl          /* 0x19 */
+        dc.w    set_scroll_positions - prireqtbl  /* 0x1A */
+        dc.w    load_md_palettes - prireqtbl      /* 0x1B */
+        dc.w    queue_register_write - prireqtbl  /* 0x1C */
         dc.w    load_sfx - prireqtbl              /* 0x1D */
         dc.w    play_sfx - prireqtbl              /* 0x1E */
         dc.w    get_sfx_status - prireqtbl        /* 0x1F */
@@ -537,13 +678,14 @@ rd_msd_sram:
         bra.w   exit_rd_sram
 
 rd_med_sram:
+        add.l   d0,d0
         tst.b   everdrive_ok
         bne.b   1f                  /* v1 or v2a MED */
         lea     0x040000,a0         /* use the upper 256K of page 31 */
         sh2_wait
         set_rv
         move.w  #0x801F,0xA130F0    /* map bank 0 to page 31, disable write */
-        move.b  0(a0,d0.l),d1       /* read SRAM */
+        move.b  1(a0,d0.l),d1       /* read SRAM */
         move.w  #0x8000,0xA130F0    /* map bank 0 to page 0, disable write */
         bra.b   exit_rd_sram
 1:
@@ -551,7 +693,7 @@ rd_med_sram:
         sh2_wait
         set_rv
         move.w  #0x801C,0xA130F0    /* map bank 0 to page 28, disable write */
-        move.b  0(a0,d0.l),d1       /* read SRAM */
+        move.b  1(a0,d0.l),d1       /* read SRAM */
         move.w  #0x8000,0xA130F0    /* map bank 0 to page 0, disable write */
 
 exit_rd_sram:
@@ -593,13 +735,14 @@ wr_msd_sram:
         bra.w   exit_wr_sram
 
 wr_med_sram:
+        add.l   d1,d1
         tst.b   everdrive_ok
         bne.b   1f                  /* v1 or v2a MED */
         lea     0x040000,a0         /* use the upper 256K of page 31 */
         sh2_wait
         set_rv
         move.w  #0xA01F,0xA130F0    /* map bank 0 to page 31, enable write */
-        move.b  d0,0(a0,d1.l)       /* write SRAM */
+        move.b  d0,1(a0,d1.l)       /* write SRAM */
         move.w  #0x8000,0xA130F0    /* map bank 0 to page 0, disable write */
         bra.b   exit_wr_sram
 1:
@@ -607,7 +750,7 @@ wr_med_sram:
         sh2_wait
         set_rv
         move.w  #0xA01C,0xA130F0    /* map bank 0 to page 28, enable write */
-        move.b  d0,0(a0,d1.l)       /* write SRAM */
+        move.b  d0,1(a0,d1.l)       /* write SRAM */
         move.w  #0x8000,0xA130F0    /* map bank 0 to page 0, disable write */
 
 exit_wr_sram:
@@ -686,7 +829,7 @@ start_music:
         bsr     set_rom_bank
 
         move.l  a1,-(sp)            /* MD lump ptr */
-        jsr     vgm_setup           /* setup lzss, set pcm_baseoffs, set vgm_ptr, read first block */
+        jsr     vgm_setup           /* setup lzexe, set pcm_baseoffs, set vgm_ptr, read first block */
         lea     4(sp),sp
 
         /* start VGM on Z80 */
@@ -715,7 +858,7 @@ start_music:
         bne.b   3b
 
 | FM setup
-        movea.l vgm_ptr,a6          /* lzss buffer */
+        movea.l vgm_ptr,a6          /* lzexe buffer */
         lea     0x1C(a6),a6         /* loop offset */
 | get vgm loop offset
         move.b  (a6)+,d0
@@ -956,56 +1099,6 @@ stop_cd:
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 
-read_mouse:
-        tst.b   d0
-        bne.b   1f                  /* skip port 1 */
-
-        move.w  ctrl1_val,d0
-        cmpi.w  #0xF001,d0
-        bne.b   1f                  /* no mouse in port 1 */
-        lea     0xA10003,a0
-        bsr     get_mky
-        cmpi.l  #-1,d0
-        beq.b   no_mky1
-        bset    #31,d0
-        move.w  d0,0xA15122
-        swap    d0
-        move.w  d0,0xA15120
-0:
-        move.w  0xA15120,d0
-        bne.b   0b                  /* wait for SH2 to read mouse value */
-        bra     main_loop
-1:
-        move.w  ctrl2_val,d0
-        cmpi.w  #0xF001,d0
-        bne.b   no_mouse            /* no mouse in port 2 */
-        lea     0xA10005,a0
-        bsr     get_mky
-        cmpi.l  #-1,d0
-        beq.b   no_mky2
-        bset    #31,d0
-        move.w  d0,0xA15122
-        swap    d0
-        move.w  d0,0xA15120
-2:
-        move.w  0xA15120,d0
-        bne.b   2b                  /* wait for SH2 to read mouse value */
-        bra     main_loop
-
-no_mky1:
-        move.w  #0xF000,ctrl1_val    /* nothing in port 1 */
-        bra.b   no_mouse
-no_mky2:
-       move.w   #0xF000,ctrl2_val    /* nothing in port 2 */
-no_mouse:
-        moveq   #-1,d0              /* no mouse */
-        move.w  d0,0xA15122
-        swap    d0
-        move.w  d0,0xA15120
-4:
-        move.w  0xA15120,d0
-        bne.b   4b                  /* wait for SH2 to read mouse value */
-        bra     main_loop
 
 
 read_cdstate:
@@ -1133,8 +1226,8 @@ ext_link:
         /* timeout during handshake - shut down link net */
         clr.b   net_type
         clr.l   extint
-        |move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.b  #0x40,0xA1000B      /* port 2 to neutral setting */
         nop
         nop
@@ -1153,8 +1246,8 @@ init_serial:
         clr.w   net_rbix
         clr.w   net_wbix
         move.l  #ext_serial,extint  /* serial read data ready handler */
-        |move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
-        move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
+        move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
+        |move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 
@@ -1170,8 +1263,8 @@ init_link:
         clr.w   net_rbix
         clr.w   net_wbix
         move.l  #ext_link,extint    /* TH INT handler */
-        |move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
-        move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
+        move.w  #0x8B08,0xC00004    /* reg 11 = IE2 (enable EXT INT), full scroll */
+        |move.w  #0x8B0B,0xC00004    /* reg 11 = IE2 (enable EXT INT), line scroll */
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 
@@ -1344,8 +1437,8 @@ net_setup:
 net_cleanup:
         clr.b   net_type
         clr.l   extint
-        |move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,0xC00004    /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,0xC00004    /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.b  #0x00,0xA10019      /* no serial */
         nop
         nop
@@ -1549,6 +1642,13 @@ set_music_volume:
 
 
 
+set_gamemode:
+        move.b  0xA15122,gamemode
+        move.w  #0,0xA15120         /* done */
+        bra     main_loop
+
+
+
 get_lump_source_and_size:
         /* fetch lump length */
         lea     lump_size,a0
@@ -1582,6 +1682,8 @@ get_lump_source_and_size:
 
 decompress_lump:
         bsr     get_lump_source_and_size
+        tst.l   lump_size
+        beq.s   decompress_lump_done
         move.l  lump_ptr,d0
         andi.l  #0x7FFFF,d0
         addi.l  #0x880000,d0
@@ -1591,86 +1693,196 @@ decompress_lump:
         move.l  d0,lump_size
         lea     decomp_buffer,a1
         jmp     Kos_Decomp_Main
-        |rts    /* Kos_Decomp_Main will do an 'rts' for us. */
+decompress_lump_done:
+        rts     /* Kos_Decomp_Main will do an 'rts' for us. */
 
 
 
-load_md_sky:
-        move.w  #0x2700,sr          /* disable ints */
+queue_register_write:
+        move.w  0xA15122,register_write_queue
 
+        move.w  #0,0xA15120         /* done */
+
+        bra     main_loop
+
+
+
+load_md_palettes:
         move.l  a0,-(sp)
         move.l  a1,-(sp)
         move.l  a2,-(sp)
         move.l  a3,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
+        move.l  d2,-(sp)
+        move.l  d3,-(sp)
+
+        bsr     get_lump_source_and_size
+1:
+        move.w  0xA15120,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x05,d0
+        bne.b   1b
+        move.b  0xA15122,d2
+        move.b  0xA15123,d3
+        move.w  #0,0xA15120         /* done with lower word */
+
+        btst    #0,d3
+        bne.s   2f
+        lea     bank1_palette_1,a3
+        bra.s   3f
+2:
+        lea     bank2_palette_1,a3
+3:
 
         lea     0xC00004,a0
         lea     0xC00000,a1
+        move.w  #0x8F02,(a0)
+        move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
+        move.l  lump_ptr,d0
+        andi.l  #0x7FFFF,d0
+        addi.l  #0x880000,d0
+        move.l  d0,a2
+        move.l  lump_size,d1
+        lsr.l   #1,d1
+        sub.l   #1,d1
+
+        btst    #0,d2                   /* Set CRAM to black? */
+        beq.s   5f
+        move.w  d1,d0
+4:
+        move.w  #0,(a1)                 /* Set color to blank in CRAM */
+        dbra    d0,4b
+5:
+        move.w  (a2)+,(a3)+             /* Copy color from ROM to DRAM */
+        dbra    d1,5b
+
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a3
+        move.l  (sp)+,a2
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        |move.w  #0,0xA15120         /* done */
+
+        bra     main_loop
+
+
+
+load_md_sky:
+        |move.l  #224,test_end      /* TESTING */
+        move.w  #0x2700,sr          /* disable ints */
+
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a2,-(sp)
+        move.l  a3,-(sp)
+        move.l  a4,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        move.w  #0x8016,(a0) /* reg 0 = /IE1 (enable HBL INT), /M3 (enable read H/V cnt) */
+        move.w  #0x8174,(a0) /* reg 1 = /DISP (display off), /IE0 (enable VBL INT), M1 (DMA enabled), /M2 (V28 mode) */
         ||move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
-        ||move.w  #0x832C,(a0) /* reg 3 = Name Tbl W = 0xB000 */
+        ||move.w  #0x8328,(a0) /* reg 3 = Name Tbl W = 0xA000 */
         ||move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        ||move.w  #0x8554,(a0) /* reg 5 = Sprite Attr Tbl = 0xA800 */
-        ||move.w  #0x8D2B,(a0) /* reg 13 = HScroll Tbl = 0xAC00 */
+        ||move.w  #0x8504,(a0) /* reg 5 = Sprite Attr Tbl = 0x0800 */
+        ||move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        ||move.w  #0x8D00,(a0) /* reg 13 = HScroll Tbl = 0x0000 */
 
 
         /* Load metadata */
+        |bset.l  #0,(test_values+20)      /* TESTING */
         bsr     get_lump_source_and_size
         lea     0xC00004,a0
         move.l  lump_ptr,d0
         andi.l  #0x7FFFF,d0
-        addi.l  #0x880001,d0    /* Plus 1 to skip the 32X thru color byte */
+        addi.l  #0x880002,d0    /* Plus 2 to skip the 32X thru color and dummy bytes */
         move.l  d0,a2
+
+        move.w  #0x8C00,d0
+        or.b    (a2)+,d0
+        cmpi.b  #3,legacy_emulator      /* Check for Gens */
+        bne.s   0f
+        or.b    #0x0081,d0              /* Force Gens to use H40 */
+0:
+        cmpi.b  #1,legacy_emulator      /* Check for a legacy emulator (not Ares) */
+        bgt.s   4f
+        move.w  #0x8F02,(a0)
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        moveq   #0,d2
+        btst.b  #0,d0                   /* Which screen resolution will be used? */
+        bne.s   2f
+
+        move.l  #0x11111111,d2          /* Left-border sprite pixels */
+        move.l  #0x48000000,(a0)        /* Write VRAM address 0x0800 */
+        lea     h32_left_edge_sprites,a3
+        move.w  #13,d1
+1:
+        move.l  (a3)+,(a1)              /* Copy eight pixels from the source */
+        dbra    d1,1b
+2:
+        move.l  #0x4A000000,(a0)        /* Write VRAM address 0x0A00 */
+        move.w  #31,d1
+3:
+        move.l  d2,(a1)                 /* Create left-border tiles, or erase them */
+        dbra    d1,3b
+4:
+        |move.w  d0,(a0) /* reg 12 */
+        move.w  d0,register_write_queue     /* Set register 12 during VBlank */
 
         move.w  #0x9000, d0
         or.b    (a2)+,d0
-        move.w  d0,(a0) /* reg 16 = Scroll Size = 32x64 */
+        move.w  d0,(a0) /* reg 16 */
 
         move.w  (a2)+,d0
-        move.w  d0,scroll_b_vert_offset
+        move.w  d0,scroll_b_vert_offset_top
 
         move.w  (a2)+,d0
-        move.w  d0,scroll_a_vert_offset
+        move.w  d0,scroll_b_vert_offset_bottom
 
-        move.b  (a2)+,d0
-        move.b  d0,scroll_b_vert_rate
+        move.w  (a2)+,d0
+        move.w  d0,scroll_a_vert_offset_top
 
-        move.b  (a2)+,d0
-        move.b  d0,scroll_a_vert_rate
+        move.w  (a2)+,d0
+        move.w  d0,scroll_a_vert_offset_bottom
 
+        move.w  (a2)+,d0
+        move.w  d0,scroll_b_vert_break
 
+        move.w  (a2)+,d0
+        move.w  d0,scroll_a_vert_break
 
-        /* Load pattern name table A */
-        bsr     decompress_lump
-        lea     0xC00004,a0
-        lea     0xC00000,a1
-        move.w  #0x8F02,(a0)
-        move.l  #0x40000003,(a0)        /* Set destination offset to pattern name table A at position 0x0 */
-        lea     decomp_buffer,a2
-        move.l  lump_size,d1
-        lsr.l   #1,d1
-        sub.l   #1,d1
-0:
-        move.w  (a2)+,(a1)              /* Write 0 to pattern name table A at position 0x0 */
-        dbra    d1,0b
+        move.b  (a2)+,d1
+        move.b  #16,d0
+        sub.b   d1,d0
+        move.b  d0,scroll_b_vert_rate_top
 
+        move.b  (a2)+,d1
+        move.b  #16,d0
+        sub.b   d1,d0
+        move.b  d0,scroll_b_vert_rate_bottom
 
-        /* Load pattern name table B */
-        bsr     decompress_lump
-        lea     0xC00004,a0
-        lea     0xC00000,a1
-        move.w  #0x8F02,(a0)
-        move.l  #0x60000003,(a0)        /* Set destination offset to pattern name table B at position 0x0 */
-        lea     decomp_buffer,a2
-        move.l  lump_size,d1
-        lsr.l   #1,d1
-        sub.l   #1,d1
-1:
-        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B at position 0x0 */
-        dbra    d1,1b
+        move.b  (a2)+,d1
+        move.b  #16,d0
+        sub.b   d1,d0
+        move.b  d0,scroll_a_vert_rate_top
+
+        move.b  (a2)+,d1
+        move.b  #16,d0
+        sub.b   d1,d0
+        move.b  d0,scroll_a_vert_rate_bottom
+
 
 
         /* Load palettes */
+        |bset.l  #0,(test_values+8)      /* TESTING */
         bsr     get_lump_source_and_size
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -1680,23 +1892,34 @@ load_md_sky:
         andi.l  #0x7FFFF,d0
         addi.l  #0x880000,d0
         move.l  d0,a2
-        lea     base_palette_1,a3
-        move.l  lump_size,d1
-        lsr.l   #1,d1
-        sub.l   #1,d1
+        lea     bank1_palette_1,a3
+        move.w  #47,d1
+        cmpi.b  #1,legacy_emulator      /* Check for legacy emulator (not Ares) */
+        bgt.s   1f
+
+        moveq   #0,d0
+        move.w  d0,(a3)+                /* Use black for the background (hardware H32-safe) */
+        addq    #2,a2
+        subq    #1,d1
+        bra.s   2f
+1:
+        move.w  (a2),d0                 /* Use background color from palette lump (best for legacy emulators) */
 2:
         move.w  (a2)+,(a3)+             /* Save color to DRAM */
         move.w  #0,(a1)                 /* Set color to black in CRAM */
         |add.l   #0x40000,a1            /* Advance the destination cursor */
         dbra    d1,2b
 
+        move.w  d0,(a3)+                /* Set color 48 to match color 0 */
+        move.w  d0,(a3)+                /* Set color 49 to match color 0 */
 
         /* Load patterns */
+        |bset.l  #0,(test_values+12)      /* TESTING */
         bsr     decompress_lump
         lea     0xC00004,a0
         lea     0xC00000,a1
         move.w  #0x8F02,(a0)
-        move.l  #0x40000000,(a0)        /* Write VRAM address 0 */
+        move.l  #0x4A800000,(a0)        /* Write VRAM address 0x0A80 */
         lea     decomp_buffer,a2
         move.l  lump_size,d1
         lsr.l   #1,d1
@@ -1705,8 +1928,264 @@ load_md_sky:
         move.w  (a2)+,(a1)              /* Copy eight pixels from the source */
         dbra    d1,3b
 
+
+
+        /* Load pattern name table B1 */
+        |move.l  #0,(test_values+0)
+        |bset.l  #0,(test_values+0)      /* TESTING */
+        bsr     decompress_lump
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        lea     decomp_buffer,a2
+        move.w  #0x8F02,(a0)
+        move.l  lump_size,d1
+        cmpi.w  #0x2000,d1              /* Greater than 8KB? */
+        bgt.s   1f
+
+        | Scroll B is either 256 or 512 pixels wide
+        |bset.l  #1,(test_values+0)      /* TESTING */
+        move.l  #0x60000003,(a0)        /* Set destination offset to pattern name table B1 at position 0x0 */
+        move.b  #0x30,scroll_a_address_register_values
+        move.l  #0x07070707,scroll_b_address_register_values
+        move.l  #0x60000003,write_scroll_b_table_1
+        move.l  #0x60000003,write_scroll_b_table_2
+        move.l  #0x60000003,write_scroll_b_table_3
+        move.l  #0x60000003,write_scroll_b_table_4
+        lsr.l   #1,d1
+        sub.l   #1,d1
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+        bra.w   9f
+1:
+        | Scroll B is 1024 pixels wide
+        |bset.l  #2,(test_values+0)      /* TESTING */
+        move.l  #0x40000002,(a0)
+        move.l  #0x18181818,scroll_a_address_register_values
+        move.l  #0x07060504,scroll_b_address_register_values
+        move.l  #0x40000002,write_scroll_b_table_1
+        move.l  #0x60000002,write_scroll_b_table_2
+        move.l  #0x40000003,write_scroll_b_table_3
+        move.l  #0x60000003,write_scroll_b_table_4
+
+        move.l  a5,-(sp)
+        lea     decomp_buffer+0x1000,a3
+        lea     decomp_buffer+0x2000,a4
+        lea     decomp_buffer+0x3000,a5
+
+        | Table B1 (1/2 panel configuration)
+        |bset.l  #3,(test_values+0)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a3)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a2
+        suba    #0x1000,a3
+
+        | Table B2 (3/2 panel configuration)
+        |bset.l  #4,(test_values+0)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a4)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a3)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a3
+        suba    #0x1000,a4
+
+        | Table B3 (3/4 panel configuration)
+        |bset.l  #5,(test_values+0)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a4)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a5)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a4
+        suba    #0x1000,a5
+
+        | Table B4 (1/4 panel configuration)
+        |bset.l  #6,(test_values+0)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a5)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        move.l  (sp)+,a5
+9:
+
+
+        /* Load pattern name table A1 */
+        |move.l  #0,(test_values+4)
+        |bset.l  #0,(test_values+4)      /* TESTING */
+        bsr     decompress_lump
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        lea     decomp_buffer,a2
+        move.w  #0x8F02,(a0)
+        move.l  lump_size,d1
+        cmpi.w  #0x2000,d1              /* Greater than 8KB? */
+        bgt.w   1f
+        cmpi.b  #0x30,scroll_a_address_register_values
+        beq.s   0f
+
+        | Scroll A is either 256 or 512 pixels wide
+        | Scroll B is either 256 or 512 pixels wide
+        |bset.l  #1,(test_values+4)      /* TESTING */
+        move.l  #0x40000003,(a0)        /* Set destination offset to pattern name table A1 at position 0x0 */
+        move.l  #0x30303030,scroll_a_address_register_values
+        move.l  #0x40000003,write_scroll_a_table_1
+        move.l  #0x40000003,write_scroll_a_table_2
+        move.l  #0x40000003,write_scroll_a_table_3
+        move.l  #0x40000003,write_scroll_a_table_4
+        bra.w   2f
+0:
+        | Scroll A is either 256 or 512 pixels wide
+        | Scroll B is 1024 pixels wide
+        |bset.l  #2,(test_values+4)      /* TESTING */
+        move.l  #0x60000001,(a0)
+        move.l  #0x18181818,scroll_a_address_register_values
+        move.l  #0x60000001,write_scroll_a_table_1
+        move.l  #0x60000001,write_scroll_a_table_2
+        move.l  #0x60000001,write_scroll_a_table_3
+        move.l  #0x60000001,write_scroll_a_table_4
+        bra.w   2f
+1:
+        | Scroll A is 1024 pixels wide
+        |bset.l  #3,(test_values+4)      /* TESTING */
+        move.l  #0x60000001,(a0)
+        move.l  #0x30282018,scroll_a_address_register_values
+        move.l  #0x60000001,write_scroll_a_table_1
+        move.l  #0x40000002,write_scroll_a_table_2
+        move.l  #0x60000002,write_scroll_a_table_3
+        move.l  #0x40000003,write_scroll_a_table_4
+
+        move.l  a5,-(sp)
+        lea     decomp_buffer+0x1000,a3
+        lea     decomp_buffer+0x2000,a4
+        lea     decomp_buffer+0x3000,a5
+
+        | Table A1 (1/2 panel configuration)
+        |bset.l  #4,(test_values+4)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a3)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a2
+        suba    #0x1000,a3
+
+        | Table A2 (3/2 panel configuration)
+        |bset.l  #5,(test_values+4)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a4)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a3)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a3
+        suba    #0x1000,a4
+
+        | Table A3 (3/4 panel configuration)
+        |bset.l  #6,(test_values+4)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a4)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a5)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a4
+        suba    #0x1000,a5
+
+        | Table A4 (1/4 panel configuration)
+        |bset.l  #7,(test_values+4)      /* TESTING */
+        move.w  #63,d0
+1:
+        move.w  #31,d1
+        move.w  d1,d2
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d1,0b
+0:
+        move.w  (a5)+,(a1)              /* Write 0 to pattern name table B1 at position 0x0 */
+        dbra    d2,0b
+        dbra    d0,1b
+
+        suba    #0x1000,a2
+        suba    #0x1000,a5
+
+        move.l  (sp)+,a5
+        bra.s   9f
+2:
+        lsr.l   #1,d1
+        sub.l   #1,d1
+0:
+        move.w  (a2)+,(a1)              /* Write 0 to pattern name table A1 at position 0x0 */
+        dbra    d1,0b
+9:
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        move.w  #0x8200,d0
+        move.b  scroll_a_address_register_values_1,d0
+        move.w  d0,(a0) /* reg 2 = Name Tbl A */
+
+        move.w  #0x8400,d0
+        move.b  scroll_b_address_register_values_1,d0
+        move.w  d0,(a0) /* reg 4 = Name Tbl B */
+
+
+
+        move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
+        move.l  (sp)+,a4
         move.l  (sp)+,a3
         move.l  (sp)+,a2
         move.l  (sp)+,a1
@@ -1719,9 +2198,43 @@ load_md_sky:
         bra     main_loop
 
 
-scroll_md_sky:
-        move.w  #0x2700,sr          /* disable ints */
+set_scroll_positions:
+        move.l  d0,-(sp)
 
+        move.w  0xA15122,current_scroll_b_top_y
+
+        move.w  #0,0xA15120         /* request more data */
+1:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x02,d0
+        bne.b   1b
+
+        move.w  0xA15122,current_scroll_b_bottom_y
+
+        move.w  #0,0xA15120         /* request more data */
+2:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x03,d0
+        bne.b   2b
+
+        move.w  0xA15122,current_scroll_a_top_y
+
+        move.w  #0,0xA15120         /* request more data */
+3:
+        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        cmpi.b  #0x04,d0
+        bne.b   3b
+
+        move.w  0xA15122,current_scroll_a_bottom_y
+
+        move.l  (sp)+,d0
+
+        move.w  #0,0xA15120         /* done */
+
+        bra     main_loop
+
+
+scroll_md_sky:
         move.l  a0,-(sp)
         move.l  a1,-(sp)
         move.l  d0,-(sp)
@@ -1730,76 +2243,97 @@ scroll_md_sky:
         move.l  d3,-(sp)
         move.l  d4,-(sp)
         move.l  d5,-(sp)
+        move.l  d6,-(sp)
+        move.l  d7,-(sp)
 
         lea     0xC00004,a0
         lea     0xC00000,a1
 
         /* Vertical */
         move.l  #0x40000010,(a0)
-        moveq   #0,d4
-        moveq   #0,d5
-        move.w  0xA15122,d4         /* scroll_y_base */
-        move.w  d4,d5
         moveq   #0,d0
         moveq   #0,d1
         moveq   #0,d2
-        move.b  scroll_b_vert_rate,d0
-        move.b  scroll_a_vert_rate,d1
-        move.b  d0,d2
-        sub.l   d1,d2
-        lsl.w   d2,d5
+        moveq   #0,d3
+        moveq   #0,d4
+        moveq   #0,d5
+        moveq   #0,d6
+        moveq   #0,d7
 
-        move.w  #0,0xA15120         /* done with horizontal scroll */
+        move.w  0xA15122,d3         /* scroll_y_base */
+
+        move.w  #0,0xA15120         /* request more data */
 2:
         move.b  0xA15121,d0         /* wait on handshake in COMM0 */
         cmpi.b  #0x02,d0
         bne.b   2b
-        move.w  0xA15122,d1         /* scroll_y_offset */
-        add.w   d4,d1
-        move.w  d1,d3
-
-        move.b  scroll_a_vert_rate,d0
-        lsr.w   d0,d1
-        move.w  scroll_a_vert_offset,d0
-        sub.w   d1,d0
-        sub.w   d5,d0
-        andi.w  #0x3FF,d0
-
-        move.w  d0,d2
-        swap    d2
-
-        move.b  scroll_b_vert_rate,d0
-        lsr.w   d0,d3
-        move.w  scroll_b_vert_offset,d0
-        sub.w   d3,d0
-        sub.w   d4,d0
-        andi.w  #0x3FF,d0
-
-        or.w    d0,d2
-
-        move.w  #0,0xA15120         /* done with horizontal scroll */
+        move.w  0xA15122,d4         /* scroll_y_offset */
+        
+        move.w  #0,0xA15120         /* request more data */
 3:
         move.b  0xA15121,d0         /* wait on handshake in COMM0 */
         cmpi.b  #0x03,d0
         bne.b   3b
-        move.w  0xA15122,d0         /* scroll_y_pan */
-        sub.w   d0,d2
-        swap    d2
-        sub.w   d0,d2
-        swap    d2
+        move.w  0xA15122,d2         /* scroll_y_pan */
 
-        move.l  d2,(a1)
+        moveq   #0,d1
+        move.b  scroll_b_vert_rate_top,d1
+        move.w  d4,d5               /* scroll_y_offset */
+        lsr.w   d1,d5
+        move.w  scroll_b_vert_offset_top,d1
+        sub.w   d3,d1               /* scroll_y_base */
+        sub.w   d2,d1               /* scroll_y_pan */
+        sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
+        |andi.w  #0x3FF,d1
+        move.w  d1,current_scroll_b_top_y
 
-        move.w  #0,0xA15120         /* done with horizontal scroll */
+        moveq   #0,d1
+        move.b  scroll_b_vert_rate_bottom,d1
+        move.w  d4,d5               /* scroll_y_offset */
+        lsr.w   d1,d5
+        move.w  scroll_b_vert_offset_bottom,d1
+        sub.w   d3,d1               /* scroll_y_base */
+        sub.w   d2,d1               /* scroll_y_pan */
+        sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
+        |andi.w  #0x3FF,d1
+        move.w  d1,current_scroll_b_bottom_y
+
+        moveq   #0,d1
+        move.b  scroll_a_vert_rate_top,d1
+        move.w  d4,d5               /* scroll_y_offset */
+        lsr.w   d1,d5
+        move.w  scroll_a_vert_offset_top,d1
+        sub.w   d3,d1               /* scroll_y_base */
+        sub.w   d2,d1               /* scroll_y_pan */
+        sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
+        |andi.w  #0x3FF,d1
+        move.w  d1,current_scroll_a_top_y
+
+        moveq   #0,d1
+        move.b  scroll_a_vert_rate_bottom,d1
+        move.w  d4,d5               /* scroll_y_offset */
+        lsr.w   d1,d5
+        move.w  scroll_a_vert_offset_bottom,d1
+        sub.w   d3,d1               /* scroll_y_base */
+        sub.w   d2,d1               /* scroll_y_pan */
+        sub.w   d5,d1               /* position = (scroll_y_base - d5 - scroll_y_pan) & 0x3FF */
+        |andi.w  #0x3FF,d1
+        move.w  d1,current_scroll_a_bottom_y
+
+        move.w  #0,0xA15120         /* done with vertical scroll */
 4:
         move.b  0xA15121,d0         /* wait on handshake in COMM0 */
         cmpi.b  #0x04,d0
         bne.b   4b
 
         /* Horizontal */
-        move.l  #0x6C000002,d3
+        move.l  write_horizontal_scroll_table,d3
         moveq   #0,d0
         move.w  0xA15122,d0         /* scroll_x */
+        move.w  d0,current_scroll_b_top_x
+        move.w  d0,current_scroll_b_bottom_x
+        move.w  d0,current_scroll_a_top_x
+        move.w  d0,current_scroll_a_bottom_x
         |move.w  d0,d1
         |swap    d0
         |or.w    d1,d0
@@ -1814,6 +2348,23 @@ scroll_md_sky:
         cmp.w   #0,d2
         bne.b   0b
 
+        lsr.w   #8,d0
+        andi.w  #3,d0
+
+        move.w  #0x8200,d1
+        lea     scroll_a_address_register_values,a1
+        adda.w  d0,a1
+        move.b  (a1),d1
+        move.w  d1,(a0) /* reg 2 = Name Tbl A */
+
+        move.w  #0x8400,d1
+        lea     scroll_b_address_register_values,a1
+        adda.w  d0,a1
+        move.b  (a1),d1
+        move.w  d1,(a0) /* reg 4 = Name Tbl B */
+
+        move.l  (sp)+,d7
+        move.l  (sp)+,d6
         move.l  (sp)+,d5
         move.l  (sp)+,d4
         move.l  (sp)+,d3
@@ -1825,65 +2376,198 @@ scroll_md_sky:
 
         move.w  #0,0xA15120         /* done */
 
-        move.w  #0x2000,sr          /* enable ints */
+        bra     main_loop
+
+
+crossfade_md_palette:
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a3,-(sp)
+        move.l  a4,-(sp)
+        move.l  a5,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+        move.l  d3,-(sp)
+        move.l  d4,-(sp)
+        move.l  d5,-(sp)
+        move.l  d6,-(sp)
+        move.l  d7,-(sp)
+
+        /* Fade palette */
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.w  #0x8F02,(a0)
+        move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
+
+        lea     bank1_palette_1,a3      /* Point A3 to source palette */
+        lea     bank2_palette_1,a4      /* Point A4 to target palette */
+        move.w  0xA15122,d2             /* Get fade degree */
+
+        btst.b  #4,d2
+        beq.s   2f
+
+        /* Copy bank2 to bank1 and load entire bank into CRAM */
+        moveq   #0x20-1,d0
+0:
+        move.l  (a4)+,(a3)+             /* Copy palette bank2 to bank1 */
+        dbra    d0,0b
+
+        moveq   #0x40-1,d0
+1:
+        move.w  (a3)+,(a1)              /* Load entire bank into CRAM */
+        dbra    d0,1b
+
+        bra.w   crossfade_done
+
+        /* Perform cross fade between bank1 and bank2 */
+2:
+        lea     crossfade_lookup,a5     /* Point A5 to crossfade lookup table */
+        moveq   #0,d4
+        moveq   #0,d5
+        moveq   #0,d6
+
+        move.w  #0x40-1,d7              /* Prepare to copy all 64 colors */
+
+
+        | D0 = CRAM value (source)
+        | D1 = CRAM value (target)
+
+        | D2 = Fade value
+
+        | D3 = CRAM color channel (source)
+        | D4 = CRAM color channel (target) / Color delta
+
+        | D5 = Resulting color
+
+        | A1 = CRAM palette
+        | A3 = DRAM palette (source)
+        | A4 = DRAM palette (target)
+        | A5 = Crossfade lookup
+
+crossfade_color:
+        move.w  (a3)+,d0        /* Copy color from source palette to D0 */
+        move.w  (a4)+,d1        /* Copy color from target palette to D1 */
+
+crossfade_red:
+        /* RED */
+        move.b  d0,d3           /* Get source red */
+        andi.w  #0xE,d3         /* Remove green from this copy */
+        move.b  d1,d4           /* Get target red */
+        andi.w  #0xE,d4         /* Remove green from this copy */
+
+        /* Get total delta */
+        sub.b   d3,d4
+        cmp.b   #0,d4
+        bge.s   3f
+        neg.b   d4
+
+        /* Find interval delta */
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsl.b   #3,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d6    /* Store new red in D6 */
+        bra.s   crossfade_green
+3:
+        /* Find interval delta */
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsl.b   #3,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d5    /* Store new red in D5 */
+
+crossfade_green:
+        /* GREEN */
+        move.w  d0,d3           /* Get source green */
+        andi.w  #0xE0,d3        /* Remove green from this copy */
+        move.w  d1,d4           /* Get target green */
+        andi.w  #0xE0,d4        /* Remove green from this copy */
+
+        /* Get total delta */
+        sub.w   d3,d4
+        cmp.w   #0,d4
+        bge.s   4f
+        neg.w   d4
+
+        /* Find interval delta*/
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsr.w   #1,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d4
+        lsl.w   #4,d4
+        or.w    d4,d6           /* Store new green in D6 */
+        bra.s   crossfade_blue
+4:
+        /* Find interval delta*/
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsr.w   #1,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d4
+        lsl.w   #4,d4
+        or.w    d4,d5           /* Store new green in D5 */
+
+crossfade_blue:
+        /* BLUE */
+        move.w  d0,d3           /* Get source blue */
+        andi.w  #0xE00,d3       /* Remove blue from this copy */
+        move.w  d1,d4           /* Get target blue */
+        andi.w  #0xE00,d4       /* Remove blue from this copy */
+
+        /* Get total delta */
+        sub.w   d3,d4
+        cmp.w   #0,d4
+        bge.s   5f
+        neg.w   d4
+
+        /* Find interval delta */
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsr.w   #5,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d4
+        lsl.w   #8,d4
+        or.w    d4,d6           /* Store new blue in D6 */
+        bra.s   crossfade_update_color
+5:
+        /* Find interval delta */
+        | D2 = Phase (x)
+        | D4 = Delta (y)
+        lsr.w   #5,d4
+        add.b   d2,d4
+        move.b  (a5,d4.w),d4
+        lsl.w   #8,d4
+        or.w    d4,d5           /* Store new blue in D5 */
+
+crossfade_update_color:
+        add.w   d5,d0
+        sub.w   d6,d0
+        move.w  d0,(a1)         /* Copy new color in D0 to CRAM */
+        dbra    d7,crossfade_color   /* Continue the loop if more colors need to be updated. */
+
+crossfade_done:
+        move.l  (sp)+,d7
+        move.l  (sp)+,d6
+        move.l  (sp)+,d5
+        move.l  (sp)+,d4
+        move.l  (sp)+,d3
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a5
+        move.l  (sp)+,a4
+        move.l  (sp)+,a3
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        move.w  #0,0xA15120         /* done */
 
         bra     main_loop
 
-/*
-TestSine:
-        dc.w    0       |0
-        dc.w    0
-
-        dc.w    2       |22.5
-        dc.w    0
-
-        dc.w    4       |45
-        dc.w    0
-
-        dc.w    6       |67.5
-        dc.w    0
-
-        dc.w    6       |90
-        dc.w    0
-
-        dc.w    6       |112.5
-        dc.w    0
-
-        dc.w    4       |135
-        dc.w    0
-
-        dc.w    2      |157.5
-        dc.w    0
-
-        dc.w    0      |180
-        dc.w    0
-
-        dc.w    -2      |202.5
-        dc.w    0
-
-        dc.w    -4      |225
-        dc.w    0
-
-        dc.w    -6      |247.5
-        dc.w    0
-
-        dc.w    -6      |270
-        dc.w    0
-
-        dc.w    -6      |292.5
-        dc.w    0
-
-        dc.w    -4      |315
-        dc.w    0
-
-        dc.w    -2      |337.5
-        dc.w    0
-*/
-
 
 fade_md_palette:
-        move.w  #0x2700,sr          /* disable ints */
-
         move.l  a0,-(sp)
         move.l  a1,-(sp)
         move.l  a3,-(sp)
@@ -1899,7 +2583,7 @@ fade_md_palette:
         move.w  #0x8F02,(a0)
         move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
 
-        lea     base_palette_1,a3       /* Point A3 to DRAM palette */
+        lea     bank1_palette_1,a3      /* Point A3 to DRAM palette */
         move.w  0xA15122,d1             /* Get fade degree */
 
         move.w  #0x40-1,d4              /* Prepare to copy all 64 colors */
@@ -1968,370 +2652,9 @@ update_color:
 
         move.w  #0,0xA15120         /* done */
 
-        move.w  #0x2000,sr          /* enable ints */
-
         bra     main_loop
 
 
-
-ctl_md_vdp:
-        andi.w  #255, d0
-        move.w  d0, init_vdp_latch
-
-        move.w  0xA15100,d0
-        eor.w   #0x8000,d0
-        move.w  d0,0xA15100         /* unset FM - disallow SH2 access to FB */
-
-        move.w  0xA15180,d0
-        andi.w  #0xFF7F,d0
-        move.w  d0,0xA15180         /* set MD priority */
-        tst.b   d0
-        bne.b   1f                  /* re-init vdp and vram */
-
-|       move.w  #0x8134,0xC00004    /* display off, vblank enabled, V28 mode */
-        move.w  0xA15180,d0
-        ori.w   #0x0080,d0
-        move.w  d0,0xA15180         /* set 32X priority */
-1:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
-
-cpy_md_vram:
-        move.w  0xA15100,d1
-        eor.w   #0x8000,d1
-        move.w  d1,0xA15100         /* unset FM - disallow SH2 access to FB */
-
-        lea     0xA15120,a1         /* 32x comm0 port */
-
-        moveq   #0,d1
-        move.b  d0,d1               /* column number */
-        add.w   d1,d1
-
-        lea     0x840200,a2         /* frame buffer */
-        lea     0(a2,d1.l),a2
-
-        cmpi.w  #0x1C00,d0
-        bhs.w   10f                 /* swap with vram */
-        cmpi.w  #0x1B00,d0
-        bhs.w   5f                  /* copy from vram */
-
-        /* COPY TO VRAM */
-        cmpi.l  #280,d1             /* vram or wram? */
-        bhs.b   2f                  /* wram */
-
-        lea     0xC00000,a0         /* vdp data port */
-        move.w  #0x8F02,4(a0)       /* set INC to 2 */
-
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lsl.l   #2,d1               /* get top two bits of offset into high word */
-        lsr.w   #2,d1
-        ori.w   #0x4000,d1          /* write VRAM */
-        swap    d1
-        move.l  d1,4(a0)            /* cmd port <- write VRAM at offset */
-        move.w  #27,d0
-1:
-        move.w  (a2),(a0)           /* next word */
-        move.w  320(a2),(a0)        /* next word */
-        move.w  640(a2),(a0)        /* next word */
-        move.w  960(a2),(a0)        /* next word */
-        move.w  1280(a2),(a0)       /* next word */
-        move.w  1600(a2),(a0)       /* next word */
-        move.w  1920(a2),(a0)       /* next word */
-        move.w  2240(a2),(a0)       /* next word */
-        lea     2560(a2),a2
-        dbra    d0,1b
-        bra     4f                  /* done */
-2:
-        subi.l  #280,d1
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lea     col_store,a0
-        lea     0(a0,d1.l),a0
-        move.w  #27,d0
-3:
-        move.w  (a2),(a0)+          /* next word */
-        move.w  320(a2),(a0)+       /* next word */
-        move.w  640(a2),(a0)+       /* next word */
-        move.w  960(a2),(a0)+       /* next word */
-        move.w  1280(a2),(a0)+      /* next word */
-        move.w  1600(a2),(a0)+      /* next word */
-        move.w  1920(a2),(a0)+      /* next word */
-        move.w  2240(a2),(a0)+      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,3b
-4:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
-
-5:
-        moveq   #0,d0
-        move.w  2(a1), d0
-
-        andi.w  #0xFF,d0            /* column offset in words */
-        add.l   d0,d0
-
-        /* COPY FROM VRAM */
-        cmpi.l  #280,d1             /* vram or wram? */
-        bhs.w   7f                  /* wram */
-
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lea     0xC00000,a0         /* vdp data port */
-        move.w  #0x8F02,4(a0)       /* set INC to 2 */
-
-        add.l   d0,d1
-
-        #mulu.w  #160,d0
-        lsl.l   #5,d0
-        move.l  d0,d2
-        add.l   d2,d2
-        add.l   d2,d2
-        add.l   d2,d0
-
-        lea     0(a2,d0.l),a2
-
-        lsl.l   #2,d1               /* get top two bits of offset into high word */
-        lsr.w   #2,d1
-        swap    d1
-        move.l  d1,4(a0)            /* cmd port <- read VRAM from offset */
-
-        move.w  2(a1), d0           /* length in words */
-        lsr.w   #8,d0
-        andi.w  #255,d0
-        subq.w  #1,d0
-        cmpi.w  #223,d0
-        bne.b   6f
-
-        move.w  #27,d0
-60:
-        move.w  (a0),(a2)           /* next word */
-        move.w  (a0),320(a2)        /* next word */
-        move.w  (a0),640(a2)        /* next word */
-        move.w  (a0),960(a2)        /* next word */
-        move.w  (a0),1280(a2)       /* next word */
-        move.w  (a0),1600(a2)       /* next word */
-        move.w  (a0),1920(a2)       /* next word */
-        move.w  (a0),2240(a2)       /* next word */
-        lea     2560(a2),a2
-        dbra    d0,60b
-        bra     9f                  /* done */
-6:
-        move.w  (a0), (a2)
-        lea     320(a2),a2
-        dbra    d0,6b
-        bra     9f                  /* done */
-7:
-        subi.l  #280,d1
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        lsl.w   #1,d2
-        add     d2,d1
-        lsl.w   #1,d2
-        add     d2,d1
-        add.l   d0,d1
-
-        #mulu.w  #160,d0
-        lsl.l   #5,d0
-        move    d0,d2
-        lsl.l   #2,d2
-        add.l   d2,d0
-
-        lea     0(a2,d0.l),a2
-
-        lea     col_store,a0
-        lea     0(a0,d1.l),a0
-
-        move.w  2(a1), d0           /* length in words */
-        lsr.w   #8,d0
-        andi.w  #255,d0
-        subq.w  #1,d0
-        cmpi.w  #223,d0
-        bne.b   8f
-
-        move.w  #27,d0
-80:
-        move.w  (a0)+,(a2)          /* next word */
-        move.w  (a0)+,320(a2)       /* next word */
-        move.w  (a0)+,640(a2)       /* next word */
-        move.w  (a0)+,960(a2)       /* next word */
-        move.w  (a0)+,1280(a2)      /* next word */
-        move.w  (a0)+,1600(a2)      /* next word */
-        move.w  (a0)+,1920(a2)      /* next word */
-        move.w  (a0)+,2240(a2)      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,80b
-        bra     9f                  /* done */
-8:
-        move.w  (a0)+, (a2)
-        lea     320(a2),a2
-        dbra    d0,8b
-9:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
-
-10:
-        /* SWAP WITH VRAM */
-        cmpi.l  #280,d1             /* vram or wram? */
-        bhs     12f                 /* wram */
-
-        lea     0xC00000,a0         /* vdp data port */
-        move.w  #0x8F02,4(a0)       /* set INC to 2 */
-
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lsl.l   #2,d1               /* get top two bits of offset into high word */
-        lsr.w   #2,d1
-        move.l  d1,d2
-        ori.w   #0x4000,d2          /* write VRAM */
-        swap    d1
-        swap    d2
-        move.l  d1,4(a0)            /* cmd port <- read VRAM at offset */
-        move.w  #27,d0
-        lea     col_store+20*224*2,a1
-11:
-        /* vram to swap buffer */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        move.w  (a0),(a1)+          /* next word */
-        dbra    d0,11b
-
-        move.l  d2,4(a0)            /* cmd port <- write VRAM at offset */
-        move.w  #27,d0
-111:
-        /* screen to vram */
-        move.w  (a2),(a0)           /* next word */
-        move.w  320(a2),(a0)        /* next word */
-        move.w  640(a2),(a0)        /* next word */
-        move.w  960(a2),(a0)        /* next word */
-        move.w  1280(a2),(a0)       /* next word */
-        move.w  1600(a2),(a0)       /* next word */
-        move.w  1920(a2),(a0)       /* next word */
-        move.w  2240(a2),(a0)       /* next word */
-        lea     2560(a2),a2
-        dbra    d0,111b
-
-        move.w  #27,d0
-        lea     -224*2(a1),a1
-        adda.l  #-320*224,a2
-112:
-        /* swap buffer to screen */
-        move.w  (a1)+,(a2)          /* next word */
-        move.w  (a1)+,320(a2)       /* next word */
-        move.w  (a1)+,640(a2)       /* next word */
-        move.w  (a1)+,960(a2)       /* next word */
-        move.w  (a1)+,1280(a2)      /* next word */
-        move.w  (a1)+,1600(a2)      /* next word */
-        move.w  (a1)+,1920(a2)      /* next word */
-        move.w  (a1)+,2240(a2)      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,112b
-        bra     14f                 /* done */
-12:
-        subi.l  #280,d1
-        #mulu.w  #224,d1
-        lsl.w   #5,d1
-        move    d1,d2
-        add     d2,d2
-        add     d2,d1
-        add     d2,d2
-        add     d2,d1
-
-        lea     col_store,a0
-        lea     0(a0,d1.l),a0
-        move.w  #27,d0
-        lea     col_store+20*224*2,a1
-13:
-        /* wram to swap buffer */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        move.w  (a0)+,(a1)+         /* next word */
-        dbra    d0,13b
-
-        lea     -224*2(a0),a0
-        move.w  #27,d0
-131:
-        /* screen to wram */
-        move.w  (a2),(a0)+          /* next word */
-        move.w  320(a2),(a0)+       /* next word */
-        move.w  640(a2),(a0)+       /* next word */
-        move.w  960(a2),(a0)+       /* next word */
-        move.w  1280(a2),(a0)+      /* next word */
-        move.w  1600(a2),(a0)+      /* next word */
-        move.w  1920(a2),(a0)+      /* next word */
-        move.w  2240(a2),(a0)+      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,131b
-
-        move.w  #27,d0
-        lea     -224*2(a1),a1
-        adda.l  #-320*224,a2
-132:
-        /* swap buffer to screen */
-        move.w  (a1)+,(a2)          /* next word */
-        move.w  (a1)+,320(a2)       /* next word */
-        move.w  (a1)+,640(a2)       /* next word */
-        move.w  (a1)+,960(a2)       /* next word */
-        move.w  (a1)+,1280(a2)      /* next word */
-        move.w  (a1)+,1600(a2)      /* next word */
-        move.w  (a1)+,1920(a2)      /* next word */
-        move.w  (a1)+,2240(a2)      /* next word */
-        lea     2560(a2),a2
-        dbra    d0,132b
-14:
-        move.w  0xA15100,d0
-        or.w    #0x8000,d0
-        move.w  d0,0xA15100         /* set FM - allow SH2 access to FB */
-
-        move.w  #0,0xA15120         /* done */
-        bra     main_loop
 
 load_sfx:
         /* fetch sample length */
@@ -2505,18 +2828,18 @@ init_vdp:
         move.w  #0x8004,(a0) /* reg 0 = /IE1 (no HBL INT), /M3 (enable read H/V cnt) */
         move.w  #0x8114,(a0) /* reg 1 = /DISP (display off), /IE0 (no VBL INT), M1 (DMA enabled), /M2 (V28 mode) */
         move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
-        move.w  #0x832C,(a0) /* reg 3 = Name Tbl W = 0xB000 */
+        move.w  #0x8328,(a0) /* reg 3 = Name Tbl W = 0xA000 */
         move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        move.w  #0x8554,(a0) /* reg 5 = Sprite Attr Tbl = 0xA800 */
+        move.w  #0x8504,(a0) /* reg 5 = Sprite Attr Tbl = 0x0800 */
         move.w  #0x8600,(a0) /* reg 6 = always 0 */
         move.w  #0x8700,(a0) /* reg 7 = BG color */
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
         move.w  #0x8900,(a0) /* reg 9 = always 0 */
         move.w  #0x8A00,(a0) /* reg 10 = HINT = 0 */
-        |move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
-        move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
+        move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
+        |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
-        move.w  #0x8D2B,(a0) /* reg 13 = HScroll Tbl = 0xAC00 */
+        move.w  #0x8D00,(a0) /* reg 13 = HScroll Tbl = 0x0000 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
         move.w  #0x8F01,(a0) /* reg 15 = data INC = 1 */
         move.w  #0x9010,(a0) /* reg 16 = Scroll Size = 32x64 */
@@ -2545,7 +2868,7 @@ init_vdp:
         tst.w   d2
         beq.b   9f
 
-        move.l  #0x60000002,(a0)        /* write VRAM address 0xA800 */
+        move.l  write_sprite_attribute_table,(a0)   /* write VRAM address 0x0800 */
         moveq   #0,d0
         move.w  #0x02BF,d1              /* 704 - 1 tiles */
 8:
@@ -2561,8 +2884,8 @@ init_vdp:
         bra.b   3f
 
 | The VDP state at this point is: Display disabled, ints disabled, Name Tbl A at 0xC000,
-| Name Tbl B at 0xE000, Name Tbl W at 0xB000, Sprite Attr Tbl at 0xA800, HScroll Tbl at 0xAC00,
-| H40 V28 mode, and Scroll size is 64x32.
+| Name Tbl B at 0xE000, Sprite Attr Tbl at 0x0800, HScroll Tbl at 0x0000, H40 V28 mode,
+| and Scroll size is 64x32.
 
 9:
 | Clear CRAM
@@ -2591,22 +2914,22 @@ init_vdp:
 | load font tile data
 
 load_font:
-        lea     0xC00004,a0         /* VDP cmd/sts reg */
-        lea     0xC00000,a1         /* VDP data reg */
-        move.w  #0x8F02,(a0)        /* INC = 2 */
-        move.l  #0x40000000,(a0)    /* write VRAM address 0 */
-        lea     font_data,a2
-        move.w  #0x6B*8-1,d2
+        |lea     0xC00004,a0         /* VDP cmd/sts reg */
+        |lea     0xC00000,a1         /* VDP data reg */
+        |move.w  #0x8F02,(a0)        /* INC = 2 */
+        |move.l  #0x40000000,(a0)    /* write VRAM address 0 */
+        |lea     font_data,a2
+        |move.w  #0x6B*8-1,d2
 0:
-        move.l  (a2)+,d0            /* font fg mask */
-        move.l  d0,d1
-        not.l   d1                  /* font bg mask */
-        and.l   fg_color,d0         /* set font fg color */
-        and.l   bg_color,d1         /* set font bg color */
-        or.l    d1,d0
-        move.l  d0,(a1)             /* set tile line */
-        dbra    d2,0b
-        rts
+        |move.l  (a2)+,d0            /* font fg mask */
+        |move.l  d0,d1
+        |not.l   d1                  /* font bg mask */
+        |and.l   fg_color,d0         /* set font fg color */
+        |and.l   bg_color,d1         /* set font bg color */
+        |or.l    d1,d0
+        |move.l  d0,(a1)             /* set tile line */
+        |dbra    d2,0b
+        |rts
 
 
 | Bump the FM player to keep the music going
@@ -2616,15 +2939,15 @@ bump_fm:
         tst.w   fm_idx
         beq.s   999f
 
-        move.w  sr,-(sp)
-        move.w  #0x2700,sr          /* disable ints */
+        |move.w  sr,-(sp)
+        |move.w  #0x2700,sr          /* disable ints */
         tst.b   REQ_ACT.w
         bmi.b   99f                 /* sram locked */
         bne.b   0f                  /* Z80 requesting action */
         tst.w   preread_cnt
         bne.b   0f                  /* buffer preread pending */
 99:
-        move.w  (sp)+,sr            /* restore int level */
+        |move.w  (sp)+,sr            /* restore int level */
 999:
         rts
 
@@ -2632,6 +2955,9 @@ bump_fm:
         movem.l d0-d7/a0-a6,-(sp)
         move.w  #0x0100,0xA11100    /* Z80 assert bus request */
         move.w  #0x0100,0xA11200    /* Z80 deassert reset */
+
+        moveq   #0x05,d1            /* VGM 0x95 command */
+        moveq   #0x01,d2            /* VGM buffer block */
 1:
         move.w  0xA11100,d0
         andi.w  #0x0100,d0
@@ -2642,31 +2968,34 @@ bump_fm:
 
 10:
         move.b  REQ_ACT.w,d0
-        cmpi.b  #0x05,d0            /* Check for 0x95 command */
+        cmp.b   d1,d0               /* Check for 0x95 command */
         beq.s   play_drum_sound
-        cmpi.b  #0x01,d0
+        cmp.b   d2,d0
         bne.w   5f                  /* not read buffer block */
 
 play_drum_sound:
 11:
         /* check for space in Z80 sram buffer */
-        move.b  STRM_DRUMI.w,d0
-        move.b  #0,STRM_DRUMI.w
-19:
-        cmpi.   #0,d0
-        beq.s   20f
+        lea     STRM_DRUMI.w,a0     | 8
+        move.b  (a0),d0             | 8     /* D0 = drum sample ID */
+        tst.b   d0                  | 4     /* is the drum sample ID == 0? */
+        beq.s   20f                 | 10/8
+        move.b  #0,(a0)+            | 12    /* clear the drum sample ID from RAM */
+        move.w  (a0)+,d1            | 8     /* D1 = drum volume and panning */
+
+        lea     0xA1512C,a1         | 8
+        move.l  a1,a2               | 4
 191:
-        cmpi.b  #0,0xA1512C
-        bne.s   191b                 /* wait for CMD interrupt to finish */
+        tst.b   (a2)                | 8
+        bne.s   191b                | 10/8  /* wait for CMD interrupt to finish */
 192:
-        move.w  STRM_DRUMV.w,d1     /* move both volume and panning to D1 */
-        move.b  #1,0xA1512C         /* queue sound playback on COMM12 */
-        move.b  d0,0xA1512D         /* pass drum sample ID to COMM13 */
-        move.w  d1,0xA1512E         /* pass drum sample volume and panning to COMM14 and COMM15 */
-        move.b  #1,0xA15103         /* call CMD interrupt on master SH-2 */
+        move.b  d2,(a1)+            | 8     /* queue sound playback on COMM12 */
+        move.b  d0,(a1)+            | 8     /* pass drum sample ID to COMM13 */
+        move.w  d1,(a1)+            | 8     /* pass drum sample volume and panning to COMM14+15 */
+        move.b  d2,0xA15103         | 16    /* call CMD interrupt on master SH-2 */
 193:
-        cmpi.b  #0,0xA1512C
-        bne.s   193b                 /* wait for CMD interrupt to finish */
+        tst.b   (a2)                | 8
+        bne.s   193b                | 10/8  /* wait for CMD interrupt to finish */
 20:
         moveq   #0,d0
         z80rd   FM_BUFGEN,d0
@@ -2710,7 +3039,7 @@ play_drum_sound:
 
         addi.w  #512,d2
         addi.w  #512,d3
-        andi.w  #0x7FFF,d2          /* 32KB buffer */
+        andi.w  #0x1FFF,d2          /* 8KB buffer */
         andi.w  #0x0FFF,d3          /* 4KB buffer */
 
         cmpi.w  #512,d4
@@ -2734,7 +3063,7 @@ play_drum_sound:
         jsr     vgm_read2
         addq.l  #4,sp
         move.w  d0,d2
-        andi.w  #0x7FFF,d2          /* amount data pre-read (with wrap around) */
+        andi.w  #0x1FFF,d2          /* amount data pre-read (with wrap around) */
 14:
         move.w  d2,offs68k
         move.w  d3,offsz80
@@ -2776,7 +3105,7 @@ play_drum_sound:
         move.w  #0x0000,0xA11100    /* Z80 deassert bus request */
 9:
         movem.l (sp)+,d0-d7/a0-a6
-        move.w  (sp)+,sr            /* restore int level */
+        |move.w  (sp)+,sr            /* restore int level */
         rts
 
 
@@ -2822,13 +3151,234 @@ rst_ym2612:
         rts
 
 
+| Horizontal Blank handler
+
+horizontal_blank:
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        move.l  #0x40000010,(a0)
+
+        move.w  #0x8A00,d1
+        cmpi.b  #1,hint_count
+        beq.s   1f
+        cmpi.b  #2,hint_count
+        beq.s   2f
+        cmpi.b  #3,hint_count
+        beq.s   3f
+0:
+        move.b  hint_1_interval,d1
+        bra.s   5f
+1:
+        move.b  hint_2_interval,d1
+        bra.s   5f
+2:
+        move.b  #0xFF,d1
+        move.l  hint_1_scroll_y_positions,d0
+        bra.s   4f
+3:
+        |move.b  #0,d1
+        move.l  hint_2_scroll_y_positions,d0
+        |bra.s   4f
+4:
+        move.l  d0,(a1)             /* update scroll A and B vertical positions */
+5:
+        move.w  d1,(a0) /* reg 10 = HINT = 0 */
+        addi.b  #1,hint_count
+
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        rte
+
+
 | Vertical Blank handler
 
 vert_blank:
         move.l  d1,-(sp)
         move.l  d2,-(sp)
+        move.l  d3,-(sp)
+        move.l  a1,-(sp)
         move.l  a2,-(sp)
 
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+
+
+        /* Calculate the HINT line for Scroll A section break */
+        move.b  scroll_a_vert_rate_top,d0
+        move.b  scroll_a_vert_rate_bottom,d1
+        cmp.b   d0,d1
+        blt.s   11f
+
+10:      /* Top section has priority */
+        move.w  current_scroll_a_top_y,d0
+        bra.s   12f
+
+11:      /* Bottom section has priority */
+        move.w  current_scroll_a_bottom_y,d0
+
+12:
+        cmpi.w  #0x200,d2
+        blt.s   14f
+13:
+        move.w  #0,d2
+14:
+
+
+
+        /* Calculate the HINT line for Scroll B section break */
+        move.b  scroll_b_vert_rate_top,d0
+        move.b  scroll_b_vert_rate_bottom,d1
+        cmp.b   d0,d1
+        blt.s   21f
+
+20:      /* Top section has priority */
+        move.w  current_scroll_b_top_y,d0
+        bra.s   22f
+
+21:      /* Bottom section has priority */
+        move.w   current_scroll_b_bottom_y,d0
+
+22:
+        move.w  scroll_b_vert_break,d3
+        sub.w   d0,d3
+        andi.w  #0x3FF,d3
+
+        cmpi.w  #0x200,d3
+        blt.s   24f
+23:
+        move.w  #0,d3
+24:
+
+
+
+        /* Figure out what section will be drawn at the top of the screen. */
+30:
+        cmpi.w  #0,d2
+        ble.w   31f
+        move.w  current_scroll_a_top_y,d1
+        bra.s   32f
+31:
+        move.w  current_scroll_a_bottom_y,d1
+32:
+        swap    d1
+
+40:
+        cmpi.w  #0,d3
+        ble.w   41f
+        move.w  current_scroll_b_top_y,d1
+        bra.s   50f
+41:
+        move.w  current_scroll_b_bottom_y,d1
+
+50:
+        move.l  #0x40000010,(a0)
+        move.l  d1,(a1)             /* Update scroll A and B vertical positions. */
+
+
+
+        /* Figure out the HINT intervals and corresponding scroll positions. */
+60:
+        move.b  #0xFF,hint_1_interval
+        move.b  #0xFF,hint_2_interval
+
+        move.l  d1,hint_1_scroll_y_positions
+
+        cmpi.w  #0xE0,d2
+        blt.s   0f
+        move.w  #0,d2           /* Interrupt intervals <=0 and >=224 will be skipped. */
+0:
+        cmpi.w  #0xE0,d3
+        blt.s   1f
+        move.w  #0,d3           /* Interrupt intervals <=0 and >=224 will be skipped. */
+1:
+
+        cmp.w   d2,d3
+        bgt.s   6f
+        blt.s   3f
+2:
+        cmpi.w  #0,d2
+        ble.w   9f
+        move.b  d2,hint_1_interval  /* Scroll B and A will share one HINT. */
+        move.b  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_1_scroll_a_y
+        move.w  d1,hint_1_scroll_b_y
+        bra.w   9f
+3:
+        cmpi.w  #0,d3
+        ble.s   5f
+        |subi.b  #2,d3
+        move.b  d3,hint_1_interval  /* Scroll B will have the first HINT. */
+        move.w  current_scroll_b_bottom_y,d1
+        move.w  d1,hint_1_scroll_b_y
+4:
+        cmpi.w  #0,d2
+        ble.w   9f
+        sub.b   d3,d2
+        |add.b   #1,d2
+        move.b  d2,hint_2_interval  /* Scroll A will have the second HINT. */
+        move.w  d1,hint_2_scroll_b_y
+        move.w  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_2_scroll_a_y
+        bra.s   9f
+5:
+        cmpi.w  #0,d2
+        ble.s   9f
+        |subi.b  #2,d2
+        move.b  d2,hint_1_interval  /* Scroll A will have the only HINT. */
+        move.w  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_1_scroll_a_y
+        bra.s   9f
+6:
+        cmpi.w  #0,d2
+        ble.s   8f
+        |subi.b  #2,d2
+        move.b  d2,hint_1_interval  /* Scroll A will have the first HINT. */
+        move.w  current_scroll_a_bottom_y,d1
+        move.w  d1,hint_1_scroll_a_y
+7:
+        cmpi.w  #0,d3
+        ble.s   9f
+        sub.b   d2,d3
+        |add.b   #1,d3
+        move.b  d3,hint_2_interval  /* Scroll B will have the second HINT. */
+        move.w  d1,hint_2_scroll_a_y
+        move.w  current_scroll_b_bottom_y,d1
+        move.w  d1,hint_2_scroll_b_y
+        bra.s   9f
+8:
+        cmpi.w  #0,d3
+        ble.s   9f
+        |subi.b  #2,d3
+        move.b  d3,hint_1_interval  /* Scroll B will have the only HINT. */
+        move.w  current_scroll_b_bottom_y,d1
+        move.w  d1,hint_1_scroll_b_y
+        |bra.s   9f
+9:
+
+        move.b  #0,hint_count
+
+        move.w  #0x8A00,d0
+        move.w  d0,(a0)             /* reg 10 = HINT = 0 */
+
+        tst.w   register_write_queue
+        beq.s   10f
+        move.w  register_write_queue,d0
+        move.w  d0,(a0)
+        moveq   #0,d0
+        move.w  d0,register_write_queue
+
+
+
+10:
         move.b  #1,need_bump_fm
         move.b  #1,need_ctrl_int
 
@@ -2877,8 +3427,11 @@ vert_blank:
         move.w  #0x8174,0xC00004    /* display on, vblank enabled, V28 mode */
 4:
         move.l  (sp)+,a2
+        move.l  (sp)+,a1
+        move.l  (sp)+,d3
         move.l  (sp)+,d2
         move.l  (sp)+,d1
+
         movea.l (sp)+,a0
         move.l  (sp)+,d0
         rte
@@ -2924,152 +3477,6 @@ get_input:
         move.b  (a0),d0
         rts
 
-| get current mouse value
-| entry: a0 = mouse control port
-| exit:  d0 = mouse value (0  0  0  0  0  0  0  0  YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0) or -2 (timeout) or -1 (no mouse)
-get_mky:
-        move.w  sr,d2
-        move.w  #0x2700,sr      /* disable ints */
-
-        move.b  #0x60,6(a0)     /* set direction bits */
-        nop
-        nop
-        move.b  #0x60,(a0)      /* first phase of mouse packet */
-        nop
-        nop
-0:
-        btst    #4,(a0)
-        beq.b   0b              /* wait on handshake */
-        move.b  (a0),d0
-        andi.b  #15,d0
-        bne     mky_err         /* not 0 means not mouse */
-
-        move.b  #0x20,(a0)      /* next phase */
-        move.w  #254,d1         /* number retries before timeout */
-1:
-        btst    #4,(a0)
-        bne.b   2f              /* handshake */
-        dbra    d1,1b
-        bra     timeout_err
-2:
-        move.b  (a0),d0
-        andi.b  #15,d0
-        move.b  #0,(a0)         /* next phase */
-        cmpi.b  #11,d0
-        bne     mky_err         /* not 11 means not mouse */
-3:
-        btst    #4,(a0)
-        beq.b   4f              /* handshake */
-        dbra    d1,3b
-        bra     timeout_err
-4:
-        move.b  (a0),d0         /* specs say should be 15 */
-        nop
-        nop
-        move.b  #0x20,(a0)      /* next phase */
-        nop
-        nop
-5:
-        btst    #4,(a0)
-        bne.b   6f
-        dbra    d1,5b
-        bra     timeout_err
-6:
-        move.b  (a0),d0         /* specs say should be 15 */
-        nop
-        nop
-        move.b  #0,(a0)         /* next phase */
-        moveq   #0,d0           /* clear reg to hold packet */
-        nop
-7:
-        btst    #4,(a0)
-        beq.b   8f              /* handshake */
-        dbra    d1,7b
-        bra     timeout_err
-8:
-        move.b  (a0),d0         /* YO XO YS XS */
-        move.b  #0x20,(a0)      /* next phase */
-        lsl.w   #8,d0           /* save nibble */
-9:
-        btst    #4,(a0)
-        bne.b   10f             /* handshake */
-        dbra    d1,9b
-        bra     timeout_err
-10:
-        move.b  (a0),d0         /* S  M  R  L */
-        move.b  #0,(a0)         /* next phase */
-        lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  0  0  0  0 */
-        lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  0  0  0  0  0  0  0  0 */
-11:
-        btst    #4,(a0)
-        beq.b   12f             /* handshake */
-        dbra    d1,11b
-        bra     timeout_err
-12:
-        move.b  (a0),d0         /* X7 X6 X5 X4 */
-        move.b  #0x20,(a0)      /* next phase */
-        lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 0  0  0  0 */
-        lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 0  0  0  0  0  0  0  0 */
-13:
-        btst    #4,(a0)
-        bne.b   14f             /* handshake */
-        dbra    d1,13b
-        bra     timeout_err
-14:
-        move.b  (a0),d0         /* X3 X2 X1 X0 */
-        move.b  #0,(a0)         /* next phase */
-        lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 0  0  0  0 */
-        lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 0  0  0  0  0  0  0  0 */
-15:
-        btst    #4,(a0)
-        beq.b   16f             /* handshake */
-        dbra    d1,15b
-        bra     timeout_err
-16:
-        move.b  (a0),d0         /* Y7 Y6 Y5 Y4 */
-        move.b  #0x20,(a0)      /* next phase */
-        lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 0  0  0  0 */
-        lsl.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 0  0  0  0  0  0  0  0*/
-17:
-        btst    #4,(a0)
-        beq.b   18f             /* handshake */
-        dbra    d1,17b
-        bra     timeout_err
-18:
-        move.b  (a0),d0         /* Y3 Y2 Y1 Y0 */
-        move.b  #0x60,(a0)      /* first phase */
-        lsl.b   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 0  0  0  0 */
-        lsr.l   #4,d0           /* YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */
-19:
-        btst    #4,(a0)
-        beq.b   19b             /* wait on handshake */
-
-        move.w  d2,sr           /* restore int status */
-        rts
-
-timeout_err:
-        move.b  #0x60,(a0)      /* first phase */
-        nop
-        nop
-0:
-        btst    #4,(a0)
-        beq.b   0b              /* wait on handshake */
-
-        move.w  d2,sr           /* restore int status */
-        moveq   #-2,d0
-        rts
-
-mky_err:
-        move.b  #0x40,6(a0)     /* set direction bits */
-        nop
-        nop
-        move.b  #0x40,(a0)
-
-        move.w  d2,sr           /* restore int status */
-        moveq   #-1,d0
-        rts
-
-
 | get_port: returns ID bits of controller pointed to by a0 in d0
 get_port:
         move.b  (a0),d0
@@ -3095,9 +3502,6 @@ get_port:
         andi.b  #1,d0
         or.b    d0,d2
 
-        move.w  #0xF001,d0
-        cmpi.b  #3,d2
-        beq.b   0f                       /* mouse in port */
         move.w  #0xF000,d0               /* no pad in port */
         cmpi.b  #0x0D,d2
         bne.b   0f
@@ -3193,6 +3597,12 @@ need_bump_fm:
 need_ctrl_int:
         dc.b    0
 
+gamemode:
+        dc.b    0
+
+legacy_emulator:
+        dc.b    0
+
 bnk7_save:
         dc.b    7
 
@@ -3241,29 +3651,193 @@ crsr_y:
         dc.w    0
 dbug_color:
         dc.w    0
-
-scroll_b_vert_offset:
+        
+scroll_b_vert_offset_top:
         dc.w    0
-scroll_a_vert_offset:
+scroll_b_vert_offset_bottom:
+        dc.w    0
+scroll_a_vert_offset_top:
+        dc.w    0
+scroll_a_vert_offset_bottom:
+        dc.w    0
+scroll_b_vert_break:
+        dc.w    0
+scroll_a_vert_break:
         dc.w    0
 
-scroll_b_vert_rate:
+scroll_b_vert_rate_top:
         dc.b    0
-scroll_a_vert_rate:
+scroll_b_vert_rate_bottom:
         dc.b    0
+scroll_a_vert_rate_top:
+        dc.b    0
+scroll_a_vert_rate_bottom:
+        dc.b    0
+
+current_sky_top_y_positions:
+current_scroll_a_top_y:
+        dc.w    0
+current_scroll_b_top_y:
+        dc.w    0
+
+current_sky_bottom_y_positions:
+current_scroll_a_bottom_y:
+        dc.w    0
+current_scroll_b_bottom_y:
+        dc.w    0
+
+current_sky_top_x_positions:
+current_scroll_a_top_x:
+        dc.w    0
+current_scroll_b_top_x:
+        dc.w    0
+
+current_sky_bottom_x_positions:
+current_scroll_a_bottom_x:
+        dc.w    0
+current_scroll_b_bottom_x:
+        dc.w    0
+
+hint_1_scroll_y_positions:
+hint_1_scroll_a_y:
+        dc.w    0
+hint_1_scroll_b_y:
+        dc.w    0
+
+hint_2_scroll_y_positions:
+hint_2_scroll_a_y:
+        dc.w    0
+hint_2_scroll_b_y:
+        dc.w    0
+
+hint_1_scroll_x_positions:
+hint_1_scroll_a_x:
+        dc.w    0
+hint_1_scroll_b_x:
+        dc.w    0
+
+hint_2_scroll_x_positions:
+hint_2_scroll_a_x:
+        dc.w    0
+hint_2_scroll_b_x:
+        dc.w    0
+
+hint_count:
+        dc.b    0
+hint_1_interval:
+        dc.b    0
+hint_2_interval:
+        dc.b    0
+        
+        .align  2
+
+register_write_queue:
+        dc.w    0
+
+        .align  4
 
 lump_ptr:
         dc.l    0
 lump_size:
         dc.l    0
 
-base_palette_1:
+
+next_write_pattern_name_table:
+        dc.l    0x60000003      /* bank 0 (0xE000) */
+        dc.l    0x40000003      /* bank 1 (0xC000) */
+        dc.l    0x60000002      /* bank 2 (0xA000) */
+        dc.l    0x40000002      /* bank 3 (0x8000) */
+        dc.l    0x60000001      /* bank 4 (0x6000) */
+
+write_scroll_b_table:
+write_scroll_b_table_1:
+        dc.l    0x60000003
+write_scroll_b_table_2:
+        dc.l    0x60000003
+write_scroll_b_table_3:
+        dc.l    0x60000003
+write_scroll_b_table_4:
+        dc.l    0x60000003
+write_scroll_a_table:
+write_scroll_a_table_1:
+        dc.l    0x40000003
+write_scroll_a_table_2:
+        dc.l    0x40000003
+write_scroll_a_table_3:
+        dc.l    0x40000003
+write_scroll_a_table_4:
+        dc.l    0x40000003
+
+scroll_b_address_register_values:
+scroll_b_address_register_values_1:
+        dc.b    0x07
+scroll_b_address_register_values_2:
+        dc.b    0x07
+scroll_b_address_register_values_3:
+        dc.b    0x07
+scroll_b_address_register_values_4:
+        dc.b    0x07
+
+scroll_a_address_register_values:
+scroll_a_address_register_values_1:
+        dc.b    0x30
+scroll_a_address_register_values_2:
+        dc.b    0x30
+scroll_a_address_register_values_3:
+        dc.b    0x30
+scroll_a_address_register_values_4:
+        dc.b    0x30
+
+write_horizontal_scroll_table:
+        dc.l    0x40000000      /* Default VRAM write to address 0x0000 */
+write_sprite_attribute_table:
+        dc.l    0x48000000      /* Default VRAM write to address 0x0800 */
+
+h32_left_edge_sprites:
+        dc.w    0x0080, 0x0301, 0xE050, 0x007B
+        dc.w    0x00A0, 0x0302, 0xE050, 0x007B
+        dc.w    0x00C0, 0x0303, 0xE050, 0x007B
+        dc.w    0x00E0, 0x0304, 0xE050, 0x007B
+        dc.w    0x0100, 0x0305, 0xE050, 0x007B
+        dc.w    0x0120, 0x0306, 0xE050, 0x007B
+        dc.w    0x0140, 0x0300, 0xE050, 0x007B
+
+|test_start:
+|        dc.l    0x08257368
+|test_values:
+|        .space  128
+|test_end:
+|        dc.l    0x08257368
+
+
+crossfade_lookup:
+        dc.b	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        dc.b	0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2
+        dc.b	0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4
+        dc.b	0, 0, 0, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 6, 6
+        dc.b	0, 0, 2, 2, 2, 2, 4, 4, 4, 4, 6, 6, 6, 6, 8, 8
+        dc.b	0, 0, 2, 2, 2, 4, 4, 4, 6, 6, 6, 6, 8, 8, 8, 10
+        dc.b	0, 0, 2, 2, 4, 4, 4, 6, 6, 6, 8, 8, 10,10,10,12
+        dc.b	0, 0, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10,10,12,12,14
+
+
+bank1_palette_1:
         .space  32
-base_palette_2:
+bank1_palette_2:
         .space  32
-base_palette_3:
+bank1_palette_3:
         .space  32
-base_palette_4:
+bank1_palette_4:
+        .space  32
+
+
+bank2_palette_1:
+        .space  32
+bank2_palette_2:
+        .space  32
+bank2_palette_3:
+        .space  32
+bank2_palette_4:
         .space  32
 
 FMReset:
@@ -3318,4 +3892,4 @@ FMReset:
 col_store:                      /* Is this label still needed? */
 decomp_buffer:
         |.space  21*224*2        /* 140 double-columns in vram, 20 in wram, 1 in wram for swap */
-        .space  12288           /* 12 KB */
+        .space  16384           /* 16 KB */

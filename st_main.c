@@ -8,6 +8,7 @@
 #include "r_local.h"
 #include "mars.h"
 #include "p_camera.h"
+#include "marshw.h"
 
 stbar_t	*stbar;
 int stbar_tics;
@@ -24,13 +25,26 @@ static short go_game, go_over;
 // Special stage
 static short narrow1;
 static short narrow9;
-static short nbracket;
+static short nbrackt;
+static short nbrackl;
+static short nbrackr;
+static short nbrackb;
 static short nrng1;
 static short nsshud;
 static short chaos;
 
+jagobj_t *narrow9_jagobj = NULL;
+jagobj_t *nbrackt_jagobj = NULL;
+jagobj_t *nbrackl_jagobj = NULL;
+jagobj_t *nbrackr_jagobj = NULL;
+jagobj_t *nbrackb_jagobj = NULL;
+jagobj_t *nrng1_jagobj = NULL;
+jagobj_t *nsshud_jagobj = NULL;
+jagobj_t *chaos_jagobj = NULL;
+
 static short ltzz_blue_lump, chev_blue_lump, lt_blue_lump;
 static short ltzz_red_lump, chev_red_lump, lt_red_lump;
+static uint16_t titlecard_x_offset;
 
 #ifndef MARS
 byte		*sbartop;
@@ -70,7 +84,10 @@ void ST_Init (void)
 	// Special stage
 	narrow1 = W_CheckNumForName("NARROW1");
 	narrow9 = W_CheckNumForName("NARROW9");
-	nbracket = W_CheckNumForName("NBRACKET");
+	nbrackt = W_CheckNumForName("NBRACKT");
+	nbrackl = W_CheckNumForName("NBRACKL");
+	nbrackr = W_CheckNumForName("NBRACKR");
+	nbrackb = W_CheckNumForName("NBRACKB");
 	nrng1 = W_CheckNumForName("NRNG1");
 	nsshud = W_CheckNumForName("NSSHUD");
 	chaos = W_CheckNumForName("CHAOS1");
@@ -88,6 +105,14 @@ void ST_ForceDraw(void)
 	stbarframe = 0;
 	ST_Ticker();
 }
+
+typedef struct
+{
+	int phase;
+	int counter;
+} mbrown_t;
+
+mbrown_t mbrownState;
 
 /*================================================== */
 /* */
@@ -113,6 +138,8 @@ void ST_InitEveryLevel(void)
 		sb->score = 0;
 	}
 	stbar_tics = 0;
+
+	mbrownState.phase = 0;
 }
 
 /*
@@ -122,6 +149,7 @@ void ST_InitEveryLevel(void)
 =
 ====================
 */
+void MBrownSequenceTicker();
 
 static void ST_Ticker_(stbar_t* sb)
 {
@@ -160,6 +188,9 @@ static void ST_Ticker_(stbar_t* sb)
 	{
 		gameaction = ga_specialstageexit;
 	}
+
+	if (mbrownState.phase > 0)
+		MBrownSequenceTicker();
 }
 
 void ST_Ticker(void)
@@ -188,6 +219,9 @@ void ST_Ticker(void)
 
 static void ST_DrawTitleCard()
 {
+#ifdef OST_BLURNESS
+	return;
+#endif
 	short ltzz_lump;
 	short chev_lump;
 	short lt_lump;
@@ -214,18 +248,30 @@ static void ST_DrawTitleCard()
 	if (gametic < 16) {
 		// Title card moving into the frame.
 
+		if (gametic == 1) {
+			titlecard_x_offset = 160;
+			int width = V_GetStringWidth(&titleFont, gamemapinfo.name);
+			if (width > 186) {
+				titlecard_x_offset += (width - 186); // Move graphics away from the left edge.
+			}
+		}
+
 		DrawScrollingBanner(ltzz_lump, (gametic-16) << 4, gametic << 1);
 
 		DrawScrollingChevrons(chev_lump, 16 + ((gametic-16) << 4), -gametic << 1);
 
 		if (gamemapinfo.act >= 1 && gamemapinfo.act <= 3) {
-			DrawJagobjLump(lt_lump, 160+70-24 + ((16 - gametic) << 5), 100 - ((16 - gametic) << 5), NULL, NULL);
-			V_DrawValueLeft(&titleNumberFont, 160+70 + ((16 - gametic) << 5), 124-4, gamemapinfo.act);
+			DrawJagobjLump(lt_lump, titlecard_x_offset + 70-24 + ((16 - gametic) << 5), 100 - ((16 - gametic) << 5), NULL, NULL);
+			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 70 + ((16 - gametic) << 5), 124-4, gamemapinfo.act);
 		}
-		V_DrawStringRight(&titleFont, 160+68 - ((16 - gametic) << 5), 100, gamemapinfo.name);
-		V_DrawStringLeft(&titleFont, 160 + ((16 - gametic) << 5), 124, "Zone");
+		V_DrawStringRight(&titleFont, titlecard_x_offset + 68 - ((16 - gametic) << 5), 100, gamemapinfo.name);
+		V_DrawStringLeft(&titleFont, titlecard_x_offset + ((16 - gametic) << 5), 124, "Zone");
 	}
-	else if (gametic < 80) {
+	else
+#ifndef OST_BLACKNESS
+	 if (gametic < 80)
+#endif
+	 {
 		// Title card at rest in the frame.
 
 		DrawScrollingBanner(ltzz_lump, 0, gametic << 1);
@@ -233,13 +279,14 @@ static void ST_DrawTitleCard()
 		DrawScrollingChevrons(chev_lump, 16, -gametic << 1);
 
 		if (gamemapinfo.act >= 1 && gamemapinfo.act <= 3) {
-			DrawJagobjLump(lt_lump, 160+68-24, 100, NULL, NULL);
+			DrawJagobjLump(lt_lump, titlecard_x_offset + 68-24, 100, NULL, NULL);
 
-			V_DrawValueLeft(&titleNumberFont, 160+68, 124-4, gamemapinfo.act);
+			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 68, 124-4, gamemapinfo.act);
 		}
-		V_DrawStringRight(&titleFont, 160+68, 100, gamemapinfo.name);
-		V_DrawStringLeft(&titleFont, 160, 124, "Zone");
+		V_DrawStringRight(&titleFont, titlecard_x_offset + 68, 100, gamemapinfo.name);
+		V_DrawStringLeft(&titleFont, titlecard_x_offset, 124, "Zone");
 	}
+#ifndef OST_BLACKNESS
 	else {
 		// Title card moving out of the frame.
 		DrawScrollingBanner(ltzz_lump, (80-gametic) << 4, gametic << 1);
@@ -252,13 +299,18 @@ static void ST_DrawTitleCard()
 			VINT lt_height = lt_y + lt_obj->height > (180+22)
 					? lt_obj->height - ((lt_y + lt_obj->height) - (180+22))
 					: lt_obj->height;
-			DrawJagobj2(lt_obj, 160+68-24 - ((gametic - 80) << 5), lt_y, 0, 0,
-					lt_obj->width, lt_height, I_OverwriteBuffer());
+			DrawJagobj3(lt_obj, titlecard_x_offset + 68-24 - ((gametic - 80) << 5), lt_y, 0, 0,
+					lt_obj->width, lt_height, 320, I_OverwriteBuffer());
 			
-			V_DrawValueLeft(&titleNumberFont, 160+68 - ((gametic - 80) << 5), 124-4, gamemapinfo.act);
+			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 68 - ((gametic - 80) << 5), 124-4, gamemapinfo.act);
 		}
-		V_DrawStringRight(&titleFont, 160+68 + ((gametic - 80) << 5), 100, gamemapinfo.name);
-		V_DrawStringLeft(&titleFont, 160 - ((gametic - 80) << 5), 124, "Zone");
+		V_DrawStringRight(&titleFont, titlecard_x_offset + 68 + ((gametic - 80) << 5), 100, gamemapinfo.name);
+		V_DrawStringLeft(&titleFont, titlecard_x_offset - ((gametic - 80) << 5), 124, "Zone");
+	}
+#endif
+
+	if (viewportNum == VIEWPORT_H32) {
+		clear_h32_borders = 2;
 	}
 }
 
@@ -270,9 +322,48 @@ static void ST_DrawTitleCard()
 ====================
 */
 
+const fixed_t hud_upscale[5] = {
+//	431440,
+	383502,
+//	340891,
+//	303014,
+	269346,
+//	239418,
+//	212816,
+	189170,
+//	168151,
+//	149468,
+	132860,
+//	118098,
+//	104976,
+	93312,
+//	82944,
+//	73728
+};
+
 static void ST_Drawer_ (stbar_t* sb)
 {
-	if (gametic < 96 && !(gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)) {
+#ifdef OST_BLACKNESS
+	ST_DrawTitleCard();
+	return;
+#endif
+
+#ifdef SKYDEBUG
+	V_DrawStringRightWithColormap(&menuFont, 280, 32, "SCROLL A:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 44, "SCROLL B:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 56, "COPPER:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 76, "PALETTE:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 88, "TILES:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 100, "METADATA:", YELLOWTEXTCOLORMAP);
+	V_DrawValueLeft(&menuFont, 288, 32, load_sky_lump_scroll_a);
+	V_DrawValueLeft(&menuFont, 288, 44, load_sky_lump_scroll_b);
+	V_DrawValueLeft(&menuFont, 288, 56, load_sky_lump_copper);
+	V_DrawValueLeft(&menuFont, 288, 76, load_sky_lump_palette);
+	V_DrawValueLeft(&menuFont, 288, 88, load_sky_lump_tiles);
+	V_DrawValueLeft(&menuFont, 288, 100, load_sky_lump_metadata);
+#endif
+
+	if (gametic <= 88 && !(gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)) {
 		ST_DrawTitleCard();
 	}
 	else if (gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)
@@ -285,29 +376,119 @@ static void ST_Drawer_ (stbar_t* sb)
 		}
 
 		// Special stage HUD
-		DrawJagobjLump(nbracket, 16, 8+16, NULL, NULL);
-		DrawJagobjLump(nbracket, 72, 8+16, NULL, NULL);
-		DrawJagobjLump(nbracket, 272, 8+16, NULL, NULL);
+#ifndef HIDE_HUD
 
-		DrawJagobjLump(nsshud, 24, 16+16, NULL, NULL);
-		DrawJagobjLump(nrng1, 280, 17+16, NULL, NULL);
-		DrawJagobjLump(chaos+(gamemapinfo.mapNumber - 60), 77, 13+16, NULL, NULL);
+		// Bracket (top)
+		if (nbrackt_jagobj != NULL) {
+			DrawJagobj(nbrackt_jagobj, 16+2, 8+16);
+			DrawJagobj(nbrackt_jagobj, 72+2, 8+16);
+			DrawJagobj(nbrackt_jagobj, 272+2, 8+16);
+		}
+		else {
+			DrawJagobjLump(nbrackt, 16+2, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackt, 72+2, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackt, 272+2, 8+16, NULL, NULL);
+		}
 
+		// Bracket (left)
+		if (nbrackl_jagobj != NULL) {
+			DrawJagobj(nbrackl_jagobj, 16, 8+16+3);
+			DrawJagobj(nbrackl_jagobj, 72, 8+16+3);
+			DrawJagobj(nbrackl_jagobj, 272, 8+16+3);
+		}
+		else {
+			DrawJagobjLump(nbrackl, 16, 8+16+3, NULL, NULL);
+			DrawJagobjLump(nbrackl, 72, 8+16+3, NULL, NULL);
+			DrawJagobjLump(nbrackl, 272, 8+16+3, NULL, NULL);
+		}
+
+		// Bracket (right)
+		if (nbrackr_jagobj != NULL) {
+			DrawJagobj(nbrackr_jagobj, 16+28, 8+16+3);
+			DrawJagobj(nbrackr_jagobj, 72+28, 8+16+3);
+			DrawJagobj(nbrackr_jagobj, 272+28, 8+16+3);
+		}
+		else {
+			DrawJagobjLump(nbrackr, 16+28, 8+16+3, NULL, NULL);
+			DrawJagobjLump(nbrackr, 72+28, 8+16+3, NULL, NULL);
+			DrawJagobjLump(nbrackr, 272+28, 8+16+3, NULL, NULL);
+		}
+
+		// Bracket (bottom)
+		if (nbrackb_jagobj != NULL) {
+			DrawJagobj(nbrackb_jagobj, 16+2, 8+16+29);
+			DrawJagobj(nbrackb_jagobj, 72+2, 8+16+29);
+			DrawJagobj(nbrackb_jagobj, 272+2, 8+16+29);
+		}
+		else {
+			DrawJagobjLump(nbrackb, 16+2, 8+16+29, NULL, NULL);
+			DrawJagobjLump(nbrackb, 72+2, 8+16+29, NULL, NULL);
+			DrawJagobjLump(nbrackb, 272+2, 8+16+29, NULL, NULL);
+		}
+
+		// Blue sphere icon
+		if (nsshud_jagobj != NULL) {
+			DrawJagobj(nsshud_jagobj, 24, 16+16);
+		}
+		else {
+			DrawJagobjLump(nsshud, 24, 16+16, NULL, NULL);
+		}
+
+		// Ring icon
+		if (nrng1_jagobj != NULL) {
+			DrawJagobj(nrng1_jagobj, 280, 17+16);
+		}
+		else {
+			DrawJagobjLump(nrng1, 280, 17+16, NULL, NULL);
+		}
+
+		// Chaos emerald icon
+		if (chaos_jagobj != NULL) {
+			DrawJagobj(chaos_jagobj, 77, 13+16);
+		}
+		else {
+			DrawJagobjLump(chaos+(gamemapinfo.mapNumber - SSTAGE_START), 77, 13+16, NULL, NULL);
+		}
+
+		// Arrow (left side)
 		DrawJagobjLump(narrow1 + ((gametic/2) & 3), 40, 13+16, NULL, NULL);
-		DrawJagobjLump(narrow9, 240, 13+16, NULL, NULL);
+
+		// Arrow (right side)
+		if (narrow9_jagobj != NULL) {
+			DrawJagobj(narrow9_jagobj, 240, 13+16);
+		}
+		else {
+			DrawJagobjLump(narrow9, 240, 13+16, NULL, NULL);
+		}
 
 		V_DrawValueCenter(&hudNumberFont, 260, 8+12+16, totalitems - sb->rings);
 		V_DrawValueCenter(&hudNumberFont, 60, 13+6+16, gamemapinfo.spheresNeeded);
 
 		V_DrawStringCenter(&menuFont, 160, 12+16, "TIME LEFT");
+#endif
 		const int delaytime = 3*TICRATE;
-		int worldTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
-		int timeLeft = (gamemapinfo.timeLimit - worldTime)/TICRATE;
+		int playTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
+		int timeLeft = (gamemapinfo.timeLimit - playTime)/TICRATE;
 		if (timeLeft < 0)
 			timeLeft = 0;
 		if (timeLeft > gamemapinfo.timeLimit/TICRATE)
 			timeLeft = gamemapinfo.timeLimit/TICRATE;
-		V_DrawValueCenter(&hudNumberFont, 160, 24+16, timeLeft);
+#ifndef HIDE_HUD
+		if (timeLeft > 9) {
+			V_DrawValueCenter(&hudNumberFont, 160, 24+16, timeLeft);
+		}
+		else if (timeLeft >= 0) {
+			int size_index = (((playTime<<5) / 15) & 63);
+			fixed_t size_scale = FRACUNIT + (2048 * (63 - size_index));
+			DrawScaledJagobj(
+					hudNumberFont.charCache[timeLeft],
+					160-8+(size_index>>2)-(size_index>>3),
+					24+16-7+(size_index>>3),
+					size_scale,
+					size_scale,
+					I_OverwriteBuffer());
+		}
+#endif
 
 		// Not the best thing to do gamelogic inside of the draw routine,
 		// but trying to keep things simple.
@@ -331,36 +512,69 @@ static void ST_Drawer_ (stbar_t* sb)
 			if (fadetime > TICRATE/3)
 				fadetime = TICRATE/3;
 		}
+
+		//CONS_Printf("free_memory: %d", free_memory);	//DLG: Remove me!
 	}
 	else
 	{
 //		CONS_Printf("skyOffsetY: %d", -(vd.viewz >> 16) - (((signed int)vd.aimingangle) >> 22));	//DLG: Remove me!
+//		CONS_Printf("legacy_emulator: %d", legacy_emulator);	//DLG: Remove me!
 
+#ifndef HIDE_HUD
 		const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
 		int worldTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
 		if (worldTime < 0)
 			worldTime = 0;
-		DrawJagobjLump(score, 16, 10+22, NULL, NULL);
-		V_DrawValuePaddedRight(&hudNumberFont, 16 + 120, 10+22, sb->score, 0);
 
 		const int minutes = worldTime/(60*TICRATE);
 		const int seconds = (worldTime/(TICRATE))%60;
-		DrawJagobjLump(time, 16, 26+22, NULL, NULL);
-		V_DrawValuePaddedRight(&hudNumberFont, 72, 26+22, minutes, 0);
-		DrawJagobjLump(timecolon, 72, 26+22, NULL, NULL);
-		V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26+22, seconds, 2);
 
-		if (sb->rings <= 0 && (gametic / 4 & 1))
-			DrawJagobjLumpWithColormap(rings, 16, 42+22, NULL, NULL, YELLOWTEXTCOLORMAP);
-		else
-			DrawJagobjLump(rings, 16, 42+22, NULL, NULL);
-		V_DrawValuePaddedRight(&hudNumberFont, 96, 42+22, sb->rings, 0);
-
-		DrawJagobjLump(face, 16, 176, NULL, NULL);
-		V_DrawStringLeftWithColormap(&menuFont, 16 + 20, 176, "SONIC", YELLOWTEXTCOLORMAP);
-		DrawJagobjLump(livex, 16 + 22, 176 + 10, NULL, NULL);
-		V_DrawValuePaddedRight(&menuFont, 16 + 58, 176+8, sb->lives, 0);
+		if (gametic < 94) {
+			const int interval = gametic-89;
+			const int offset_x = 16 + ((6-interval) << 3);
+			DrawScaledJagobj(W_POINTLUMPNUM(score), offset_x, 10+22+((6-interval)<<1), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(time), offset_x, 26+22+((6-interval)<<2), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(rings), offset_x, 42+22+((6-interval)<<3), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+		}
+		else {
+			DrawJagobjLump(score, 16, 10+22, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 16 + 120, 10+22, sb->score, 0);
+			DrawJagobjLump(time, 16, 26+22, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 72, 26+22, minutes, 0);
+			DrawJagobjLump(timecolon, 72, 26+22, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26+22, seconds, 2);
+			if (sb->rings <= 0 && (gametic / 4 & 1))
+				DrawJagobjLumpWithColormap(rings, 16, 42+22, NULL, NULL, YELLOWTEXTCOLORMAP);
+			else
+				DrawJagobjLump(rings, 16, 42+22, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 96, 42+22, sb->rings, 0);
+			DrawJagobjLump(face, 16, 176, NULL, NULL);
+			V_DrawStringLeftWithColormap(&menuFont, 16 + 20, 176, "SONIC", YELLOWTEXTCOLORMAP);
+			DrawJagobjLump(livex, 16 + 22, 176 + 10, NULL, NULL);
+			V_DrawValuePaddedRight(&menuFont, 16 + 58, 176+8, sb->lives, 0);
+		}
+#endif
 	}
+
+#ifndef HIDE_HUD
+
+#ifdef SHOW_COORDINATES
+	V_DrawValueLeft(&menuFont, 320-112, 32, (players[0].mo->x >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-112, 40, (players[0].mo->y >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-112, 48, (players[0].mo->z >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-112, 56, (players[0].mo->angle >> 16) & 0xFFFF);
+
+	V_DrawValueLeft(&menuFont, 320-64, 32, (camera.x >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-64, 40, (camera.y >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-64, 48, (camera.z >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-64, 56, (camera.angle >> 16) & 0xFFFF);
+#endif
+
+#if defined(REC_INPUT_DEMO) || defined(REC_POS_DEMO)
+	if (IsDemoModeType(DemoMode_Recording)) {
+		V_DrawStringRightWithColormap(&menuFont, 320 - 16, 192, "RECORDING", YELLOWTEXTCOLORMAP);
+	}
+#endif
 
 	if (sb->lives == 0 && sb->deadTimer > 3*TICRATE)
 	{
@@ -370,47 +584,107 @@ static void ST_Drawer_ (stbar_t* sb)
 		int overX = 160 + 8;
 		int timelength = 3*TICRATE + TICRATE/2;
 		int timesize = timelength - 3*TICRATE;
-
 		if (sb->deadTimer < timelength)
 		{
 			int timepassed = timesize - (timelength - sb->deadTimer);
 			gameX = gameStartX + (((gameX - gameStartX)/timesize) * timepassed);
 			overX = overStartX + (((overX - overStartX)/timesize) * timepassed);
 		}
-
 		DrawJagobjLump(go_game, gameX, 102, NULL, NULL);
 		DrawJagobjLump(go_over, overX, 102, NULL, NULL);
+
+		if (viewportNum == VIEWPORT_H32) {
+			clear_h32_borders = 2;
+		}
 	}
 
 	if (sb->intermission)
 		Y_IntermissionDrawer();
+#endif
+}
+
+static char consoleMsg[128];
+static VINT consoleMsgTics = 0;
+static boolean consoleCenter = false;
+
+void MBrownSequenceStart()
+{
+	if (!clearedGame)
+		return;
+
+	camBossMobj = P_SpawnMobj(1680 << FRACBITS, 4352 << FRACBITS, 768 << FRACBITS, MT_MBROWN);
+	mbrownState.phase = 1;
+	mbrownState.counter = TICRATE;
+	CONS_Printf("You again!");
+	consoleCenter = true;
+}
+
+void MBrownSequenceTicker()
+{
+	mbrownState.counter--;
+
+	if (mbrownState.counter > 0)
+		return;
+
+	if (mbrownState.phase == 1)
+	{
+		CONS_Printf("Are you responsible...");
+		consoleCenter = true;
+		mbrownState.counter = TICRATE;
+	}
+	else if (mbrownState.phase == 2)
+	{
+		CONS_Printf("...for this pixellated mess!?");
+		consoleCenter = true;
+		mbrownState.counter = TICRATE;
+	}
+	else if (mbrownState.phase == 3)
+	{
+		CONS_Printf("Take a hike!");
+		consoleCenter = true;
+		mbrownState.counter = TICRATE;
+	}
+	else if (mbrownState.phase == 4)
+	{
+		CONS_Printf("In a forest.");
+		consoleCenter = true;
+		mbrownState.counter = TICRATE;
+	}
+	else if (mbrownState.phase == 5)
+	{
+		startmap = 10;
+		gameaction = ga_warped;
+	}
+
+	mbrownState.phase++;
 }
 
 void CONS_Printf(char *msg, ...) 
 {
+	consoleCenter = false;
 	if (stbar)
 	{
 		va_list ap;
 
 		va_start(ap, msg);
-		D_vsnprintf(stbar->msg, sizeof(stbar->msg), msg, ap);
+		D_vsnprintf(consoleMsg, sizeof(consoleMsg), msg, ap);
 		va_end(ap);
 
-		stbar->msgTics = 4 * TICRATE;
+		consoleMsgTics = 4 * TICRATE;
 	}
 } 
 
 void ST_Drawer(void)
 {
-	int	p = splitscreen ? 0 : consoleplayer;
-	int e = splitscreen ? MAXPLAYERS : consoleplayer + 1;
-	int y[MAXPLAYERS];
+	if (IsTitleScreen())
+		return;
 
 	if (debugmode == DEBUGMODE_NODRAW)
 		return;
 
-	if (demoplayback)
-		return;
+	int	p = splitscreen ? 0 : consoleplayer;
+	int e = splitscreen ? MAXPLAYERS : consoleplayer + 1;
+	int y[MAXPLAYERS];
 
 	y[consoleplayer] = I_FrameBufferHeight();
 	y[consoleplayer^1] = 0;
@@ -429,10 +703,17 @@ void ST_Drawer(void)
 		p++;
 	}
 
-	if (stbar->msgTics)
+	if (consoleMsgTics)
 	{
-		V_DrawStringLeft(&menuFont, 0, 24, stbar->msg);
-		stbar->msgTics--;
+		if (consoleCenter)
+			V_DrawStringCenter(&menuFont, 160, 112, consoleMsg);
+		else
+			V_DrawStringLeft(&menuFont, 8, 24, consoleMsg);
+		
+		consoleMsgTics--;
+
+		if (consoleMsgTics <= 0)
+			consoleCenter = false;
 	}
 }
 
@@ -448,7 +729,7 @@ void ST_EraseBlock(int x, int y, int width, int height)
 	if (width & 1)
 		width -= 1;
 
-	DrawJagobj2(sbar, x, stbar_y + y, x, y, width, height, I_FrameBuffer());
+	DrawJagobj3(sbar, x, stbar_y + y, x, y, width, height, 320, I_FrameBuffer());
 }*/
 
 #endif

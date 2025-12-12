@@ -93,6 +93,7 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 			player->justSprung = TICRATE;
 	}
 
+	boolean totallySideways = false;
 	if (vertispeed > 0)
 		player->mo->z = spring->z + (spring->theight << FRACBITS) + 1;
 	else if (vertispeed < 0)
@@ -103,6 +104,7 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 		fixed_t offy = 0;
 		// Horizontal springs teleport you in FRONT of them.
 		player->mo->momx = player->mo->momy = 0;
+		totallySideways = true;
 
 		// Overestimate the distance to position you at
 		P_ThrustValues(spring->angle, (springinfo->radius + playerinfo->radius + 1) * 2, &offx, &offy);
@@ -123,6 +125,17 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 		player->mo->x = spring->x + offx;
 		player->mo->y = spring->y + offy;
 		P_SetThingPosition(player->mo);
+
+		// Go into a spin
+		P_ResetScore(player);
+		player->pflags |= PF_SPINNING;
+		P_SetMobjState(player->mo, S_PLAY_ATK1);
+		player->pflags |= PF_USEDOWN;
+		player->mo->momz = 0;
+		if (player->pflags & PF_VERTICALFLIP)
+			player->mo->z = spring->z + (spring->theight << FRACBITS) - P_GetPlayerSpinHeight();
+		else
+			player->mo->z = spring->z;
 	}
 
 	if (vertispeed)
@@ -137,7 +150,7 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 
 		if (horizspeed)
 		{
-			player->justSprung = TICRATE;
+			player->justSprung = totallySideways ? TICRATE >> 2 : TICRATE;
 			player->mo->angle = spring->angle;
 		}
 
@@ -187,7 +200,7 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 	if (toucher->health <= 0)
 		return;						/* can happen with a sliding player corpse */
 
-	if (special->flags & MF_RINGMOBJ)
+	if ((special->flags & MF_RINGMOBJ) && (special->flags & MF_SPECIAL))
 	{
 		if (!P_CanPickupItem(player))
 			return;
@@ -199,14 +212,13 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 			P_SpawnMobj(ring->x << FRACBITS, ring->y << FRACBITS, ring->z << FRACBITS, MT_SPARK);
 			P_GivePlayerRings(player, 1);
 			sound = mobjinfo[special->type].deathsound;
-
 			player->itemcount++;
 		}
 		else if (special->type == MT_TOKEN)
 		{
 			ringmobj_t *ring = (ringmobj_t*)special;
-			token++;
-			tokenbits |= special->angle / ANG45;
+			tokens++;
+			tokenbits |= ring->pad;
 			P_SpawnMobj(ring->x << FRACBITS, ring->y << FRACBITS, ring->z << FRACBITS, MT_SPARK);
 			sound = mobjinfo[special->type].deathsound;
 		}
@@ -230,8 +242,40 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 				S_StartSong(gameinfo.emeraldMus, 0, cdtrack_emerald);
 			}
 		}
+		else if (special->type == MT_TORCH)
+		{
+			if (player->shield != SH_ELEMENTAL)
+				P_DamageMobj(toucher, special, special, 1);
+			return;
+		}
+		else if (special->type == MT_SMALLMACE || special->type == MT_BIGMACE)
+		{
+			P_DamageMobj(toucher, special, special, 1);
+			return;
+		}
+		else if (!(player->pflags & PF_MACESPIN) && (special->type == MT_SMALLGRABCHAIN
+			|| special->type == MT_BIGGRABCHAIN))
+		{
+			if (P_MobjFlip(toucher) * toucher->momz > 0) // Only activates when falling downward or on a surface
+				return;
+
+			if (player->powers[pw_flashing])
+				return;
+
+			P_ResetPlayer(player);
+
+			S_StartSound(toucher, sfx_s3k_3c);
+			P_SetMobjState(toucher, S_PLAY_ATK1);
+
+			// disable controls shortly
+			player->justSprung = TICRATE >> 2;
+			player->pflags |= PF_MACESPIN;
+
+			toucher->target = special;
+
+			return;
+		}
 		
-		special->flags &= ~MF_SPECIAL;
 		P_RemoveMobj (special);
 
 		if (sound <= sfx_None)
@@ -244,27 +288,45 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 	}
 
 	// Ignore eggman in "ouchie" mode
-	if ((special->type == MT_EGGMOBILE || special->type == MT_EGGMOBILE2) && (special->flags2 & MF2_FRET))
+	if ((mobjinfo[special->type].spawnhealth > 1) && (special->flags2 & MF2_FRET))
 		return;
 
 	if ((special->flags2 & MF2_SHOOTABLE) && !(special->flags2 & MF2_MISSILE))
 	{
 		if (special->flags2 & MF2_ENEMY) // enemy rules
 		{
-			if (special->type == MT_SPRINGSHELL && special->health > 0)
+			if (special->health > 0)
 			{
-				fixed_t tmz = toucher->z - toucher->momz;
-				fixed_t tmznext = toucher->z;
-				fixed_t shelltop = special->z + (special->theight << FRACBITS);
-				fixed_t sprarea = 12*FRACUNIT;
-
-				if ((tmznext <= shelltop && tmz > shelltop) || (tmznext > shelltop - sprarea && tmznext < shelltop))
+				if (special->type == MT_SPRINGSHELL)
 				{
-					P_DoSpring(special, player);
-					return;
+					fixed_t tmz = toucher->z - toucher->momz;
+					fixed_t tmznext = toucher->z;
+					fixed_t shelltop = special->z + (special->theight << FRACBITS);
+					fixed_t sprarea = 12*FRACUNIT;
+
+					if ((tmznext <= shelltop && tmz > shelltop) || (tmznext > shelltop - sprarea && tmznext < shelltop))
+					{
+						P_DoSpring(special, player);
+						player->pflags |= PF_SPRINGSHELL;
+						return;
+					}
+					else if (tmz > shelltop - sprarea && tmz < shelltop) // Don't damage people springing up / down
+						return;
 				}
-				else if (tmz > shelltop - sprarea && tmz < shelltop) // Don't damage people springing up / down
-					return;
+				else if (special->type == MT_FACESTABBER)
+				{
+					if (special->state == S_FACESTABBER_CHARGE3)
+					{
+						// If you hit him head on, you get hurt instead.
+						angle_t botToPlayer = R_PointToAngle2(special->x, special->y, toucher->x - toucher->momx, toucher->y - toucher->momy);
+						if (botToPlayer < special->angle + ANG90
+							&& botToPlayer > special->angle - ANG90)
+						{
+							P_DamageMobj(toucher, special, special, 1);
+							return;
+						}
+					}
+				}
 			}
 
 			if ((player->pflags & PF_JUMPED) || (player->pflags & PF_SPINNING) || player->powers[pw_invulnerability])
@@ -282,6 +344,46 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 			{
 				toucher->momx = -toucher->momx;
 				toucher->momy = -toucher->momy;
+			}
+		}
+		else if (special->type == MT_EGGSHIELD)
+		{
+			const mobjinfo_t *sInfo = &mobjinfo[special->type];
+			angle_t angle = R_PointToAngle2(special->x, special->y, toucher->x, toucher->y) - special->angle;
+			fixed_t touchspeed = P_AproxDistance(toucher->momx, toucher->momy);
+			if (touchspeed < FRACUNIT)
+				touchspeed = FRACUNIT;
+
+			// Blocked by the shield?
+			if (!(angle > ANG90 && angle < ANG270))
+			{
+				toucher->momx = P_ReturnThrustX(special->angle, touchspeed);
+				toucher->momy = P_ReturnThrustY(special->angle, touchspeed);
+				toucher->momz = -toucher->momz >> 1;
+				player->homingTimer = 0;
+
+				// Play a bounce sound?
+				S_StartSound(toucher, sInfo->painsound);
+
+				// experimental bounce
+				if (special->target)
+					SETLOWER8(special->target->extradata, 0);
+			}
+			else
+			{
+				// Shatter the shield!
+				toucher->momx = -toucher->momx >> 1;
+				toucher->momy = -toucher->momy >> 1;
+				toucher->momz = -toucher->momz >> 1;
+				player->homingTimer = 0;
+
+				P_SetMobjState(special, sInfo->deathstate);
+				P_InstaThrust(special, special->angle, 3*FRACUNIT);
+				special->momz = 4*FRACUNIT;
+				special->flags &= ~MF_NOGRAVITY;
+
+//				S_StartSound(toucher, sInfo->deathsound);
+				S_StartSound(toucher, sfx_wbreak);
 			}
 		}
 		else // A monitor or something else we can pop
@@ -317,6 +419,10 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 
 	switch(special->type)
 	{
+		case MT_GOOP:
+			P_DamageMobj(toucher, special, special, 1);
+			special->latecall = LC_REMOVE_MOBJ;
+			return;
 		case MT_ATTRACTRING:
 		case MT_FLINGRING:
 			P_SpawnMobj(special->x, special->y, special->z, MT_SPARK);
@@ -443,6 +549,15 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 		{
 			score = 1000;
 			scoreState = mobjinfo[MT_SCORE].spawnstate + 3;
+
+			if (target->type == MT_EGGMOBILE2)
+			{
+				for (mobj_t *mo = mobjhead.next ; mo != (void *)&mobjhead; mo = mo->next)
+				{					
+					if (mo->type == MT_GOOP)
+						mo->latecall = LC_REMOVE_MOBJ;
+				}
+			}
 		}
 
 		P_SetMobjState(scoremobj, scoreState);
@@ -458,6 +573,8 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 			flicky->momz = 4*FRACUNIT;
 			flicky->target = player->mo;
 		}
+
+		target->target = NULL;
 	}
 }
 
@@ -485,9 +602,9 @@ static void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor)
 	player->mo->z++; // Lift off the ground a little
 
 	if (player->pflags & PF_UNDERWATER)
-		player->mo->momz = FixedDiv(10511*FRACUNIT, 2600*FRACUNIT) * P_MobjFlip(player->mo);
+		player->mo->momz = (4 << FRACBITS) * P_MobjFlip(player->mo);
 	else
-		player->mo->momz = FixedDiv(69*FRACUNIT, 10*FRACUNIT) * P_MobjFlip(player->mo);
+		player->mo->momz = 452198 /*6.9*/ * P_MobjFlip(player->mo);
 
 	ang = ((player->mo->momx || player->mo->momy) ? R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy) : player->mo->angle);
 
@@ -517,6 +634,7 @@ void P_BlackOw(player_t *player)
 			players[i].whiteFlash = 4;
 	}
 
+	// TODO: Use blockmap!
 	for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
     {
 		if ((node->flags2 & MF2_ENEMY) && P_AproxDistance(node->x - player->mo->x, node->y - player->mo->y) < 1536*FRACUNIT)
@@ -558,7 +676,7 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 	if (target->health <= 0)
 		return;
 
-	if (target->type == MT_EGGMOBILE || target->type == MT_EGGMOBILE2)
+	if (targinfo->spawnhealth > 1)
 	{
 		if (target->flags2 & MF2_FRET) // Currently flashing from being hit
 			return;
@@ -580,7 +698,7 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 /* */
 	if (player)
 	{
-		if (player->exiting)
+		if (player->exiting || leveltime < 3*TICRATE)
 			return;
 
 		P_ResetPlayer(player);

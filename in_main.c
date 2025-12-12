@@ -2,6 +2,7 @@
 /* in_main.c -- intermission */
 // This is now only used for special stage intermission
 #include "doomdef.h"
+#include "r_local.h"
 #include "st_main.h"
 #include "st_inter.h"
 #include "v_font.h"
@@ -117,10 +118,12 @@ static void Y_AwardSpecialStageBonus(void)
 static VINT intertic = 0;
 static VINT endtic = 0;
 static VINT tallydonetic = -1;
+static VINT tileLump = -1;
 
 void IN_Start (void)
 {
 	intertype = int_spec;
+	tileLump = W_GetNumForName("SPECTILE");
 
 	Y_AwardSpecialStageBonus();
 
@@ -169,8 +172,11 @@ void IN_Start (void)
 	DoubleBufferSetup ();
 #endif
 
-	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-	I_SetPalette(dc_playpals+5*768); // Completely white
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4), dc_cshift_playpals); // Completely white
+	if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+		copper_table_brightness = 31;
+		effects_flags |= EFFECTS_COPPER_REFRESH;
+	}
 
 	// Remove water distortion filter from both frame buffers.
 	RemoveDistortionFilters();
@@ -178,6 +184,8 @@ void IN_Start (void)
 	RemoveDistortionFilters();
 
 	S_StartSong(gameinfo.intermissionMus, 0, cdtrack_intermission);
+
+	clearscreen = 2;
 }
 
 void IN_Stop (void)
@@ -297,7 +305,7 @@ int IN_Ticker (void)
 			S_StartSound(NULL, sfx_s3k_b0); // cha-ching!
 
 			// Update when done with tally
-			if (!demoplayback)
+			if (!IsDemoModeType(DemoMode_Playback))
 			{
 				//M_SilentUpdateUnlockablesAndEmblems(serverGamedata);
 
@@ -323,34 +331,44 @@ int IN_Ticker (void)
 
 void IN_Drawer (void)
 {
+	if (clearscreen > 0) {
+		I_ResetLineTable();
+		clearscreen--;
+	}
+
 	if (intertic < TICRATE/2)
 	{
-		VINT palette = 5 - (intertic / 3);
+		VINT palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4 - (intertic / 3);
 		if (palette < 0)
 			palette = 0;
 
-		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-		I_SetPalette(dc_playpals+palette*768); // Fade from white to normal
+		R_FadePalette(dc_playpals, palette, dc_cshift_playpals); // Fade from white to normal
+		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+			copper_table_brightness = 31 - (intertic << 1);
+			effects_flags |= EFFECTS_COPPER_REFRESH;
+		}
 	}
 	else if (endtic != -1 && endtic - intertic < TICRATE / 2)
 	{
-		VINT palette = 10 - (endtic - intertic) / 2;
+		VINT palette = (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4) - (endtic - intertic) / 2;
 			if (palette < 6)
 				palette = 0;
 
 		if (endtic <= intertic)
 			palette = 10;
 
-		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-		I_SetPalette(dc_playpals+palette*768); // Fade from normal to black
+		R_FadePalette(dc_playpals, palette, dc_cshift_playpals); // Fade from normal to black
+		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+			copper_table_brightness = -31 + ((endtic - intertic) >> 2);
+			effects_flags |= EFFECTS_COPPER_REFRESH;
+		}
 	}
 	else
 	{
-		const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 		I_SetPalette(dc_playpals); // Normal
 	}
 
-	DrawTiledBackground2(W_GetNumForName("SPECTILE"));
+	DrawTiledBackground2(tileLump);
 
 	if (intertype == int_spec)
 	{

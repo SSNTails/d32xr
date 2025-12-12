@@ -4,131 +4,9 @@ camera_t camera;
 //#define NOCLIPCAMERA
 #define CAM_PHYS_HEIGHT (12 << FRACBITS)
 
-static boolean PIT_CameraCheckLine(line_t *ld, pmovework_t *mw)
-{
-   fixed_t   opentop, openbottom, lowfloor;
-   sector_t *front, *back;
+boolean invertCamera = false;
 
-   // The moving thing's destination positoin will cross the given line.
-   // If this should not be allowed, return false.
-   if(ld->sidenum[1] == -1)
-      return false; // one-sided line
-
-   if(ld->flags & ML_BLOCKING)
-      return false; // explicitly blocking everything
-
-   front = LD_FRONTSECTOR(ld);
-   back  = LD_BACKSECTOR(ld);
-
-   if(front->ceilingheight == front->floorheight ||
-      back->ceilingheight == back->floorheight)
-   {
-      mw->blockline = ld;
-      return false; // probably a closed door
-   }
-
-   if(front->ceilingheight < back->ceilingheight)
-      opentop = front->ceilingheight;
-   else
-      opentop = back->ceilingheight;
-
-   if(front->floorheight > back->floorheight)
-   {
-      openbottom = front->floorheight;
-      lowfloor   = back->floorheight;
-   }
-   else
-   {
-      openbottom = back->floorheight;
-      lowfloor   = front->floorheight;
-   }
-
-   // adjust floor/ceiling heights
-   if(opentop < mw->tmceilingz)
-      mw->tmceilingz = opentop;
-   if(openbottom >mw->tmfloorz)
-      mw->tmfloorz = openbottom;
-   if(lowfloor < mw->tmdropoffz)
-      mw->tmdropoffz = lowfloor;
-
-   return true;
-}
-
-static boolean PM_CameraCrossCheck(line_t *ld, pmovework_t *mw)
-{
-   if(PM_BoxCrossLine(ld, mw))
-   {
-      if(!PIT_CameraCheckLine(ld, mw))
-         return false;
-   }
-   return true;
-}
-
-static boolean PM_CameraCheckPosition(pmovework_t *mw)
-{
-   int xl, xh, yl, yh, bx, by;
-   mobj_t *tmthing = mw->tmthing;
-   VINT *lvalidcount;
-
-   mw->tmflags = tmthing->flags;
-
-   const fixed_t tradius = mobjinfo[tmthing->type].radius;
-   mw->tmbbox[BOXTOP   ] = mw->tmy + tradius;
-   mw->tmbbox[BOXBOTTOM] = mw->tmy - tradius;
-   mw->tmbbox[BOXRIGHT ] = mw->tmx + tradius;
-   mw->tmbbox[BOXLEFT  ] = mw->tmx - tradius;
-
-   mw->newsubsec = R_PointInSubsector(mw->tmx, mw->tmy);
-
-   // the base floor/ceiling is from the subsector that contains the point.
-   // Any contacted lines the step closer together will adjust them.
-   mw->tmfloorz   = mw->tmdropoffz = mw->newsubsec->sector->floorheight;
-   mw->tmceilingz = mw->newsubsec->sector->ceilingheight;
-
-   I_GetThreadLocalVar(DOOMTLS_VALIDCOUNT, lvalidcount);
-   *lvalidcount = *lvalidcount + 1;
-   if (*lvalidcount == 0)
-      *lvalidcount = 1;
-
-   mw->blockline = NULL;
-
-   if(mw->tmflags & MF_NOCLIP) // thing has no clipping?
-      return true;
-
-   // check lines
-   xl = mw->tmbbox[BOXLEFT  ] - bmaporgx;
-   xh = mw->tmbbox[BOXRIGHT ] - bmaporgx;
-   yl = mw->tmbbox[BOXBOTTOM] - bmaporgy;
-   yh = mw->tmbbox[BOXTOP   ] - bmaporgy;
-
-   if(xl < 0)
-      xl = 0;
-   if(yl < 0)
-      yl = 0;
-	if(yh < 0 || xh < 0)
-		return true;
-
-   xl = (unsigned)xl >> MAPBLOCKSHIFT;
-   xh = (unsigned)xh >> MAPBLOCKSHIFT;
-   yl = (unsigned)yl >> MAPBLOCKSHIFT;
-   yh = (unsigned)yh >> MAPBLOCKSHIFT;
-
-   if(xh >= bmapwidth)
-      xh = bmapwidth - 1;
-   if(yh >= bmapheight)
-      yh = bmapheight - 1;
-
-   for(bx = xl; bx <= xh; bx++)
-   {
-      for(by = yl; by <= yh; by++)
-      {
-         if(!P_BlockLinesIterator(bx, by, (blocklinesiter_t)PM_CameraCrossCheck, mw))
-            return false;
-      }
-   }
-
-   return true;
-}
+boolean PM_CheckPosition(pmovework_t *mw);
 
 static boolean P_CameraTryMove2(ptrymove_t *tm, boolean checkposonly)
 {
@@ -140,7 +18,7 @@ static boolean P_CameraTryMove2(ptrymove_t *tm, boolean checkposonly)
    mw.tmy = tm->tmy;
    mw.tmthing = tm->tmthing;
 
-   trymove2 = PM_CameraCheckPosition(&mw);
+   trymove2 = PM_CheckPosition(&mw);
 
    tm->floatok = false;
    tm->blockline = mw.blockline;
@@ -170,7 +48,7 @@ static boolean P_CameraTryMove2(ptrymove_t *tm, boolean checkposonly)
    tmthing->ceilingz = mw.tmceilingz;
    tmthing->x = mw.tmx;
    tmthing->y = mw.tmy;
-   tmthing->isubsector = mw.newsubsec - subsectors;
+   tmthing->isubsector = SS_TO_I(mw.newsubsec);
 
    return true;
 }
@@ -190,7 +68,7 @@ static void P_ResetCamera(player_t *player, camera_t *thiscam)
 	thiscam->z = player->mo->z + VIEWHEIGHT;
    thiscam->angle = player->mo->angle;
    thiscam->aiming = 0;
-   thiscam->subsector = R_PointInSubsector(thiscam->x, thiscam->y);
+   thiscam->subsector = I_TO_SS(R_PointInSubsector2(thiscam->x, thiscam->y));
 }
 
 // Process the mobj-ish required functions of the camera
@@ -213,6 +91,7 @@ static void P_CameraThinker(player_t *player, camera_t *thiscam)
 		momy = (thiscam->momy>>2);
 
 		mobj_t mo; // Our temporary dummy to pretend we are a mobj
+      D_memset(&mo, 0, sizeof(mobj_t));
 		mo.flags = MF_SOLID;
       mo.flags2 = MF2_FLOAT;
 		mo.x = thiscam->x;
@@ -220,6 +99,7 @@ static void P_CameraThinker(player_t *player, camera_t *thiscam)
 		mo.z = thiscam->z;
 		mo.floorz = thiscam->floorz;
 		mo.ceilingz = thiscam->ceilingz;
+		mo.isubsector = thiscam->subsector - subsectors;
 		mo.momx = thiscam->momx;
 		mo.momy = thiscam->momy;
 		mo.momz = thiscam->momz;
@@ -263,7 +143,7 @@ camwrapup:
 		thiscam->momx = mo.momx;
 		thiscam->momy = mo.momy;
 		thiscam->momz = mo.momz;
-      thiscam->subsector = R_PointInSubsector(thiscam->x, thiscam->y);
+      	thiscam->subsector = I_TO_SS(mo.isubsector);
    }
 
 	// P_CameraZMovement()
@@ -307,6 +187,7 @@ camwrapup:
 }
 
 mobj_t *camBossMobj = NULL;
+VINT camBossMobjCounter = 0;
 
 void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 {
@@ -315,11 +196,11 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	fixed_t x, y, z, viewpointx, viewpointy, camspeed, camdist, camheight, pviewheight;
 	fixed_t dist;
 	mobj_t *mo;
-	subsector_t *newsubsec;
+	VINT newsubsec;
    const mobjinfo_t *caminfo = &mobjinfo[MT_CAMERA];
 
 	mo = player->mo;
-   thiscam->distFromPlayer = P_AproxDistance(P_AproxDistance(thiscam->x - mo->x, thiscam->y - mo->y), thiscam->z - mo->z);
+   thiscam->distFromPlayer = P_AproxDistance3D(thiscam->x - mo->x, thiscam->y - mo->y, thiscam->z - mo->z);
 
    // If there is a boss, should focus on the boss
    if (camBossMobj)
@@ -328,18 +209,26 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
          angle = focusangle = R_PointToAngle2(thiscam->x, thiscam->y, camBossMobj->x, camBossMobj->y);
       else
          angle = focusangle = R_PointToAngle2(thiscam->x, thiscam->y, 0, 0);
+
+	  if (camBossMobjCounter > 0)
+	  {
+		if (--camBossMobjCounter <= 0)
+			camBossMobj = NULL;
+	  }
    }
    else
    {
       if (!player->exiting && player->stillTimer > TICRATE/2 && !(player->buttons & (BT_CAMLEFT | BT_CAMRIGHT)))
          angle = focusangle = mo->angle;
+	  else if (player->pflags & PF_STARTDASH)
+	  	 angle = focusangle = mo->angle;
       else
          angle = focusangle = R_PointToAngle2(thiscam->x, thiscam->y, mo->x, mo->y);
    }
 
 	P_CameraThinker(player, thiscam);
 
-	camspeed = FRACUNIT / 4;
+	camspeed = FRACUNIT >> 2;
 	camdist = CAM_DIST;
 	camheight = 20 << FRACBITS;
 
@@ -357,11 +246,13 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	// If dead, camera is twice as close
 	if (!(mo->flags2 & MF2_SHOOTABLE))
 		dist >>= 1;
-   else if (player->exiting)
-   {
-      dist *= 3; // Even farther away when exiting
-      camspeed >>= 2;
-   }
+    else if (player->exiting)
+    {
+        dist *= 3; // Even farther away when exiting
+        camspeed >>= 2;
+    }
+    else if (player->pflags & PF_MACESPIN)
+		dist = (dist << 1) - (dist >> 1); // * 1.5
 
 	// Destination XY
 	x = mo->x - FixedMul(finecosine((angle>>ANGLETOFINESHIFT) & FINEMASK), dist);
@@ -370,20 +261,21 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	pviewheight = VIEWHEIGHT;
 
 	if (player->pflags & PF_VERTICALFLIP)
-		z = mo->z + FixedDiv(FixedMul(mobjinfo[mo->type].height,3),4) -
+		z = mo->z + FixedMul(mobjinfo[mo->type].height, 49152 /*height * 0.75*/) -
 			(((mo->theight << FRACBITS) != mobjinfo[mo->type].height) ? mobjinfo[mo->type].height - (mo->theight << FRACBITS) : 0)
          - pviewheight - camheight;
 	else
 		z = mo->z + pviewheight + camheight;
 
 	// Look at halfway between the camera and player. Is the ceiling lower? Then the camera should try to move down to fit under it
-	newsubsec = R_PointInSubsector(((mo->x>>FRACBITS) + (thiscam->x>>FRACBITS))<<(FRACBITS-1), ((mo->y>>FRACBITS) + (thiscam->y>>FRACBITS))<<(FRACBITS-1));
+	newsubsec = R_PointInSubsector2(((mo->x>>FRACBITS) + (thiscam->x>>FRACBITS))<<(FRACBITS-1), ((mo->y>>FRACBITS) + (thiscam->y>>FRACBITS))<<(FRACBITS-1));
+   const sector_t *newsec = SS_SECTOR(newsubsec);
 
 	{
 		// camera fit?
-		if (newsubsec->sector->ceilingheight != newsubsec->sector->floorheight // Don't try to fit in sectors with equal floor and ceiling heights
-			&& newsubsec->sector->ceilingheight - caminfo->height < z)
-			z = newsubsec->sector->ceilingheight - caminfo->height-(11<<FRACBITS);
+		if (newsec->ceilingheight != newsec->floorheight // Don't try to fit in sectors with equal floor and ceiling heights
+			&& newsec->ceilingheight - caminfo->height < z)
+			z = newsec->ceilingheight - caminfo->height-(11<<FRACBITS);
 	}
 
 	if (thiscam->z < thiscam->floorz)
@@ -405,10 +297,13 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	thiscam->momy = FixedMul(y - thiscam->y, camspeed);
 	thiscam->momz = FixedMul(z - thiscam->z, camspeed);
 
-   if (player->buttons & BT_CAMLEFT)
-      P_ThrustValues(thiscam->angle - ANG90, -16*FRACUNIT, &thiscam->momx, &thiscam->momy);
-   if (player->buttons & BT_CAMRIGHT)
-      P_ThrustValues(thiscam->angle - ANG90, 16*FRACUNIT, &thiscam->momx, &thiscam->momy);
+   if ((player->buttons & BT_CAMLEFT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_LEFT))
+      P_ThrustValues(thiscam->angle - ANG90, -16*FRACUNIT * (invertCamera ? 1 : -1), &thiscam->momx, &thiscam->momy);
+   if ((player->buttons & BT_CAMRIGHT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_RIGHT))
+      P_ThrustValues(thiscam->angle - ANG90, 16*FRACUNIT * (invertCamera ? 1 : -1), &thiscam->momx, &thiscam->momy);
+
+   if (player->pflags & PF_MACESPIN)
+		player->mo->angle = thiscam->angle;
 
    if (!(mo->flags2 & MF2_SHOOTABLE))
       thiscam->momx = thiscam->momy = thiscam->momz = 0;
@@ -416,7 +311,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
    dist = P_AproxDistance(viewpointx - thiscam->x, viewpointy - thiscam->y);
 
    if (player->pflags & PF_VERTICALFLIP)
-		angle = R_PointToAngle2(0, thiscam->z, dist,mo->z + (FixedDiv(FixedMul(mobjinfo[mo->type].height,3),4) >> 1)
+		angle = R_PointToAngle2(0, thiscam->z, dist,mo->z + (FixedMul(mobjinfo[mo->type].height, 49152 /*0.75*/) >> 1)
 			- (((mo->theight << FRACBITS) != mobjinfo[mo->type].height) ? (mobjinfo[mo->type].height - (mo->theight << FRACBITS)) >> 1 : 0));
 	else
 		angle = R_PointToAngle2(0, thiscam->z, dist, mo->z + (mobjinfo[mo->type].height >> 2));
@@ -431,8 +326,10 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
       thiscam->aiming -= (dist>>3);
    }
 
-   if (thiscam->z < thiscam->subsector->sector->floorheight)
-      thiscam->z = thiscam->subsector->sector->floorheight;
-   else if (thiscam->z + CAM_PHYS_HEIGHT > thiscam->subsector->sector->ceilingheight)
-      thiscam->z = thiscam->subsector->sector->ceilingheight - CAM_PHYS_HEIGHT;
+   const sector_t *camSec = I_TO_SEC(thiscam->subsector->isector);
+
+   if (thiscam->z < camSec->floorheight)
+      thiscam->z = camSec->floorheight;
+   else if (thiscam->z + CAM_PHYS_HEIGHT > camSec->ceilingheight)
+      thiscam->z = camSec->ceilingheight - CAM_PHYS_HEIGHT;
 }

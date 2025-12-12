@@ -2,7 +2,7 @@
 
 #include "32x.h"
 #include "doomdef.h"
-#include "lzss.h"
+#include "lz.h"
 #include "mars.h"
 
 /* include "r_local.h" */
@@ -68,11 +68,15 @@ void decode(unsigned char *input, unsigned char *output)
 #else
 void decode(unsigned char* input, unsigned char* output)
 {
-	lzss_state_t lzss;
-	lzss_setup(&lzss, input, output, LZSS_BUF_SIZE);
-	lzss_read_all(&lzss);
+#ifdef USE_LZEXE
+	LzReadAll(input, output);
+#else
+	LZSTATE lz;
+	lzss_setup(&lz, input, output, LZ_BUF_SIZE);
+	LzReadAll(&lz);
 #endif
 }
+#endif
 
 /*
 ============================================================================
@@ -90,16 +94,17 @@ void decode(unsigned char* input, unsigned char* output)
 ====================
 */
 
+/*
 void W_Init (void)
 {
 	int				infotableofs;
 
 	wadfileptr = 0;
 
-	// Search for the WAD contents inside the ROM at 1024 byte intervals,
-	// from 0x30000 to 0x80000.
+	// Search for the WAD contents inside the ROM at 256 byte intervals,
+	// from 0x31000 to 0x80000.
 	unsigned long *romptr = (unsigned long *)&MARS_CART_ROM;
-	for (int i=0x30000/4; i < 0x80000/4; i += 0x400) {
+	for (int i=0x31000/4; i < 0x80000/4; i += 0x100/4) {
 		if (romptr[i] == (('I'<<24) | ('W'<<16) | ('A'<<8) | ('D'))) {
 			numlumps = romptr[i+1];
 			infotableofs = romptr[i+2];
@@ -116,8 +121,8 @@ void W_Init (void)
 		I_Error ("Wad file not found.\n");
 	}
 }
+*/
 
-/*
 void W_Init (void)
 {
 	int				infotableofs;
@@ -132,7 +137,6 @@ void W_Init (void)
 	infotableofs = BIGLONG(((wadinfo_t*)wadfileptr)->infotableofs);
 	lumpinfo = (lumpinfo_t *) (wadfileptr + infotableofs);
 }
-*/
 
 
 /*
@@ -258,11 +262,12 @@ int W_ReadLump (int lump, void *dest)
 	l = lumpinfo+lump;
 	if (l->name[0] & 0x80) /* compressed */
 	{
-		 decode((unsigned char *)W_POINTLUMPNUM(lump),
-		(unsigned char *) dest);
+		decode((unsigned char *)W_POINTLUMPNUM(lump),
+				(unsigned char *) dest);
 	}
 	else
-	  D_memcpy (dest, W_POINTLUMPNUM(lump), BIGLONG(l->size));
+		D_memcpy (dest, W_POINTLUMPNUM(lump), BIGLONG(l->size));
+
 	return BIGLONG(l->size);
 }
 
@@ -286,8 +291,6 @@ void	*W_CacheLumpNum (int lump, int tag)
 		I_Error("W_CacheLumpNum: %i < 0", lump);
 	if (lump >= numlumps)
 		I_Error ("W_CacheLumpNum: %i >= numlumps",lump);
-	if (tag != PU_STATIC)
-		I_Error("W_CacheLumpNum: %i tag != PU_STATIC", lump);
 
 	len = W_LumpLength(lump);
 	cache = Z_Malloc(len+1, tag);

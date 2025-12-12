@@ -24,19 +24,32 @@
   SOFTWARE.
 */
 
+#include "doomdef.h"
 #include "marshw.h"
+#include "r_local.h"
+#include "v_font.h"
 
 static volatile uint16_t mars_activescreen = 0;
 
 static char mars_gamepadport[MARS_MAX_CONTROLLERS];
-static char mars_mouseport;
-static volatile uint16_t mars_controlval[2];
+
+static volatile uint16_t next_buttons_pressed[2];
+static volatile uint16_t next_buttons_released[2];
+static volatile uint16_t previous_buttons[2];
+
+volatile uint8_t legacy_emulator = 0;
+
+volatile unsigned int mars_thru_rgb = 0;
+volatile unsigned int mars_hblank_count = 0;
+volatile unsigned int mars_hblank_count_peak = 0;
 
 volatile unsigned mars_vblank_count = 0;
 volatile unsigned mars_pwdt_ovf_count = 0;
 volatile unsigned mars_swdt_ovf_count = 0;
 unsigned mars_frtc2msec_frac = 0;
-const uint8_t* mars_newpalette = NULL;
+
+static const uint8_t* mars_newpalette = NULL;
+
 uint16_t mars_thru_rgb_reference = 0;
 
 int16_t mars_requested_lines = 224;
@@ -62,6 +75,10 @@ static void intr_handler_stub(void) {}
 static void (*pri_cmd_cb)(void) = &intr_handler_stub;
 static void (*sci_cmd_cb)(void) = &intr_handler_stub;
 static void (*sci_dma1_cb)(void) = &intr_handler_stub;
+
+static char Mars_UploadPalette(const uint8_t* palette) MARS_ATTR_DATA_CACHE_ALIGN;
+
+#define MARS_ACTIVE_SCREEN (*(volatile uint16_t *)(((intptr_t)&mars_activescreen) | 0x20000000))
 
 void Mars_WaitFrameBuffersFlip(void)
 {
@@ -96,7 +113,7 @@ void Mars_InitLineTable(void)
 	}
 
 	for (j = 0; j < mars_framebuffer_height; j++)
-		lines[offset+j] = j * 320 / 2 + 0x100;
+		lines[offset+j] = (j * 320 / 2 + 0x100) + ((~h40_sky)&1);
 
 	blank = j * 320 / 2;
 
@@ -110,6 +127,8 @@ void Mars_InitLineTable(void)
 	// make sure blank line is clear
 	for (j = blank; j < (blank + 160); j++)
 		lines[j] = 0;
+	
+	MARS_VDP_SCRSHFT = ((~h40_sky)&1);
 }
 
 void Mars_SetBrightness(int16_t brightness)
@@ -117,11 +136,16 @@ void Mars_SetBrightness(int16_t brightness)
 	mars_brightness = brightness;
 }
 
-int Mars_BackBuffer(void) {
-	return mars_activescreen;
+void Mars_SetPalette(const uint8_t *palette)
+{
+	mars_newpalette = palette;
 }
 
-char Mars_UploadPalette(const uint8_t* palette)
+int Mars_BackBuffer(void) {
+	return MARS_ACTIVE_SCREEN;
+}
+
+static char Mars_UploadPalette(const uint8_t* palette)
 {
 	int	i;
 	unsigned short* cram = (unsigned short *)&MARS_CRAM;
@@ -152,55 +176,10 @@ char Mars_UploadPalette(const uint8_t* palette)
 
 	#ifdef MDSKY
 	// Allow MD VDP to show through for this palette index.
-	cram[MARS_MD_PIXEL_THRU_INDEX] = cram[mars_thru_rgb_reference] & 0x7FFF;
+	cram[COLOR_THRU] = cram[mars_thru_rgb_reference] & 0x7FFF;
 	#endif
 
 	return 1;
-}
-
-int Mars_PollMouse(void)
-{
-	unsigned int mouse1, mouse2;
-	int port = mars_mouseport;
-
-	if (port < 0)
-		return -1;
-
-	while (MARS_SYS_COMM0); // wait until 68000 has responded to any earlier requests
-	MARS_SYS_COMM0 = 0x0500 | port; // tells 68000 to read mouse
-	while (MARS_SYS_COMM0 == (0x0500 | port)); // wait for mouse value
-
-	mouse1 = MARS_SYS_COMM0;
-	mouse2 = MARS_SYS_COMM2;
-	MARS_SYS_COMM0 = 0; // tells 68000 we got the mouse value
-
-	return (int)((mouse1 << 16) | mouse2);
-}
-
-int Mars_ParseMousePacket(int mouse, int* pmx, int* pmy)
-{
-	int mx, my;
-
-	// (YO XO YS XS S  M  R  L  X7 X6 X5 X4 X3 X2 X1 X0 Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0)
-
-	mx = ((unsigned)mouse >> 8) & 0xFF;
-	// check overflow
-	if (mouse & 0x00400000)
-		mx = (mouse & 0x00100000) ? -256 : 256;
-	else if (mouse & 0x00100000)
-		mx |= 0xFFFFFF00;
-
-	my = mouse & 0xFF;
-	// check overflow
-	if (mouse & 0x00800000)
-		my = (mouse & 0x00200000) ? -256 : 256;
-	else if (mouse & 0x00200000)
-		my |= 0xFFFFFF00;
-
-	*pmx = mx;
-	*pmy = my;
-
-	return mouse;
 }
 
 int Mars_GetWDTCount(void)
@@ -252,10 +231,12 @@ void Mars_Init(void)
 {
 	int i;
 
+	legacy_emulator = MARS_SYS_COMM15_BYTE;
+	MARS_SYS_COMM15_BYTE = 0;
+
 	/* no controllers or mouse by default */
 	for (i = 0; i < MARS_MAX_CONTROLLERS; i++)
 		mars_gamepadport[i] = -1;
-	mars_mouseport = -1;
 
 	//SH2_WDT_WTCSR_TCNT = 0xA518; /* WDT TCSR = clr OVF, IT mode, timer off, clksel = Fs/2 */
 	
@@ -463,7 +444,7 @@ static inline unsigned short GetNetByte(void)
 	while (MARS_SYS_COMM0);
 	MARS_SYS_COMM0 = 0x1200;	/* get a byte from the network */
 	while (MARS_SYS_COMM0);
-	return MARS_SYS_COMM2;		/* status:byte */
+	return *(volatile unsigned short *)&MARS_SYS_COMM2;		/* status:byte */
 }
 
 /*
@@ -510,7 +491,7 @@ int Mars_PutNetByte(int val)
 	while (MARS_SYS_COMM0);
 	MARS_SYS_COMM0 = 0x1300 | (val & 0x00FF);	/* send a byte to the network */
 	while (MARS_SYS_COMM0);
-	return (MARS_SYS_COMM2 == 0xFFFF) ? -1 : 0;
+	return (*(volatile unsigned short *)&MARS_SYS_COMM2 == 0xFFFF) ? -1 : 0;
 }
 
 void Mars_SetupNet(int type)
@@ -622,7 +603,6 @@ void Mars_DetectInputDevices(void)
 	unsigned i;
 	unsigned ctrl_wait = 0xFF00;
 
-	mars_mouseport = -1;
 	for (i = 0; i < MARS_MAX_CONTROLLERS; i++)
 		mars_gamepadport[i] = -1;
 
@@ -632,19 +612,17 @@ void Mars_DetectInputDevices(void)
 		while (MARS_SYS_COMM0 != ctrl_wait);
 
 		int val = MARS_SYS_COMM2;
-		if (val == 0xF000)
-		{
-			mars_controlval[i] = 0;
+
+		next_buttons_pressed[i] = 0;
+		next_buttons_released[i] = 0;
+
+		if (val == 0xF000) {
+			previous_buttons[i] = 0;
 		}
-		else if (val == 0xF001)
-		{
-			mars_mouseport = i;
-			mars_controlval[i] = 0;
-		}
-		else
-		{
+		else {
 			mars_gamepadport[i] = i;
-			mars_controlval[i] |= val;
+			next_buttons_pressed[i] |= (val & (~previous_buttons[i]));
+			next_buttons_released[i] |= ((~val) & previous_buttons[i]);
 		}
 
 		MARS_SYS_COMM0 = ++ctrl_wait;
@@ -671,9 +649,46 @@ int Mars_ReadController(int ctrl)
 	if (port < 0)
 		return -1;
 
-	val = mars_controlval[port];
-	mars_controlval[port] = 0;
+	val = (next_buttons_pressed[port] & (~previous_buttons[port]))
+		| ((~next_buttons_released[port]) & previous_buttons[port]);
+
+	next_buttons_pressed[port] = 0;
+	next_buttons_released[port] = 0;
+	previous_buttons[port] = val;
+
 	return val;
+}
+
+void Mars_WriteMDVDPRegister(int write)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = write;
+	MARS_SYS_COMM0 = 0x1C00;
+}
+
+void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size, int bank, int flags)
+{
+	int i;
+
+	uint16_t s[4];
+	
+	// Load palettes
+
+	s[0] = (uintptr_t)palettes_size>>16, s[1] = (uintptr_t)palettes_size&0xffff;
+	s[2] = ((uintptr_t)palettes_ptr >>16), s[3] = (uintptr_t)palettes_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM0);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x1B01+i;
+	}
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2_BYTE = flags;
+	MARS_SYS_COMM3_BYTE = bank;
+	MARS_SYS_COMM0 = 0x1B05;
+
+	//while (MARS_SYS_COMM0);
 }
 
 #ifdef MDSKY
@@ -685,6 +700,13 @@ void Mars_FadeMDPaletteFromBlack(int fade_degree)
 	while (MARS_SYS_COMM0);
 	MARS_SYS_COMM2 = fade_degree;
 	MARS_SYS_COMM0 = 0x1001;
+}
+
+void Mars_CrossfadeMDPalette(int fade_degree)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = fade_degree;
+	MARS_SYS_COMM0 = 0x0501;
 }
 
 void Mars_ScrollMDSky(short scroll_x, short scroll_y_base, short scroll_y_offset, short scroll_y_pan) {
@@ -705,6 +727,28 @@ void Mars_ScrollMDSky(short scroll_x, short scroll_y_base, short scroll_y_offset
 	MARS_SYS_COMM0 = 0x1104;
 }
 
+void Mars_SetScrollPositions(
+		short scroll_b_top_y, short scroll_b_bottom_y, short scroll_a_top_y, short scroll_a_bottom_y)
+//		short scroll_b_top_x, short scroll_b_top_y, short scroll_b_bottom_x, short scroll_b_bottom_y,
+//		short scroll_a_top_x, short scroll_a_top_y, short scroll_a_bottom_x, short scroll_a_bottom_y)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_b_top_y;
+	MARS_SYS_COMM0 = 0x1A01;
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_b_bottom_y;
+	MARS_SYS_COMM0 = 0x1A02;
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_a_top_y;
+	MARS_SYS_COMM0 = 0x1A03;
+
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = scroll_a_bottom_y;
+	MARS_SYS_COMM0 = 0x1A04;
+}
+
 /*
 Load the MD sky tiles, palettes, and pattern name table into the MD VDP.
 */
@@ -723,30 +767,6 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 
 	s[0] = 0, s[1] = 8;
 	s[2] = ((uintptr_t)sky_metadata_ptr >>16), s[3] = (uintptr_t)sky_metadata_ptr &0xffff;
-
-	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
-		MARS_SYS_COMM2 = s[i];
-		MARS_SYS_COMM0 = 0x0F01+i;
-	}
-
-
-	// Load pattern name table A
-
-	s[0] = (uintptr_t)sky_names_a_size>>16, s[1] = (uintptr_t)sky_names_a_size&0xffff;
-	s[2] = ((uintptr_t)sky_names_a_ptr >>16), s[3] = (uintptr_t)sky_names_a_ptr &0xffff;
-
-	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
-		MARS_SYS_COMM2 = s[i];
-		MARS_SYS_COMM0 = 0x0F01+i;
-	}
-
-
-	// Load pattern name table B
-
-	s[0] = (uintptr_t)sky_names_b_size>>16, s[1] = (uintptr_t)sky_names_b_size&0xffff;
-	s[2] = ((uintptr_t)sky_names_b_ptr >>16), s[3] = (uintptr_t)sky_names_b_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
 		while (MARS_SYS_COMM0);
@@ -778,34 +798,41 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 		MARS_SYS_COMM0 = 0x0F01+i;
 	}
 
+
+	// Load pattern name table B
+
+	s[0] = (uintptr_t)sky_names_b_size>>16, s[1] = (uintptr_t)sky_names_b_size&0xffff;
+	s[2] = ((uintptr_t)sky_names_b_ptr >>16), s[3] = (uintptr_t)sky_names_b_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM0);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x0F01+i;
+	}
+
+
+	// Load pattern name table A
+
+	s[0] = (uintptr_t)sky_names_a_size>>16, s[1] = (uintptr_t)sky_names_a_size&0xffff;
+	s[2] = ((uintptr_t)sky_names_a_ptr >>16), s[3] = (uintptr_t)sky_names_a_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM0);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x0F01+i;
+	}
+
 	while (MARS_SYS_COMM0);
 }
 #endif
 
-void Mars_CtlMDVDP(int sel)
+
+void MD_SetGamemode(int gamemode)
 {
 	while (MARS_SYS_COMM0);
-	MARS_SYS_COMM0 = 0x1900 | (sel & 0x00FF);
+	MARS_SYS_COMM2_BYTE = gamemode;
+	MARS_SYS_COMM0 = 0x1900;
 	while (MARS_SYS_COMM0);
-}
-
-void Mars_StoreWordColumnInMDVRAM(int c)
-{
-	while (MARS_SYS_COMM0);
-	MARS_SYS_COMM0 = 0x1A00|c;		/* sel = to VRAM, column in LB of comm0, start move */
-}
-
-void Mars_LoadWordColumnFromMDVRAM(int c, int offset, int len)
-{
-	while (MARS_SYS_COMM0 != 0);
-	MARS_SYS_COMM2 = (((uint16_t)len)<<8) | offset;  /* (length<<8)|offset */
-	MARS_SYS_COMM0 = 0x1B00|c;		/* sel = to VRAM, column in LB of comm0, start move */
-}
-
-void Mars_SwapWordColumnWithMDVRAM(int c)
-{
-    while (MARS_SYS_COMM0);
-    MARS_SYS_COMM0 = 0x1C00|c;        /* sel = swap with VRAM, column in LB of comm0, start move */
 }
 
 void Mars_Finish(void)
@@ -813,14 +840,242 @@ void Mars_Finish(void)
 	while (MARS_SYS_COMM0 != 0);
 }
 
+#ifdef CPUDEBUG
+void pri_vbi_debug(void)
+{
+	// TODO: Put all debugger logic here!
+
+	//DoubleBufferSetup();
+
+	//V_DrawValueLeft(&menuFont, 32, 64, cpu_debug_pr);
+
+	//Mars_FlipFrameBuffers(false);
+
+	//while(true);
+}
+#endif
+
 void pri_vbi_handler(void)
 {
 	mars_vblank_count++;
+
+#ifdef SHOW_COMPATIBILITY_PROMPT
+	// Check for dropped interrupts. There are 225 HINT intervals, some emulators only handle 224.
+	if (mars_vblank_count < 300) {
+		if (mars_hblank_count < 224 && mars_hblank_count_peak >= 224 && legacy_emulator == LEGACY_EMULATOR_NONE) {
+			// A modern emulator with unstable interrupts is assumed to be Ares or older version of Jgenesis.
+			legacy_emulator = LEGACY_EMULATOR_ARES;
+		}
+	}
+#endif
+
+	mars_hblank_count_peak = mars_hblank_count;
+	mars_hblank_count = 0;
+
+#ifdef CPUDEBUG
+	if (cpu_debug_pr) {
+		// TODO: This logic should be in the pri_vbi_debug() function!
+		R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK), dc_cshift_playpals);
+		I_FillFrameBuffer(0x1C);
+		V_DrawValueLeft(&menuFont, 32, 128, cpu_debug_pr);
+		Mars_FlipFrameBuffers(true);
+	}
+#endif
 
 	if (mars_newpalette)
 	{
 		if (Mars_UploadPalette(mars_newpalette))
 			mars_newpalette = NULL;
+	}
+
+	if (effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_ENABLED)) {
+		if (IsLevel() && !(effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_SKY_IN_VIEW))) {
+			MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
+		}
+		else {
+			MARS_SYS_INTMSK |= MARS_SYS_HINT;
+		}
+	}
+	else {
+		MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
+	}
+
+	// Update copper buffer
+	if (effects_flags & EFFECTS_COPPER_ENABLED && effects_flags & EFFECTS_COPPER_REFRESH 
+			&& copper_source_table[copper_table_selection>>4] != NULL)
+	{
+		unsigned short *buffer = copper_buffer;
+
+		if (copper_table_brightness < 0) {
+			// Copy a darker version of the selected source table into the copper buffer
+			unsigned short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+
+			int total_lines = (IsTitleScreen() ? 120 : 224);
+			for (int y=0; y < total_lines; y++) {
+				int prev_rgb = *table++;
+				int buffer_rgb;
+				int next_color;
+				int prev_color;
+				int degree = -copper_table_brightness;
+
+				// Red cross-fade
+				prev_color = prev_rgb & 0x1F;
+				buffer_rgb = (prev_color - ((prev_color * degree) / 31));
+				if (buffer_rgb < 0) buffer_rgb = 0;
+				if (buffer_rgb > 31) buffer_rgb = 31;
+
+				// Green cross-fade
+				prev_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				next_color = (prev_color - ((prev_color * degree) / 31));
+				if (next_color < 0) next_color = 0;
+				if (next_color > 31) next_color = 31;
+				buffer_rgb |= (next_color << 5);
+
+				// Blue cross-fade
+				prev_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				next_color = (prev_color - ((prev_color * degree) / 31));
+				if (next_color < 0) next_color = 0;
+				if (next_color > 31) next_color = 31;
+				buffer_rgb |= (next_color << 10);
+
+				// Copy the new color to the copper buffer.
+				*buffer++ = buffer_rgb;
+			}
+		}
+		else if (copper_table_brightness > 0) {
+			// Copy a brighter version of the selected source table into the copper buffer
+			unsigned short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+
+			int total_lines = (IsTitleScreen() ? 120 : 224);
+			for (int y=0; y < total_lines; y++) {
+				int prev_rgb = *table++;
+				int buffer_rgb;
+				int next_color;
+				int prev_color;
+				int degree = copper_table_brightness;
+
+				// Red cross-fade
+				prev_color = prev_rgb & 0x1F;
+				buffer_rgb = (prev_color + (((31 - prev_color) * degree) / 31));
+				if (buffer_rgb < 0) buffer_rgb = 0;
+				if (buffer_rgb > 31) buffer_rgb = 31;
+
+				// Green cross-fade
+				prev_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				next_color = (prev_color + (((31 - prev_color) * degree) / 31));
+				if (next_color < 0) next_color = 0;
+				if (next_color > 31) next_color = 31;
+				buffer_rgb |= (next_color << 5);
+
+				// Blue cross-fade
+				prev_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				next_color = (prev_color + (((31 - prev_color) * degree) / 31));
+				if (next_color < 0) next_color = 0;
+				if (next_color > 31) next_color = 31;
+				buffer_rgb |= (next_color << 10);
+
+				// Copy the new color to the copper buffer.
+				*buffer++ = buffer_rgb;
+			}
+		}
+		else if (copper_table_selection & 0xF) {
+			// Transitioning between source tables
+			int transition_frame = copper_table_selection & 0xF;
+			unsigned short *next_table = &copper_source_table[(copper_table_selection>>4)^1][copper_color_index];
+			unsigned short *prev_table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+
+			int total_lines = (IsTitleScreen() ? 120 : 224);
+			for (int y=0; y < total_lines; y++) {
+				int prev_rgb = *prev_table++;
+				int next_rgb = *next_table++;
+				int buffer_rgb;
+				int prev_color;
+				int next_color;
+				int degree;
+
+				if (y >= 112) {
+					// Delay fading of the top half of the screen.
+					degree = (transition_frame - ((y >> 4) - 7)) << 1;
+				}
+				else {
+					// Delay fading of the bottom half of the screen.
+					degree = (transition_frame - (6 - (y >> 4))) << 1;
+				}
+
+				if (degree < 0) {
+					degree = 0;
+				}
+				else if (degree > 16) {
+					degree = 16;
+				}
+
+				// Red cross-fade
+				prev_color = prev_rgb & 0x1F;
+				next_color = next_rgb & 0x1F;
+				if (next_color >= prev_color) {
+					buffer_rgb = (prev_color + (((next_color - prev_color) * degree) >> 4));
+				} else {
+					buffer_rgb = (prev_color - (((prev_color - next_color) * degree) >> 4));
+				}
+
+				// Green cross-fade
+				prev_rgb >>= 5;
+				next_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				next_color = next_rgb & 0x1F;
+				if (next_color >= prev_color) {
+					buffer_rgb |= ((prev_color + (((next_color - prev_color) * degree) >> 4)) << 5);
+				} else {
+					buffer_rgb |= ((prev_color - (((prev_color - next_color) * degree) >> 4)) << 5);
+				}
+
+				// Blue cross-fade
+				prev_rgb >>= 5;
+				next_rgb >>= 5;
+				prev_color = prev_rgb & 0x1F;
+				next_color = next_rgb & 0x1F;
+				if (next_color >= prev_color) {
+					buffer_rgb |= ((prev_color + (((next_color - prev_color) * degree) >> 4)) << 10);
+				} else {
+					buffer_rgb |= ((prev_color - (((prev_color - next_color) * degree) >> 4)) << 10);
+				}
+
+				// Copy the new color to the copper buffer.
+				*buffer++ = buffer_rgb;
+			}
+		}
+		else {
+			// Straight copy from the selected source table to the copper buffer
+			unsigned short *table = &copper_source_table[copper_table_selection>>4][copper_color_index];
+
+			for (int y=0; y < (224>>2); y++) {
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+			}
+		}
+
+		if (IsTitleScreen()) {
+			unsigned short *table = &copper_source_table
+					[(copper_table_selection>>4)^1][((leveltime-3)<<1) & 127];
+
+			buffer += (143-120);	// Some emulators will be one raster late, so make this 143 instead of 144.
+
+			for (int y=0; y < (24>>2); y++) {
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+				*buffer++ = *table++;
+			}
+		}
+		if (!IsTitleScreen()) {
+			effects_flags &= (~EFFECTS_COPPER_REFRESH);
+		}
 	}
 }
 

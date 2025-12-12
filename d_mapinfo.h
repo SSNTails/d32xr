@@ -30,14 +30,18 @@ typedef struct
 {
 	char *name;
 	char *sky;
+	VINT zone;
 	VINT act;
 	VINT next;
 	VINT skyOffsetY;
+	VINT skyBitmapOffsetY;
+	VINT skyBitmapScrollRate;
 	VINT lumpNum;
 	VINT borderFlat;
 	VINT skyTopColor;
 	VINT skyBottomColor;
 	VINT mapNumber;
+	VINT weather;
 	VINT musicLump;
 	VINT afterBossMusic;
 	VINT spheresNeeded;
@@ -52,6 +56,7 @@ typedef struct
 	VINT borderFlat;
 	VINT titleTime;
 	VINT titlePage;
+	VINT titlePage2;
 	VINT titleMus;
 	VINT intermissionMus;
 	VINT emeraldMus;

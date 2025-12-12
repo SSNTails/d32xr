@@ -240,6 +240,8 @@ static void G_AddMapinfoKey(char* key, char* value, dmapinfo_t* mi)
 
 	if (!D_strcasecmp(key, "next"))
 		mi->next = W_GetNumForName(value);
+	else if (!D_strcasecmp(key, "zone"))
+		mi->zone = D_atoi(value);
 	else if (!D_strcasecmp(key, "act"))
 		mi->act = D_atoi(value);
 	else if (!D_strcasecmp(key, "borderFlat"))
@@ -248,12 +250,18 @@ static void G_AddMapinfoKey(char* key, char* value, dmapinfo_t* mi)
 		mi->sky = value;
 	else if (!D_strcasecmp(key, "skyOffsetY"))
 		mi->skyOffsetY = D_atoi(value);
+	else if (!D_strcasecmp(key, "skyBitmapOffsetY"))
+		mi->skyBitmapOffsetY = D_atoi(value);
+	else if (!D_strcasecmp(key, "skyBitmapScrollRate"))
+		mi->skyBitmapScrollRate = D_atoi(value);
 	else if (!D_strcasecmp(key, "skyTopColor"))
 		mi->skyTopColor = D_atoi(value);
 	else if (!D_strcasecmp(key, "skyBottomColor"))
 		mi->skyBottomColor = D_atoi(value);
 	else if (!D_strcasecmp(key, "mapnumber"))
 		mi->mapNumber = D_atoi(value);
+	else if (!D_strcasecmp(key, "weather"))
+		mi->weather = D_atoi(value);
 	else if (!D_strcasecmp(key, "music"))
 		mi->musicLump = W_CheckNumForName(value);
 	else if (!D_strcasecmp(key, "afterBossMusic"))
@@ -276,6 +284,8 @@ static void G_AddGameinfoKey(char* key, char* value, dgameinfo_t* gi)
 		gi->creditsTime = D_atoi(value);
 	else if (!D_strcasecmp(key, "titlePage"))
 		gi->titlePage = W_CheckNumForName(value);
+	else if (!D_strcasecmp(key, "titlePage2"))
+		gi->titlePage2 = W_CheckNumForName(value);
 	else if (!D_strcasecmp(key, "creditsPage"))
 		gi->creditsPage = W_CheckNumForName(value);
 	else if (!D_strcasecmp(key, "titleMus"))

@@ -9,7 +9,7 @@ WAD ?= doom32x.wad
 LDSCRIPTSDIR = $(ROOTDIR)/ldscripts
 
 LIBPATH = -L$(ROOTDIR)/sh-elf/lib -L$(ROOTDIR)/sh-elf/lib/gcc/sh-elf/4.6.2 -L$(ROOTDIR)/sh-elf/sh-elf/lib
-INCPATH = -I. -I$(ROOTDIR)/sh-elf/include -I$(ROOTDIR)/sh-elf/sh-elf/include -I./liblzss
+INCPATH = -I. -I$(ROOTDIR)/sh-elf/include -I$(ROOTDIR)/sh-elf/sh-elf/include -I./liblzexe -I./liblzss
 
 CCFLAGS = -c -std=c11 -m2 -mb
 CCFLAGS += -Wall -Wextra -pedantic -Wno-unused-parameter -Wimplicit-fallthrough=0 -Wno-missing-field-initializers -Wnonnull
@@ -17,21 +17,37 @@ CCFLAGS += -D__32X__ -DMARS
 CCFLAGS += -DMDSKY
 #CCFLAGS += -DREC_POS_DEMO
 #CCFLAGS += -DPLAY_POS_DEMO
+#CCFLAGS += -DREC_INPUT_DEMO=10
+#CCFLAGS += -DPLAY_INPUT_DEMO
 CCFLAGS += -DHIGH_DETAIL_SPRITES
 CCFLAGS += -DFLATDRAW2X
 CCFLAGS += -DWALLDRAW2X
 CCFLAGS += -DSIMPLELIGHT
 CCFLAGS += -DNARROW_SCENERY
 CCFLAGS += -DFLOOR_OVER_FLOOR
+#CCFLAGS += -DMEMDEBUG
+CCFLAGS += -DCPUDEBUG
+#CCFLAGS += -DSKYDEBUG
+#CCFLAGS += -DSHOW_FPS
+#CCFLAGS += -DSHOW_COORDINATES
+#CCFLAGS += -DOST_BLACKNESS
+#CCFLAGS += -DOST_BLURNESS
+#CCFLAGS += -DHIDE_HUD
+#CCFLAGS += -DHIDE_PLAYER
+#CCFLAGS += -DKIOSK_MODE
+CCFLAGS += -DSHOW_COMPATIBILITY_PROMPT
 CCFLAGS += -DSHOW_DISCLAIMER
-LDFLAGS = -T mars-ssf.ld -Wl,-Map=output.map -nostdlib -Wl,--gc-sections --specs=nosys.specs
+#CCFLAGS += -DBENCHMARK
+CCFLAGS += -DUSE_LZEXE
+LDFLAGS = -T mars-ssf.ld -Wl,-Map=output.map -nostdlib -Wl,--gc-sections,--sort-section=alignment --specs=nosys.specs
 ASFLAGS = --big
+ASFLAGS += --defsym WADBASE=$(BINSIZE)
 
 MARSHWCFLAGS := $(CCFLAGS)
 MARSHWCFLAGS += -O1 -fno-lto
 
 release: CCFLAGS += -Os -fomit-frame-pointer -ffast-math -funroll-loops -fno-align-loops -fno-align-jumps -fno-align-labels
-release: CCFLAGS += -ffunction-sections -fdata-sections -flto
+release: CCFLAGS += -fno-common -ffunction-sections -fdata-sections -flto
 release: LDFLAGS += -flto=3
 
 debug: CCFLAGS += -g -Os -ggdb -fomit-frame-pointer
@@ -110,7 +126,7 @@ OBJS = \
 	r_cache.o \
 	m_fire.o \
 	v_font.o \
-	lzss.o
+	lzexe.o
 
 release: $(TARGET).32x
 
@@ -123,13 +139,28 @@ m68k.bin:
 
 $(TARGET).32x: $(TARGET).elf
 	$(OBJC) -O binary $< temp2.bin
-	$(DD) if=temp2.bin of=temp.bin bs=236K conv=sync
+	$(DD) if=temp2.bin of=temp.bin bs=256 conv=sync
 	rm -f temp3.bin
 	cat temp.bin $(WAD) >>temp3.bin
 	$(DD) if=temp3.bin of=$@ bs=512K conv=sync
+	rm -f temp.bin temp2.bin temp3.bin
+	romhdrfx -d $(TARGET).32x
 
-$(TARGET).elf: $(OBJS)
+$(TARGET).elf: realbinsize
+	$(AS) $(ASFLAGS) $(INCPATH) wadbase.s -o wadbase.o
 	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(TARGET).elf
+
+realbinsize: temp.bin
+	$(eval override FILESIZE=$(shell stat -L -c %s temp.bin))
+	$(eval override BINSIZE=$(shell expr $(FILESIZE) / 256))
+
+temp.bin: $(TARGET)_tmp.elf
+	$(OBJC) -O binary $< temp2.bin
+	$(DD) if=temp2.bin of=temp.bin bs=256 conv=sync
+	rm -f temp2.bin $(TARGET)_tmp.elf
+
+$(TARGET)_tmp.elf: $(OBJS)
+	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(TARGET)_tmp.elf
 
 crt0.o: crt0.s m68k.bin
 
@@ -139,7 +170,7 @@ marshw.o: marshw.c
 %.o: %.c
 	$(CC) $(CCFLAGS) $(INCPATH) $< -o $@
 
-%.o: liblzss/%.c
+%.o: liblzexe/%.c
 	$(CC) $(CCFLAGS) $(INCPATH) $< -o $@
 
 %.o: %.s
@@ -148,3 +179,5 @@ marshw.o: marshw.c
 clean:
 	make clean -C src-md
 	$(RM) *.o mr8k.bin $(TARGET).32x $(TARGET).elf output.map temp.bin temp2.bin
+
+.PHONY: realbinsize

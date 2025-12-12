@@ -32,7 +32,7 @@
 boolean PIT_CheckThing(mobj_t* thing, pmovework_t *mw) ATTR_DATA_CACHE_ALIGN;
 static boolean PIT_CheckLine(line_t* ld, pmovework_t *mw) ATTR_DATA_CACHE_ALIGN;
 static boolean PM_CrossCheck(line_t* ld, pmovework_t *mw) ATTR_DATA_CACHE_ALIGN;
-static boolean PM_CheckPosition(pmovework_t *mw) ATTR_DATA_CACHE_ALIGN;
+boolean PM_CheckPosition(pmovework_t *mw) ATTR_DATA_CACHE_ALIGN;
 boolean P_TryMove2(ptrymove_t *tm, boolean checkposonly) ATTR_DATA_CACHE_ALIGN;
 
 //
@@ -162,7 +162,7 @@ boolean PM_BoxCrossLine(line_t *ld, pmovework_t *mw)
       return false; // bounding boxes don't intersect
    }
 
-   if(ld->flags & ML_ST_POSITIVE)
+   if(ldflags[ld-lines] & ML_ST_POSITIVE)
    {
       x1 = mw->tmbbox[BOXLEFT ];
       x2 = mw->tmbbox[BOXRIGHT];
@@ -192,7 +192,7 @@ boolean PM_BoxCrossLine(line_t *ld, pmovework_t *mw)
 //
 // Adjusts tmfloorz and tmceilingz as lines are contacted.
 //
-static boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
+boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
 {
    fixed_t   opentop, openbottom, lowfloor;
    sector_t *front, *back;
@@ -203,13 +203,13 @@ static boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
    if(ld->sidenum[1] == -1)
       return false; // one-sided line
 
-   if(!(tmthing->flags2 & MF2_MISSILE))
-   {
-      if(ld->flags & ML_BLOCKING)
-         return false; // explicitly blocking everything
-      if(!tmthing->player && (ld->flags & ML_BLOCKMONSTERS))
-         return false; // block monsters only
-   }
+   const uint16_t lineflags = ldflags[ld-lines];
+
+   if(lineflags & ML_BLOCKING)
+      return false; // explicitly blocking everything
+
+   if(!(tmthing->flags2 & MF2_MISSILE) && !(tmthing->player || tmthing->type == MT_CAMERA) && (lineflags & ML_BLOCKMONSTERS))
+      return false; // block monsters only
 
    front = LD_FRONTSECTOR(ld);
    back  = LD_BACKSECTOR(ld);
@@ -241,23 +241,35 @@ static boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
       lowfloor   = frontFloor;
    }
 
-   if (ld->flags & ML_MIDTEXTUREBLOCK)
+   if (tmthing->type != MT_CAMERA && (lineflags & ML_MIDTEXTUREBLOCK))
    {
       const side_t *side = &sides[ld->sidenum[0]];
-      const texture_t *tex = &textures[side->midtexture];
+      sidetex_t *st = SIDETEX(side);
+      const texture_t *tex = &textures[st->midtexture];
       const fixed_t texheight = tex->height << (FRACBITS+1);
       int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
       rowoffset >>= 4; // sign extend
       fixed_t textop, texbottom;
 
-      if (ld->flags & ML_DONTPEGBOTTOM)
+      fixed_t texfloor, texceiling;
+      if (front->ceilingheight < back->ceilingheight)
+         texceiling = front->ceilingheight;
+      else
+         texceiling = back->ceilingheight;
+
+      if (front->floorheight > back->floorheight)
+         texfloor = front->floorheight;
+      else
+         texfloor = back->floorheight;
+
+      if (lineflags & ML_DONTPEGBOTTOM)
       {
-         texbottom = openbottom + ((int)rowoffset << (FRACBITS));
+         texbottom = texfloor + ((int)rowoffset << (FRACBITS));
          textop = texbottom + texheight;
       }
       else
       {
-         textop = opentop + ((int)rowoffset << (FRACBITS));
+         textop = texceiling + ((int)rowoffset << (FRACBITS));
          texbottom = textop - texheight;
       }
 
@@ -315,9 +327,10 @@ void P_PlayerCheckForStillPickups(mobj_t *mobj)
 {
 	int xl, xh, yl, yh, bx, by;
 	pmovework_t mw;
-	mw.newsubsec = &subsectors[mobj->isubsector];
-	mw.tmfloorz = mw.tmdropoffz = mw.newsubsec->sector->floorheight;
-	mw.tmceilingz = mw.newsubsec->sector->ceilingheight;
+	mw.newsubsec = I_TO_SS(mobj->isubsector);
+   mw.newsec = I_TO_SEC(mw.newsubsec->isector);
+	mw.tmfloorz = mw.tmdropoffz = mw.newsec->floorheight;
+	mw.tmceilingz = mw.newsec->ceilingheight;
 	mw.blockline = NULL;
 	mw.tmflags = mobj->flags;
 	mw.tmx = mobj->x;
@@ -367,11 +380,11 @@ void P_PlayerCheckForStillPickups(mobj_t *mobj)
 //
 // This is purely informative, nothing is modified (except things picked up)
 //
-static boolean PM_CheckPosition(pmovework_t *mw)
+boolean PM_CheckPosition(pmovework_t *mw)
 {
    int xl, xh, yl, yh, bx, by;
    mobj_t *tmthing = mw->tmthing;
-   VINT *lvalidcount;
+   VINT *lvalidcount = validcount;
 
    mw->tmflags = tmthing->flags;
 
@@ -380,14 +393,14 @@ static boolean PM_CheckPosition(pmovework_t *mw)
    mw->tmbbox[BOXRIGHT ] = mw->tmx + mobjinfo[tmthing->type].radius;
    mw->tmbbox[BOXLEFT  ] = mw->tmx - mobjinfo[tmthing->type].radius;
 
-   mw->newsubsec = R_PointInSubsector(mw->tmx, mw->tmy);
+   mw->newsubsec = I_TO_SS(R_PointInSubsector2(mw->tmx, mw->tmy));
+   mw->newsec = I_TO_SEC(mw->newsubsec->isector);
 
    // the base floor/ceiling is from the subsector that contains the point.
    // Any contacted lines the step closer together will adjust them.
-   mw->tmfloorz   = mw->tmdropoffz = FloorZAtPos(mw->newsubsec->sector, mw->tmthing->z, mw->tmthing->theight << FRACBITS);
-   mw->tmceilingz = CeilingZAtPos(mw->newsubsec->sector, mw->tmthing->z, mw->tmthing->theight << FRACBITS);
+   mw->tmfloorz   = mw->tmdropoffz = FloorZAtPos(mw->newsec, mw->tmthing->z, mw->tmthing->theight << FRACBITS);
+   mw->tmceilingz = CeilingZAtPos(mw->newsec, mw->tmthing->z, mw->tmthing->theight << FRACBITS);
 
-   I_GetThreadLocalVar(DOOMTLS_VALIDCOUNT, lvalidcount);
    *lvalidcount = *lvalidcount + 1;
    if (*lvalidcount == 0)
       *lvalidcount = 1;
@@ -397,41 +410,44 @@ static boolean PM_CheckPosition(pmovework_t *mw)
    if(mw->tmflags & MF_NOCLIP) // thing has no clipping?
       return true;
 
-   // Check things first, possibly picking things up.
-   // The bounding box is extended by MAXRADIUS because mobj_ts are grouped
-   // into mapblocks based on their origin point, and can overlap into adjacent
-   // blocks by up to MAXRADIUS units.
-   xl = mw->tmbbox[BOXLEFT  ] - bmaporgx - MAXRADIUS;
-   xh = mw->tmbbox[BOXRIGHT ] - bmaporgx + MAXRADIUS;
-   yl = mw->tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS;
-   yh = mw->tmbbox[BOXTOP   ] - bmaporgy + MAXRADIUS;
-
-	if(xl < 0)
-		xl = 0;
-	if(yl < 0)
-		yl = 0;
-	if(yh < 0)
-		return true;
-	if(xh < 0)
-		return true;
-
-   xl = (unsigned)xl >> MAPBLOCKSHIFT;
-   xh = (unsigned)xh >> MAPBLOCKSHIFT;
-   yl = (unsigned)yl >> MAPBLOCKSHIFT;
-   yh = (unsigned)yh >> MAPBLOCKSHIFT;
-
-   if(xh >= bmapwidth)
-      xh = bmapwidth - 1;
-   if(yh >= bmapheight)
-      yh = bmapheight - 1;
-
-   // check things
-   for(bx = xl; bx <= xh; bx++)
+   if (mw->tmthing->type != MT_CAMERA)
    {
-      for(by = yl; by <= yh; by++)
+      // Check things first, possibly picking things up.
+      // The bounding box is extended by MAXRADIUS because mobj_ts are grouped
+      // into mapblocks based on their origin point, and can overlap into adjacent
+      // blocks by up to MAXRADIUS units.
+      xl = mw->tmbbox[BOXLEFT  ] - bmaporgx - MAXRADIUS;
+      xh = mw->tmbbox[BOXRIGHT ] - bmaporgx + MAXRADIUS;
+      yl = mw->tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS;
+      yh = mw->tmbbox[BOXTOP   ] - bmaporgy + MAXRADIUS;
+
+      if(xl < 0)
+         xl = 0;
+      if(yl < 0)
+         yl = 0;
+      if(yh < 0)
+         return true;
+      if(xh < 0)
+         return true;
+
+      xl = (unsigned)xl >> MAPBLOCKSHIFT;
+      xh = (unsigned)xh >> MAPBLOCKSHIFT;
+      yl = (unsigned)yl >> MAPBLOCKSHIFT;
+      yh = (unsigned)yh >> MAPBLOCKSHIFT;
+
+      if(xh >= bmapwidth)
+         xh = bmapwidth - 1;
+      if(yh >= bmapheight)
+         yh = bmapheight - 1;
+
+      // check things
+      for(bx = xl; bx <= xh; bx++)
       {
-         if(!P_BlockThingsIterator(bx, by, (blockthingsiter_t)PIT_CheckThing, mw))
-            return false;
+         for(by = yl; by <= yh; by++)
+         {
+            if(!P_BlockThingsIterator(bx, by, (blockthingsiter_t)PIT_CheckThing, mw))
+               return false;
+         }
       }
    }
 
@@ -511,17 +527,17 @@ boolean P_TryMove2(ptrymove_t *tm, boolean checkposonly)
          return false; // too big a step up
       if (!((tmthing->flags2 & MF2_FLOAT) || tmthing->player) && mw.tmfloorz - mw.tmdropoffz > 24*FRACUNIT)
          return false; // don't stand over a dropoff
-      if (tmthing->type == MT_SKIM && mw.newsubsec->sector->heightsec == -1)
+      if (tmthing->type == MT_SKIM && mw.newsec->heightsec < 0)
          return false; // Skim can't go out of water
+
+      if (tmthing->type == MT_PLAYER && tmthing->z == tmthing->floorz && mw.tmfloorz < tmthing->z && tmthing->z - mw.tmfloorz <= 24*FRACUNIT)
+         tmthing->z = mw.tmfloorz;
    }
 
    // the move is ok, so link the thing into its new position.
-   P_UnsetThingPosition(tmthing);
    tmthing->floorz   = mw.tmfloorz;
    tmthing->ceilingz = mw.tmceilingz;
-   tmthing->x        = mw.tmx;
-   tmthing->y        = mw.tmy;
-   P_SetThingPosition2(tmthing, mw.newsubsec);
+   P_SetThingPositionConditionally(tmthing, mw.tmx, mw.tmy, SS_TO_I(mw.newsubsec));
 
    return true;
 }

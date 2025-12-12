@@ -10,7 +10,8 @@
 #define SLOWTURNTICS 10
 #define STOPSPEED FRACUNIT / 16
 #define FRICTION 0xd240
-#define MAXBOB 16 * FRACUNIT /* 16 pixels of bob */
+
+boolean spindashPlayerOriented = false;
 
 void P_KillMobj(mobj_t *source, mobj_t *target);
 
@@ -38,6 +39,106 @@ void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move)
 	mo->momx = 0;
 	mo->momy = 0;
 	P_ThrustValues(angle, move, &mo->momx, &mo->momy);
+}
+
+static void P_InnerCheckFloatbobPlatforms(player_t *player, sector_t *sector)
+{
+	if (sector->fofsec < 0 || sector->heightsec < 0)
+		return;
+
+	if (!(sector->flags & SF_FLOATBOB))
+		return;
+
+	sector_t *fofsec = &sectors[sector->fofsec];
+	if (P_MobjFlip(player->mo) < 0)
+	{
+		if (D_abs(fofsec->floorheight - (player->mo->z + (player->mo->theight << FRACBITS))) > D_abs(player->mo->momz))
+			return;
+	}
+	else
+	{
+		if (D_abs(fofsec->ceilingheight - player->mo->z) > D_abs(player->mo->momz))
+			return;
+	}
+
+	// Trigger a bounce
+	EV_BounceSector(fofsec, sector, -player->mo->momz, sector->heightsec);
+}
+
+static void P_CheckFloatbobPlatforms(player_t *player)
+{
+	if (P_MobjFlip(player->mo)*player->mo->momz >= 0)
+		return;
+	
+	for (int i = 0; i < player->num_touching_sectors; i++)
+	{
+		sector_t *sector = &sectors[player->touching_sectorlist[i]];
+		P_InnerCheckFloatbobPlatforms(player, sector);
+	}
+
+	P_InnerCheckFloatbobPlatforms(player, SS_SECTOR(player->mo->isubsector));
+}
+
+static void P_InnerCheckConveyor(player_t *player, const sector_t *sector)
+{
+	boolean convey = false;
+	fixed_t convDx = 0;
+	fixed_t convDy = 0;
+
+	// Does fofsec >= 0 and fofsec->flags SF_FOF_CONVEYOR?
+	if (sector->fofsec >= 0 && (sectors[sector->fofsec].flags & SF_CONVEYOR) && sectors[sector->fofsec].ceilingheight == player->mo->z)
+	{
+		const sector_t *fofsec = &sectors[sector->fofsec];
+		const scrollflat_t *scrollflat = SPTR_TO_LPTR(fofsec->specialdata);
+
+		if (scrollflat && scrollflat->ctrlLine)
+		{
+			const mapvertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
+			const mapvertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
+
+			convDx = ((fixed_t)(v2->x - v1->x)) << (FRACBITS+1);
+			convDy = ((fixed_t)(v2->y - v1->y)) << (FRACBITS+1);
+			convey = true;
+		}
+	}
+
+	if ((sector->flags & SF_CONVEYOR) && sector->floorheight == player->mo->z) // Regular sector floor has conveyor belt
+	{
+		const scrollflat_t *scrollflat = SPTR_TO_LPTR(sector->specialdata);
+
+		if (scrollflat && scrollflat->ctrlLine)
+		{
+			const mapvertex_t *v1 = &vertexes[scrollflat->ctrlLine->v1];
+			const mapvertex_t *v2 = &vertexes[scrollflat->ctrlLine->v2];
+
+			convDx = ((fixed_t)(v2->x - v1->x)) << (FRACBITS+1);
+			convDy = ((fixed_t)(v2->y - v1->y)) << (FRACBITS+1);
+			convey = true;
+		}
+	}
+
+	if (convey)
+	{
+		player->mo->momx = REALMOMX(player) + convDx;
+		player->mo->momy = REALMOMY(player) + convDy;
+		player->cmomx = convDx;//FixedMul(convDx, 58368);
+		player->cmomy = convDy;//FixedMul(convDy, 58368);
+		player->onconveyor = 4;
+	}
+}
+
+static void P_CheckConveyors(player_t *player)
+{
+	if (P_MobjFlip(player->mo)*player->mo->momz != 0)
+		return;
+
+	for (int i = 0; i < player->num_touching_sectors; i++)
+	{
+		sector_t *sector = &sectors[player->touching_sectorlist[i]];
+		P_InnerCheckConveyor(player, sector);
+	}
+
+	P_InnerCheckConveyor(player, SS_SECTOR(player->mo->isubsector));
 }
 
 void P_RestoreMusic(player_t *player)
@@ -71,7 +172,10 @@ void P_ResetPlayer(player_t *player)
 	player->pflags &= ~PF_JUMPED;
 	player->pflags &= ~PF_THOKKED;
 	player->pflags &= ~PF_ELEMENTALBOUNCE;
+	player->pflags &= ~PF_MACESPIN;
 	player->homingTimer = 0;
+	player->onconveyor = 0;
+	player->cmomx = player->cmomy = 0;
 }
 
 void P_PlayerRingBurst(player_t *player, int damage)
@@ -205,11 +309,11 @@ void P_PlayerXYMovement(mobj_t *mo)
 {
 	player_t *player = &players[mo->player - 1];
 
-	player->num_touching_sectors = 0;
-	P_PlayerMove(mo);
+	if (!(player->pflags & PF_MACESPIN))
+		P_PlayerMove(mo);
 
-	fixed_t speed = P_AproxDistance(mo->momx, mo->momy);
-	const angle_t speedDir = R_PointToAngle2(0, 0, mo->momx, mo->momy);
+	fixed_t speed = P_AproxDistance(REALMOMX(player), REALMOMY(player));
+	const angle_t speedDir = R_PointToAngle2(0, 0, REALMOMX(player), REALMOMY(player));
 	const fixed_t top = (player->pflags & PF_SPINNING) ? 80 * FRACUNIT : 30 *FRACUNIT;
 
 	if (speed > top) // Speed cap
@@ -217,9 +321,13 @@ void P_PlayerXYMovement(mobj_t *mo)
 		const fixed_t diff = speed - top;
 		const angle_t opposite = speedDir - ANG180;
 
+		mo->momx = REALMOMX(player);
+		mo->momy = REALMOMY(player);
 		P_Thrust(player->mo, opposite, diff);
+		mo->momx += player->cmomx;
+		mo->momy += player->cmomy;
 	}
-	else if (player->powers[pw_flashing] != FLASHINGTICS && player->mo->z <= player->mo->floorz) // Friction
+	else if (player->powers[pw_flashing] != FLASHINGTICS && mo->z <= mo->floorz) // Friction
 	{
 		const fixed_t frc = (player->pflags & PF_SPINNING) ? FRACUNIT >> 2 : FRACUNIT * 1;
 		
@@ -237,23 +345,20 @@ void P_PlayerXYMovement(mobj_t *mo)
 					else
 						P_ThrustValues(speedDir, -frc, &newSpeedX, &newSpeedY);
 
-					player->mo->momx += newSpeedX;
-					player->mo->momy += newSpeedY;
+					mo->momx += newSpeedX;
+					mo->momy += newSpeedY;
 				}
 				else
 				{
-					player->mo->momx = FixedMul(player->mo->momx, FRACUNIT - (STOPSPEED*2));
-					player->mo->momy = FixedMul(player->mo->momy, FRACUNIT - (STOPSPEED*2));
+					mo->momx = player->cmomx + FixedMul(REALMOMX(player), FRACUNIT - (STOPSPEED*2));
+					mo->momy = player->cmomy + FixedMul(REALMOMY(player), FRACUNIT - (STOPSPEED*2));
 				}
 			}
 		}
 		else if (!(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL)))
 		{
-			if (speed < STOPSPEED)
-			{
-				mo->momx = 0;
-				mo->momy = 0;
-			}
+			mo->momx = player->cmomx;
+			mo->momy = player->cmomy;
 		}
 	}
 }
@@ -271,14 +376,8 @@ void P_PlayerZMovement(mobj_t *mo)
 	player_t *player = &players[mo->player - 1];
 	const fixed_t gravity = (player->pflags & PF_VERTICALFLIP) ? -GRAVITY : GRAVITY;
 
-	/* */
-	/* check for smooth step up */
-	/* */
-	if (mo->z < mo->floorz)
-	{
-		player->viewheight -= mo->floorz - mo->z;
-		player->deltaviewheight = (VIEWHEIGHT - player->viewheight) >> 2;
-	}
+	if (player->pflags & PF_MACESPIN)
+		return;
 
 	/* */
 	/* adjust height */
@@ -301,9 +400,6 @@ void P_PlayerZMovement(mobj_t *mo)
 	{ /* hit the floor */
 		if (mo->momz < 0)
 		{
-			if (mo->momz < -gravity * 2) /* squat down */
-				player->deltaviewheight = mo->momz >> 3;
-
 			mo->momz = 0;
 
 			if (!(player->pflags & PF_VERTICALFLIP))
@@ -331,7 +427,17 @@ void P_PlayerZMovement(mobj_t *mo)
 	}
 
 	if (mo->state == S_PLAY_SPRING && mo->momz < 0)
-		P_SetMobjState(mo, S_PLAY_FALL1);
+	{
+		if (player->pflags & PF_SPRINGSHELL)
+		{
+			player->pflags &= ~PF_SPRINGSHELL;
+			player->pflags &= ~PF_THOKKED;
+			P_SetMobjState(player->mo, S_PLAY_ATK1);
+			player->pflags |= PF_JUMPED;
+		}
+		else
+			P_SetMobjState(mo, S_PLAY_FALL1);
+	}
 }
 
 /*
@@ -347,6 +453,8 @@ void P_PlayerMobjThink(mobj_t *mobj)
 	player_t *player = &players[mobj->player - 1];
 	const state_t *st;
 	int state;
+
+	P_CheckConveyors(player);
 
 	// Make sure player shows dead
 	if (mobj->health == 0)
@@ -366,10 +474,15 @@ void P_PlayerMobjThink(mobj_t *mobj)
 	/* */
 	/* momentum movement */
 	/* */
-	if (mobj->momx || mobj->momy)
+	if (player->mo->momx || player->mo->momy)
+	{
+		player->num_touching_sectors = 0;
 		P_PlayerXYMovement(mobj);
+	}
 	else if (!(mobj->flags & MF_NOCLIP))
  		P_PlayerCheckForStillPickups(mobj);
+
+	P_CheckFloatbobPlatforms(player);
 
 	if ((mobj->z != mobj->floorz) || mobj->momz)
 		P_PlayerZMovement(mobj);
@@ -479,18 +592,18 @@ void P_BuildMove(player_t *player)
 	/* */
 	mo = player->mo;
 
-	if (!mo->momx && !mo->momy && player->forwardmove == 0 && player->sidemove == 0 && !(player->pflags & PF_GASPEDAL) && !(player->pflags & PF_SPINNING))
-	{ /* if in a walking frame, stop moving */
-		if (mo->state >= S_PLAY_RUN1 && mo->state <= S_PLAY_RUN8)
-			P_SetMobjState(mo, S_PLAY_STND);
-	}
+		if (D_abs(REALMOMX(player)) < STOPSPEED && D_abs(REALMOMY(player)) < STOPSPEED && player->forwardmove == 0 && player->sidemove == 0 && !(player->pflags & PF_GASPEDAL) && !(player->pflags & PF_SPINNING))
+		{ /* if in a walking frame, stop moving */
+			if (mo->state >= S_PLAY_RUN1 && mo->state <= S_PLAY_RUN8)
+				P_SetMobjState(mo, S_PLAY_STND);
+		}
 
 	const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
 	if (leveltime > delaytime)
 	{
 		if (!(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL) || player->buttons & BT_CAMLEFT || player->buttons & BT_CAMRIGHT))
 		{
-			if (!(player->mo->momx > STOPSPEED || player->mo->momx < -STOPSPEED || player->mo->momy > STOPSPEED || player->mo->momy < -STOPSPEED || player->mo->momz > STOPSPEED || player->mo->momz < -STOPSPEED))
+			if (!(REALMOMX(player) > STOPSPEED || REALMOMX(player) < -STOPSPEED || REALMOMY(player) > STOPSPEED || REALMOMY(player) < -STOPSPEED || player->mo->momz > STOPSPEED || player->mo->momz < -STOPSPEED))
 				player->stillTimer++;
 			else
 				player->stillTimer = 0;
@@ -510,7 +623,11 @@ void P_BuildMove(player_t *player)
 	{
 		player->forwardmove = player->sidemove = 0;
 		player->pflags &= ~PF_GASPEDAL;
+		player->pflags |= PF_CONTROLDISABLED;
 		player->buttons = 0;
+	}
+	else {
+		player->pflags &= ~PF_CONTROLDISABLED;
 	}
 }
 
@@ -521,8 +638,6 @@ void P_BuildMove(player_t *player)
 
 ===============================================================================
 */
-
-boolean onground;
 
 /*
 ==================
@@ -536,68 +651,7 @@ boolean onground;
 
 void P_CalcHeight(player_t *player)
 {
-	int angle;
-	fixed_t bob;
-
-	// Regular movement bobbing
-	// (needs to be calculated for gun swing
-	// even if not on ground)
-	// OPTIMIZE: tablify angle
-	// Note: a LUT allows for effects
-	//  like a ramp with low health.
-
-	player->bob = FixedMul(player->mo->momx, player->mo->momx) + FixedMul(player->mo->momy, player->mo->momy);
-	player->bob >>= 2;
-
-	if (player->bob > MAXBOB) //   |
-		player->bob = MAXBOB; // phares 2/26/98
-
-	if (!onground)
-	{
-		player->viewz = player->mo->z + VIEWHEIGHT;
-
-		if (player->viewz > player->mo->ceilingz - 4 * FRACUNIT)
-			player->viewz = player->mo->ceilingz - 4 * FRACUNIT;
-
-		// The following line was in the Id source and appears      // phares 2/25/98
-		// to be a bug. player->viewz is checked in a similar
-		// manner at a different exit below.
-
-		//  player->viewz = player->mo->z + player->viewheight;
-		return;
-	}
-
-	angle = (FINEANGLES / 20 * gametic) & FINEMASK;
-	bob = FixedMul(player->bob / 2, finesine(angle));
-
-	// move viewheight
-
-	if (player->playerstate == PST_LIVE)
-	{
-		player->viewheight += player->deltaviewheight;
-
-		if (player->viewheight > VIEWHEIGHT)
-		{
-			player->viewheight = VIEWHEIGHT;
-			player->deltaviewheight = 0;
-		}
-
-		if (player->viewheight < VIEWHEIGHT / 2)
-		{
-			player->viewheight = VIEWHEIGHT / 2;
-			if (player->deltaviewheight <= 0)
-				player->deltaviewheight = 1;
-		}
-
-		if (player->deltaviewheight)
-		{
-			player->deltaviewheight += FRACUNIT / 4;
-			if (!player->deltaviewheight)
-				player->deltaviewheight = 1;
-		}
-	}
-
-	player->viewz = player->mo->z + player->viewheight + bob;
+	player->viewz = player->mo->z + VIEWHEIGHT;
 
 	if (player->viewz > player->mo->ceilingz - 4 * FRACUNIT)
 		player->viewz = player->mo->ceilingz - 4 * FRACUNIT;
@@ -669,18 +723,19 @@ void P_AddPlayerScore(player_t *player, int amount)
 	player->score += amount;
 }
 
-static inline fixed_t P_GetPlayerSpinHeight()
+fixed_t P_GetPlayerSpinHeight()
 {
 	return FixedMul(mobjinfo[MT_PLAYER].height, 2*FRACUNIT/3);
 }
 
-static inline fixed_t P_GetPlayerHeight()
+fixed_t P_GetPlayerHeight()
 {
 	return mobjinfo[MT_PLAYER].height;
 }
 
 static void P_DoSpinDash(player_t *player)
 {
+	const boolean onground = (player->mo->z <= player->mo->floorz);
 	const int buttons = player->buttons;
 
 	if (!player->exiting && !(player->mo->state == mobjinfo[player->mo->type].painstate && player->powers[pw_flashing]))
@@ -688,8 +743,11 @@ static void P_DoSpinDash(player_t *player)
 		if ((buttons & BT_SPIN) && player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
 		{
 			P_ResetScore(player);
-			player->mo->momx = 0; // TODO: cmomx/cmomy
-			player->mo->momy = 0;
+			if (!spindashPlayerOriented) {
+				player->mo->angle = camera.angle;
+			}
+			player->mo->momx = player->cmomx;
+			player->mo->momy = player->cmomy;
 			player->pflags |= PF_STARTDASH;
 			player->pflags |= PF_SPINNING;
 			player->dashSpeed = 1;
@@ -744,8 +802,8 @@ static void P_DoSpinDash(player_t *player)
 			{
 				player->pflags &= ~PF_SPINNING;
 				P_SetMobjState(player->mo, S_PLAY_STND);
-//				player->mo->momx = 0; // TODO: cmomx/cmomy
-//				player->mo->momy = 0;
+				player->mo->momx = player->cmomx;
+				player->mo->momy = player->cmomy;
 				P_ResetScore(player);
 				if (player->pflags & PF_VERTICALFLIP)
 					player->mo->z = player->mo->ceilingz - P_GetPlayerHeight();
@@ -799,10 +857,9 @@ void P_PlayerHitFloor(player_t *player)
 {
 	if (player->pflags & PF_JUMPED)
 		player->pflags &= ~PF_SPINNING;
-	else if (!(player->pflags & PF_USEDOWN))
-		player->pflags &= ~PF_SPINNING;
 
-	if (!((player->pflags & PF_SPINNING) && (player->pflags & PF_USEDOWN)))
+	// A little bit different from PC - if hit the floor while spinning, continue to spin.
+	if (!(player->pflags & PF_SPINNING))
 	{
 		P_ResetScore(player);
 		P_SetMobjState(player->mo, S_PLAY_RUN1);
@@ -815,8 +872,12 @@ void P_PlayerHitFloor(player_t *player)
 
 	if (!(player->pflags & PF_SPINNING) && !(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL)))
 	{
+		player->mo->momx = REALMOMX(player);
+		player->mo->momy = REALMOMY(player);
 		player->mo->momx >>= 1;
 		player->mo->momy >>= 1;
+		player->mo->momx += player->cmomx;
+		player->mo->momy += player->cmomy;
 	}
 
 	player->homingTimer = 0;
@@ -836,7 +897,7 @@ static void P_DoJump(player_t *player)
 
 	// Reduce jump strength when underwater
 	if (player->pflags & PF_UNDERWATER)
-		player->mo->momz = FixedMul(player->mo->momz, FixedDiv(117 * FRACUNIT, 200 * FRACUNIT));
+		player->mo->momz = FixedMul(player->mo->momz, 38338/*117/200*/);
 
 	player->mo->z++;
 
@@ -847,91 +908,174 @@ static void P_DoJump(player_t *player)
 	S_StartSound(player->mo, sfx_s3k_62);
 }
 
-boolean P_LookForTarget(player_t *player)
+#define HOMING_DIST (512*FRACUNIT)
+
+typedef struct
 {
-	const fixed_t targetMaxDist = 512*FRACUNIT;
-	const angle_t oldAngle = player->mo->angle;
-	mobj_t *node;
-	mobj_t *best = NULL;
-	fixed_t bestDist = D_MAXINT;
+	player_t *player;
+	mobj_t *closest;
+	fixed_t closestDist;
+} homingFinder_t;
 
-	for (node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
-    {
-		if (node->type == MT_PLAYER)
-			continue;
+boolean PIT_LookForTarget(mobj_t *thing, homingFinder_t *hf)
+{
+	const player_t *player = hf->player;
 
-		if (node->flags & MF_STATIC)
-		{
-			if (!(node->type >= MT_YELLOWSPRING && node->type <= MT_REDHORIZ)
-				&& !(node->flags2 & MF2_SHOOTABLE))
-				continue;
-		}
-		else
-		{
-			// Enemies and springs only (for now)
-			if (!((node->flags2 & MF2_ENEMY) || (node->flags2 & MF2_SHOOTABLE)))
-				continue;
+	if (thing->type == MT_PLAYER)
+		return true;
 
-			// Ignore fretting bosses
-			if (node->flags2 & MF2_FRET)
-				continue;
-
-			if (node->health <= 0)
-				continue; // dead
-		}
-
-		if (node->z > player->mo->z + (player->mo->theight << FRACBITS))
-			continue;
-
-		fixed_t dist = P_AproxDistance(P_AproxDistance(node->x - player->mo->x, node->y - player->mo->y), node->z - player->mo->z);
-
-		if (dist > targetMaxDist)
-			continue;
-
-		if (dist > bestDist)
-			continue;
-
-		// Well, it's the closest, but is it in front of us?
-		angle_t ang = R_PointToAngle2(player->mo->x, player->mo->y, node->x, node->y) - player->mo->angle;
-
-		if (ang > ANG90 && ang < ANG270)
-			continue;
-
-		player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, node->x, node->y);
-
-//		if (!P_CheckSight(player->mo, node))
-//			continue; // Can't see it
-
-		best = node;
-		bestDist = dist;
-    }
-
-	if (!best)
+	if (thing->flags & MF_RINGMOBJ)
 	{
-		player->mo->angle = oldAngle;
-		return false;
+		if (thing->type == MT_BIGGRABCHAIN || thing->type == MT_SMALLGRABCHAIN)
+		{
+			ringmobj_t *macePoint = (ringmobj_t*)thing;
+
+			if ((macePoint->z << FRACBITS) > player->mo->z + (player->mo->theight << FRACBITS))
+				return true;
+
+			const fixed_t dist = P_AproxDistance3D((macePoint->x << FRACBITS) - player->mo->x, (macePoint->y << FRACBITS) - player->mo->y, (macePoint->z << FRACBITS) - player->mo->z);
+
+			if (dist < hf->closestDist)
+			{
+				// Well, it's the closest, but is it in front of us?
+				angle_t ang = R_PointToAngle2(player->mo->x, player->mo->y, macePoint->x << FRACBITS, macePoint->y << FRACBITS) - player->mo->angle;
+
+				if (ang > ANG90 && ang < ANG270)
+					return true;
+
+				hf->closest = thing;
+				hf->closestDist = dist;
+			}
+		}
+
+		return true;
 	}
 
-	player->mo->target = best;
+	if (thing->flags & MF_STATIC)
+	{
+		if (!(thing->type >= MT_YELLOWSPRING && thing->type <= MT_REDHORIZ)
+			&& !(thing->flags2 & MF2_SHOOTABLE))
+			return true;
+	}
+	else
+	{
+		// Enemies and springs only (for now)
+		if (!((thing->flags2 & MF2_ENEMY) || (thing->flags2 & MF2_SHOOTABLE)))
+			return true;
+
+		// Ignore fretting bosses
+		if (thing->flags2 & MF2_FRET)
+			return true;
+
+		if (thing->health <= 0)
+			return true; // dead
+	}
+
+	if (thing->z > player->mo->z + (player->mo->theight << FRACBITS))
+		return true;
+
+	const fixed_t dist = P_AproxDistance3D(thing->x - player->mo->x, thing->y - player->mo->y, thing->z - player->mo->z);
+
+	if (dist < hf->closestDist)
+	{
+		// Well, it's the closest, but is it in front of us?
+		angle_t ang = R_PointToAngle2(player->mo->x, player->mo->y, thing->x, thing->y) - player->mo->angle;
+
+		if (ang > ANG90 && ang < ANG270)
+			return true;
+
+		hf->closest = thing;
+		hf->closestDist = dist;
+	}
 	return true;
+}
+
+boolean P_LookForTarget(player_t *player)
+{
+	const fixed_t		dist = HOMING_DIST;
+	const mobj_t *spot = player->mo;
+	int			x,y, xl, xh, yl, yh;
+	
+	yh = spot->y + dist - bmaporgy;
+	yl = spot->y - dist - bmaporgy;
+	xh = spot->x + dist - bmaporgx;
+	xl = spot->x - dist - bmaporgx;
+
+	if(xl < 0)
+		xl = 0;
+	if(yl < 0)
+		yl = 0;
+	if(yh < 0)
+		return false;
+	if(xh < 0)
+		return false;
+
+    xl = (unsigned)xl >> MAPBLOCKSHIFT;
+    xh = (unsigned)xh >> MAPBLOCKSHIFT;
+    yl = (unsigned)yl >> MAPBLOCKSHIFT;
+    yh = (unsigned)yh >> MAPBLOCKSHIFT;
+
+   if(xh >= bmapwidth)
+      xh = bmapwidth - 1;
+   if(yh >= bmapheight)
+      yh = bmapheight - 1;
+
+	homingFinder_t hf;
+	hf.player = player;
+	hf.closest = NULL;
+	hf.closestDist = HOMING_DIST;
+	
+	for (y=yl ; y<=yh ; y++)
+		for (x=xl ; x<=xh ; x++)
+			P_BlockThingsIterator(x, y, (blockthingsiter_t)PIT_LookForTarget, &hf);
+
+	if (hf.closest)
+	{
+		player->mo->target = hf.closest;
+		return true;
+	}
+
+	return false;
 }
 
 static void P_HomingAttack(mobj_t *source, mobj_t *dest)
 {
+	const fixed_t ns = 30*FRACUNIT;
+
 	if (!dest)
 		return;
+
+	if (dest->flags & MF_RINGMOBJ)
+	{
+		ringmobj_t *macePoint = (ringmobj_t*)dest;
+		const fixed_t destx = macePoint->x<<FRACBITS;
+		const fixed_t desty = macePoint->y<<FRACBITS;
+		const fixed_t destz = macePoint->z<<FRACBITS;
+
+		source->angle = R_PointToAngle2(source->x, source->y, destx, desty);
+
+		fixed_t dist = P_AproxDistance3D(destx - source->x, desty - source->y, destz - source->z);
+
+		if (dist < 1) // Don't divide by zero
+			dist = 1;
+
+		source->momx = FixedMul(FixedDiv(destx - source->x, dist), ns);
+		source->momy = FixedMul(FixedDiv(desty - source->y, dist), ns);
+		source->momz = FixedMul(FixedDiv(destz - source->z, dist), ns);
+
+		return;
+	}
 
 	if (dest->health <= 0)
 		return;
 
 	source->angle = R_PointToAngle2(source->x, source->y, dest->x, dest->y);
 
-	fixed_t dist = P_AproxDistance(P_AproxDistance(dest->x - source->x, dest->y - source->y), dest->z - source->z);
+	fixed_t dist = P_AproxDistance3D(dest->x - source->x, dest->y - source->y, dest->z - source->z);
 
 	if (dist < 1) // Don't divide by zero
 		dist = 1;
 
-	const fixed_t ns = 30*FRACUNIT;
 	source->momx = FixedMul(FixedDiv(dest->x - source->x, dist), ns);
 	source->momy = FixedMul(FixedDiv(dest->y - source->y, dist), ns);
 	source->momz = FixedMul(FixedDiv(dest->z - source->z, dist), ns);
@@ -943,25 +1087,35 @@ static void P_DoJumpStuff(player_t *player)
 
 	if (buttons & BT_JUMP)
 	{
-		if (!(player->pflags & PF_JUMPDOWN) && player->mo->state != S_PLAY_PAIN && P_IsObjectOnGround(player->mo) && !P_IsReeling(player))
+		if (!(player->pflags & PF_JUMPDOWN))
 		{
-			P_DoJump(player);
-			player->pflags &= ~PF_THOKKED;
-			player->pflags &= ~PF_ELEMENTALBOUNCE;
-		}
-		else if (!(player->pflags & PF_JUMPDOWN) && (player->pflags & PF_JUMPED) && !(player->pflags & PF_THOKKED))
-		{
-			// Find a nearby enemy.
-			if (P_LookForTarget(player))
+			if (player->pflags & PF_MACESPIN)
 			{
-				player->homingTimer = 2*TICRATE * 2;
-				S_StartSound(player->mo, sfx_thok);
-				player->pflags &= ~PF_SPINNING;
-				player->pflags &= ~PF_STARTDASH;
-				player->pflags |= PF_THOKKED;
+				player->mo->target = NULL;
+				player->powers[pw_flashing] = TICRATE >> 2;
+				player->pflags &= ~PF_MACESPIN;
+				player->pflags |= PF_JUMPED;
 			}
-			else
-				S_StartSound(player->mo, sfx_ngskid);
+			else if (player->mo->state != S_PLAY_PAIN && P_IsObjectOnGround(player->mo) && !P_IsReeling(player))
+			{
+				P_DoJump(player);
+				player->pflags &= ~PF_THOKKED;
+				player->pflags &= ~PF_ELEMENTALBOUNCE;
+			}
+			else if ((player->pflags & PF_JUMPED) && !(player->pflags & PF_THOKKED))
+			{
+				// Find a nearby enemy.
+				if (P_LookForTarget(player))
+				{
+					player->homingTimer = 2*TICRATE * 2;
+					S_StartSound(player->mo, sfx_thok);
+					player->pflags &= ~PF_SPINNING;
+					player->pflags &= ~PF_STARTDASH;
+					player->pflags |= PF_THOKKED;
+				}
+				else
+					S_StartSound(player->mo, sfx_ngskid);
+			}
 		}
 
 		player->pflags |= PF_JUMPDOWN;
@@ -1001,9 +1155,9 @@ void P_DoPlayerExit(player_t *player)
 		sector_t *outer = &sectors[outerNum];
 		spawnPoint->movecount = 1;
 		
-		floormove_t *floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC);
+		floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
 		P_AddThinker (&floor->thinker);
-		inner->specialdata = floor;
+		inner->specialdata = LPTR_TO_SPTR(floor);
 		floor->thinker.function = T_MoveFloor;
 		floor->type = eggCapsuleInnerPop;
 		floor->crush = false;
@@ -1013,7 +1167,10 @@ void P_DoPlayerExit(player_t *player)
 		floor->floordestheight = 
 			(inner->floorheight>>FRACBITS) - 8;
 
-		outer->floorheight -= 64*FRACUNIT;
+		if (gamemapinfo.mapNumber == 3)
+			outer->floorheight -= 64*FRACUNIT;
+		else
+			outer->floorheight -= 80*FRACUNIT;
 
 		for (int i = 0; i < numsides; i++)
 		{
@@ -1032,8 +1189,8 @@ void P_DoPlayerExit(player_t *player)
 					continue;
 
 				// Get the other side
-				lines[j].flags &= ~ML_DONTPEGTOP;
-				lines[j].flags |= ML_DONTPEGBOTTOM;
+				ldflags[j] &= ~ML_DONTPEGTOP;
+				ldflags[j] |= ML_DONTPEGBOTTOM;
 				sides[lines[j].sidenum[1]].rowoffset = 96;
 			}
 		}
@@ -1093,11 +1250,11 @@ VINT ControlDirection(player_t *player)
 	if (!(player->forwardmove || player->sidemove))
 		return 0;
 
-	if (!(player->mo->momx || player->mo->momy))
+	if (!(REALMOMX(player) || REALMOMY(player)))
 		return 0;
 
 	camera_t *thiscam = &camera;
-	controlplayerdirection = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+	controlplayerdirection = R_PointToAngle2(0, 0, REALMOMX(player), REALMOMY(player));
 
 	// Calculate the angle at which the controls are pointing
 	// to figure out the proper mforward and mbackward.
@@ -1139,8 +1296,12 @@ void P_SpawnSkidDust(player_t *player)
 
 void P_MovePlayer(player_t *player)
 {
+	if (player->onconveyor == 4 && !P_IsObjectOnGround(player->mo)) // Actual conveyor belt
+		player->cmomx = player->cmomy = 0;
+
 	//	player->mo->angle += player->angleturn;
-	fixed_t speed = P_AproxDistance(player->mo->momx, player->mo->momy);
+	fixed_t speed = P_AproxDistance(REALMOMX(player), REALMOMY(player));
+	player->speed = speed;
 
 	if (player->homingTimer || (player->powers[pw_sneakers] && speed > 20*FRACUNIT))
 	{
@@ -1151,9 +1312,11 @@ void P_MovePlayer(player_t *player)
 	}
 
 	/* don't let the player control movement if not onground */
-	onground = (player->mo->z <= player->mo->floorz);
+	const boolean onground = (player->mo->z <= player->mo->floorz);
 
-	if (player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL))
+	if (player->pflags & PF_STARTDASH)
+		player->mo->angle -= player->sidemove << 9;
+	else if (player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL))
 	{
 		camera_t *thiscam = &camera;
 		fixed_t controlX = 0;
@@ -1182,15 +1345,23 @@ void P_MovePlayer(player_t *player)
 
 				controlAngle = R_PointToAngle2(0, 0, controlX, controlY);
 
+				player->mo->momx = REALMOMX(player);
+				player->mo->momy = REALMOMY(player);
 				P_ThrustValues(controlAngle, acc, &player->mo->momx, &player->mo->momy);
-				angle_t moveAngle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+				player->mo->momx += player->cmomx;
+				player->mo->momy += player->cmomy;
+				angle_t moveAngle = R_PointToAngle2(0, 0, REALMOMX(player), REALMOMY(player));
 				
 				// Clip to current speed
-				if (P_AproxDistance(player->mo->momx, player->mo->momy) > speed)
+				if (P_AproxDistance(REALMOMX(player), REALMOMY(player)) > speed)
 				{
-					const fixed_t diff = P_AproxDistance(player->mo->momx, player->mo->momy) - speed;
+					const fixed_t diff = P_AproxDistance(REALMOMX(player), REALMOMY(player)) - speed;
 
+					player->mo->momx = REALMOMX(player);
+					player->mo->momy = REALMOMY(player);
 					P_ThrustValues(moveAngle - ANG180, diff, &player->mo->momx, &player->mo->momy);
+					player->mo->momx += player->cmomx;
+					player->mo->momy += player->cmomy;
 				}
 			}
 		}
@@ -1248,14 +1419,18 @@ void P_MovePlayer(player_t *player)
 				fixed_t moveVecY = 0;
 				P_ThrustValues(controlAngle, speed, &moveVecX, &moveVecY);
 
+				player->mo->momx = REALMOMX(player);
+				player->mo->momy = REALMOMY(player);
 				player->mo->momx = FixedMul(player->mo->momx, 28*FRACUNIT);
 				player->mo->momy = FixedMul(player->mo->momy, 28*FRACUNIT);
 				player->mo->momx += moveVecX;
 				player->mo->momy += moveVecY;
 				player->mo->momx = FixedDiv(player->mo->momx, 29*FRACUNIT);
 				player->mo->momy = FixedDiv(player->mo->momy, 29*FRACUNIT);
+				player->mo->momx += player->cmomx;
+				player->mo->momy += player->cmomy;
 
-				player->mo->angle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+				player->mo->angle = R_PointToAngle2(0, 0, REALMOMX(player), REALMOMY(player));
 			}
 
 			if (speed < 10*FRACUNIT)
@@ -1268,8 +1443,11 @@ void P_MovePlayer(player_t *player)
 			fixed_t moveVecX = 0;
 			fixed_t moveVecY = 0;
 			P_ThrustValues(controlAngle, acc, &moveVecX, &moveVecY);
-			player->mo->momx += moveVecX;
-			player->mo->momy += moveVecY;
+
+			player->mo->momx = REALMOMX(player) + moveVecX;
+			player->mo->momy = REALMOMY(player) + moveVecY;
+			player->mo->momx += player->cmomx;
+			player->mo->momy += player->cmomy;
 
 	//		CONS_Printf("Acc: %d, MomX: %d, MomY: %d", acc, player->mo->momx >> FRACBITS, player->mo->momy >> FRACBITS);
 		}
@@ -1279,11 +1457,11 @@ void P_MovePlayer(player_t *player)
 		P_SetMobjState(player->mo, S_PLAY_RUN1);
 
 	// Make sure you're not teetering when you shouldn't be.
-	if ((player->mo->state == S_PLAY_TEETER1 || player->mo->state == S_PLAY_TEETER2) && (player->mo->momx || player->mo->momy || player->mo->momz))
+	if ((player->mo->state == S_PLAY_TEETER1 || player->mo->state == S_PLAY_TEETER2) && (REALMOMX(player) || REALMOMY(player) || player->mo->momz))
 		P_SetMobjState(player->mo, S_PLAY_STND);
 
 	if (!player->mo->momz &&
-		((!(player->mo->momx || player->mo->momy) && (player->mo->state == S_PLAY_STND || player->mo->state == S_PLAY_TAP1 || player->mo->state == S_PLAY_TAP2 || player->mo->state == S_PLAY_TEETER1 || player->mo->state == S_PLAY_TEETER2))))
+		((!(REALMOMX(player) || REALMOMY(player)) && (player->mo->state == S_PLAY_STND || player->mo->state == S_PLAY_TAP1 || player->mo->state == S_PLAY_TAP2 || player->mo->state == S_PLAY_TEETER1 || player->mo->state == S_PLAY_TEETER2))))
 		P_DoTeeter(player);
 
 	////////////////////////////
@@ -1330,8 +1508,9 @@ void P_MovePlayer(player_t *player)
 	{
 		if (player->mo->target)
 		{
-			if (player->mo->target->health <= 0)
+			if (!(player->mo->target->flags & MF_RINGMOBJ) && player->mo->target->health <= 0)
 			{
+				player->mo->target = NULL;
 				player->mo->momx >>= 1;
 				player->mo->momy >>= 1;
 				player->mo->momz >>= 1;
@@ -1349,10 +1528,10 @@ void P_MovePlayer(player_t *player)
 			player->pflags &= ~PF_THOKKED;
 	}
 
-	player->speed = P_AproxDistance(player->mo->momx, player->mo->momy);
+	player->speed = P_AproxDistance(REALMOMX(player), REALMOMY(player));
 
 	// If you're running fast enough, you can create splashes as you run in shallow water.
-	if (subsectors[player->mo->isubsector].sector->heightsec != -1)
+	if (sectors[subsectors[player->mo->isubsector].isector].heightsec >= 0)
 	{
 		const fixed_t watertop = GetWatertopMo(player->mo);
 
@@ -1414,6 +1593,12 @@ void P_MovePlayer(player_t *player)
 					S_StartSound(player->mo, sfx_s3k_43);
 				}
 			}
+
+			if (player->homingTimer > 0)
+			{
+				player->homingTimer = 0;
+				S_StartSound(player->mo, sfx_ngskid);
+			}
 		}
 	}
 	else
@@ -1429,7 +1614,7 @@ void P_MovePlayer(player_t *player)
 				P_SpawnSkidDust(player);
 			}
 		}
-		else if (player->skidTime <= 0 && P_AproxDistance(player->mo->momx, player->mo->momy) >= 25 << (FRACBITS-1)
+		else if (player->skidTime <= 0 && P_AproxDistance(REALMOMX(player), REALMOMY(player)) >= 25 << (FRACBITS-1)
 			&& ControlDirection(player) == 2)
 		{
 			// start a skid
@@ -1461,10 +1646,6 @@ void P_MovePlayer(player_t *player)
 
 void P_DeathThink(player_t *player)
 {
-	/* fall to the ground */
-	if (player->viewheight > 8 * FRACUNIT)
-		player->viewheight -= FRACUNIT;
-	onground = (player->mo->z <= player->mo->floorz);
 	P_CalcHeight(player);
 
 	if (player->deadTimer == 2*TICRATE)
@@ -1595,8 +1776,26 @@ static void P_CheckUnderwaterAndSpaceTimer(player_t *player)
 extern int ticphase;
 void P_RingMagnet(mobj_t *spot);
 
+
+// Belongs in p_polyobj.c, which doesn't exist yet...
+static void RotateVertex(fixed_t polyCenterX, fixed_t polyCenterY, mapvertex_t *v, angle_t ang)
+{
+	vertex_t tmp;
+	tmp.x = v->x << FRACBITS;
+	tmp.y = v->y << FRACBITS;
+
+	tmp.x -= polyCenterX;
+	tmp.y -= polyCenterY;
+
+	v->x = (FixedMul(tmp.x, finecosine(ang)) - FixedMul(tmp.y, finesine(ang)) + polyCenterX) >> FRACBITS;
+	v->y = (FixedMul(tmp.x, finesine(ang)) + FixedMul(tmp.y, finecosine(ang)) + polyCenterY) >> FRACBITS;
+}
+
 void P_PlayerThink(player_t *player)
 {
+	if (player->pflags & PF_CHANGESECTOR)
+		P_ChangeSectorPlayer(player);
+
 	ticphase = 20;
 	P_PlayerMobjThink(player->mo);
 
@@ -1618,11 +1817,12 @@ void P_PlayerThink(player_t *player)
 
 	P_CalcHeight(player);
 
-	if (player == &players[consoleplayer])
+	if (player == &players[consoleplayer] && gameaction != ga_demoending)
 		P_MoveChaseCamera(player, &camera);
 
-	if (subsectors[player->mo->isubsector].sector->special)
-		P_PlayerInSpecialSector(player);
+	player->onconveyor = 0;
+
+	P_PlayerInSpecialSector(player);
 
 	ticphase = 23;
 	ticphase = 24;
@@ -1632,10 +1832,14 @@ void P_PlayerThink(player_t *player)
 	if (player->powers[pw_flashing] && player->powers[pw_flashing] < FLASHINGTICS)
 		player->powers[pw_flashing]--;
 
-	if (player->powers[pw_flashing] < FLASHINGTICS && (player->powers[pw_flashing] & 1))
+	if (player->powers[pw_flashing] > 0 && player->powers[pw_flashing] < FLASHINGTICS && (gametic & 1))
 		player->mo->flags2 |= MF2_DONTDRAW;
 	else
 		player->mo->flags2 &= ~MF2_DONTDRAW;
+
+#ifdef HIDE_PLAYER
+	player->mo->flags2 |= MF2_DONTDRAW;
+#endif
 
 	if (player->powers[pw_extralife] > 0)
 	{
@@ -1689,6 +1893,10 @@ void P_PlayerThink(player_t *player)
 
 	P_CheckUnderwaterAndSpaceTimer(player);
 	P_CheckInvincibilityTimer(player);
+
+	player->mo->momx = REALMOMX(player);
+	player->mo->momy = REALMOMY(player);
+	player->cmomx = player->cmomy = 0;
 }
 
 void R_ResetResp(player_t *p)

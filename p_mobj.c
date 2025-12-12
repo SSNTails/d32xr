@@ -48,19 +48,16 @@ mobj_t *P_FindFirstMobjOfType(uint16_t type)
 =
 ===============
 */
-
+__attribute((noinline))
 void P_RemoveMobj (mobj_t *mobj)
 {
 /* unlink from sector and block lists */
-	P_UnsetThingPosition (mobj);
+	P_UnsetThingPosition(mobj);
 
 	if (mobj->flags & MF_RINGMOBJ)
 	{
-		ringmobj_t *ring = (ringmobj_t*)mobj;
-		ring->flags = 0;
-		ring->alive = 0;
+		mobj->flags = MF_RINGMOBJ|MF_NOBLOCKMAP|MF_NOSECTOR; // Remove all other flags
 		return;
-
 	}
 	else if (mobj->flags & MF_STATIC)
 	{
@@ -72,7 +69,7 @@ void P_RemoveMobj (mobj_t *mobj)
 
 	mobj->target = NULL;
 	mobj->extradata = 0;
-	mobj->latecall = (latecall_t)-1;	/* make sure it doesn't come back to life... */
+	mobj->latecall = LC_INVALID;	/* make sure it doesn't come back to life... */
 
 /* unlink from mobj list */
 	P_RemoveMobjFromCurrList(mobj);
@@ -94,13 +91,12 @@ void P_Attract(mobj_t *source, mobj_t *dest)
 	fixed_t tx = dest->x;
 	fixed_t ty = dest->y;
 	fixed_t tz = dest->z + (dest->theight << (FRACBITS-1)); // Aim for center
-	fixed_t xydist = P_AproxDistance(tx - source->x, ty - source->y);
 
 	// change angle
 	source->angle = R_PointToAngle2(source->x, source->y, tx, ty);
 
 	// change slope
-	dist = P_AproxDistance(xydist, tz - source->z);
+	dist = P_AproxDistance3D(tx - source->x, ty - source->y, tz - source->z);
 
 	if (dist < 1)
 		dist = 1;
@@ -116,25 +112,22 @@ void P_Attract(mobj_t *source, mobj_t *dest)
 	source->momz = FixedMul(FixedDiv(tz - source->z, dist), speedmul);
 
 	// Instead of just unsetting NOCLIP like an idiot, let's check the distance to our target.
-	ndist = P_AproxDistance(P_AproxDistance(tx - (source->x+source->momx),
-											ty - (source->y+source->momy)),
+	ndist = P_AproxDistance3D(tx - (source->x+source->momx),
+											ty - (source->y+source->momy),
 											tz - (source->z+source->momz));
 
 	if (ndist > dist) // gone past our target
 	{
 		// place us on top of them then.
 		source->momx = source->momy = source->momz = 0;
-		P_UnsetThingPosition(source);
-		source->x = tx;
-		source->y = ty;
 		source->z = tz;
-		P_SetThingPosition(source);
+		P_SetThingPositionConditionally(source, tx, ty, dest->isubsector);
 	}
 }
 
 fixed_t GetWatertopSec(const sector_t *sec)
 {
-	if (sec->heightsec == -1)
+	if (sec->heightsec < 0)
 		return sec->floorheight - 512*FRACUNIT;
 
 	return sectors[sec->heightsec].ceilingheight;
@@ -142,7 +135,7 @@ fixed_t GetWatertopSec(const sector_t *sec)
 
 fixed_t GetWatertopMo(const mobj_t *mo)
 {
-	const sector_t *sec = subsectors[mo->isubsector].sector;
+	const sector_t *sec = &sectors[subsectors[mo->isubsector].isector];
 	return GetWatertopSec(sec);
 }
 
@@ -198,7 +191,7 @@ int8_t P_MobjFlip(mobj_t *mo)
 
 boolean P_SetMobjState (mobj_t *mobj, statenum_t state)
 {
-	uint16_t changes = 0xffff;
+	uint16_t changes = 0xf; // Only chain up to 16 states.
 
 	if (mobj->flags & MF_RINGMOBJ)
 		return true; // silently fail
@@ -226,9 +219,6 @@ boolean P_SetMobjState (mobj_t *mobj, statenum_t state)
 
 		if (st->action)		/* call action functions when the state is set */
 			st->action(mobj, st->var1, st->var2);
-
-		if (!(mobj->flags & (MF_STATIC)))
-			mobj->latecall = NULL;	/* make sure it doesn't come back to life... */
 
 		state = st->nextstate;
 	} while (!mobj->tics && --changes > 0);
@@ -267,7 +257,7 @@ void P_ExplodeMissile (mobj_t *mo)
 ===============
 */
 
-mobj_t *P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
+mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 {
 	mobj_t		*mobj;
 	const state_t		*st;
@@ -278,6 +268,9 @@ mobj_t *P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	{
 		if (info->flags & MF_NOBLOCKMAP) // It's scenery
 		{
+			if (numscenerymobjs >= scenerymobjcount)
+				I_Error("No more slots available for a scenery mobj.");
+				
 			scenerymobj_t *scenerymobj = &scenerymobjlist[numscenerymobjs];
 			scenerymobj->type = type;
 			scenerymobj->x = x >> FRACBITS;
@@ -285,7 +278,7 @@ mobj_t *P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			scenerymobj->flags = info->flags;
 
 			/* set subsector and/or block links */
-			P_SetThingPosition2 ((mobj_t*)scenerymobj, R_PointInSubsector(x, y));
+			P_SetThingPosition2 ((mobj_t*)scenerymobj, R_PointInSubsector2(x, y));
 
 			numscenerymobjs++;
 
@@ -293,16 +286,18 @@ mobj_t *P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		}
 		else // It's a ring
 		{
+			if (numringmobjs >= ringmobjcount)
+				I_Error("No more slots available for a ring mobj.");
+
 			ringmobj_t *ringmobj = &ringmobjlist[numringmobjs];
 			ringmobj->type = type;
 			ringmobj->x = x >> FRACBITS;
 			ringmobj->y = y >> FRACBITS;
 			ringmobj->z = z >> FRACBITS;
 			ringmobj->flags = info->flags;
-			ringmobj->alive = 1;
 
 			/* set subsector and/or block links */
-			P_SetThingPosition2 ((mobj_t*)ringmobj, R_PointInSubsector(x, y));
+			P_SetThingPosition2 ((mobj_t*)ringmobj, R_PointInSubsector2(x, y));
 
 			numringmobjs++;
 
@@ -351,23 +346,39 @@ mobj_t *P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->state = info->spawnstate;
 	mobj->tics = st->tics;
 
+	/* */
+	/* link into the mobj list */
+	/* */
+	P_AddMobjToList(mobj, (void *)&mobjhead);
+
+	return mobj;
+}
+
+mobj_t *P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
+{
+	const mobjinfo_t *info = &mobjinfo[type];
+	mobj_t *mobj = P_SpawnMobjNoSector(x, y, z, type);
+
+	if (info->flags & MF_RINGMOBJ)
+		return mobj;
+
 /* set subsector and/or block links */
-	P_SetThingPosition (mobj);
+	P_SetThingPosition(mobj);
+
+	const sector_t *sec = &sectors[subsectors[mobj->isubsector].isector];
 	
-	mobj->floorz = subsectors[mobj->isubsector].sector->floorheight;
-	mobj->ceilingz = subsectors[mobj->isubsector].sector->ceilingheight;
+	mobj->floorz = sec->floorheight;
+	mobj->ceilingz = sec->ceilingheight;
 	if (z == ONFLOORZ)
 		mobj->z = mobj->floorz;
 	else if (z == ONCEILINGZ)
 		mobj->z = mobj->ceilingz - info->height;
-	else 
+	else
 		mobj->z = z;
-	
-/* */
-/* link into the mobj list */
-/* */
-	P_AddMobjToList(mobj, (void *)&mobjhead);
 
+	mobj->floorz = FloorZAtPos(sec, mobj->z, info->height);
+	mobj->ceilingz = CeilingZAtPos(sec, mobj->z, info->height);
+	
 	return mobj;
 }
 
@@ -381,6 +392,9 @@ int thingmem = 0;
 */
 void P_PreSpawnMobjs(int count, int staticcount, int ringcount, int scenerycount)
 {
+	ringmobjcount = ringcount;
+	scenerymobjcount = scenerycount;
+
 	thingmem = count * sizeof(mobj_t) + staticcount * static_mobj_size + ringcount * sizeof(ringmobj_t) + scenerycount * sizeof(scenerymobj_t);
 
 	if (scenerycount > 0)
@@ -399,6 +413,7 @@ void P_PreSpawnMobjs(int count, int staticcount, int ringcount, int scenerycount
 	if (staticcount > 0)
 	{
 		uint8_t *mobj = Z_Malloc (static_mobj_size*staticcount, PU_LEVEL);
+		D_memset(mobj, 0, static_mobj_size*staticcount);
 		for (; staticcount > 0; staticcount--) {
 			P_AddMobjToList((void *)mobj, (void *)&freestaticmobjhead);
 			mobj += static_mobj_size;
@@ -409,6 +424,7 @@ void P_PreSpawnMobjs(int count, int staticcount, int ringcount, int scenerycount
 	if (count > 0)
 	{
 		mobj_t *mobj = Z_Malloc (sizeof(*mobj)*count, PU_LEVEL);
+		D_memset(mobj, 0, (sizeof(*mobj)*count));
 		for (; count > 0; count--) {
 			P_AddMobjToList(mobj, (void *)&freemobjhead);
 			mobj++;
@@ -467,7 +483,6 @@ void P_SpawnPlayer (mapthing_t *mthing)
 	p->mo = mobj;
 	p->playerstate = PST_LIVE;	
 	p->whiteFlash = 0;
-	p->viewheight = VIEWHEIGHT;
 
 	if (gamemapinfo.act == 3)
 		p->health = mobj->health = 11;
@@ -483,8 +498,8 @@ void P_SpawnPlayer (mapthing_t *mthing)
 		P_ThrustValues(mobj->angle + (ANG45 * 3), -CAM_DIST, &camera.x, &camera.y);
 	camera.x = (camera.x >> FRACBITS) << FRACBITS;
 	camera.y = (camera.y >> FRACBITS) << FRACBITS;
-	camera.subsector = R_PointInSubsector(camera.x, camera.y);
-	camera.z = camera.subsector->sector->floorheight + (mobj->theight << FRACBITS);
+	camera.subsector = I_TO_SS(R_PointInSubsector2(camera.x, camera.y));
+	camera.z = sectors[camera.subsector->isector].floorheight + (mobj->theight << FRACBITS);
 	
 	if (!netgame)
 		return;
@@ -503,10 +518,6 @@ int P_MapThingSpawnsMobj (mapthing_t* mthing)
 {
 	int			i;
 
-/* count deathmatch start positions */
-	if (mthing->type == 11)
-		return 0;
-
 	if (mthing->type >= 600 && mthing->type <= 603)
 		return 3;
 
@@ -517,10 +528,6 @@ int P_MapThingSpawnsMobj (mapthing_t* mthing)
 #endif
 
 	if (mthing->type <= 4)
-		return 0;
-
-/* check for apropriate skill level */
-	if ((netgame != gt_deathmatch) && (mthing->options & 16))
 		return 0;
 
 /* find which type to spawn */
@@ -600,9 +607,9 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 			return ONFLOORZ;
 	}*/
 
-	const subsector_t *ss = R_PointInSubsector(x, y);
+	const sector_t *sec = SS_SECTOR(R_PointInSubsector2(x, y));
 
-	return ss->sector->floorheight + dz;
+	return sec->floorheight + dz;
 }
 
 void P_SpawnMapThing (mapthing_t *mthing, int thingid)
@@ -610,15 +617,6 @@ void P_SpawnMapThing (mapthing_t *mthing, int thingid)
 	int			i;
 	mobj_t		*mobj;
 	fixed_t		x,y,z;
-		
-/* count deathmatch start positions */
-	if (mthing->type == 11)
-	{
-		if (deathmatch_p < deathmatchstarts + MAXDMSTARTS)
-			D_memcpy (deathmatch_p, mthing, sizeof(*mthing));
-		deathmatch_p++;
-		return;
-	}
 	
 /* check for players specially */
 
@@ -650,12 +648,6 @@ return;	/*DEBUG */
 	if (i==NUMMOBJTYPES)
 		I_Error ("P_SpawnMapThing: Unknown type %i at (%i, %i)",mthing->type
 		, mthing->x, mthing->y);
-
-	if (mobjinfo[i].flags & MF_RINGMOBJ)
-	{
-		ringmobjstates[i] = mobjinfo[i].spawnstate;
-		ringmobjtics[i] = states[mobjinfo[i].spawnstate].tics;
-	}
 	
 /* spawn it */
 
@@ -665,29 +657,73 @@ return;	/*DEBUG */
 	z = (mthing->options >> 4) << FRACBITS;
 	z = P_GetMapThingSpawnHeight(i, mthing, x, y, z);
 
-	if (mthing->type == 312 && (tokenbits & (mthing->angle / 45))) // MT_TOKEN
+	if (mthing->type == 312 && (tokenbits & (1 << totaltokens))) // MT_TOKEN
+	{
+		totaltokens++;
 		return; // Player already has this token
+	}
 
 	mobj = P_SpawnMobj (x,y,z, i);
 	if (mobj->type == MT_RING)
 	{
 		totalitems++;
 	}
-	else if (mobj->type == MT_TOKEN)
+	else if (mobj->type == MT_EGGMOBILE)
 	{
-		tokenbits |= (mthing->angle / 45);
+		mobj_t *eggmech = P_SpawnMobj(x, y, z, MT_EGGMOBILE_MECH);
+		eggmech->target = mobj;
+	}
+	else if (mobj->type == MT_EGGMOBILE2)
+	{
+		mobj_t *eggmech = P_SpawnMobj(x, y, z, MT_EGGMOBILE2_MECH);
+		eggmech->target = mobj;
+	}
+	else if (mobj->type == MT_ROBOHOOD)
+	{
+		if (mthing->options & MTF_AMBUSH)
+			mobj->flags2 |= MF2_SPAWNEDJETS;
+	}
+	else if (mobj->type == MT_EGGGUARD)
+	{
+		mobj_t *shield = P_SpawnMobj(x, y, z, MT_EGGSHIELD);
+		shield->target = mobj;
+
+		if (mthing->options & MTF_AMBUSH)
+			mobj->flags2 |= MF2_SPAWNEDJETS; // We use this as an extra flag for all kinds of fun stuff. :)
+
+		mobj->extradata = 0;
+
+		if (mthing->options & MTF_EXTRA)
+			SETUPPER8(mobj->extradata, TMGD_RIGHT) // TMGD_RIGHT
+		else if (mthing->options & MTF_OBJECTSPECIAL)
+			SETUPPER8(mobj->extradata, TMGD_LEFT) // TMGD_LEFT
+	}
+	else if (mobj->type == MT_FACESTABBER)
+	{
+		mobj_t *jet = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_JETFUME1);
+		jet->target = mobj;
+		jet->flags2 |= MF2_DONTDRAW;
+		jet->movecount = 4; // This tells it which one it is
+	}
+
+	if (mobj->type == MT_TOKEN) {
+		((ringmobj_t *)mobj)->pad = (1 << totaltokens);
+		totaltokens++;
 	}
 
 	if (mobj->flags & MF_RINGMOBJ)
 		return;
 
+
+	// Set the angle
 	if (mobj->type == MT_STARPOST)
 	{
-		mobj->health = (mthing->angle >> 8) + 1;
-		mobj->angle = (mthing->angle & 0xff) * ANGLE_1;
+		mobj->health = (mthing->angle / 360) + 1;
+		mobj->angle = (mthing->angle % 360) * ANGLE_1;
 	}
-	else
+	else {
 		mobj->angle = mthing->angle * ANGLE_1;
+	}
 
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);
@@ -756,94 +792,33 @@ void P_CheckMissileSpawn (mobj_t *th)
 ================
 */
 
-void P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type)
+mobj_t *P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type)
 {
-	mobj_t		*th;
-	angle_t		an;
-	int			dist;
-	int			speed;
-	const mobjinfo_t* thinfo = &mobjinfo[type];
+    mobj_t        *th;
+    angle_t        an;
+    int            speed;
+    const mobjinfo_t* thinfo = &mobjinfo[type];
 
-	th = P_SpawnMobj (source->x,source->y, source->z + 4*8*FRACUNIT, type);
-	if (thinfo->seesound)
-		S_StartSound (source, thinfo->seesound);
-	th->target = source;		/* where it came from */
-	an = R_PointToAngle2 (source->x, source->y, dest->x, dest->y);	
-	th->angle = an;
-	an >>= ANGLETOFINESHIFT;
-	speed = mobjinfo[th->type].speed >> 16;
-	th->momx = speed * finecosine(an);
-	th->momy = speed * finesine(an);
-	
-	dist = P_AproxDistance (dest->x - source->x, dest->y - source->y);
-	dist = dist / mobjinfo[th->type].speed;
-	if (dist < 1)
-		dist = 1;
-	th->momz = (dest->z - source->z) / dist;
-	P_CheckMissileSpawn (th);
-}
+    th = P_SpawnMobj (source->x,source->y, source->z + 4*8*FRACUNIT, type);
+    if (thinfo->seesound)
+        S_StartSound (source, thinfo->seesound);
+    th->target = source;        /* where it came from */
+    an = R_PointToAngle2 (source->x, source->y, dest->x, dest->y);    
+    th->angle = an;
 
+    th->momx = dest->x - th->x;
+    th->momy = dest->y - th->y;
+    th->momz = dest->z - th->z;
+	FV3_Normalize((vector3_t*)&th->momx, (vector3_t*)&th->momx);
 
-/*
-================
-=
-= P_SpawnPlayerMissile
-=
-= Tries to aim at a nearby monster
-================
-*/
+    speed = mobjinfo[th->type].speed;
+    th->momx = FixedMul(th->momx, speed);
+    th->momy = FixedMul(th->momy, speed);
+    th->momz = FixedMul(th->momz, speed)*2; // why do we multiply by two here I don't even
 
-void P_SpawnPlayerMissile (mobj_t *source, mobjtype_t type)
-{
-	mobj_t			*th;
-	mobj_t 			*linetarget;
-	angle_t			an;
-	fixed_t			x,y,z, slope;
-	int				speed;
-	lineattack_t	la;
-	const mobjinfo_t* thinfo = &mobjinfo[type];
+    P_CheckMissileSpawn (th);
 
-/* */
-/* see which target is to be aimed at */
-/* */
-	an = source->angle;
-	slope = P_AimLineAttack (&la, source, an, 16*64*FRACUNIT);
-	linetarget = la.shootmobj;
-	if (!linetarget)
-	{
-		an += 1<<26;
-		slope = P_AimLineAttack (&la, source, an, 16*64*FRACUNIT);
-		linetarget = la.shootmobj;
-		if (!linetarget)
-		{
-			an -= 2<<26;
-			slope = P_AimLineAttack (&la, source, an, 16*64*FRACUNIT);
-			linetarget = la.shootmobj;
-		}
-		if (!linetarget)
-		{
-			an = source->angle;
-			slope = 0;
-		}
-	}
-	
-	x = source->x;
-	y = source->y;
-	z = source->z + 4*8*FRACUNIT;
-	
-	th = P_SpawnMobj (x,y,z, type);
-	if (thinfo->seesound)
-		S_StartSound (source, thinfo->seesound);
-	th->target = source;
-	th->angle = an;
-	
-	speed = mobjinfo[th->type].speed >> 16;
-	
-	th->momx = speed * finecosine(an>>ANGLETOFINESHIFT);
-	th->momy = speed * finesine(an>>ANGLETOFINESHIFT);
-	th->momz = speed * slope;
-
-	P_CheckMissileSpawn (th);
+    return th;
 }
 
 void P_MobjCheckWater(mobj_t *mo)
@@ -853,9 +828,10 @@ void P_MobjCheckWater(mobj_t *mo)
 		player_t *player = &players[mo->player-1];
 		VINT wasinwater = player->pflags & PF_UNDERWATER;
 		player->pflags &= ~(PF_TOUCHWATER|PF_UNDERWATER);
-		fixed_t watertop = subsectors[mo->isubsector].sector->floorheight - 512*FRACUNIT;
+		const sector_t *moSec = SS_SECTOR(mo->isubsector);
+		fixed_t watertop = moSec->floorheight - 512*FRACUNIT;
 
-		if (subsectors[mo->isubsector].sector->heightsec != -1)
+		if (moSec->heightsec >= 0)
 		{
 			watertop = GetWatertopMo(mo);
 
@@ -889,28 +865,31 @@ void P_MobjCheckWater(mobj_t *mo)
 		{
 			// Check to make sure you didn't just cross into a sector to jump out of
 			// that has shallower water than the block you were originally in.
-			if (watertop - mo->floorz <= mobjinfo[MT_PLAYER].height / 2)
+			if (watertop - mo->floorz <= mobjinfo[MT_PLAYER].height >> 1)
 				return;
 
 			if (wasinwater && mo->momz > 0)
-				mo->momz = FixedMul(mo->momz, FixedDiv(780*FRACUNIT, 457*FRACUNIT)); // Give the mobj a little out-of-water boost.
+				mo->momz = FixedMul(mo->momz, 111855/*1.7*/); // Give the mobj a little out-of-water boost.
 
 			if (mo->momz < 0)
 			{
-				if (mo->z + mobjinfo[MT_PLAYER].height / 2 - mo->momz >= watertop)
+				if (mo->z + (mobjinfo[MT_PLAYER].height >> 1) - mo->momz >= watertop)
 				{
 					// Spawn a splash
 					P_SpawnMobj(mo->x, mo->y, watertop, MT_SPLISH);
 				}
 
 				// skipping stone!
-				if (!(player->pflags & PF_JUMPED) && player->speed/2 > D_abs(mo->momz)
+				if (!(player->pflags & PF_JUMPED) && player->speed > (D_abs(mo->momz) << 1)
 					&& (player->pflags & PF_SPINNING) && mo->z + mobjinfo[MT_PLAYER].height - mo->momz > watertop)
 				{
 					mo->momz = -mo->momz/2;
 
 					if (mo->momz > 6*FRACUNIT)
 						mo->momz = 6*FRACUNIT;
+
+					mo->momx -= mo->momx >> 2;
+					mo->momy -= mo->momy >> 2;
 				}
 
 				int bubbleCount = D_abs(mo->momz >> FRACBITS);

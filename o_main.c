@@ -2,6 +2,7 @@
 
 #include "doomdef.h"
 #include "p_local.h"
+#include "p_camera.h"
 #include "st_main.h"
 #include "v_font.h"
 #ifdef MARS
@@ -22,6 +23,8 @@ typedef enum
 	mi_game, 
 	mi_audio,
 	mi_video,
+	mi_camerapan,
+	mi_spindash,
 	mi_help,
 
 	mi_soundvol,
@@ -64,7 +67,7 @@ typedef struct
 	VINT	y;
 	uint8_t	slider;
 	uint8_t screen;
-	char 	name[16];
+	const char 	*name;
 } menuitem_t;
 
 static menuitem_t menuitem[NUMMENUITEMS];
@@ -84,7 +87,7 @@ typedef struct
 {
 	VINT firstitem;
 	VINT numitems;
-	char name[10];
+	const char *name;
 } menuscreen_t;
 
 typedef enum
@@ -94,7 +97,6 @@ typedef enum
 	ms_game,
 	ms_audio,
 	ms_video,
-	ms_controls,
 	ms_help,
 
 	NUMMENUSCREENS
@@ -132,83 +134,85 @@ void O_Init (void)
 	cursorpos = 0;
 	screenpos = ms_none;
 
-	D_memset(menuitem, 0, sizeof(menuitem));
+	D_memset(menuitem, 0, sizeof(*menuitem)*NUMMENUITEMS);
 	D_memset(sliders, 0, sizeof(sliders));
 
-	D_memcpy(menuitem[mi_game].name, "GAME", 5);
+	menuitem[mi_game].name = "GAME";
 	menuitem[mi_game].x = ITEMX;
 	menuitem[mi_game].y = STARTY;
 	menuitem[mi_game].screen = ms_game;
 
-	D_memcpy(menuitem[mi_audio].name, "AUDIO", 6);
+	menuitem[mi_audio].name = "AUDIO";
 	menuitem[mi_audio].x = ITEMX;
 	menuitem[mi_audio].y = STARTY+ITEMSPACE;
 	menuitem[mi_audio].screen = ms_audio;
 
-	D_memcpy(menuitem[mi_video].name, "VIDEO", 6);
+	menuitem[mi_video].name = "VIDEO";
 	menuitem[mi_video].x = ITEMX;
 	menuitem[mi_video].y = STARTY+ITEMSPACE*2;
-	menuitem[mi_video].slider = 0;
 	menuitem[mi_video].screen = ms_video;
-/*
-	D_memcpy(menuitem[mi_controls].name, "Controls", 9);
-	menuitem[mi_controls].x = ITEMX;
-	menuitem[mi_controls].y = STARTY+ITEMSPACE*3;
-	menuitem[mi_controls].screen = ms_controls;
-*/
-	D_memcpy(menuitem[mi_help].name, "HELP / ABOUT", 13);
+
+	menuitem[mi_camerapan].name = "CAMERA";
+	menuitem[mi_camerapan].x = ITEMX;
+	menuitem[mi_camerapan].y = STARTY+ITEMSPACE*3;
+
+	menuitem[mi_spindash].name = "SPINDASH";
+	menuitem[mi_spindash].x = ITEMX;
+	menuitem[mi_spindash].y = STARTY+ITEMSPACE*4;
+
+	menuitem[mi_help].name = "HELP / ABOUT";
 	menuitem[mi_help].x = ITEMX;
-	menuitem[mi_help].y = STARTY+ITEMSPACE*3;
+	menuitem[mi_help].y = STARTY+ITEMSPACE*5;
 	menuitem[mi_help].screen = ms_help;
 
-	D_memcpy(menuitem[mi_soundvol].name, "Sfx volume", 11);
+	menuitem[mi_soundvol].name = "Sfx volume";
 	menuitem[mi_soundvol].x = ITEMX - 32;
 	menuitem[mi_soundvol].y = STARTY;
 	menuitem[mi_soundvol].slider = si_sfxvolume+1;
 	sliders[si_sfxvolume].maxval = 4;
 	sliders[si_sfxvolume].curval = 4*sfxvolume/64;
 
-	D_memcpy(menuitem[mi_music].name, "Music", 6);
+	menuitem[mi_music].name = "Music";
 	menuitem[mi_music].x = ITEMX - 32;
 	menuitem[mi_music].y = STARTY+ITEMSPACE*2;
 
-	D_memcpy(menuitem[mi_musicvol].name, "CDA volume", 11);
+	menuitem[mi_musicvol].name = "CDA volume";
 	menuitem[mi_musicvol].x = ITEMX - 32;
 	menuitem[mi_musicvol].y = STARTY + ITEMSPACE * 3;
 	menuitem[mi_musicvol].slider = si_musvolume+1;
 	sliders[si_musvolume].maxval = 8;
 	sliders[si_musvolume].curval = 8*musicvolume/64;
 /*
-	D_memcpy(menuitem[mi_sfxdriver].name, "SFX driver", 11);
+	menuitem[mi_sfxdriver].name = "SFX driver";
 	menuitem[mi_sfxdriver].x = ITEMX;
 	menuitem[mi_sfxdriver].y = STARTY+ITEMSPACE*5;
 */
-	D_memcpy(menuitem[mi_resolution].name, "Resolution", 11);
+	menuitem[mi_resolution].name = "Resolution";
 	menuitem[mi_resolution].x = ITEMX;
 	menuitem[mi_resolution].y = STARTY;
 	menuitem[mi_resolution].slider = si_resolution+1;
 	sliders[si_resolution].maxval = numViewports - 1;
 	sliders[si_resolution].curval = viewportNum;
 
-	D_memcpy(menuitem[mi_anamorphic].name, "WIDESCREEN", 11);
+	menuitem[mi_anamorphic].name = "WIDESCREEN";
 	menuitem[mi_anamorphic].x = ITEMX - 32;
 	menuitem[mi_anamorphic].y = STARTY + ITEMSPACE * 2;
 
 
-	D_memcpy(menuitem[mi_controltype].name, "Gamepad", 8);
+	menuitem[mi_controltype].name = "Gamepad";
 	menuitem[mi_controltype].x = ITEMX;
 	menuitem[mi_controltype].y = STARTY;
 
-	D_memcpy(menuitem[mi_strafebtns].name, "LR Strafe", 10);
+	menuitem[mi_strafebtns].name = "LR Strafe";
 	menuitem[mi_strafebtns].x = ITEMX;
 	menuitem[mi_strafebtns].y = STARTY+ITEMSPACE*5;
 
 
-	D_memcpy(menuscreen[ms_main].name, "OPTIONS", 8);
+	menuscreen[ms_main].name = "OPTIONS";
 	menuscreen[ms_main].firstitem = mi_game;
 	menuscreen[ms_main].numitems = mi_help - mi_game + 1;
 
-	D_memcpy(menuscreen[ms_audio].name, "AUDIO", 6);
+	menuscreen[ms_audio].name = "AUDIO";
 	menuscreen[ms_audio].firstitem = mi_soundvol;
 	menuscreen[ms_audio].numitems = mi_music - mi_soundvol + 1;
 
@@ -220,15 +224,11 @@ void O_Init (void)
 			menuscreen[ms_audio].numitems++;
 	}
 
-	D_memcpy(menuscreen[ms_video].name, "VIDEO", 6);
+	menuscreen[ms_video].name = "VIDEO";
 	menuscreen[ms_video].firstitem = mi_anamorphic;
 	menuscreen[ms_video].numitems = mi_anamorphic - mi_anamorphic + 1;
 
-	D_memcpy(menuscreen[ms_controls].name, "CONTROLS", 9);
-	menuscreen[ms_controls].firstitem = mi_controltype;
-	menuscreen[ms_controls].numitems = mi_strafebtns - mi_controltype + 1;
-
-	D_memcpy(menuscreen[ms_help].name, "HELP / ABOUT", 13);
+	menuscreen[ms_help].name = "HELP / ABOUT";
 	menuscreen[ms_help].firstitem = 0;
 	menuscreen[ms_help].numitems = 0;
 }
@@ -266,24 +266,21 @@ void O_Control (player_t *player)
 	buttons = ticbuttons[playernum] & MENU_BTNMASK;
 	oldbuttons = oldticbuttons[playernum] & MENU_BTNMASK;
 	
-	if ( ( (buttons & BT_OPTION) && !(oldbuttons & BT_OPTION) )
-#ifdef MARS
-		|| ( (buttons & BT_START) && !(oldbuttons & BT_START) && !(buttons & BT_MODE) )
-#endif
-		)
+	if ((buttons & BT_START) && !(oldbuttons & BT_START) && !(buttons & BT_MODE))
 	{
 		optionsMenuOn = !optionsMenuOn;
 
 		if (playernum == curplayer)
 		{
-			if (screenpos == ms_game)
+			if (screenpos == ms_game) {
 				M_Stop();
+			}
 			if (netgame == gt_single)
 				gamepaused ^= 1;
 			movecount = 0;
 			cursorpos = 0;
 			screenpos = ms_main;
-			S_StartSound(NULL, sfx_None);
+			overlay_graphics = og_none;		// May want "og_hud" in the future.
 			if (optionsMenuOn)
 #ifndef MARS
 				DoubleBufferSetup();
@@ -299,7 +296,7 @@ void O_Control (player_t *player)
 		return;
 
 /* clear buttons so player isn't moving aroung */
-	ticbuttons[playernum] &= (BT_OPTION|BT_START);	/* leave option status alone */
+	ticbuttons[playernum] &= BT_START;	/* leave option status alone */
 
 	if (playernum != curplayer)
 		return;
@@ -438,6 +435,12 @@ void O_Control (player_t *player)
 					anamorphicview = slider->curval;
 					R_SetViewportSize(viewportNum);
 					break;
+				case mi_camerapan:
+					invertCamera = !invertCamera;
+					break;
+				case mi_spindash:
+					spindashPlayerOriented = !spindashPlayerOriented;
+					break;
 				default:
 					break;
 
@@ -518,8 +521,33 @@ void O_Control (player_t *player)
 					S_SetSoundDriver(o_sfxdriver);
 				}
 			}
+			else if (screenpos == ms_main)
+			{
+				if (buttons & BT_RIGHT)
+				{
+					switch (itemno) {
+						case mi_camerapan:
+							invertCamera = !invertCamera;
+							break;
+						case mi_spindash:
+							spindashPlayerOriented = !spindashPlayerOriented;
+							break;
+					}
+				}
 
-			if (screenpos == ms_video)
+				if (buttons & BT_LEFT)
+				{
+					switch (itemno) {
+						case mi_camerapan:
+							invertCamera = !invertCamera;
+							break;
+						case mi_spindash:
+							spindashPlayerOriented = !spindashPlayerOriented;
+							break;
+					}
+				}
+			}
+			else if (screenpos == ms_video)
 			{
 				int oldanamorphicview = anamorphicview;
 
@@ -568,10 +596,10 @@ void O_Control (player_t *player)
 
 void O_DrawHelp (VINT yPos)
 {
-	V_DrawStringCenter(&menuFont, 160, yPos - 96, "TIP: Use gas pedal for easier control");
+	V_DrawStringCenter(&menuFont, 160, yPos - 96, "TIP: Use gas pedal to 'drive'");
 
 	V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 32, "SONIC ROBO BLAST 32X", YELLOWTEXTCOLORMAP);
-	V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 20, "v0.1a DEMO", YELLOWTEXTCOLORMAP);
+	V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 20, "v0.2a DEMO", YELLOWTEXTCOLORMAP);
 
 	V_DrawStringRight(&menuFont, 160-8, yPos, "JUMP ");
 	V_DrawStringLeft(&menuFont, 160, yPos, "= B");
@@ -582,8 +610,8 @@ void O_DrawHelp (VINT yPos)
 	V_DrawStringRight(&menuFont, 160-8, yPos + (12*3), "MOVE CAMERA ");
 	V_DrawStringLeft(&menuFont, 160, yPos + (12*3), "= X and Z");
 
-	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5), "INTENDED ONLY FOR NTSC SYSTEMS AND", YELLOWTEXTCOLORMAP);
-	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5) + 8, "ARES / KEGA FUSION v3.64 AT THIS TIME", YELLOWTEXTCOLORMAP);
+	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5), "OPTIMIZED FOR NTSC SYSTEMS AND", YELLOWTEXTCOLORMAP);
+	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5) + 8, "PICODRIVE 2.04 & JGENESIS 0.10", YELLOWTEXTCOLORMAP);
 
 	V_DrawStringCenter(&menuFont, 160, yPos + 80, "ssntails.srb2.org/srb32x");
 }
@@ -690,5 +718,11 @@ void O_Drawer (void)
 
 	if (screenpos == ms_help)
 		O_DrawHelp(80);
+
+	if (screenpos == ms_main)
+	{
+		V_DrawStringLeft(&menuFont, menuitem[mi_camerapan].x + 80, menuitem[mi_camerapan].y, invertCamera ? ": INVERTED" : ": NORMAL");
+		V_DrawStringLeft(&menuFont, menuitem[mi_spindash].x + 80, menuitem[mi_spindash].y, spindashPlayerOriented ? ": PLAYER" : ": CAMERA");
+	}
 }
 

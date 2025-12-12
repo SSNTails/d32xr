@@ -142,7 +142,7 @@ static boolean PA_ShootLine(shootWork_t *sw, line_t *li, fixed_t interceptfrac)
    sector_t *front, *back;
    fixed_t   opentop, openbottom;
 
-   if(!(li->flags & ML_TWOSIDED))
+   if(li->sidenum[1] == -1)
    {
       if(!sw->shootline)
       {
@@ -286,10 +286,11 @@ static boolean PA_CrossSubsector(shootWork_t *sw, int bspnum)
    mobj_t  *thing;
    intercept_t  in;
    mapvertex_t tv1, tv2;
-   VINT     *lvalidcount, vc;
+   VINT     *lvalidcount = validcount;
+   VINT     vc;
 
    // check things
-   for(thing = subsectors[bspnum].sector->thinglist; thing; thing = thing->snext)
+   for(thing = SPTR_TO_LPTR(sectors[subsectors[bspnum].isector].thinglist); thing; thing = SPTR_TO_LPTR(thing->snext))
    {
       if(thing->isubsector != bspnum)
          continue;
@@ -332,10 +333,9 @@ static boolean PA_CrossSubsector(shootWork_t *sw, int bspnum)
 
    // check lines
    const subsector_t *sub = &subsectors[bspnum];
-   count = sub->numlines;
+   count = P_GetSubsectorNumlines(sub);
    seg   = &segs[sub->firstline];
 
-   I_GetThreadLocalVar(DOOMTLS_VALIDCOUNT, lvalidcount);
    vc = *lvalidcount + 1;
    if (vc == 0)
       vc = 1;

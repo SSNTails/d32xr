@@ -14,16 +14,13 @@ typedef struct
 
 creditcard_t creditCards[] = {
 	{"C_STJR",   "SONIC ROBO BLAST",     "32X",              "STAFF", "" },
-	{"C_WSQUID", "TRACKING",                "Wessquiid",         "Title Theme\nGreenflower 1 & 2\nSpeed Shoes\nMost Others", "x.com/@wessquiid\nwessquiid.carrd.co" },
-	{"C_NQUITE", "TRACKING",                "NotQuiteHere",      "Special Stage",       "x.com/NotQuiteHereTSM" },
-	{"C_CRYPTK", "TRACKING",                "Cryptik",          "Boss Theme\nMiscellaneous",        "x.com/@LunarCryptik\nyoutube.com/c\n/LunarCryptik" },
-	{"C_JOYTAY", "TRACKING",                "John \"Joy\" Tay", "Credits Theme",                          "x.com/@johntayjinf\nyoutube.com\n/@johntayjinf" },
-	{"C_SAXMAN", "PROGRAMMING",          "Saxman",           "MegaDrive & 32X\nAssembler\nAdditional tooling", "rumble.com/user\n/ymtx81z" },
+	{NULL, "TRACKING",                NULL,         "Cryptik\n\nWessquiid\n\nNerreave\n\nNotQuiteHere\n\nJoy Tay\n\nJustKam\n\nMattM4nia", "" },
+	{"C_SAXMAN", "PROGRAMMING",          "Saxman",           "MegaDrive & 32X\nAssembly\nAdditional programming\nTools", "rumble.com/user\n/ymtx81z" },
 	{"C_SSN",    "PROGRAMMING",          "SSNTails",         "Project Lead\nGameplay\nEngine Enhancements\nAdditional Art",            "x.com/@SSNTails\nyoutube.com\n/@ssntails" },
 	{"C_VIC",    "SPECIAL THANKS",       "Viciious",         "Doom 32X:\nResurrection\nDoom CD32X:\nFusion",             "x.com/vluchitz" },
-	{"C_MITTEN", "SPECIAL THANKS",       "Mittens",          "Mapping support",                     "youtube.com\n/@Mittens0407\ntwitch.tv\n/mittens0407" },
-	{"C_STJR",   "BASED ON THE WORK BY", "Sonic Team Jr.",   "www.srb2.org",                        "Shout-outs to:\nAlice Alacroix\nMotor Roach\nNev3r\nGuyWithThePie\nAnd so many more!" },
-	{NULL,       "THANKS FOR PLAYING!", "", "", "" },
+	{"C_THANKS", "SPECIAL THANKS",       NULL,          "Mittens\n\nChilly Willy\n\nTmEE\n\nJames Groth",                     "" },
+	{"C_STJR",   "BASED ON THE WORK BY", "Sonic Team Jr.",   "www.srb2.org",                        "Shout-outs to:\nAlice Alacroix\nMotor Roach\nNev3r\nGuyWithThePie\nToaster\nAnd so many more!" },
+	{NULL,       "", "", "", "" },
 	{NULL, NULL, NULL, NULL, NULL },
 };
 
@@ -32,6 +29,10 @@ creditcard_t creditCards[] = {
 static VINT cardPFP = 0;
 static VINT cardTimer = 0;
 static VINT curCard = 0;
+
+static VINT trackerCards[7];
+
+static VINT chaosLumps[6];
 
 static void F_DrawBackground(void)
 {
@@ -71,21 +72,42 @@ static boolean F_NextCard()
 
 void F_Start (void)
 {
+	h40_sky = 1;	// Get rid of the three-pixel shift.
+	RemoveDistortionFilters();
+	UpdateBuffer();
+	RemoveDistortionFilters();
+	UpdateBuffer();
+
+	trackerCards[0] = W_GetNumForName("C_TRACK1");
+	trackerCards[1] = W_GetNumForName("C_TRACK2");
+	trackerCards[2] = W_GetNumForName("C_TRACK3");
+	trackerCards[3] = W_GetNumForName("C_TRACK4");
+	trackerCards[4] = W_GetNumForName("C_TRACK5");
+	trackerCards[5] = W_GetNumForName("C_TRACK6");
+	trackerCards[6] = W_GetNumForName("C_TRACK7");
+
+	chaosLumps[0] = W_GetNumForName("CHAOS1");
+	chaosLumps[1] = W_GetNumForName("CHAOS2");
+	chaosLumps[2] = W_GetNumForName("CHAOS3");
+	chaosLumps[3] = W_GetNumForName("CHAOS4");
+	chaosLumps[4] = W_GetNumForName("CHAOS5");
+	chaosLumps[5] = W_GetNumForName("CHAOS6");
+
 	S_StartSong(gameinfo.victoryMus, 1, cdtrack_end);
 
 	// Set this to black, prep for fade-in.
-	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-	I_SetPalette(dc_playpals+5*768);
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4), dc_cshift_playpals);
 
 	R_InitColormap();
 
 	curCard = -1;
 	F_NextCard();
+
+	clearedGame = true;
 }
 
 void F_Stop (void)
 {
-	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	I_SetPalette(dc_playpals);
 
 	R_InitColormap();
@@ -111,8 +133,6 @@ int F_Ticker (void)
 			return 1;
 	}
 
-	const uint8_t *dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
-
 	if (cardTimer >= CARDTIME - 12)
 	{
 		int palIndex = cardTimer - (CARDTIME - 12);
@@ -121,12 +141,12 @@ int F_Ticker (void)
 			palIndex = 4;
 
 		palIndex += 6;
-		I_SetPalette(dc_playpals+palIndex*768);
+		R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
 	}
 	else if (cardTimer < 12)
 	{
 		int palIndex = 10 - (cardTimer / 3);
-		I_SetPalette(dc_playpals+palIndex*768);
+		R_FadePalette(dc_playpals, palIndex, dc_cshift_playpals);
 	}
 	else
 		I_SetPalette(dc_playpals);
@@ -141,6 +161,7 @@ int F_Ticker (void)
 =
 =======================
 */
+extern boolean unlockcez;
 
 void F_Drawer (void)
 {
@@ -159,6 +180,20 @@ void F_Drawer (void)
 		V_DrawStringCenter(&creditFont, 160, 112-8, card->name); // 32X
 		V_DrawStringCenter(&creditFont, 160, 112-8+16+8, card->didWhat); // STAFF
 	}
+	else if (curCard == 1)
+	{
+		V_DrawStringCenter(&creditFont, 160, 32, card->title);
+
+		DrawJagobjLump(trackerCards[0], 24, 64, NULL, NULL);
+		DrawJagobjLump(trackerCards[1], 24+48, 64, NULL, NULL);
+		DrawJagobjLump(trackerCards[2], 24+48+48, 64, NULL, NULL);
+		DrawJagobjLump(trackerCards[3], 24, 64+48, NULL, NULL);
+		DrawJagobjLump(trackerCards[4], 24+48, 64+48, NULL, NULL);
+		DrawJagobjLump(trackerCards[5], 24+48+48, 64+48, NULL, NULL);
+		DrawJagobjLump(trackerCards[6], 24+48, 64+48+48, NULL, NULL);
+
+		V_DrawStringLeft(&menuFont, 160+8, 64, card->didWhat);
+	}
 	else
 	{
 		V_DrawStringCenter(&creditFont, 160, cardPFP ? 32 : 112-8, card->title);
@@ -167,6 +202,33 @@ void F_Drawer (void)
 			DrawJagobjLump(cardPFP, 32, 64, NULL, NULL);
 		else
 		{
+			uint8_t emerald_bits = emeralds;
+
+			if (emeralds == 63) {
+				V_DrawStringCenter(&creditFont, 160, 32, "GOT THEM ALL");
+				unlockcez = true;
+			}
+			else {
+				V_DrawStringCenter(&creditFont, 160, 32, "TRY AGAIN");
+			}
+
+			for (int i=0; i < 6; i++) {
+				if (emerald_bits & 1) {
+					// Make the emerald flash.
+					if (cardTimer & 1) {
+						DrawJagobjLumpWithColormap(chaosLumps[i], 68 + (i<<5), 72, 0, 0, HWLIGHT(192));
+					}
+					else {
+						DrawJagobjLump(chaosLumps[i], 68 + (i<<5), 72, 0, 0);
+					}
+				}
+				else {
+					// Dim the emerald.
+					DrawJagobjLumpWithColormap(chaosLumps[i], 68 + (i<<5), 72, 0, 0, HWLIGHT(64));
+				}
+				emerald_bits >>= 1;
+			}
+			V_DrawStringCenterWithColormap(&menuFont, 160, 124, "THANKS FOR PLAYING!", YELLOWTEXTCOLORMAP);
 			V_DrawStringCenterWithColormap(&menuFont, 160, 142, "Stay tuned for the full version!", YELLOWTEXTCOLORMAP);
 			V_DrawStringCenter(&menuFont, 160, 160, "youtube.com/@ssntails");
 		}
