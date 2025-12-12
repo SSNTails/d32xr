@@ -161,6 +161,7 @@ int F_Ticker (void)
 =
 =======================
 */
+extern boolean unlockcez;
 
 void F_Drawer (void)
 {
@@ -205,6 +206,7 @@ void F_Drawer (void)
 
 			if (emeralds == 63) {
 				V_DrawStringCenter(&creditFont, 160, 32, "GOT THEM ALL");
+				unlockcez = true;
 			}
 			else {
 				V_DrawStringCenter(&creditFont, 160, 32, "TRY AGAIN");

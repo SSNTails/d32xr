@@ -640,6 +640,7 @@ startnew:
 
 		if (gameaction == ga_warped)
 		{
+			tokenbits = 0;
 			if (starttype != netgame || startmap != gamemapinfo.mapNumber)
 			{
 				gameaction = ga_startnew;
@@ -665,12 +666,18 @@ startnew:
 			}
 		}
 		else if (gamemapinfo.mapNumber < SSTAGE_START || gamemapinfo.mapNumber > SSTAGE_END)
+		{
 			nextmapl = gamemapinfo.next;
+			tokenbits = 0;
+		}
 		else
+		{
 			nextmapl = returnspecstagemapl;
+			tokenbits = 0;
+		}
 
 		if (nextmapl == 0) {
-			if (gamemapinfo.mapNumber != 10 && emeralds == 6) {
+			if (gamemapinfo.mapNumber != 10 && emeralds == 63) {
 				nextmapl = G_LumpNumForMapNum(10);	// Go to CEZ1 (secret level)
 			}
 			else {
