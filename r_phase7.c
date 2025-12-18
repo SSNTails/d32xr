@@ -66,6 +66,20 @@ static char pl_lock = 0;
 static int pl_next = 0;
 #endif
 
+
+
+const int8_t wave_table[128] =
+{
+      0,   0,   1,   2,   3,   3,   4,   5,   5,   6,   7,   7,   8,   9,   9,  10,
+     10,  11,  11,  12,  12,  13,  13,  14,  14,  14,  14,  15,  15,  15,  15,  15,
+     15,  15,  15,  15,  15,  15,  14,  14,  14,  14,  13,  13,  12,  12,  11,  11,
+     10,  10,   9,   9,   8,   7,   7,   6,   5,   5,   4,   3,   3,   2,   1,   0,
+      0,  -1,  -2,  -3,  -4,  -4,  -5,  -6,  -6,  -7,  -8,  -8,  -9, -10, -10, -11,
+    -11, -12, -12, -13, -13, -14, -14, -15, -15, -15, -15, -16, -16, -16, -16, -16,
+    -16, -16, -16, -16, -16, -16, -15, -15, -15, -15, -14, -14, -13, -13, -12, -12,
+    -11, -11, -10, -10,  -9,  -8,  -8,  -7,  -6,  -6,  -5,  -4,  -4,  -3,  -2,  -1
+};
+
 //
 // Render the horizontal spans determined by R_PlaneLoop
 //
@@ -172,18 +186,24 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
 
     if (flatpixels[flatnum].flags & FLF_WAVY)
     {
-        const int wtofs = 75 * gametic;
-        const int peck = (wtofs + (distance >> 10)) & 8191;
-        int bgofs = FixedDiv(finesine(peck), distance>>9) >> FRACBITS;
-        
-        if (y + bgofs >= viewportHeight)
-            bgofs = viewportHeight - y - 1;
-        else if (y + bgofs < 0)
-            bgofs = -y;
+        const int x_offset = 0;
+        const int y_offset = 56;
+        const int x_rate = leveltime << 1;
+        const int y_rate = x_rate + leveltime;
+        const int x_length = distance >> 15;
+        const int y_length = distance >> 15;
 
-        angle = (vd.viewangle + ANG90) >> ANGLETOFINESHIFT;
-        xfrac += FixedMul(finecosine(angle), bgofs << FRACBITS);
-        yfrac += FixedMul(finesine(angle), bgofs << FRACBITS);
+        const int xfrac_inc = (wave_table[(x_offset + x_rate + x_length) & 127] << (FRACBITS-4));
+        const int yfrac_inc = (wave_table[(y_offset + y_rate + y_length) & 127] << (FRACBITS-0));
+
+        xfrac += xfrac_inc;
+        yfrac += yfrac_inc;
+
+        if (IsTitleScreen()) {
+            // More dramatic for the title screen.
+            xfrac += (xfrac_inc << 1);
+            yfrac += (yfrac_inc << 1);
+        }
     }
 
     drawspan(y, x, x2, light, xfrac, yfrac, xstep, ystep, lpl->ds_source[miplevel], mipsize);
