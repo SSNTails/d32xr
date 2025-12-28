@@ -44,11 +44,11 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
    patch     = texture->data[0];
 
    spropening = seg->clipbounds;
-   maskedcol  = seg->clipbounds + (seg->realstop - seg->realstart + 1);
+   maskedcol  = seg->clipbounds + (seg->stop - seg->start + 1);
 
    widthmask = texture->width - 1;
    fracstep  = seg->scalestep;
-   scalefrac = seg->scalefrac + (x - seg->realstart) * fracstep;
+   scalefrac = seg->scalefrac + (x - seg->start) * fracstep;
 
    I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
 
@@ -169,12 +169,12 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
       return;
 
    spropening = seg->clipbounds;
-   maskedcol  = seg->clipbounds + (seg->realstop - seg->realstart + 1);
+   maskedcol  = seg->clipbounds + (seg->stop - seg->start + 1);
 
    texture   = &textures[texturenum];
    widthmask = texture->width - 1;
    fracstep  = seg->scalestep;
-   scalefrac = seg->scalefrac + (x - seg->realstart) * fracstep;
+   scalefrac = seg->scalefrac + (x - seg->start) * fracstep;
 
    I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
 
