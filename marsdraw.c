@@ -1112,6 +1112,35 @@ void DrawScaledJagobj(jagobj_t* jo, int x, int y,
 	}
 }
 
+void DrawFast(byte *data, int x, int y)
+{
+	pixel_t *dest = I_OverwriteBuffer() + y * 160 + (x>>1);
+
+	pixel_t *pixels = (pixel_t *)data;
+	uint16_t count_word = *pixels++;
+
+	while (count_word == 0xFF00) {
+		dest += (count_word >> 8);
+		count_word = *pixels++;
+	}
+
+	do {
+		dest += (count_word >> 8);
+		uint8_t draw_count = count_word;
+		int n = (draw_count + 3) >> 2;
+		switch (draw_count & 3)
+		{
+		case 0: do { *dest++ = *pixels++;
+		case 3:      *dest++ = *pixels++;
+		case 2:      *dest++ = *pixels++;
+		case 1:      *dest++ = *pixels++;
+		} while (--n > 0);
+		}
+
+		count_word = *pixels++;
+	} while (count_word > 255);
+}
+
 void DrawJagobj3(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h,
 	const int canvas_width, pixel_t *fb)

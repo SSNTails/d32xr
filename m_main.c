@@ -69,7 +69,9 @@ static mainitem_t mainitem[NUMMAINITEMS];
 static mainscreen_t mainscreen[NUMMAINSCREENS];
 
 //static const char* playmodes[NUMMODES] = { "Single", "Coop", "Deathmatch" };
-jagobj_t* m_title;
+//jagobj_t* m_title;
+byte* m_titlea;
+byte* m_titleb;
 
 static VINT m_skull1lump;
 static VINT numslump;
@@ -79,12 +81,18 @@ static VINT numslump;
 #define NUMTBLINKFRAMES 3
 #define NUMKBLINKFRAMES 3
 #define NUMTAILWAGFRAMES 6
-jagobj_t *m_hand[NUMHANDFRAMES];
-jagobj_t *m_kfist[NUMKFISTFRAMES];
 jagobj_t *m_sblink[NUMSBLINKFRAMES];
 jagobj_t *m_tblink[NUMTBLINKFRAMES];
 jagobj_t *m_kblink[NUMKBLINKFRAMES];
-jagobj_t *m_tailwag[NUMTAILWAGFRAMES];
+
+//jagobj_t *m_hand[NUMHANDFRAMES];
+//jagobj_t *m_kfist[NUMKFISTFRAMES];
+//jagobj_t *m_tailwag[NUMTAILWAGFRAMES];
+
+byte *m_hand[NUMHANDFRAMES];
+byte *m_kfist[NUMKFISTFRAMES];
+byte *m_tailwag[NUMTAILWAGFRAMES];
+
 static char fistCounter = 5;
 static char sBlinkCounter = 110;
 static char tBlinkCounter = 25;
@@ -131,25 +139,35 @@ void M_Start2 (boolean startup_)
 #endif
 
 	startup = startup_;
-	m_title = NULL;
+	//m_title = NULL;
+	m_titlea = NULL;
+	m_titleb = NULL;
 	titleTicker = 0;
 	titleSmallTicker = 0;
 	if (startup)
 	{
-		i = W_CheckNumForName("M_TITLE");
-		m_title = i != -1 ? W_CacheLumpNum(i, PU_STATIC) : NULL;
+		//i = W_CheckNumForName("M_TITLE");
+		//m_title = i != -1 ? W_CacheLumpNum(i, PU_STATIC) : NULL;
 
-		if (legacy_emulator == LEGACY_EMULATOR_KEGA) {
+		i = W_CheckNumForName("M_TITLEA");
+		m_titlea = i != -1 ? W_CacheLumpNum(i, PU_STATIC) : NULL;
+
+		i = W_CheckNumForName("M_TITLEB");
+		m_titleb = i != -1 ? W_CacheLumpNum(i, PU_STATIC) : NULL;
+
+		/*if (legacy_emulator == LEGACY_EMULATOR_KEGA) {
 			// Kega Fusion doesn't support copper. Use solid orange for the "32X" logo instead.
-			int total_pixels = m_title->width * m_title->height;
-			uint8_t *pixels = m_title->data;
+			//int total_pixels = m_title->width * m_title->height;
+			//uint8_t *pixels = m_title->data;
+			int total_pixels = m_titleb->width * m_titleb->height;
+			uint8_t *pixels = m_titleb->data;
 			for (int i=0; i < total_pixels; i++) {
 				if (*pixels == 0xFF) {
 					*pixels = 0x35;
 				}
 				pixels++;
 			}
-		}
+		}*/
 
 		for (i = 0; i < NUMHANDFRAMES; i++)
 		{
@@ -238,11 +256,13 @@ void M_Start2 (boolean startup_)
 	mainscreen[ms_help].numitems = 1;
 
 	mainitem[mi_newgame].name = "START GAME";
+	//mainitem[mi_newgame].name = "";
 	mainitem[mi_newgame].x = ITEMX;
 	mainitem[mi_newgame].y = CURSORY(0);
 	mainitem[mi_newgame].screen = ms_gametype;
 
 	mainitem[mi_loadgame].name = "ABOUT";
+	//mainitem[mi_loadgame].name = "";
 	mainitem[mi_loadgame].x = ITEMX;
 	mainitem[mi_loadgame].y = CURSORY(1);
 	mainitem[mi_loadgame].screen = ms_help;
@@ -298,10 +318,22 @@ void M_Stop (void)
 
 /* free all loaded graphics */
 
-	if (m_title != NULL)
+	//if (m_title != NULL)
+	//{
+	//	Z_Free (m_title);
+	//	m_title = NULL;
+	//}
+
+	if (m_titlea != NULL)
 	{
-		Z_Free (m_title);
-		m_title = NULL;
+		Z_Free (m_titlea);
+		m_titlea = NULL;
+	}
+
+	if (m_titleb != NULL)
+	{
+		Z_Free (m_titleb);
+		m_titleb = NULL;
 	}
 
 	if (startup)
@@ -437,8 +469,8 @@ int M_Ticker (void)
 	cursorframe++;
 
 	if (screenpos != ms_help) {
-	//	if (cursorframe & 1)	// For 30 fps
-		if (cursorframe % 3)	// For 20 fps
+		if (cursorframe & 1)	// For 30 fps
+	//	if (cursorframe % 3)	// For 20 fps
 	//	if (titleTicker & 1)	// For 15 fps
 		{
 			titleSmallTicker++;
@@ -742,9 +774,11 @@ void M_Drawer (void)
 	}
 
 /* Draw main menu */
-	if (m_title)
+	//if (m_title)
+	if (m_titlea)
 	{
-		const VINT logoPos = 160 - (m_title->width / 2);
+		//const VINT logoPos = 160 - (m_title->width / 2);
+		const VINT logoPos = 160 - (240/2);
 
 		if (scrpos == ms_help) {
 			if (titleTicker < 4) {
@@ -755,21 +789,23 @@ void M_Drawer (void)
 				I_FillFrameBuffer(fillcolor);
 
 				// Draw the entire emblem with an alternate colormap.
-				DrawJagobjWithColormap(m_title, logoPos, 16,
+				//DrawJagobjWithColormap(m_title, logoPos, 16,
+				//		0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+				DrawJagobjWithColormap(m_titlea, logoPos, 16,
 						0, 0, 0, 0, I_OverwriteBuffer(), colormap);
 
 				// Draw animations with an alternate colormap.
-				DrawJagobjWithColormap(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32,
-						0, 0, 0, 0, I_OverwriteBuffer(), colormap);
-				DrawJagobjWithColormap(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2,
-						0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+				//DrawJagobjWithColormap(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32,
+				//		0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+				//DrawJagobjWithColormap(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2,
+				//		0, 0, 0, 0, I_OverwriteBuffer(), colormap);
 
-				if (fistCounter < 0)
-					DrawJagobjWithColormap(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43,
-							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
-				else
-					DrawJagobjWithColormap(m_kfist[0], logoPos + 188, 16 + 43,
-							0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+				//if (fistCounter < 0)
+				//	DrawJagobjWithColormap(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43,
+				//			0, 0, 0, 0, I_OverwriteBuffer(), colormap);
+				//else
+				//	DrawJagobjWithColormap(m_kfist[0], logoPos + 188, 16 + 43,
+				//			0, 0, 0, 0, I_OverwriteBuffer(), colormap);
 
 				if (sBlinkCounter < 0)
 					DrawJagobjWithColormap(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27,
@@ -795,30 +831,41 @@ void M_Drawer (void)
 				DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 88, gamemapinfo.skyTopColor);
 
 				// Draw the entire logo emblem.
-				DrawJagobj(m_title, logoPos, 16);
+				//DrawJagobj(m_title, logoPos, 16);
+				DrawFast(m_titlea, logoPos, 16);
+				DrawFast(m_titleb, logoPos, 16+81);
 			}
 
 			// Cover up animation trails.
-			DrawFillRect(48, 18, 58, 24, gamemapinfo.skyTopColor);	// two tails (top)
-			DrawFillRect(44, 46, 12, 42, gamemapinfo.skyTopColor);	// two tails (side/bottom)
-			DrawFillRect(262, 76, 8, 6, gamemapinfo.skyTopColor);	// fist
+			//DrawFillRect(48, 18, 58, 24, gamemapinfo.skyTopColor);	// two tails (top)
+			//DrawFillRect(44, 46, 12, 42, gamemapinfo.skyTopColor);	// two tails (side/bottom)
+			//DrawFillRect(262, 76, 8, 6, gamemapinfo.skyTopColor);	// fist
 
 			// Draw the logo emblem in pieces (helps get PicoDrive very close to 20 fps).
-			DrawJagobj3(m_title, logoPos+4, 16, 4, 0, 62, 28, 320, I_OverwriteBuffer());
-			DrawJagobj3(m_title, logoPos, 16+28, 0, 28, m_title->width, 58, 320, I_OverwriteBuffer());
-			DrawJagobj3(m_title, logoPos+24, 16+86, 24, 86, 10, 15, 320, I_OverwriteBuffer());
-			DrawJagobj3(m_title, logoPos+206, 16+86, 206, 86, 10, 13, 320, I_OverwriteBuffer());
-			DrawJagobj3(m_title, logoPos+34, 16+99, 34, 99, 174, 9, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos+4, 16, 4, 0, 62, 28, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos, 16+28, 0, 28, m_title->width, 58, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos+24, 16+86, 24, 86, 10, 15, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos+206, 16+86, 206, 86, 10, 13, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos+34, 16+99, 34, 99, 174, 9, 320, I_OverwriteBuffer());
 			
-			DrawJagobj3(m_title, logoPos, 16+108, 0, 108, m_title->width, m_title->height - 108, 320, I_OverwriteBuffer());
+			//DrawJagobj3(m_title, logoPos, 16+108, 0, 108, m_title->width, m_title->height - 108, 320, I_OverwriteBuffer());
 			
 			//DrawJagobj3(m_title, logoPos, 16+108, 0, 108, 34, 47, 320, I_OverwriteBuffer());
 			//DrawJagobj3(m_title, logoPos+34, 16+108, 34, 108, 18, 38, 320, I_OverwriteBuffer());
 			//DrawJagobj3(m_title, logoPos+188, 16+108, 188, 108, 18, 38, 320, I_OverwriteBuffer());
 			//DrawJagobj3(m_title, logoPos+206, 16+108, 206, 108, 34, 47, 320, I_OverwriteBuffer());
 
-			DrawJagobj(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32);
-			DrawJagobj(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
+			DrawFast(m_titleb, logoPos, 16+81);
+
+			if (titleSmallTicker & 1) {
+				//DrawJagobj(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32);
+				//DrawJagobj3(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2 + 73, 0, 73, 60, 16, 320, I_OverwriteBuffer());
+				DrawFast(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32);
+			}
+			else {
+				//DrawJagobj(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
+			}
+			DrawFast(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
 
 			if (titleTicker & 1) {
 				sBlinkCounter--;
@@ -833,13 +880,17 @@ void M_Drawer (void)
 
 				fistCounter--;
 				if (fistCounter <= -NUMKFISTFRAMES)
-					fistCounter = 20 + (M_Random() % 21);
+					fistCounter = 30 + (M_Random() % 31);
 			}
 
-			if (fistCounter < 0)
-				DrawJagobj(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
-			else
-				DrawJagobj(m_kfist[0], logoPos + 188, 16 + 43);
+			if (fistCounter < 0) {
+				//DrawJagobj(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
+				DrawFast(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
+			}
+			else {
+				//DrawJagobj(m_kfist[0], logoPos + 188, 16 + 43);
+				DrawFast(m_kfist[0], logoPos + 188, 16 + 43);
+			}
 
 			if (sBlinkCounter < 0)
 				DrawJagobj(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27);
@@ -851,7 +902,7 @@ void M_Drawer (void)
 				DrawJagobj(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37);
 		}
 
-		y_offset = m_title->height + 24 - STARTY;
+		y_offset = 179 - STARTY;
 	}
 	else {
 		y_offset = 0;
