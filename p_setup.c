@@ -397,6 +397,8 @@ static void P_SetupMace(mapthing_t *mthing)
 	P_AddMaceChain(mthing, &axis, &rotation, args);
 }
 
+//#define BAREBONESMAP
+
 void P_LoadThings (int lump)
 {
 	byte			*data;
@@ -440,8 +442,14 @@ void P_LoadThings (int lump)
 	mt = (mapthing_t *)data;
 	for (i=0 ; i<numthings ; i++, mt++)
 	{
+#ifdef BAREBONESMAP
+		if (mt->type >= 100 && mt->type < 200)
+			continue; // Don't count
+#endif
+
 		if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
 		{
+#ifndef BAREBONESMAP
 			// Determine the # of objects that will be spawned
 			int maceLinkCount = P_GetMaceLinkCount(mt);
 
@@ -450,6 +458,7 @@ void P_LoadThings (int lump)
 
 			numringthings++; // End of chain (ball)
 			numMaces++;
+#endif
 		}
 		else
 		{
@@ -499,6 +508,11 @@ void P_LoadThings (int lump)
 	mt = (mapthing_t *)data;
 	for (i=0 ; i<numthings ; i++, mt++)
 	{
+#ifdef BAREBONESMAP
+		if (mt->type >= 100 && mt->type < 200)
+			continue; // Don't count
+#endif
+
 		if (mt->type == 600) // 5 vertical rings (yellow spring)
 			P_SpawnItemRow(mt, mobjinfo[MT_RING].doomednum, 5, 0, 64);
 		else if (mt->type == 601) // 5 vertical rings (red spring)
@@ -508,7 +522,11 @@ void P_LoadThings (int lump)
 		else if (mt->type == 603) // 10 diagonal rings (yellow spring)
 			P_SpawnItemRow(mt, mobjinfo[MT_RING].doomednum, 10, 64, 64);
 		else if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
+		{
+#ifndef BAREBONESMAP
 			P_SetupMace(mt);
+#endif
+		}
 		else
 			P_SpawnMapThing(mt, i);
 	}
@@ -862,7 +880,9 @@ D_printf ("P_SetupLevel(%i)\n",lumpnum);
 	P_GroupLines();
 
 /* set up world state */
+#ifndef BAREBONESMAP
 	P_SpawnSpecials ();
+#endif
 	P_LoadThings (lumpnum+ML_THINGS);
 
 	ST_InitEveryLevel ();
