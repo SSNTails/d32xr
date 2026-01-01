@@ -77,13 +77,16 @@ static VINT m_skull1lump;
 static VINT numslump;
 #define NUMHANDFRAMES 5
 #define NUMKFISTFRAMES 7
-#define NUMSBLINKFRAMES 3
+#define NUMSBLINKFRAMES 4
 #define NUMTBLINKFRAMES 3
 #define NUMKBLINKFRAMES 3
 #define NUMTAILWAGFRAMES 6
 jagobj_t *m_sblink[NUMSBLINKFRAMES];
 jagobj_t *m_tblink[NUMTBLINKFRAMES];
 jagobj_t *m_kblink[NUMKBLINKFRAMES];
+const uint8_t sblink_anim_seq[4] = { 1, 2, 3, 0 };
+const uint8_t tblink_anim_seq[4] = { 1, 2, 1, 0 };
+const uint8_t kblink_anim_seq[4] = { 1, 2, 1, 0 };
 
 //jagobj_t *m_hand[NUMHANDFRAMES];
 //jagobj_t *m_kfist[NUMKFISTFRAMES];
@@ -190,21 +193,19 @@ void M_Start2 (boolean startup_)
 			m_sblink[i] = W_CacheLumpName(entry, PU_STATIC);
 		}
 
-		for (int i = 0; i < NUMKBLINKFRAMES-1; i++)
+		for (int i = 0; i < NUMKBLINKFRAMES; i++)
 		{
 			char entry[9];
 			D_snprintf(entry, sizeof(entry), "KBLINK%d", i + 1);
 			m_kblink[i] = W_CacheLumpName(entry, PU_STATIC);
 		}
-		m_kblink[2] = W_CacheLumpName("KBLINK1", PU_STATIC);
 
-		for (int i = 0; i < NUMTBLINKFRAMES-1; i++)
+		for (int i = 0; i < NUMTBLINKFRAMES; i++)
 		{
 			char entry[9];
 			D_snprintf(entry, sizeof(entry), "TBLINK%d", i + 1);
 			m_tblink[i] = W_CacheLumpName(entry, PU_STATIC);
 		}
-		m_tblink[2] = W_CacheLumpName("TBLINK1", PU_STATIC);
 
 		for (int i = 0; i < NUMTAILWAGFRAMES; i++)
 		{
@@ -833,7 +834,6 @@ void M_Drawer (void)
 				// Draw the entire logo emblem.
 				//DrawJagobj(m_title, logoPos, 16);
 				DrawFast(m_titlea, logoPos, 16);
-				DrawFast(m_titleb, logoPos, 16+81);
 			}
 
 			// Cover up animation trails.
@@ -861,45 +861,57 @@ void M_Drawer (void)
 				//DrawJagobj(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32);
 				//DrawJagobj3(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2 + 73, 0, 73, 60, 16, 320, I_OverwriteBuffer());
 				DrawFast(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32);
+				DrawFast2(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2, 69);
 			}
 			else {
-				//DrawJagobj(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
+				DrawFast(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
 			}
-			DrawFast(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
 
 			if (titleTicker & 1) {
 				sBlinkCounter--;
 				if (sBlinkCounter <= -NUMSBLINKFRAMES)
 					sBlinkCounter = M_Random() & 127;
 				tBlinkCounter--;
-				if (tBlinkCounter <= -NUMTBLINKFRAMES)
+				if (tBlinkCounter <= (-NUMTBLINKFRAMES)-1)
 					tBlinkCounter = M_Random() & 127;
 				kBlinkCounter--;
-				if (kBlinkCounter <= -NUMKBLINKFRAMES)
+				if (kBlinkCounter <= (-NUMKBLINKFRAMES)-1)
 					kBlinkCounter = M_Random() & 127;
 
-				fistCounter--;
-				if (fistCounter <= -NUMKFISTFRAMES)
-					fistCounter = 30 + (M_Random() % 31);
+				if (titleTicker & 2) {
+					fistCounter--;
+					if (fistCounter < -NUMKFISTFRAMES)
+						fistCounter = 30 + (M_Random() % 31);
+				}
 			}
 
-			if (fistCounter < 0) {
+			// Knuckles fist
+			if (fistCounter == -NUMKFISTFRAMES) {
+				//DrawJagobj(m_kfist[0], logoPos + 188, 16 + 43);
+				DrawFast(m_kfist[0], logoPos + 188, 16 + 43);
+			}
+			else if (fistCounter < 0) {
 				//DrawJagobj(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
 				DrawFast(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
 			}
 			else {
-				//DrawJagobj(m_kfist[0], logoPos + 188, 16 + 43);
-				DrawFast(m_kfist[0], logoPos + 188, 16 + 43);
+				DrawFast2(m_kfist[0], logoPos + 188, 16 + 43, 28);
 			}
 
-			if (sBlinkCounter < 0)
-				DrawJagobj(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27);
+			// Sonic eye frames
+			if (sBlinkCounter <= 0) {
+				DrawFast(m_sblink[sblink_anim_seq[D_abs(sBlinkCounter)]], logoPos + 93, 16 + 27);
+			}
 
-			if (tBlinkCounter < 0)
-				DrawJagobj(m_tblink[D_abs(tBlinkCounter)], logoPos + 54, 16 + 40);
+			// Tails eye frames
+			if (tBlinkCounter <= 0) {
+				DrawFast(m_tblink[tblink_anim_seq[D_abs(tBlinkCounter)]], logoPos + 54, 16 + 40);
+			}
 
-			if (kBlinkCounter < 0)
-				DrawJagobj(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37);
+			// Knuckles eye frames
+			if (kBlinkCounter <= 0) {
+				DrawFast(m_kblink[kblink_anim_seq[D_abs(kBlinkCounter)]], logoPos + 158, 16 + 37);
+			}
 		}
 
 		y_offset = 179 - STARTY;

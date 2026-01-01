@@ -1404,6 +1404,7 @@ void DrawJagobj3 (jagobj_t* jo, int x, int y,
 void DrawScaledJagobj (jagobj_t* jo, int x, int y, 
 	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb);
 void DrawFast(byte *data, int x, int y);
+void DrawFast2(byte *data, int x, int y, int src_y);
 void DrawFillRect (int x, int y, int w, int h, int c);
 void DrawLine (int x, int y, int length, int c, boolean vertical);
 void UpdateBuffer (void);

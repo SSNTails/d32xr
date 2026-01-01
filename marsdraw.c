@@ -1112,19 +1112,37 @@ void DrawScaledJagobj(jagobj_t* jo, int x, int y,
 	}
 }
 
-void DrawFast(byte *data, int x, int y)
+void DrawFast(byte *data, int x, int y) {
+	DrawFast2(data, x, y, 0);
+}
+
+void DrawFast2(byte *data, int x, int y, int src_y)
 {
 	pixel_t *dest = I_OverwriteBuffer() + y * 160 + (x>>1);
 
 	pixel_t *pixels = (pixel_t *)data;
 	uint16_t count_word = *pixels++;
 
+	if (src_y > 0) {
+		pixel_t *target_dest = dest + (src_y * 160);
+		while (target_dest > dest) {
+			// Continue reading data until the src_y position is found.
+			dest += (count_word >> 8);
+			uint8_t draw_count = count_word;
+			dest += draw_count;
+			pixels += draw_count;
+			count_word = *pixels++;
+		}
+	}
+
 	while (count_word == 0xFF00) {
+		// Continue reading until the first non-transparent pixels are detected.
 		dest += (count_word >> 8);
 		count_word = *pixels++;
 	}
 
 	do {
+		// Draw the graphic to the frame buffer.
 		dest += (count_word >> 8);
 		uint8_t draw_count = count_word;
 		int n = (draw_count + 3) >> 2;
