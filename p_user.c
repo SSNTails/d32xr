@@ -926,7 +926,8 @@ boolean PIT_LookForTarget(mobj_t *thing, homingFinder_t *hf)
 
 	if (thing->flags & MF_RINGMOBJ)
 	{
-		if (thing->type == MT_BIGGRABCHAIN || thing->type == MT_SMALLGRABCHAIN)
+		if (thing->type == MT_BIGGRABCHAIN || thing->type == MT_SMALLGRABCHAIN
+			|| (thing->type >= MT_YELLOWSPRING && thing->type <= MT_REDHORIZ))
 		{
 			ringmobj_t *macePoint = (ringmobj_t*)thing;
 
@@ -953,8 +954,7 @@ boolean PIT_LookForTarget(mobj_t *thing, homingFinder_t *hf)
 
 	if (thing->flags & MF_STATIC)
 	{
-		if (!(thing->type >= MT_YELLOWSPRING && thing->type <= MT_REDHORIZ)
-			&& !(thing->flags2 & MF2_SHOOTABLE))
+		if (!(thing->flags2 & MF2_SHOOTABLE))
 			return true;
 	}
 	else

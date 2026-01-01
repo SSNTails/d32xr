@@ -711,6 +711,12 @@ return;	/*DEBUG */
 		totaltokens++;
 	}
 
+	if (mobj->type == MT_YELLOWSPRING || mobj->type == MT_YELLOWDIAG || mobj->type == MT_YELLOWHORIZ
+			|| mobj->type == MT_REDSPRING || mobj->type == MT_REDDIAG || mobj->type == MT_REDHORIZ)
+	{
+		((ringmobj_t *)mobj)->pad = (mthing->angle * ANGLE_1) >> ANGLETOFINESHIFT;
+	}
+
 	if (mobj->flags & MF_RINGMOBJ)
 		return;
 

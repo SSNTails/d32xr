@@ -71,13 +71,6 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 	if (player->pflags & PF_VERTICALFLIP)
 		vertispeed *= -1;
 
-	/*
-	player->powers[pw_justsprung] = 5;
-	if (horizspeed)
-		player->powers[pw_noautobrake] = ((horizspeed*TICRATE)>>(FRACBITS+3))/9; // TICRATE at 72*FRACUNIT
-	else if (P_MobjFlip(player->mo) == P_MobjFlip(spring))
-		player->powers[pw_justsprung] |= (1<<15);
-*/
 	if ((horizspeed && vertispeed) || (player && player->homingTimer > 0)) // Mimic SA
 	{
 		player->mo->momx = player->mo->momy = player->mo->momz = 0;
@@ -202,6 +195,21 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 
 	if ((special->flags & MF_RINGMOBJ) && (special->flags & MF_SPECIAL))
 	{
+		if (special->type == MT_YELLOWSPRING || special->type == MT_YELLOWDIAG || special->type == MT_YELLOWHORIZ
+			|| special->type == MT_REDSPRING || special->type == MT_REDDIAG || special->type == MT_REDHORIZ)
+		{
+			ringmobj_t *spring = (ringmobj_t*)special;
+			mobj_t temp;
+			temp.type = special->type;
+			temp.x = spring->x << FRACBITS;
+			temp.y = spring->y << FRACBITS;
+			temp.z = spring->z << FRACBITS;
+			temp.theight = mobjinfo[spring->type].height >> FRACBITS;
+			temp.angle = spring->pad << ANGLETOFINESHIFT;
+			P_DoSpring(&temp, player);
+			return;
+		}
+
 		if (!P_CanPickupItem(player))
 			return;
 
@@ -302,7 +310,7 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 					fixed_t tmz = toucher->z - toucher->momz;
 					fixed_t tmznext = toucher->z;
 					fixed_t shelltop = special->z + (special->theight << FRACBITS);
-					fixed_t sprarea = 12*FRACUNIT;
+					fixed_t sprarea = 16*FRACUNIT;
 
 					if ((tmznext <= shelltop && tmz > shelltop) || (tmznext > shelltop - sprarea && tmznext < shelltop))
 					{
@@ -398,13 +406,6 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 			}
 		}
 		
-		return;
-	}
-	
-	if (special->type == MT_YELLOWSPRING || special->type == MT_YELLOWDIAG || special->type == MT_YELLOWHORIZ
-		|| special->type == MT_REDSPRING || special->type == MT_REDDIAG || special->type == MT_REDHORIZ)
-	{
-		P_DoSpring(special, player);
 		return;
 	}
 

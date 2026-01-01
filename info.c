@@ -3169,7 +3169,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 	20,    // mass
 	0,              // damage
 	sfx_None,       // activesound
-	MF_SPECIAL|MF_STATIC, // flags
+	MF_SPECIAL|MF_STATIC|MF_RINGMOBJ, // flags
 	0, // flags2
 },
 
@@ -3195,7 +3195,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 	32,    // mass
 	0,              // damage
 	sfx_None,       // activesound
-	MF_SPECIAL|MF_STATIC, // flags
+	MF_SPECIAL|MF_STATIC|MF_RINGMOBJ, // flags
 	0, // flags2
 },
 {           // MT_YELLOWDIAG
@@ -3220,7 +3220,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 	20,    // mass
 	20,    // damage
 	sfx_None,       // activesound
-	MF_SPECIAL|MF_STATIC, // flags
+	MF_SPECIAL|MF_STATIC|MF_RINGMOBJ, // flags
 	0, // flags2
 },
 
@@ -3246,7 +3246,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 	32,    // mass
 	32,    // damage
 	sfx_None,       // activesound
-	MF_SPECIAL|MF_STATIC, // flags
+	MF_SPECIAL|MF_STATIC|MF_RINGMOBJ, // flags
 	0, // flags2
 },
 {           // MT_YELLOWHORIZ
@@ -3271,7 +3271,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 	0,              // mass
 	40,    // damage
 	sfx_None,       // activesound
-	MF_SPECIAL|MF_STATIC, // flags
+	MF_SPECIAL|MF_STATIC|MF_RINGMOBJ, // flags
 	0, // flags2
 },
 
@@ -3297,7 +3297,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 	0,              // mass
 	60,    // damage
 	sfx_None,       // activesound
-	MF_SPECIAL|MF_STATIC, // flags
+	MF_SPECIAL|MF_STATIC|MF_RINGMOBJ, // flags
 	0, // flags2
 },
 {           // MT_STEAM
