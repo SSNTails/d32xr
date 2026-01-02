@@ -284,8 +284,10 @@ static void G_AddGameinfoKey(char* key, char* value, dgameinfo_t* gi)
 		gi->creditsTime = D_atoi(value);
 	else if (!D_strcasecmp(key, "titlePage"))
 		gi->titlePage = W_CheckNumForName(value);
-	else if (!D_strcasecmp(key, "titlePage2"))
-		gi->titlePage2 = W_CheckNumForName(value);
+	else if (!D_strcasecmp(key, "titlePageA"))
+		gi->titlePageA = W_CheckNumForName(value);
+	else if (!D_strcasecmp(key, "titlePageB"))
+		gi->titlePageB = W_CheckNumForName(value);
 	else if (!D_strcasecmp(key, "creditsPage"))
 		gi->creditsPage = W_CheckNumForName(value);
 	else if (!D_strcasecmp(key, "titleMus"))
