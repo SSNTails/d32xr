@@ -605,7 +605,8 @@ void ClearEEProm (void);
 void DrawSinglePlaque (jagobj_t *pl);
 
 jagobj_t	*titlepic;
-jagobj_t    *titlepic2;
+byte    	*titlepic_a;
+byte	    *titlepic_b;
 
 int TIC_Abortable (void)
 {
@@ -1572,28 +1573,36 @@ void START_Title(void)
 
 	R_SetupMDSky("sky1", 1); // TODO: //DLG: Load MAP30 gamemapinfo to get the sky name.
 
-	titlepic = gameinfo.titlePage != -1 ? W_CacheLumpNum(gameinfo.titlePage, PU_STATIC) : NULL;
-	titlepic2 = gameinfo.titlePage2 != -1 ? W_CacheLumpNum(gameinfo.titlePage2, PU_STATIC) : NULL;
+	lvlsel_lump = W_CheckNumForName("LVLSEL01");
+	titlepic = W_CacheLumpNum(gameinfo.titlePage, PU_STATIC);
+	titlepic_a = W_CacheLumpNum(gameinfo.titlePageA, PU_STATIC);
+	titlepic_b = W_CacheLumpNum(gameinfo.titlePageB, PU_STATIC);
 
 	ticon = 0;
 
-	I_InitMenuFire(titlepic, titlepic2);
+	I_InitMenuFire(titlepic, titlepic_a, titlepic_b);
 
 	S_StartSong(gameinfo.titleMus, 0, cdtrack_title);
 }
 
 void STOP_Title (void)
 {
+	if (titlepic_b != NULL)
+	{
+		Z_Free (titlepic_b);
+		titlepic_b = NULL;
+	}
+
+	if (titlepic_a != NULL)
+	{
+		Z_Free (titlepic_a);
+		titlepic_a = NULL;
+	}
+
 	if (titlepic != NULL)
 	{
 		Z_Free (titlepic);
 		titlepic = NULL;
-	}
-
-	if (titlepic2 != NULL)
-	{
-		Z_Free (titlepic2);
-		titlepic2 = NULL;
 	}
 
 	I_StopMenuFire();
