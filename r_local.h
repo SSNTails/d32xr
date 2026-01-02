@@ -98,7 +98,6 @@ typedef	struct
 
 	VINT        fofsec;
 
-	SPTR		thinglist;			/* list of mobjs in sector */
 	VINT        specline; // Reference to a line of the sector for special reasons (i.e., FOF control line)
 } sector_t;
 
@@ -261,6 +260,8 @@ extern	spritedef_t		sprites[NUMSPRITES];
 extern	uint16_t			numvertexes;
 extern	uint16_t			numsegs;
 extern	uint16_t			numsectors;
+extern  uint16_t            numstaticsectors;
+extern  uint16_t            numdynamicsectors;
 extern	uint16_t			numsubsectors;
 extern	uint16_t			numnodes;
 extern	uint16_t			numlines;
@@ -273,7 +274,10 @@ extern  uint16_t        *linespecials;
 
 extern	mapvertex_t	*vertexes;
 extern	seg_t		*segs;
-extern	sector_t	*sectors;
+extern	sector_t	**dpsectors;
+extern  sector_t    *static_sectors;
+extern  sector_t    *dynamic_sectors;
+extern  SPTR        *sector_thinglist;
 extern	subsector_t	*subsectors;
 extern	node_t		*nodes;
 extern	line_t		*lines;

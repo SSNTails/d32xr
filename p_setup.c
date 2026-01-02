@@ -12,6 +12,8 @@
 uint16_t			numvertexes;
 uint16_t			numsegs;
 uint16_t			numsectors;
+uint16_t            numstaticsectors;
+uint16_t            numdynamicsectors;
 uint16_t			numsubsectors;
 uint16_t			numnodes;
 uint16_t			numlines;
@@ -24,7 +26,10 @@ uint16_t        *linespecials;
 
 mapvertex_t	*vertexes;
 seg_t		*segs;
-sector_t	*sectors;
+sector_t	**dpsectors;
+sector_t    *static_sectors;
+sector_t    *dynamic_sectors;
+SPTR        *sector_thinglist;
 subsector_t	*subsectors;
 node_t		*nodes;
 line_t		*lines;
@@ -133,29 +138,38 @@ void P_LoadSubsectors (int lump)
 =================
 */
 
-void P_LoadSectors (int lump)
+void P_LoadSectors (int staticlump, int dynamiclump)
 {
 	byte			*data;
 	int				i;
 	mapsector_t		*ms;
 	sector_t		*ss;
-			
-	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
-	sectors = Z_Malloc (numsectors*sizeof(sector_t) + 16,PU_LEVEL);
-	sectors = (void*)(((uintptr_t)sectors + 15) & ~15); // aline on cacheline boundary
-	D_memset (sectors, 0, numsectors*sizeof(sector_t));
-	data = I_TempBuffer ();
-	W_ReadLump (lump,data);
+
+	numstaticsectors = W_LumpLength(staticlump) / sizeof(sector_t);
+	numdynamicsectors = W_LumpLength(dynamiclump) / sizeof(mapsector_t);
+	numsectors = numstaticsectors + numdynamicsectors;
+
+	static_sectors = W_POINTLUMPNUM(staticlump);
+	dynamic_sectors = Z_Malloc(numdynamicsectors*sizeof(sector_t) + 16, PU_LEVEL);
+	dynamic_sectors = (void*)(((uintptr_t)dynamic_sectors + 15) & ~15); // aline on cacheline boundary
+	D_memset (dynamic_sectors, 0, numdynamicsectors*sizeof(sector_t));
+
+	sector_thinglist = Z_Malloc(numsectors*sizeof(SPTR) + 16, PU_LEVEL);
+	sector_thinglist = (void*)(((uintptr_t)sector_thinglist + 15) & ~15); // aline on cacheline boundary
+	D_memset(sector_thinglist, 0, numsectors*sizeof(SPTR));
+
+	// Read in the dynamic sectors
+	data = I_TempBuffer();
+	W_ReadLump(dynamiclump, data);
 	
 	ms = (mapsector_t *)data;
-	ss = sectors;
-	for (i=0 ; i<numsectors ; i++, ss++, ms++)
+	ss = dynamic_sectors;
+	for (i=0 ; i<numdynamicsectors ; i++, ss++, ms++)
 	{
-		ss->floorheight = LITTLESHORT(ms->floorheight)<<FRACBITS;
-		ss->ceilingheight = LITTLESHORT(ms->ceilingheight)<<FRACBITS;
+		ss->floorheight = (ms->floorheight)<<FRACBITS;
+		ss->ceilingheight = (ms->ceilingheight)<<FRACBITS;
 		ss->floorpic = ms->floorpic;
 		ss->ceilingpic = ms->ceilingpic;
-		ss->thinglist = (SPTR)0;
 
 		ss->lightlevel = ms->lightlevel;
 		ss->special = ms->special;
@@ -166,11 +180,18 @@ void P_LoadSectors (int lump)
 		ss->specline = -1;
 		ss->floor_xoffs = 0;
 		ss->flags = 0;
-
-		// killough 3/7/98:
-//		ss->floor_xoffs = 0;
-//		ss->floor_yoffs = 0;      // floor and ceiling flats offsets
 	}
+
+	// Now create the double pointers to the sectors
+	dpsectors = Z_Malloc(numsectors*sizeof(sector_t*) + 16, PU_LEVEL);
+	dpsectors = (void*)(((uintptr_t)dpsectors + 15) & ~15); // aline on cacheline boundary
+
+	int dpCount = 0;
+	for (i = 0; i < numstaticsectors; i++)
+		dpsectors[dpCount++] = &static_sectors[i];
+
+	for (i = 0; i < numdynamicsectors; i++)
+		dpsectors[dpCount++] = &dynamic_sectors;
 }
 
 
@@ -864,7 +885,7 @@ D_printf ("P_SetupLevel(%i)\n",lumpnum);
 /* note: most of this ordering is important	 */
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
 	P_LoadVertexes (lumpnum+ML_VERTEXES);
-	P_LoadSectors (lumpnum+ML_SECTORS);
+	P_LoadSectors (lumpnum+ML_SECTORS, lumpnum+ML_DSECTORS);
 	P_LoadSideDefs (lumpnum+ML_SIDEDEFS);
 	P_LoadSideTexes (lumpnum+ML_SIDETEX);
 	P_LoadLineDefs (lumpnum+ML_LINEDEFS);
