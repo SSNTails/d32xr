@@ -59,6 +59,7 @@ int16_t worldbbox[4];
 #define LOADFLAGS_SEGS 16
 #define LOADFLAGS_LINEDEFS 32
 #define LOADFLAGS_SUBSECTORS 64
+#define LOADFLAGS_SECTORS 128
 
 /*
 =================
@@ -149,7 +150,14 @@ void P_LoadSectors (int staticlump, int dynamiclump)
 	numdynamicsectors = W_LumpLength(dynamiclump) / sizeof(mapsector_t);
 	numsectors = numstaticsectors + numdynamicsectors;
 
-	static_sectors = W_POINTLUMPNUM(staticlump);
+	if (gamemapinfo.loadFlags & LOADFLAGS_SECTORS)
+	{
+		static_sectors = Z_Malloc(numstaticsectors*sizeof(sector_t) + 16, PU_LEVEL);
+		static_sectors = (void*)(((uintptr_t)static_sectors + 15) & ~15); // aline on cacheline boundary
+		W_ReadLump(staticlump, static_sectors);
+	}
+	else
+		static_sectors = W_POINTLUMPNUM(staticlump);
 
 	sector_thinglist = Z_Malloc(numsectors*sizeof(SPTR) + 16, PU_LEVEL);
 	sector_thinglist = (void*)(((uintptr_t)sector_thinglist + 15) & ~15); // aline on cacheline boundary
