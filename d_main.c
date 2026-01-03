@@ -1573,7 +1573,6 @@ void START_Title(void)
 
 	R_SetupMDSky("sky1", 1); // TODO: //DLG: Load MAP30 gamemapinfo to get the sky name.
 
-	lvlsel_lump = W_CheckNumForName("LVLSEL01");
 	titlepic = W_CacheLumpNum(gameinfo.titlePage, PU_STATIC);
 	titlepic_a = W_CacheLumpNum(gameinfo.titlePageA, PU_STATIC);
 	titlepic_b = W_CacheLumpNum(gameinfo.titlePageB, PU_STATIC);

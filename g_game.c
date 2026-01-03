@@ -496,6 +496,9 @@ void G_Init(void)
 	}
 
 	gameinfo.borderFlat = W_CheckNumForName("SRB2TILE");
+	gameinfo.titlePage = W_CheckNumForName("TITLE");
+	gameinfo.titlePageA = W_CheckNumForName("M_TITLEA");
+	gameinfo.titlePageB = W_CheckNumForName("M_TITLEB");
 	gameinfo.titleTime = 540;
 	gameinfo.endFlat = gameinfo.borderFlat;
 	gameinfo.endShowCast = 1;
