@@ -150,36 +150,40 @@ void P_LoadSectors (int staticlump, int dynamiclump)
 	numsectors = numstaticsectors + numdynamicsectors;
 
 	static_sectors = W_POINTLUMPNUM(staticlump);
-	dynamic_sectors = Z_Malloc(numdynamicsectors*sizeof(sector_t) + 16, PU_LEVEL);
-	dynamic_sectors = (void*)(((uintptr_t)dynamic_sectors + 15) & ~15); // aline on cacheline boundary
-	D_memset (dynamic_sectors, 0, numdynamicsectors*sizeof(sector_t));
 
 	sector_thinglist = Z_Malloc(numsectors*sizeof(SPTR) + 16, PU_LEVEL);
 	sector_thinglist = (void*)(((uintptr_t)sector_thinglist + 15) & ~15); // aline on cacheline boundary
 	D_memset(sector_thinglist, 0, numsectors*sizeof(SPTR));
 
 	// Read in the dynamic sectors
-	data = I_TempBuffer();
-	W_ReadLump(dynamiclump, data);
-	
-	ms = (mapsector_t *)data;
-	ss = dynamic_sectors;
-	for (i=0 ; i<numdynamicsectors ; i++, ss++, ms++)
+	if (numdynamicsectors > 0)
 	{
-		ss->floorheight = (ms->floorheight)<<FRACBITS;
-		ss->ceilingheight = (ms->ceilingheight)<<FRACBITS;
-		ss->floorpic = ms->floorpic;
-		ss->ceilingpic = ms->ceilingpic;
+		dynamic_sectors = Z_Malloc(numdynamicsectors*sizeof(sector_t) + 16, PU_LEVEL);
+		dynamic_sectors = (void*)(((uintptr_t)dynamic_sectors + 15) & ~15); // aline on cacheline boundary
+		D_memset (dynamic_sectors, 0, numdynamicsectors*sizeof(sector_t));
 
-		ss->lightlevel = ms->lightlevel;
-		ss->special = ms->special;
+		data = I_TempBuffer();
+		W_ReadLump(dynamiclump, data);
+		
+		ms = (mapsector_t *)data;
+		ss = dynamic_sectors;
+		for (i=0 ; i<numdynamicsectors ; i++, ss++, ms++)
+		{
+			ss->floorheight = (ms->floorheight)<<FRACBITS;
+			ss->ceilingheight = (ms->ceilingheight)<<FRACBITS;
+			ss->floorpic = ms->floorpic;
+			ss->ceilingpic = ms->ceilingpic;
 
-		ss->tag = ms->tag;
-		ss->heightsec = -1; // sector used to get floor and ceiling height
-		ss->fofsec = -1;
-		ss->specline = -1;
-		ss->floor_xoffs = 0;
-		ss->flags = 0;
+			ss->lightlevel = ms->lightlevel;
+			ss->special = ms->special;
+
+			ss->tag = ms->tag;
+			ss->heightsec = -1; // sector used to get floor and ceiling height
+			ss->fofsec = -1;
+			ss->specline = -1;
+			ss->floor_xoffs = 0;
+			ss->flags = 0;
+		}
 	}
 
 	// Now create the double pointers to the sectors
@@ -191,7 +195,7 @@ void P_LoadSectors (int staticlump, int dynamiclump)
 		dpsectors[dpCount++] = &static_sectors[i];
 
 	for (i = 0; i < numdynamicsectors; i++)
-		dpsectors[dpCount++] = &dynamic_sectors;
+		dpsectors[dpCount++] = &dynamic_sectors[i];
 }
 
 
@@ -315,7 +319,7 @@ static short P_GetMaceLinkCount(mapthing_t *mthing)
 	const mapvertex_t *v1 = &vertexes[line->v1];
 	const mapvertex_t *v2 = &vertexes[line->v2];
 
-	sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
+	sector_t *frontsector = I_TO_SEC(sides[line->sidenum[0]].sector);
 	VINT mlength = D_abs(v1->x - v2->x);
 
 	VINT msublinks = frontsector->lightlevel; // number of links to subtract from the inside.
@@ -352,7 +356,7 @@ static void P_SetupMace(mapthing_t *mthing)
 
 	vector3_t axis, rotation;
 
-	sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
+	sector_t *frontsector = I_TO_SEC(sides[line->sidenum[0]].sector);
 	const mapvertex_t *v1 = &vertexes[line->v1];
 	const mapvertex_t *v2 = &vertexes[line->v2];
 //	const VINT angle = frontsector->ceilingheight >> FRACBITS;
@@ -376,7 +380,7 @@ static void P_SetupMace(mapthing_t *mthing)
 
 	if (line->sidenum[1] >= 0)
 	{
-		sector_t *backsector = &sectors[sides[line->sidenum[1]].sector];
+		sector_t *backsector = I_TO_SEC(sides[line->sidenum[1]].sector);
 		VINT backtextureoffset = sides[line->sidenum[1]].textureoffset & 0xfff;
 		backtextureoffset <<= 4; // sign extend
 		backtextureoffset >>= 4; // sign extend

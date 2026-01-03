@@ -130,12 +130,12 @@ fixed_t GetWatertopSec(const sector_t *sec)
 	if (sec->heightsec < 0)
 		return sec->floorheight - 512*FRACUNIT;
 
-	return sectors[sec->heightsec].ceilingheight;
+	return dpsectors[sec->heightsec]->ceilingheight;
 }
 
 fixed_t GetWatertopMo(const mobj_t *mo)
 {
-	const sector_t *sec = &sectors[subsectors[mo->isubsector].isector];
+	const sector_t *sec = dpsectors[subsectors[mo->isubsector].isector];
 	return GetWatertopSec(sec);
 }
 
@@ -365,7 +365,7 @@ mobj_t *P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 /* set subsector and/or block links */
 	P_SetThingPosition(mobj);
 
-	const sector_t *sec = &sectors[subsectors[mobj->isubsector].isector];
+	const sector_t *sec = SS_SECTOR(mobj->isubsector);
 	
 	mobj->floorz = sec->floorheight;
 	mobj->ceilingz = sec->ceilingheight;
@@ -499,7 +499,7 @@ void P_SpawnPlayer (mapthing_t *mthing)
 	camera.x = (camera.x >> FRACBITS) << FRACBITS;
 	camera.y = (camera.y >> FRACBITS) << FRACBITS;
 	camera.subsector = I_TO_SS(R_PointInSubsector2(camera.x, camera.y));
-	camera.z = sectors[camera.subsector->isector].floorheight + (mobj->theight << FRACBITS);
+	camera.z = I_TO_SEC(camera.subsector->isector)->floorheight + (mobj->theight << FRACBITS);
 	
 	if (!netgame)
 		return;

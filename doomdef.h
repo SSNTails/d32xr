@@ -1234,8 +1234,8 @@ fixed_t R_PointToDist2(fixed_t dx, fixed_t dy) ATTR_DATA_CACHE_ALIGN;
 VINT R_PointInSubsector2(fixed_t x, fixed_t y) ATTR_DATA_CACHE_ALIGN;
 #define I_TO_SS(x) (&subsectors[x])
 #define SS_TO_I(x) (x - subsectors)
-#define SS_SECTOR(x) (&sectors[subsectors[x].isector])
-#define I_TO_SEC(x) (&sectors[x])
+#define SS_SECTOR(x) (dpsectors[subsectors[x].isector])
+#define I_TO_SEC(x) (dpsectors[x])
 
 
 /*---- */

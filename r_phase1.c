@@ -67,7 +67,7 @@ static VINT checkcoord[12][4] =
    { 0, 0, 0, 0 }
 };
 
-static sector_t emptysector = { .floorheight = 0, .ceilingheight = 0, .floorpic = -2, .ceilingpic = -2, .lightlevel = -2, .special = 0, .tag = 0, .flags = 0, .heightsec = -1, .fofsec = -1, .thinglist = (SPTR)0, .specialdata = (SPTR)0, .specline = -1 };
+static sector_t emptysector = { .floorheight = 0, .ceilingheight = 0, .floorpic = -2, .ceilingpic = -2, .lightlevel = -2, .special = 0, .tag = 0, .flags = 0, .heightsec = -1, .fofsec = -1, .specialdata = (SPTR)0, .specline = -1 };
 
 static int R_ClipToViewEdges(angle_t angle1, angle_t angle2)
 {
@@ -328,7 +328,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 #ifdef FLOOR_OVER_FLOOR
          if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
          {
-            const sector_t *frontFOF = &sectors[front_sector->fofsec];
+            const sector_t *frontFOF = I_TO_SEC(front_sector->fofsec);
             *fofInfo = front_sector->fofsec;
 
             if (frontFOF->ceilingheight < vd.viewz)
@@ -380,7 +380,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 #ifdef FLOOR_OVER_FLOOR
          if (back_sector->fofsec >= 0 && !(back_sector->flags & SF_FOF_SWAPHEIGHTS))
          {
-            const sector_t *backFOF = &sectors[back_sector->fofsec];
+            const sector_t *backFOF = I_TO_SEC(back_sector->fofsec);
             segl->fofSector = back_sector->fofsec;
             *fofInfo = front_sector->fofsec;
             actionbits |= AC_FOFSIDE; // Means the backsector has a FOF
@@ -408,7 +408,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             }
             else if (!(front_sector->flags & SF_FOF_SWAPHEIGHTS))
             {
-               const sector_t *frontFOF = &sectors[front_sector->fofsec];
+               const sector_t *frontFOF = I_TO_SEC(front_sector->fofsec);
                *fofInfo = front_sector->fofsec;
                if (frontFOF->ceilingheight < vd.viewz)
                {
@@ -423,7 +423,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
          }
          else if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
          {
-            const sector_t *frontFOF = &sectors[front_sector->fofsec];
+            const sector_t *frontFOF = I_TO_SEC(front_sector->fofsec);
             *fofInfo = front_sector->fofsec;
             if (frontFOF->ceilingheight < vd.viewz)
             {
@@ -709,7 +709,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
       // Replace sector being drawn, with a copy to be hacked
       *tempsec = *sec;
 
-      const sector_t *fofsec = &sectors[sec->fofsec];
+      const sector_t *fofsec = I_TO_SEC(sec->fofsec);
 
       if (sec->heightsec < 0) // Standard midpoint version
       {
@@ -744,7 +744,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
    }
    else if (sec->heightsec >= 0)
    {
-      const sector_t *watersec = &sectors[sec->heightsec];
+      const sector_t *watersec = I_TO_SEC(sec->heightsec);
 
       // Replace sector being drawn, with a copy to be hacked
       *tempsec = *sec;
@@ -839,7 +839,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
 
    sidedef = &sides[ldef->sidenum[side]];
    const sector_t *frontsector = rbsp->curfsector;
-   sector_t *backsector = (ldef->sidenum[1] >= 0) ? &sectors[sides[ldef->sidenum[side^1]].sector] : NULL;
+   sector_t *backsector = (ldef->sidenum[1] >= 0) ? I_TO_SEC(sides[ldef->sidenum[side^1]].sector) : NULL;
 
    solid = false;
 
@@ -884,22 +884,21 @@ static void R_Subsector(rbspWork_t *rbsp, int num)
    const subsector_t *sub = &subsectors[num];
    seg_t       *line;
    int          count;
-   int secnum = sub->isector;
-   sector_t    *frontsector = &sectors[sub->isector];
-      
-   if (frontsector->thinglist)
+   const int secnum = sub->isector;
+
+   if (sector_thinglist[secnum]) // frontsector->thinglist
    {
       if(validcount[secnum+1] != validcount[0]) // not already processed?
       {
          validcount[secnum+1] = validcount[0];  // mark it as processed
          if (vd.lastvissector < vd.vissectors + MAXVISSSEC)
          {
-           *vd.lastvissector++ = frontsector;
+           *vd.lastvissector++ = secnum; // frontsector
          }
       }
    }
 
-   rbsp->curfsector = frontsector;
+   rbsp->curfsector = I_TO_SEC(secnum); // frontsector
    line     = &segs[sub->firstline];
    count    = P_GetSubsectorNumlines(sub);
 

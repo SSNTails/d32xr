@@ -49,7 +49,7 @@ static void P_InnerCheckFloatbobPlatforms(player_t *player, sector_t *sector)
 	if (!(sector->flags & SF_FLOATBOB))
 		return;
 
-	sector_t *fofsec = &sectors[sector->fofsec];
+	sector_t *fofsec = I_TO_SEC(sector->fofsec);
 	if (P_MobjFlip(player->mo) < 0)
 	{
 		if (D_abs(fofsec->floorheight - (player->mo->z + (player->mo->theight << FRACBITS))) > D_abs(player->mo->momz))
@@ -72,7 +72,7 @@ static void P_CheckFloatbobPlatforms(player_t *player)
 	
 	for (int i = 0; i < player->num_touching_sectors; i++)
 	{
-		sector_t *sector = &sectors[player->touching_sectorlist[i]];
+		sector_t *sector = I_TO_SEC(player->touching_sectorlist[i]);
 		P_InnerCheckFloatbobPlatforms(player, sector);
 	}
 
@@ -86,9 +86,9 @@ static void P_InnerCheckConveyor(player_t *player, const sector_t *sector)
 	fixed_t convDy = 0;
 
 	// Does fofsec >= 0 and fofsec->flags SF_FOF_CONVEYOR?
-	if (sector->fofsec >= 0 && (sectors[sector->fofsec].flags & SF_CONVEYOR) && sectors[sector->fofsec].ceilingheight == player->mo->z)
+	if (sector->fofsec >= 0 && (I_TO_SEC(sector->fofsec)->flags & SF_CONVEYOR) && I_TO_SEC(sector->fofsec)->ceilingheight == player->mo->z)
 	{
-		const sector_t *fofsec = &sectors[sector->fofsec];
+		const sector_t *fofsec = I_TO_SEC(sector->fofsec);
 		const scrollflat_t *scrollflat = SPTR_TO_LPTR(fofsec->specialdata);
 
 		if (scrollflat && scrollflat->ctrlLine)
@@ -134,7 +134,7 @@ static void P_CheckConveyors(player_t *player)
 
 	for (int i = 0; i < player->num_touching_sectors; i++)
 	{
-		sector_t *sector = &sectors[player->touching_sectorlist[i]];
+		const sector_t *sector = I_TO_SEC(player->touching_sectorlist[i]);
 		P_InnerCheckConveyor(player, sector);
 	}
 
@@ -664,7 +664,7 @@ static void P_DoTeeter(player_t *player)
 
 	for (int i = 0; i < player->num_touching_sectors; i++)
 	{
-		sector_t *sec = &sectors[player->touching_sectorlist[i]];
+		const sector_t *sec = I_TO_SEC(player->touching_sectorlist[i]);
 		fixed_t floorz = FloorZAtPos(sec, player->mo->z, player->mo->theight << FRACBITS);
 
 		if (floorz < player->mo->floorz - tiptop)
@@ -1151,8 +1151,8 @@ void P_DoPlayerExit(player_t *player)
 		if (innerNum == -1 || outerNum == -1 || !spawnPoint)
 			return;
 
-		sector_t *inner = &sectors[innerNum];
-		sector_t *outer = &sectors[outerNum];
+		sector_t *inner = I_TO_SEC(innerNum);
+		sector_t *outer = I_TO_SEC(outerNum);
 		spawnPoint->movecount = 1;
 		
 		floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
@@ -1174,7 +1174,7 @@ void P_DoPlayerExit(player_t *player)
 
 		for (int i = 0; i < numsides; i++)
 		{
-			if (sides[i].sector != outer-sectors)
+			if (sides[i].sector != outerNum)
 				continue;
 
 			// Found a sidedef for outer.
@@ -1531,7 +1531,7 @@ void P_MovePlayer(player_t *player)
 	player->speed = P_AproxDistance(REALMOMX(player), REALMOMY(player));
 
 	// If you're running fast enough, you can create splashes as you run in shallow water.
-	if (sectors[subsectors[player->mo->isubsector].isector].heightsec >= 0)
+	if (SS_SECTOR(player->mo->isubsector)->heightsec >= 0)
 	{
 		const fixed_t watertop = GetWatertopMo(player->mo);
 

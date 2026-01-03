@@ -81,7 +81,7 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 	uint8_t tag = P_GetLineTag(line);
 	while ((secnum = P_FindSectorFromLineTagNum(tag,secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
+		sec = dpsectors[secnum];
 		if (sec->specialdata)
 			continue;
 		
@@ -118,7 +118,7 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 
 			if (type == raiseAndCrush)
 			{
-				ceiling->topheight = P_FindHighestCeilingSurrounding(sec)->ceilingheight >> FRACBITS;
+				ceiling->topheight = dpsectors[P_FindHighestCeilingSurrounding(secnum)]->ceilingheight >> FRACBITS;
 				ceiling->direction = 1;
 			}
 			else

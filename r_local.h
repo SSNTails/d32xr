@@ -99,6 +99,7 @@ typedef	struct
 	VINT        fofsec;
 
 	VINT        specline; // Reference to a line of the sector for special reasons (i.e., FOF control line)
+	VINT        extrasecdata; // TBD
 } sector_t;
 
 typedef struct sectorBBox_s
@@ -137,8 +138,10 @@ typedef struct line_s
 	VINT		sidenum[2];			/* sidenum[1] will be -1 if one sided */
 } line_t;
 
-#define LD_FRONTSECTOR(ld) (&sectors[sides[(ld)->sidenum[0]].sector])
-#define LD_BACKSECTOR(ld) ((ld)->sidenum[1] != -1 ? &sectors[sides[ld->sidenum[1]].sector] : NULL)
+#define LD_FRONTSECTOR(ld) (dpsectors[sides[(ld)->sidenum[0]].sector])
+#define LD_BACKSECTOR(ld) ((ld)->sidenum[1] != -1 ? dpsectors[sides[ld->sidenum[1]].sector] : NULL)
+#define LD_IFRONTSECTOR(ld) (sides[(ld)->sidenum[0]].sector)
+#define LD_IBACKSECTOR(ld) ((ld)->sidenum[1] != -1 ? sides[ld->sidenum[1]].sector : -1)
 
 typedef struct subsector_s
 {
@@ -830,7 +833,7 @@ __attribute__((aligned(16)))
 	/* */
 	/* subsectors */
 	/* */
-	sector_t		**vissectors/*[MAXVISSSEC]*/, **lastvissector;
+	VINT		*vissectors/*[MAXVISSSEC]*/, *lastvissector;
 
 	/* */
 	/* planes */

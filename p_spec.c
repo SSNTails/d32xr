@@ -84,10 +84,9 @@ void P_InitPicAnims (void)
 */
 
 __attribute((noinline))
-VINT P_FindNextSectorLine(sector_t *sector, VINT start)
+VINT P_FindNextSectorLine(VINT isector, VINT start)
 {
 	VINT i;
-	VINT isector = sector - sectors;
 
 	for (i = start + 1; i < numlines; i++)
 	{
@@ -111,16 +110,14 @@ VINT P_FindNextSectorLine(sector_t *sector, VINT start)
 /*	Return sector_t * of sector next to current. NULL if not two-sided line */
 /* */
 /*================================================================== */
-sector_t *getNextSector(line_t *line,sector_t *sec)
+VINT getNextSector(line_t *line, VINT sec)
 {
-	sector_t *front;
-
 	if (!(line->sidenum[1] >= 0))
-		return NULL;
+		return -1;
 	
-	front = LD_FRONTSECTOR(line);
+	VINT front = LD_IFRONTSECTOR(line);
 	if (front == sec)
-		return LD_BACKSECTOR(line);
+		return LD_IBACKSECTOR(line);
 
 	return front;
 }
@@ -130,22 +127,22 @@ sector_t *getNextSector(line_t *line,sector_t *sec)
 /*	FIND LOWEST FLOOR HEIGHT IN SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-sector_t *P_FindLowestFloorSurrounding(sector_t *sec)
+VINT P_FindLowestFloorSurrounding(VINT sec)
 {
 	VINT			i = -1;
 	line_t		*check;
-	sector_t	*other;
-	sector_t *lowest = sec;
+	VINT other;
+	VINT lowest = sec;
 
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
 
-		if (!other)
+		if (other < 0)
 			continue;
 
-		if (other->floorheight < lowest->floorheight)
+		if (dpsectors[other]->floorheight < dpsectors[lowest]->floorheight)
 			lowest = other;
 	}
 
@@ -157,22 +154,22 @@ sector_t *P_FindLowestFloorSurrounding(sector_t *sec)
 /*	FIND HIGHEST FLOOR HEIGHT IN SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-sector_t *P_FindHighestFloorSurrounding(sector_t *sec)
+VINT P_FindHighestFloorSurrounding(VINT sec)
 {
 	VINT			i = -1;
 	line_t		*check;
-	sector_t	*other;
-	sector_t *highest = sec;
+	VINT other;
+	VINT highest = sec;
 
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
 
-		if (!other)
+		if (other < 0)
 			continue;
 
-		if (other->floorheight < highest->floorheight)
+		if (dpsectors[other]->floorheight < dpsectors[highest]->floorheight)
 			highest = other;
 	}
 
@@ -184,25 +181,25 @@ sector_t *P_FindHighestFloorSurrounding(sector_t *sec)
 /*	FIND NEXT HIGHEST CEILING IN SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-sector_t *P_FindNextHighestCeiling(sector_t *sec, fixed_t currentheight)
+VINT P_FindNextHighestCeiling(VINT sec, fixed_t currentheight)
 {
 	VINT		i = -1;
 	int			h = 0;
-	sector_t    *min;
+	VINT min;
 	line_t		*check;
-	sector_t	*other;
-	sector_t	*heightlist[20];		/* 20 adjoining sectors max! */
+	VINT other;
+	VINT heightlist[20];		/* 20 adjoining sectors max! */
 	
-	heightlist[0] = NULL;
+	heightlist[0] = -1;
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
 
-		if (!other)
+		if (other < 0)
 			continue;
 
-		if (other->ceilingheight > currentheight)
+		if (dpsectors[other]->ceilingheight > currentheight)
 			heightlist[h++] = other;
 
 		if (h == sizeof(heightlist) / sizeof(heightlist[0]))
@@ -217,7 +214,7 @@ sector_t *P_FindNextHighestCeiling(sector_t *sec, fixed_t currentheight)
 	/* */
 	min = heightlist[0];
 	for (i = 1;i < h;i++)
-		if (heightlist[i]->ceilingheight < min->ceilingheight)
+		if (dpsectors[heightlist[i]]->ceilingheight < dpsectors[min]->ceilingheight)
 			min = heightlist[i];
 			
 	return min;
@@ -228,25 +225,25 @@ sector_t *P_FindNextHighestCeiling(sector_t *sec, fixed_t currentheight)
 /*	FIND NEXT HIGHEST FLOOR IN SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-sector_t *P_FindNextHighestFloor(sector_t *sec, fixed_t currentheight)
+VINT P_FindNextHighestFloor(VINT sec, fixed_t currentheight)
 {
 	VINT		i = -1;
 	int			h = 0;
-	sector_t    *min;
+	VINT min;
 	line_t		*check;
-	sector_t	*other;
-	sector_t	*heightlist[20];		/* 20 adjoining sectors max! */
+	VINT other;
+	VINT heightlist[20];		/* 20 adjoining sectors max! */
 	
-	heightlist[0] = NULL;
+	heightlist[0] = -1;
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
 
-		if (!other)
+		if (other < 0)
 			continue;
 
-		if (other->floorheight > currentheight)
+		if (dpsectors[other]->floorheight > currentheight)
 			heightlist[h++] = other;
 
 		if (h == sizeof(heightlist) / sizeof(heightlist[0]))
@@ -261,31 +258,31 @@ sector_t *P_FindNextHighestFloor(sector_t *sec, fixed_t currentheight)
 	/* */
 	min = heightlist[0];
 	for (i = 1;i < h;i++)
-		if (heightlist[i]->floorheight < min->floorheight)
+		if (dpsectors[heightlist[i]]->floorheight < dpsectors[min]->floorheight)
 			min = heightlist[i];
 			
 	return min;
 }
 
-sector_t *P_FindNextLowestFloor(sector_t *sec, fixed_t currentheight)
+VINT P_FindNextLowestFloor(VINT sec, fixed_t currentheight)
 {
 	VINT		i = -1;
 	int			h = 0;
-	sector_t    *min;
+	VINT min;
 	line_t		*check;
-	sector_t	*other;
-	sector_t	*heightlist[20];		/* 20 adjoining sectors max! */
+	VINT other;
+	VINT	    heightlist[20];		/* 20 adjoining sectors max! */
 
-	heightlist[0] = NULL;
+	heightlist[0] = -1;
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
 
-		if (!other)
+		if (other < 0)
 			continue;
 
-		if (other->floorheight < currentheight)
+		if (dpsectors[other]->floorheight < currentheight)
 			heightlist[h++] = other;
 
 		if (h == sizeof(heightlist) / sizeof(heightlist[0]))
@@ -300,7 +297,7 @@ sector_t *P_FindNextLowestFloor(sector_t *sec, fixed_t currentheight)
 	/* */
 	min = heightlist[0];
 	for (i = 1;i < h;i++)
-		if (heightlist[i]->floorheight > min->floorheight)
+		if (dpsectors[heightlist[i]]->floorheight > dpsectors[min]->floorheight)
 			min = heightlist[i];
 			
 	return min;
@@ -311,22 +308,22 @@ sector_t *P_FindNextLowestFloor(sector_t *sec, fixed_t currentheight)
 /*	FIND LOWEST CEILING IN THE SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-sector_t *P_FindLowestCeilingSurrounding(sector_t *sec)
+VINT P_FindLowestCeilingSurrounding(VINT sec)
 {
 	VINT		i = 0;
 	line_t		*check;
-	sector_t	*other;
-	sector_t	*lowest = NULL;
+	VINT other;
+	VINT lowest = -1;
 	
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
 
-		if (!other)
+		if (other < 0)
 			continue;
 
-		if (lowest == NULL || other->ceilingheight < lowest->ceilingheight)
+		if (lowest < 0 || dpsectors[other]->ceilingheight < dpsectors[lowest]->ceilingheight)
 			lowest = other;
 	}
 
@@ -338,22 +335,22 @@ sector_t *P_FindLowestCeilingSurrounding(sector_t *sec)
 /*	FIND HIGHEST CEILING IN THE SURROUNDING SECTORS */
 /* */
 /*================================================================== */
-sector_t *P_FindHighestCeilingSurrounding(sector_t *sec)
+VINT P_FindHighestCeilingSurrounding(VINT sec)
 {
 	VINT	i = 0;
 	line_t	*check;
-	sector_t	*other;
-	sector_t *highest = NULL;
+	VINT other;
+	VINT highest = -1;
 	
 	while ((i = P_FindNextSectorLine(sec, i)) >= 0)
 	{
 		check = &lines[i];
 		other = getNextSector(check,sec);
 
-		if (!other)
+		if (other < 0)
 			continue;
 
-		if (highest == NULL || other->ceilingheight > highest->ceilingheight)
+		if (highest < 0 || dpsectors[other]->ceilingheight > dpsectors[highest]->ceilingheight)
 			highest = other;
 	}
 
@@ -368,15 +365,21 @@ sector_t *P_FindHighestCeilingSurrounding(sector_t *sec)
 
 VINT P_FindSectorWithTag(VINT tag, int start)
 {
-	int	i;
+	if (start < 0)
+		start = numstaticsectors - 1; // Start at the first dynamic sector element
 
-	for (i=start+1;i<numsectors;i++)
-		if (sectors[i].tag == tag)
+	start++;
+
+	for (int i = start; i < numsectors; i++)
+	{
+		if (dpsectors[i]->tag == tag)
 			return i;
+	}
+
 	return -1;
 }
 
-int	P_FindSectorFromLineTag(line_t	*line,int start)
+int	P_FindSectorFromLineTag(line_t *line, int start)
 {
 	return P_FindSectorFromLineTagNum(P_GetLineTag(line), start);
 }
@@ -386,13 +389,19 @@ int	P_FindSectorFromLineTag(line_t	*line,int start)
 /*	RETURN NEXT SECTOR # THAT LINE TAG REFERS TO */
 /* */
 /*================================================================== */
-int	P_FindSectorFromLineTagNum(uint8_t tag,int start)
+int	P_FindSectorFromLineTagNum(uint8_t tag, int start)
 {
-	int	i;
+	if (start < 0)
+		start = numstaticsectors - 1;
 
-	for (i=start+1;i<numsectors;i++)
-		if (sectors[i].tag == tag)
+	start++;
+
+	for (int i = start; i < numsectors; i++)
+	{
+		if (dpsectors[i]->tag == tag)
 			return i;
+	}
+
 	return -1;
 }
 
@@ -416,12 +425,12 @@ VINT P_FindNextLineWithTag(uint8_t tag, int *start)
 /*	Find minimum light from an adjacent sector */
 /* */
 /*================================================================== */
-int	P_FindMinSurroundingLight(sector_t *sector,int max)
+int	P_FindMinSurroundingLight(VINT sector,int max)
 {
 	VINT			i = 0;
 	int			min;
 	line_t		*line;
-	sector_t	*check;
+	VINT check;
 	
 	min = max;
 	while ((i = P_FindNextSectorLine(sector, i)) >= 0)
@@ -429,10 +438,10 @@ int	P_FindMinSurroundingLight(sector_t *sector,int max)
 		line = &lines[i];
 
 		check = getNextSector(line,sector);
-		if (!check)
+		if (check < 0)
 			continue;
-		if (check->lightlevel < min)
-			min = check->lightlevel;
+		if (dpsectors[check]->lightlevel < min)
+			min = dpsectors[check]->lightlevel;
 	}
 
 	return min;
@@ -503,7 +512,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				int secnum = -1;
 				while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 				{
-					sector_t *sec = &sectors[secnum];
+					sector_t *sec = dpsectors[secnum];
 					sec->floorheight += rowoffset << FRACBITS;
 					P_ChangeSector(sec, false);
 				}
@@ -514,7 +523,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				int secnum = -1;
 				while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 				{
-					sector_t *sec = &sectors[secnum];
+					sector_t *sec = dpsectors[secnum];
 					if (sec->specialdata)
 						continue;
 
@@ -581,7 +590,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				int secnum = -1;
 				while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 				{
-					sector_t *sec = &sectors[secnum];
+					sector_t *sec = dpsectors[secnum];
 					sec->ceilingheight += textureoffset << FRACBITS;
 					P_ChangeSector(sec, false);
 				}
@@ -592,7 +601,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				int secnum = -1;
 				while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
 				{
-					sector_t *sec = &sectors[secnum];
+					sector_t *sec = dpsectors[secnum];
 					if (sec->specialdata)
 						continue;
 
@@ -646,7 +655,7 @@ void P_LinedefExecute(uint8_t tag, player_t *player, sector_t *caller)
 			|| special == 232) // Once
 		{
 			// Traverse the linedefs, finding other linedefs that belong to the same sector
-			sector_t *ctrlSector = LD_FRONTSECTOR(line);
+			VINT ctrlSector = LD_IFRONTSECTOR(line);
 			int16_t start = -1;
 			while ((start = P_FindNextSectorLine(ctrlSector, start)) >= 0)
 			{
@@ -677,7 +686,7 @@ static void P_PlayerOnSpecial3DFloor(player_t *player, sector_t *originalSector)
 	if (originalSector->fofsec < 0)
 		return;
 
-	fofsec = &sectors[originalSector->fofsec];
+	fofsec = dpsectors[originalSector->fofsec];
 
 	switch (fofsec->special)
 	{
@@ -987,7 +996,7 @@ void EV_BounceSector(sector_t *fofsec, sector_t *targetSector, fixed_t momz, VIN
 
 		bouncer->targetSector = targetSector;
 		bouncer->fofSector = fofsec;
-		bouncer->watersec = &sectors[heightsec];
+		bouncer->watersec = dpsectors[heightsec];
 		bouncer->speed = momz >> 1;
 		bouncer->distance = FRACUNIT;
 		bouncer->low = true;
@@ -1007,7 +1016,7 @@ void T_ScrollFlat (scrollflat_t *scrollflat)
 
 	for (int i = 0; i < scrollflat->numsectors; i++)
 	{
-		sector_t *sec = &sectors[scrollflat->sectors[i]];
+		sector_t *sec = dpsectors[scrollflat->sectors[i]];
 
 		uint8_t xoff = sec->floor_xoffs >> 8;
 		uint8_t yoff = sec->floor_xoffs & 0xff;
@@ -1025,7 +1034,7 @@ void T_ScrollFlat (scrollflat_t *scrollflat)
 	}
 }
 
-static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
+static void P_StartScrollFlat(line_t *line, VINT isector, boolean carry)
 {
 	thinker_t	*currentthinker;
 	uint8_t tag = P_GetLineTag(line);
@@ -1046,7 +1055,7 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 				if (sf->numsectors > sf->totalSectors) // Bounds check
 					return;
 
-				sf->sectors[sf->numsectors] = (VINT)(sector-sectors);
+				sf->sectors[sf->numsectors] = isector;
 				sf->numsectors++;
 				return;
 			}
@@ -1059,7 +1068,7 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 		int numScrollflatSectors = 0;
 		for (int i = 0; i < numsectors; i++)
 		{
-			if (sectors[i].tag == tag)
+			if (dpsectors[i]->tag == tag)
 				numScrollflatSectors++;
 		}
 
@@ -1069,7 +1078,7 @@ static void P_StartScrollFlat(line_t *line, sector_t *sector, boolean carry)
 		scrollflat->ctrlLine = line;
 		scrollflat->sectors = (VINT*)((uint8_t*)scrollflat + sizeof(*scrollflat));
 		
-		scrollflat->sectors[0] = (VINT)(sector - sectors);
+		scrollflat->sectors[0] = isector;
 		scrollflat->numsectors = 1;
 		scrollflat->totalSectors = numScrollflatSectors;
 		scrollflat->carry = carry;
@@ -1088,7 +1097,7 @@ void P_SpawnLightningStrike(boolean close)
 
 	for (int i = 0; i < lightningSpawner->numsectors*2; i += 2)
 	{
-		sector_t *sec = &sectors[lightningSpawner->sectorData[i]];
+		sector_t *sec = dpsectors[lightningSpawner->sectorData[i]];
 		sec->lightlevel = (uint8_t)(close ? 255 : (255 + (int32_t)sec->lightlevel) >> 1);
 	}
 }
@@ -1100,7 +1109,7 @@ void T_LightningFade(lightningspawn_t *spawner)
 
 	for (int i = 0; i < spawner->numsectors*2;)
 	{
-		sector_t *sec = &sectors[spawner->sectorData[i++]];
+		sector_t *sec = dpsectors[spawner->sectorData[i++]];
 		const VINT origLightLevel = spawner->sectorData[i++];
 
 		sec->lightlevel -= 6;
@@ -1122,7 +1131,7 @@ static void P_InitLightning()
 
 	for (int i = 0; i < numsectors; i++)
 	{
-		if (sectors[i].ceilingpic == (uint8_t)-1)
+		if (dpsectors[i]->ceilingpic == (uint8_t)-1)
 			numskysectors++;
 	}
 
@@ -1136,10 +1145,10 @@ static void P_InitLightning()
 	int count = 0;
 	for (int i = 0; i < numsectors; i++)
 	{
-		if (sectors[i].ceilingpic == (uint8_t)-1)
+		if (dpsectors[i]->ceilingpic == (uint8_t)-1)
 		{
 			spawner->sectorData[count++] = i;
-			spawner->sectorData[count++] = sectors[i].lightlevel;
+			spawner->sectorData[count++] = dpsectors[i]->lightlevel;
 		}
 	}
 
@@ -1214,7 +1223,7 @@ static void P_StartScrollTex(line_t *line)
 		if (s < 0)
 			return;
 
-		paramSector = &sectors[s];
+		paramSector = dpsectors[s];
 
 		int numScrolltexLines = 0;
 		for (int i = 0; i < numlines; i++)
@@ -1327,10 +1336,10 @@ playerIsOnMe:
 		playerOnMe->mo->z = playerOnMe->mo->floorz = raise->sector->ceilingheight;
 
 	for (int k = 0; k < raise->numsectors; k++)
-		P_ChangeSector(&sectors[raise->sectors[k]], true);
+		P_ChangeSector(dpsectors[raise->sectors[k]], true);
 }
 
-static void P_AddRaiseThinker(sector_t *fofSector, line_t *fofLine)
+static void P_AddRaiseThinker(VINT fofSector, line_t *fofLine)
 {
 	mapvertex_t *v1 = &vertexes[fofLine->v1];
 	mapvertex_t *v2 = &vertexes[fofLine->v2];
@@ -1347,9 +1356,9 @@ static void P_AddRaiseThinker(sector_t *fofSector, line_t *fofLine)
 	raise->thinker.function = T_RaiseSector;
 
 	raise->tag = P_GetLineTag(fofLine);
-	raise->sector = fofSector;
-	raise->ceilingtop = P_FindHighestCeilingSurrounding(fofSector)->ceilingheight >> FRACBITS;
-	raise->ceilingbottom = P_FindLowestCeilingSurrounding(fofSector)->ceilingheight >> FRACBITS;
+	raise->sector = dpsectors[fofSector];
+	raise->ceilingtop = dpsectors[P_FindHighestCeilingSurrounding(fofSector)]->ceilingheight >> FRACBITS;
+	raise->ceilingbottom = dpsectors[P_FindLowestCeilingSurrounding(fofSector)]->ceilingheight >> FRACBITS;
 	raise->basespeed = P_AproxDistance(v2->x - v1->x, v2->y - v1->y) >> 2;
 	raise->sectors = (int16_t*)((uint8_t*)raise + sizeof(*raise));
 	raise->numsectors = 0;
@@ -1673,7 +1682,7 @@ VINT	*linespeciallist = NULL;
 
 void P_SpawnSpecials (void)
 {
-	sector_t	*sector;
+	sector_t	**dpsector;
 	int		i;
 
 	lightningSpawner = NULL;
@@ -1681,9 +1690,11 @@ void P_SpawnSpecials (void)
 	/* */
 	/*	Init special SECTORs */
 	/* */
-	sector = sectors;
-	for (i=0 ; i<numsectors ; i++, sector++)
+	dpsector = dpsectors;
+	for (i=0 ; i<numsectors ; i++, dpsector++)
 	{
+		sector_t *sector = *dpsector;
+
 		if (!sector->special)
 			continue;
 		switch (sector->special)
@@ -1731,96 +1742,95 @@ void P_SpawnSpecials (void)
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-				sectors[s].heightsec = sec;
+				dpsectors[s]->heightsec = sec;
 			break;
 		}
 		case 100: // 'FOF' sector
 		case 170: // Crumbling (respawn)
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
-			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
+			dpsectors[sec]->flags |= SF_FOF_CONTROLSECTOR;
 
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
-				sectors[s].fofsec = sec;
-				sectors[sec].specline = i;
+				dpsectors[s]->fofsec = sec;
+				dpsectors[sec]->specline = i;
 
 			// A sector that has FOF collision, but for rendering it will swap the floor/ceiling
 			// heights depending on the camera height.
 			// Should that be the halfheight of the control sector?
 			// Or maybe even configurable somehow, by using the control sector's texture offset value...
 				if (ldflags[i] & ML_BLOCKMONSTERS)
-					sectors[s].flags |= SF_FOF_SWAPHEIGHTS;
+					dpsectors[s]->flags |= SF_FOF_SWAPHEIGHTS;
 			}
 			break;
 		}
 		case 105: // FOF that is invisible but solid
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
-			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
+			dpsectors[sec]->flags |= SF_FOF_CONTROLSECTOR;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
-				sectors[s].fofsec = sec;
-				sectors[sec].specline = i;
-				sectors[s].flags |= SF_FOF_INVISIBLE_TANGIBLE;
+				dpsectors[s]->fofsec = sec;
+				dpsectors[sec]->specline = i;
+				dpsectors[s]->flags |= SF_FOF_INVISIBLE_TANGIBLE;
 			}
 			break;
 		}
 		case 160: // Water bobbing FOF
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
-			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
+			dpsectors[sec]->flags |= SF_FOF_CONTROLSECTOR;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
-				sectors[s].fofsec = sec;
-				sectors[sec].specline = i;
+				dpsectors[s]->fofsec = sec;
+				dpsectors[sec]->specline = i;
 
 				// These are always SF_FOF_SWAPHEIGHTS
-				sectors[s].flags |= SF_FOF_SWAPHEIGHTS;
-				sectors[s].flags |= SF_FLOATBOB;
+				dpsectors[s]->flags |= SF_FOF_SWAPHEIGHTS;
+				dpsectors[s]->flags |= SF_FLOATBOB;
 			}
 			break;
 		}
 		case 178: // Crumbling, respawn, floating
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
-			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
+			dpsectors[sec]->flags |= SF_FOF_CONTROLSECTOR;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
-				sectors[s].fofsec = sec;
-				sectors[s].flags |= SF_CRUMBLE;
-				sectors[s].flags |= SF_FLOATBOB;
-				sectors[s].flags |= SF_RESPAWN;
-				sectors[sec].specline = i;
+				dpsectors[s]->fofsec = sec;
+				dpsectors[s]->flags |= SF_CRUMBLE;
+				dpsectors[s]->flags |= SF_FLOATBOB;
+				dpsectors[s]->flags |= SF_RESPAWN;
+				dpsectors[sec]->specline = i;
 			}
 			break;
 		}
 		case 179: // Crumbling, no-respawn, floating
 		{
 			VINT sec = sides[*lines[i].sidenum].sector;
-			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
+			dpsectors[sec]->flags |= SF_FOF_CONTROLSECTOR;
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
-				sectors[s].fofsec = sec;
-				sectors[s].flags |= SF_CRUMBLE;
-				sectors[s].flags |= SF_FLOATBOB;
-				sectors[sec].specline = i;
+				dpsectors[s]->fofsec = sec;
+				dpsectors[s]->flags |= SF_CRUMBLE;
+				dpsectors[s]->flags |= SF_FLOATBOB;
+				dpsectors[sec]->specline = i;
 			}
 			break;
 		}
 		case 190: // Rising Platform
 		{
 			VINT sec = sides[lines[i].sidenum[0]].sector;
-			sectors[sec].flags |= SF_FOF_CONTROLSECTOR;
-			sector_t *fofSector = &sectors[sec];
-
+			dpsectors[sec]->flags |= SF_FOF_CONTROLSECTOR;
+	
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
 			{
-				sectors[s].fofsec = sec;
-				sectors[sec].specline = i;
+				dpsectors[s]->fofsec = sec;
+				dpsectors[sec]->specline = i;
 			}
 
-			P_AddRaiseThinker(fofSector, &lines[i]);
+			P_AddRaiseThinker(sec, &lines[i]);
 			break;
 		}
 		case 249: // Scroll line texture by tagged sector floor (X) and ceiling (Y)
@@ -1831,14 +1841,14 @@ void P_SpawnSpecials (void)
 		case 250: // Scroll floor
 		{
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-				P_StartScrollFlat(&lines[i], &sectors[s], false);
+				P_StartScrollFlat(&lines[i], s, false);
 
 			break;
 		}
 		case 251: // Scroll floor and carry
 		{
 			for (int s = -1; (s = P_FindSectorFromLineTag(lines+i,s)) >= 0;)
-				P_StartScrollFlat(&lines[i], &sectors[s], true);
+				P_StartScrollFlat(&lines[i], s, true);
 
 			break;
 		}

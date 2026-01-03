@@ -222,8 +222,8 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
 
     const int cyvh = (centerY << 16) | viewportHeight;
 
-    sector_t *frontFOF = segexdata >= 0 ? &sectors[segexdata] : NULL;
-    sector_t *backFOF = segl->fofSector >= 0 ? &sectors[segl->fofSector] : NULL;
+    sector_t *frontFOF = segexdata >= 0 ? I_TO_SEC(segexdata) : NULL;
+    sector_t *backFOF = segl->fofSector >= 0 ? I_TO_SEC(segl->fofSector) : NULL;
 
     for (x = start; x <= stop; x++)
     {

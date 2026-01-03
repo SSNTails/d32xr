@@ -57,11 +57,11 @@ void P_MobjThinker(mobj_t* mobj) ATTR_DATA_CACHE_ALIGN;
 fixed_t FloorZAtPos(const sector_t *sec, fixed_t z, fixed_t height)
 {
    fixed_t floorz = sec->floorheight;
-   const fixed_t thingtop = z + height;
 
    if (sec->fofsec >= 0)
    {
-      sector_t *fof = &sectors[sec->fofsec];
+      const fixed_t thingtop = z + height;
+      sector_t *fof = dpsectors[sec->fofsec];
 
       fixed_t delta1 = z - (fof->floorheight + ((fof->ceilingheight - fof->floorheight)/2));
       fixed_t delta2 = thingtop - (fof->floorheight + ((fof->ceilingheight - fof->floorheight)/2));
@@ -78,7 +78,7 @@ fixed_t CeilingZAtPos(const sector_t *sec, fixed_t z, fixed_t height)
 
    if (sec->fofsec >= 0)
    {
-      sector_t *fof = &sectors[sec->fofsec];
+      sector_t *fof = dpsectors[sec->fofsec];
 
       fixed_t delta1 = z - (fof->floorheight + ((fof->ceilingheight - fof->floorheight)/2));
       fixed_t delta2 = thingtop - (fof->floorheight + ((fof->ceilingheight - fof->floorheight)/2));
@@ -994,7 +994,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                      if (i == -1)
                         chosen = MT_EXPLODE;
 
-                     fixed_t z = sectors[subsectors[mobj->isubsector].isector].floorheight - 80*FRACUNIT;
+                     fixed_t z = SS_SECTOR(mobj->isubsector)->floorheight - 80*FRACUNIT;
                      z += (P_Random() & 31) << FRACBITS;
 
                      mobj_t *flicky = P_SpawnMobj(

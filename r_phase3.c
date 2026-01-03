@@ -33,7 +33,7 @@ static void R_PrepMobj(mobj_t *thing)
    // TODO: This is not technically correct, but is a quick way to remove some draw-through
    if (sec == vd.viewsector && sec->fofsec >= 0)
    {
-      const sector_t *fofsec = &sectors[sec->fofsec];
+      const sector_t *fofsec = I_TO_SEC(sec->fofsec);
 
       if ((vd.viewz > fofsec->floorheight && thing->z < fofsec->floorheight)
          || (vd.viewz < fofsec->ceilingheight && thing->z >= fofsec->ceilingheight))
@@ -138,7 +138,7 @@ static void R_PrepMobj(mobj_t *thing)
    if (heightsec >= 0 && vd.heightsec)   // only clip things which are in special sectors
       {
          const fixed_t localgzt = thing->z + ((fixed_t)BIGSHORT(patch->topoffset) << FRACBITS);
-         const fixed_t thingHeight = sectors[heightsec].ceilingheight;
+         const fixed_t thingHeight = I_TO_SEC(heightsec)->ceilingheight;
    
          if ((vd.underwater) != (localgzt < thingHeight))
             return;
@@ -321,7 +321,7 @@ static void R_PrepRing(ringmobj_t *thing, int scenery)
    if (heightsec >= 0 && vd.heightsec)   // only clip things which are in special sectors
       {
          const fixed_t localgzt = thingz + ((fixed_t)BIGSHORT(patch->topoffset) << FRACBITS);
-         const fixed_t thingHeight = sectors[heightsec].ceilingheight;
+         const fixed_t thingHeight = I_TO_SEC(heightsec)->ceilingheight;
    
          if ((vd.underwater) != (localgzt < thingHeight))
             return;
@@ -329,7 +329,7 @@ static void R_PrepRing(ringmobj_t *thing, int scenery)
    // TODO: This is not technically correct, but is a quick way to remove some draw-through
    if (sec == vd.viewsector && sec->fofsec >= 0)
    {
-      const sector_t *fofsec = &sectors[sec->fofsec];
+      const sector_t *fofsec = I_TO_SEC(sec->fofsec);
       if ((vd.viewz > fofsec->floorheight && thingz < fofsec->floorheight)
          || (vd.viewz < fofsec->ceilingheight && thingz >= fofsec->ceilingheight))
          return;
@@ -388,12 +388,12 @@ static void R_PrepRing(ringmobj_t *thing, int scenery)
 //
 void R_SpritePrep(void)
 {
-   sector_t **pse = vd.vissectors;
+   VINT *pse = vd.vissectors;
 
    while(pse < vd.lastvissector)
    {
-      sector_t    *se = *pse;
-      mobj_t *thing = SPTR_TO_LPTR(se->thinglist);
+      VINT    se = *pse;
+      mobj_t *thing = SPTR_TO_LPTR(sector_thinglist[se]);
 
       while(thing) // walk sector thing list
       {

@@ -849,8 +849,8 @@ void P_DoBossVictory(mobj_t *mo)
 	if (outerNum == -1 || innerNum == -1)
 		return;
 
-	sector_t *outer = &sectors[outerNum];
-	sector_t *inner = &sectors[innerNum];
+	sector_t *outer = dpsectors[outerNum];
+	sector_t *inner = dpsectors[innerNum];
 
 	inner->floorheight += 16*FRACUNIT; // OK to just insta-set this
 	inner->floorpic = R_FlatNumForName("YELFLR");
@@ -1162,7 +1162,7 @@ void A_BubbleRise(mobj_t *actor, int16_t var1, int16_t var2)
 		P_InstaThrust(actor, P_Random() & 1 ? actor->angle - ANG90 : actor->angle - ANG180,
 			(P_Random() & 1) ? FRACUNIT/2 : -FRACUNIT/2);
 
-	if (sectors[subsectors[actor->isubsector].isector].heightsec < 0
+	if (dpsectors[subsectors[actor->isubsector].isector]->heightsec < 0
 		|| actor->z + (actor->theight << (FRACBITS-1)) > GetWatertopMo(actor))
 		actor->latecall = LC_REMOVE_MOBJ;
 }

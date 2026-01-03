@@ -211,8 +211,11 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
    if(!(tmthing->flags2 & MF2_MISSILE) && !(tmthing->player || tmthing->type == MT_CAMERA) && (lineflags & ML_BLOCKMONSTERS))
       return false; // block monsters only
 
-   front = LD_FRONTSECTOR(ld);
-   back  = LD_BACKSECTOR(ld);
+   VINT ifront = LD_IFRONTSECTOR(ld);
+   VINT iback = LD_IBACKSECTOR(ld);
+
+   front = dpsectors[ifront];
+   back = iback < 0 ? NULL : I_TO_SEC(iback);
    fixed_t frontFloor = FloorZAtPos(front, tmthing->z, tmthing->theight << FRACBITS);
    fixed_t frontCeiling = CeilingZAtPos(front, tmthing->z, tmthing->theight << FRACBITS);
    fixed_t backFloor = FloorZAtPos(back, tmthing->z, tmthing->theight << FRACBITS);
@@ -302,9 +305,9 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
    {
       player_t *player = &players[tmthing->player-1];
       if (player->num_touching_sectors < MAX_TOUCHING_SECTORS)
-         player->touching_sectorlist[player->num_touching_sectors++] = front - sectors;
-      if (player->num_touching_sectors < MAX_TOUCHING_SECTORS)
-         player->touching_sectorlist[player->num_touching_sectors++] = back - sectors;
+         player->touching_sectorlist[player->num_touching_sectors++] = ifront;
+      if (player->num_touching_sectors < MAX_TOUCHING_SECTORS && back)
+         player->touching_sectorlist[player->num_touching_sectors++] = iback;
    }
    return true;
 }
