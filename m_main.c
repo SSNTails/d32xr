@@ -72,7 +72,8 @@ static mainscreen_t mainscreen[NUMMAINSCREENS];
 
 byte* m_titlea;
 byte* m_titleb;
-byte title_framebuffer_init[2];
+
+static byte title_framebuffer_init[2];
 
 static VINT m_skull1lump;
 static VINT numslump;
@@ -142,11 +143,16 @@ void M_Start2 (boolean startup_)
 #endif
 
 	startup = startup_;
-	//m_title = NULL;
 	m_titlea = NULL;
 	m_titleb = NULL;
 	titleTicker = 0;
 	titleSmallTicker = 0;
+
+	fistCounter = 5;
+	sBlinkCounter = 110;
+	tBlinkCounter = 25;
+	kBlinkCounter = 76;
+
 	if (startup)
 	{
 		m_titlea = i != -1 ? W_CacheLumpNum(gameinfo.titlePageA, PU_STATIC) : NULL;
@@ -784,45 +790,13 @@ void M_Drawer (void)
 			if (title_framebuffer_init[active_framebuffer] == 0) {
 				title_framebuffer_init[active_framebuffer] = 1;
 
-				const int colormap = 12*256;	// 75% dark
+				const int colormap = 11*256;	// 69% dark
 				const int fillcolor = 0x8B;		// Dark blue
 
 				// Clear the entire screen.
 				I_FillFrameBuffer(fillcolor);
 
-				// Draw the entire emblem with an alternate colormap.
-				//DrawMaskedGraphicWithColormap(m_titlea, logoPos, 16, colormap);
-
-				// Draw animations with an alternate colormap.
-				//DrawJagobjWithColormap(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32,
-				//		0, 0, 0, 0, I_OverwriteBuffer(), colormap);
-				//DrawJagobjWithColormap(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2,
-				//		0, 0, 0, 0, I_OverwriteBuffer(), colormap);
-
-				//if (fistCounter < 0)
-				//	DrawJagobjWithColormap(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43,
-				//			0, 0, 0, 0, I_OverwriteBuffer(), colormap);
-				//else
-				//	DrawJagobjWithColormap(m_kfist[0], logoPos + 188, 16 + 43,
-				//			0, 0, 0, 0, I_OverwriteBuffer(), colormap);
-
-				/*if (sBlinkCounter < 0) {
-					//DrawJagobjWithColormap(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27,
-					//		0, 0, 0, 0, I_OverwriteBuffer(), colormap);
-					DrawMaskedGraphicWithColormap(m_sblink[D_abs(sBlinkCounter)], logoPos + 93, 16 + 27, colormap);
-				}
-
-				if (tBlinkCounter < 0) {
-					//DrawJagobjWithColormap(m_tblink[D_abs(tBlinkCounter)], logoPos + 54, 16 + 40,
-					//		0, 0, 0, 0, I_OverwriteBuffer(), colormap);
-					DrawMaskedGraphicWithColormap(m_tblink[D_abs(tBlinkCounter)], logoPos + 54, 16 + 40, colormap);
-				}
-
-				if (kBlinkCounter < 0) {
-					//DrawJagobjWithColormap(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37,
-					//		0, 0, 0, 0, I_OverwriteBuffer(), colormap);
-					DrawMaskedGraphicWithColormap(m_kblink[D_abs(kBlinkCounter)], logoPos + 158, 16 + 37, colormap);
-				}*/
+				RefreshTitle(true, colormap);
 				
 				// Erase the odd lines.
 				for (int x=1; x < 320; x += 2) {
@@ -835,24 +809,10 @@ void M_Drawer (void)
 
 			if (title_framebuffer_init[active_framebuffer] == 0) {
 				title_framebuffer_init[active_framebuffer] = 1;
-
-				// Fill the area above the viewport with the sky color.
-				DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 88, gamemapinfo.skyTopColor);
-
-				// Draw the entire logo emblem.
-				DrawMaskedGraphic(m_titlea, logoPos, 16);
-
-				DrawMaskedGraphic(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
-			}
-
-			DrawMaskedGraphic(m_titleb, logoPos, 16+81);
-
-			if (titleSmallTicker & 1) {
-				DrawMaskedGraphic(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32);
-				DrawMaskedGraphic2(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2, 69);
+				RefreshTitle(true, 0);
 			}
 			else {
-				DrawMaskedGraphic(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2);
+				RefreshTitle(false, 0);
 			}
 
 			if (titleTicker & 1) {
@@ -871,32 +831,6 @@ void M_Drawer (void)
 					if (fistCounter < -NUMKFISTFRAMES)
 						fistCounter = 30 + (M_Random() % 31);
 				}
-			}
-
-			// Knuckles fist
-			if (fistCounter == -NUMKFISTFRAMES) {
-				DrawMaskedGraphic(m_kfist[0], logoPos + 188, 16 + 43);
-			}
-			else if (fistCounter < 0) {
-				DrawMaskedGraphic(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43);
-			}
-			else {
-				DrawMaskedGraphic2(m_kfist[0], logoPos + 188, 16 + 43, 28);
-			}
-
-			// Sonic eye frames
-			if (sBlinkCounter <= 0) {
-				DrawMaskedGraphic(m_sblink[sblink_anim_seq[D_abs(sBlinkCounter)]], logoPos + 93, 16 + 27);
-			}
-
-			// Tails eye frames
-			if (tBlinkCounter <= 0) {
-				DrawMaskedGraphic(m_tblink[tblink_anim_seq[D_abs(tBlinkCounter)]], logoPos + 54, 16 + 40);
-			}
-
-			// Knuckles eye frames
-			if (kBlinkCounter <= 0) {
-				DrawMaskedGraphic(m_kblink[kblink_anim_seq[D_abs(kBlinkCounter)]], logoPos + 158, 16 + 37);
 			}
 		}
 
@@ -1030,5 +964,72 @@ void M_Drawer (void)
 			V_DrawStringLeft(&menuFont, CURSORX, y + ITEMSPACE*2+10 + 2, "checkpoint after");
 			V_DrawStringLeft(&menuFont, CURSORX, y + ITEMSPACE*3+10 + 2, "the first area.");
 		}
+	}
+}
+
+void RefreshTitle(boolean full, int colormap)
+{
+	const VINT logoPos = 160 - (240/2);
+
+	if (full) {
+		if (overlay_graphics != og_about) {
+			// Fill the area above the viewport with the sky color.
+			DrawFillRect((SCREENWIDTH - VIEWPORT_WIDTH_H32) >> 1, 0, VIEWPORT_WIDTH_H32, 88, gamemapinfo.skyTopColor);
+		}
+
+		// Draw the entire logo emblem.
+		DrawMaskedGraphic3(m_titlea, logoPos, 16, 0, colormap);
+	}
+
+	DrawMaskedGraphic3(m_titleb, logoPos, 16+81, 0, colormap);
+
+	if (full) {
+		DrawMaskedGraphic3(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32, 0, colormap);
+		DrawMaskedGraphic3(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2, 0, colormap);
+	}
+	else if (titleSmallTicker & 1) {
+		DrawMaskedGraphic3(m_hand[(titleSmallTicker>>1) % NUMHANDFRAMES], 160 + 3, 16 + 32, 0, colormap);
+		DrawMaskedGraphic3(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2, 69, colormap);
+	}
+	else {
+		DrawMaskedGraphic3(m_tailwag[(titleSmallTicker>>1) % NUMTAILWAGFRAMES], logoPos + 5, 16 + 2, 0, colormap);
+	}
+
+	// Knuckles fist
+	if (fistCounter == -NUMKFISTFRAMES) {
+		DrawMaskedGraphic3(m_kfist[0], logoPos + 188, 16 + 43, 0, colormap);
+	}
+	else if (fistCounter < 0) {
+		DrawMaskedGraphic3(m_kfist[D_abs(fistCounter)], logoPos + 188, 16 + 43, 0, colormap);
+	}
+	else if (full) {
+		DrawMaskedGraphic3(m_kfist[0], logoPos + 188, 16 + 43, 0, colormap);
+	}
+	else {
+		DrawMaskedGraphic3(m_kfist[0], logoPos + 188, 16 + 43, 28, colormap);
+	}
+
+	// Sonic eye frames
+	if (sBlinkCounter <= 0) {
+		DrawMaskedGraphic3(m_sblink[sblink_anim_seq[D_abs(sBlinkCounter)]], logoPos + 93, 16 + 27, 0, colormap);
+	}
+	else if (full) {
+		DrawMaskedGraphic3(m_sblink[sblink_anim_seq[3]], logoPos + 93, 16 + 27, 0, colormap);
+	}
+
+	// Tails eye frames
+	if (tBlinkCounter <= 0) {
+		DrawMaskedGraphic3(m_tblink[tblink_anim_seq[D_abs(tBlinkCounter)]], logoPos + 54, 16 + 40, 0, colormap);
+	}
+	else if (full) {
+		DrawMaskedGraphic3(m_tblink[tblink_anim_seq[3]], logoPos + 54, 16 + 40, 0, colormap);
+	}
+
+	// Knuckles eye frames
+	if (kBlinkCounter <= 0) {
+		DrawMaskedGraphic3(m_kblink[kblink_anim_seq[D_abs(kBlinkCounter)]], logoPos + 158, 16 + 37, 0, colormap);
+	}
+	else if (full) {
+		DrawMaskedGraphic3(m_kblink[kblink_anim_seq[3]], logoPos + 158, 16 + 37, 0, colormap);
 	}
 }
