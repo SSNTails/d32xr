@@ -1112,6 +1112,89 @@ void DrawScaledJagobj(jagobj_t* jo, int x, int y,
 	}
 }
 
+void DrawMaskedGraphicWithColormap(byte *data, int x, int y, int colormap) {
+	DrawMaskedGraphic3(data, x, y, 0, colormap);
+}
+
+void DrawMaskedGraphic(byte *data, int x, int y) {
+	DrawMaskedGraphic3(data, x, y, 0, 0);
+}
+
+void DrawMaskedGraphic2(byte *data, int x, int y, int src_y) {
+	DrawMaskedGraphic3(data, x, y, src_y, 0);
+}
+
+void DrawMaskedGraphic3(byte *data, int x, int y, int src_y, int colormap)
+{
+	pixel_t *dest = I_OverwriteBuffer() + y * 160 + (x>>1);
+
+	pixel_t *pixels = (pixel_t *)data;
+	uint16_t count_word = *pixels++;
+
+	if (src_y > 0) {
+		pixel_t *target_dest = dest + (src_y * 160);
+		while (target_dest > dest) {
+			// Continue reading data until the src_y position is found.
+			dest += (count_word >> 8);
+			uint8_t draw_count = count_word;
+			dest += draw_count;
+			pixels += draw_count;
+			count_word = *pixels++;
+		}
+	}
+
+	while (count_word == 0xFF00) {
+		// Continue reading until the first non-transparent pixels are detected.
+		dest += (count_word >> 8);
+		count_word = *pixels++;
+	}
+
+	if (colormap > 0)
+	{
+		//TODO: This block for using a colormap when drawing could be optimized slightly.
+		int16_t *dc_colormap = (int16_t*)dc_colormaps + colormap;
+		byte *dest_bytes = (byte *)dest;
+		byte *src_bytes = (byte *)pixels;
+		do {
+			// Draw the graphic to the frame buffer.
+			dest_bytes += (count_word >> 8) << 1;
+			uint8_t draw_count = count_word << 1;
+			int n = (draw_count + 3) >> 2;
+			switch (draw_count & 3)
+			{
+			case 0: do { *dest_bytes++ = dc_colormap[*src_bytes++];
+			case 3:      *dest_bytes++ = dc_colormap[*src_bytes++];
+			case 2:      *dest_bytes++ = dc_colormap[*src_bytes++];
+			case 1:      *dest_bytes++ = dc_colormap[*src_bytes++];
+			} while (--n > 0);
+			}
+
+			count_word = *src_bytes++;
+			count_word <<= 8;
+			count_word |= *src_bytes++;
+		} while (count_word > 255);
+	}
+	else
+	{
+		do {
+			// Draw the graphic to the frame buffer.
+			dest += (count_word >> 8);
+			uint8_t draw_count = count_word;
+			int n = (draw_count + 3) >> 2;
+			switch (draw_count & 3)
+			{
+			case 0: do { *dest++ = *pixels++;
+			case 3:      *dest++ = *pixels++;
+			case 2:      *dest++ = *pixels++;
+			case 1:      *dest++ = *pixels++;
+			} while (--n > 0);
+			}
+
+			count_word = *pixels++;
+		} while (count_word > 255);
+	}
+}
+
 void DrawJagobj3(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h,
 	const int canvas_width, pixel_t *fb)

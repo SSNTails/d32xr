@@ -184,7 +184,7 @@ typedef unsigned angle_t;
 #define	FINEMASK			(FINEANGLES-1)
 #define	ANGLETOFINESHIFT	19	/* 0x100000000 to 0x2000 */
 
-#define TITLE_ANGLE_INC		0x800000
+#define TITLE_ANGLE_INC		0x555555
 
 #define TITLE_MAP_NUMBER	30
 #define SSTAGE_START        60
@@ -1403,6 +1403,10 @@ void DrawJagobj3 (jagobj_t* jo, int x, int y,
 	int src_x, int src_y, int src_w, int src_h, int canvas_width, pixel_t* fb);
 void DrawScaledJagobj (jagobj_t* jo, int x, int y, 
 	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb);
+void DrawMaskedGraphic(byte *data, int x, int y);
+void DrawMaskedGraphic2(byte *data, int x, int y, int src_y);
+void DrawMaskedGraphic3(byte *data, int x, int y, int src_y, int colormap);
+void DrawMaskedGraphicWithColormap(byte *data, int x, int y, int colormap);
 void DrawFillRect (int x, int y, int w, int h, int c);
 void DrawLine (int x, int y, int length, int c, boolean vertical);
 void UpdateBuffer (void);
@@ -1497,7 +1501,7 @@ extern VINT initmathtables;
 extern VINT COLOR_BLACK;
 extern VINT COLOR_WHITE;
 
-void I_InitMenuFire(jagobj_t* titlepic, jagobj_t* titlepic2);
+void I_InitMenuFire(jagobj_t* titlepic, byte* titlepic_a, byte* titlepic_b);
 void I_StopMenuFire(void);
 void I_DrawMenuFire(void);
 
