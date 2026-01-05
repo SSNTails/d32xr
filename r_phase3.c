@@ -263,13 +263,23 @@ static void R_PrepRing(ringmobj_t *thing, int scenery)
    sprlump = &spritelumps[sprframe->lump];
 
    // sprite has a single view for all rotations
+   flip = (thingframe & FF_FLIPPED) ? -1 : 1;
    lump = sprlump[0];
+   if(!(lump & SL_SINGLESIDED))
+   {
+      // select proper rotation depending on player's view point
+      angle_t ang  = R_PointToAngle2(vd.viewx, vd.viewy, thing->x << FRACBITS, thing->y << FRACBITS);
+      lump = sprlump[(ang - (thing->pad << ANGLETOFINESHIFT) + (unsigned int)(ANG45 / 2)*9) >> 29];
+
+      if (lump & SL_FLIPPED)
+         flip = -1;
+   }
+   // else // sprite has a single view for all rotations
+
    lump &= SL_LUMPMASK;
 
    patch = W_POINTLUMPNUM(lump);
    xscale = FixedDiv(PROJECTION, tz);
-
-   flip = (thingframe & FF_FLIPPED) ? -1 : 1;
 
    // calculate edges of the shape
 #ifdef NARROW_SCENERY
