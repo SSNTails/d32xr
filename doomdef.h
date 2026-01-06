@@ -1232,11 +1232,6 @@ int	R_CheckTextureNumForName (const char *name);
 angle_t R_PointToAngle2 (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2) ATTR_DATA_CACHE_ALIGN;
 fixed_t R_PointToDist2(fixed_t dx, fixed_t dy) ATTR_DATA_CACHE_ALIGN;
 VINT R_PointInSubsector2(fixed_t x, fixed_t y) ATTR_DATA_CACHE_ALIGN;
-#define I_TO_SS(x) (&subsectors[x])
-#define SS_TO_I(x) (x - subsectors)
-#define SS_SECTOR(x) (dpsectors[subsectors[x].isector])
-#define I_TO_SEC(x) (dpsectors[x])
-
 
 /*---- */
 /*MISC */

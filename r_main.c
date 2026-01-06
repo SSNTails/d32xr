@@ -832,40 +832,50 @@ static boolean IsWavyFlat(uint8_t flatnum)
 
 static boolean IsRotatedFlat(uint8_t flatnum)
 {
-	return flatnum == 7
+	return flatnum == 5
+		|| flatnum == 6
+		|| flatnum == 7
 		|| flatnum == 8
 		|| flatnum == 39
 		|| flatnum == 40
 		|| flatnum == 41
+		|| flatnum == 43
 		|| flatnum == 44
 		|| flatnum == 46
 		|| flatnum == 47
-		|| flatnum == 48
-		|| flatnum == 49
-		|| flatnum == 52
-		|| flatnum == 53
 		|| flatnum == 55
+		|| flatnum == 56
 		|| flatnum == 57
-		|| flatnum == 58
-		|| flatnum == 61
-		|| flatnum == 62
-		|| flatnum == 63
 		|| flatnum == 64
 		|| flatnum == 65
-		|| flatnum == 66
+		|| flatnum == 70
 		|| flatnum == 72
+		|| flatnum == 73
+		|| flatnum == 74
 		|| flatnum == 75
-		|| flatnum == 77
 		|| flatnum == 78
-		|| flatnum == 82
+		|| flatnum == 79
+		|| flatnum == 81
 		|| flatnum == 83
-		|| flatnum == 91
+		|| flatnum == 85
+		|| flatnum == 94
 		|| flatnum == 95
+		|| flatnum == 96
 		|| flatnum == 97
-		|| flatnum == 100
-		|| flatnum == 101
-		|| flatnum == 107
-		|| flatnum == 108;
+		|| flatnum == 98
+		|| flatnum == 99
+		|| flatnum == 105
+		|| flatnum == 108
+		|| flatnum == 110
+		|| flatnum == 115
+		|| flatnum == 116
+		|| flatnum == 124
+		|| flatnum == 128
+		|| flatnum == 130
+		|| flatnum == 133
+		|| flatnum == 134
+		|| flatnum == 140
+		|| flatnum == 141;
 }
 
 /*
@@ -1233,7 +1243,7 @@ extern	pixel_t	*screens[2];	/* [viewportWidth*viewportHeight];  */
 #define AIMINGTODY(a) ((finetangent((2048+(((int)a)>>ANGLETOFINESHIFT)) & FINEMASK)*160)>>FRACBITS)
 
 static void R_Setup (int displayplayer, visplane_t *visplanes_,
-	visplane_t **visplanes_hash_, VINT *vissectors_, viswallextra_t *viswallex_)
+	visplane_t **visplanes_hash_, SPTR **vissectors_, viswallextra_t *viswallex_)
 {
 	VINT waterpal = 0;
 	int 		i;
@@ -1805,7 +1815,7 @@ void R_RenderPlayerView(int displayplayer)
 		visplane_t visplanes_[MAXVISPLANES];
 	__attribute__((aligned(16)))
 		visplane_t *visplanes_hash_[NUM_VISPLANES_BUCKETS];
-	VINT vissectors_[(MAXVISSSEC > MAXVISSPRITES ? MAXVISSSEC : MAXVISSPRITES) + 1];
+	SPTR *vissectors_[(MAXVISSSEC > MAXVISSPRITES ? MAXVISSSEC : MAXVISSPRITES) + 1];
 	viswallextra_t viswallex_[MAXWALLCMDS + 1] __attribute__((aligned(16)));
 
 	if (sky_in_view == 0) {

@@ -398,12 +398,11 @@ static void R_PrepRing(ringmobj_t *thing, int scenery)
 //
 void R_SpritePrep(void)
 {
-   VINT *pse = vd.vissectors;
+   SPTR **pse = vd.vissectors;
 
    while(pse < vd.lastvissector)
    {
-      VINT    se = *pse;
-      mobj_t *thing = SPTR_TO_LPTR(sector_thinglist[se]);
+      mobj_t *thing = SPTR_TO_LPTR(**pse);
 
       while(thing) // walk sector thing list
       {

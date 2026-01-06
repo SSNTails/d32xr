@@ -1679,6 +1679,14 @@ if (sm->msublinks > sm->mlength)
 
 VINT		numlineanimspecials = 0;
 VINT	*linespeciallist = NULL;
+/*
+sector_t *I_TO_SEC(VINT i)
+{
+	if (i < 0)
+		I_Error("i is %d", i);
+
+	return dpsectors[i];
+}*/
 
 void P_SpawnSpecials (void)
 {

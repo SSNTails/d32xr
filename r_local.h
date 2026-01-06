@@ -138,10 +138,18 @@ typedef struct line_s
 	VINT		sidenum[2];			/* sidenum[1] will be -1 if one sided */
 } line_t;
 
+#define I_TO_SS(x) (&subsectors[x])
+#define SS_TO_I(x) (x - subsectors)
+#define I_TO_SEC(x) (dpsectors[x])
+
+//sector_t *I_TO_SEC(int16_t i);
+
+#define SS_SECTOR(x) (I_TO_SEC(subsectors[x].isector))
+
 #define LD_FRONTSECTOR(ld) (I_TO_SEC(sides[(ld)->sidenum[0]].sector))
-#define LD_BACKSECTOR(ld) ((ld)->sidenum[1] != -1 ? I_TO_SEC(sides[ld->sidenum[1]].sector) : NULL)
+#define LD_BACKSECTOR(ld) ((ld)->sidenum[1] >= 0 ? I_TO_SEC(sides[ld->sidenum[1]].sector) : NULL)
 #define LD_IFRONTSECTOR(ld) (sides[(ld)->sidenum[0]].sector)
-#define LD_IBACKSECTOR(ld) ((ld)->sidenum[1] != -1 ? sides[ld->sidenum[1]].sector : -1)
+#define LD_IBACKSECTOR(ld) ((ld)->sidenum[1] >= 0 ? sides[ld->sidenum[1]].sector : -1)
 
 typedef struct subsector_s
 {
@@ -833,7 +841,7 @@ __attribute__((aligned(16)))
 	/* */
 	/* subsectors */
 	/* */
-	VINT		*vissectors/*[MAXVISSSEC]*/, *lastvissector;
+	SPTR		**vissectors/*[MAXVISSSEC]*/, **lastvissector;
 
 	/* */
 	/* planes */
