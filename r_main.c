@@ -1233,7 +1233,7 @@ extern	pixel_t	*screens[2];	/* [viewportWidth*viewportHeight];  */
 #define AIMINGTODY(a) ((finetangent((2048+(((int)a)>>ANGLETOFINESHIFT)) & FINEMASK)*160)>>FRACBITS)
 
 static void R_Setup (int displayplayer, visplane_t *visplanes_,
-	visplane_t **visplanes_hash_, sector_t *vissectors_, viswallextra_t *viswallex_)
+	visplane_t **visplanes_hash_, VINT *vissectors_, viswallextra_t *viswallex_)
 {
 	VINT waterpal = 0;
 	int 		i;
