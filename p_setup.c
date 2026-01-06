@@ -146,18 +146,11 @@ void P_LoadSectors (int staticlump, int dynamiclump)
 	mapsector_t		*ms;
 	sector_t		*ss;
 
+	// LOADFLAGS_SECTORS is actually handled at compile-time
 	numstaticsectors = W_LumpLength(staticlump) / sizeof(sector_t);
 	numdynamicsectors = W_LumpLength(dynamiclump) / sizeof(mapsector_t);
 	numsectors = numstaticsectors + numdynamicsectors;
-
-	if (gamemapinfo.loadFlags & LOADFLAGS_SECTORS)
-	{
-		static_sectors = Z_Malloc(numstaticsectors*sizeof(sector_t) + 16, PU_LEVEL);
-		static_sectors = (void*)(((uintptr_t)static_sectors + 15) & ~15); // aline on cacheline boundary
-		W_ReadLump(staticlump, static_sectors);
-	}
-	else
-		static_sectors = W_POINTLUMPNUM(staticlump);
+	static_sectors = W_POINTLUMPNUM(staticlump);
 
 	sector_thinglist = Z_Malloc(numsectors*sizeof(SPTR) + 16, PU_LEVEL);
 	sector_thinglist = (void*)(((uintptr_t)sector_thinglist + 15) & ~15); // aline on cacheline boundary
