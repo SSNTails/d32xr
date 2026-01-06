@@ -36,19 +36,17 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
 //   if (texture->lumpnum < firstsprite || texture->lumpnum >= firstsprite + numsprites)
 //      return;
 
-   if (x <= seg->start && seg->start <= stopx)
-      seg->start = stopx + 1;
-   if (stopx >= seg->stop && seg->stop <= x)
-      seg->stop = x - 1;
+   const VINT segStart = seg->start;
+   const VINT segStop = seg->stop;
 
    patch     = texture->data[0];
 
    spropening = seg->clipbounds;
-   maskedcol  = seg->clipbounds + (seg->stop - seg->start + 1);
+   maskedcol  = seg->clipbounds + (segStop - segStart + 1);
 
    widthmask = texture->width - 1;
    fracstep  = seg->scalestep;
-   scalefrac = seg->scalefrac + (x - seg->start) * fracstep;
+   scalefrac = seg->scalefrac + (x - segStart) * fracstep;
 
    I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
 

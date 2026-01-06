@@ -692,6 +692,9 @@ typedef struct
 /* */
 	VINT			start;
 	VINT			stop;					/* inclusive x coordinates */
+
+	fixed_t			floorheight;
+
 	union
 	{
 		seg_t			*seg;
@@ -703,8 +706,6 @@ typedef struct
 		fixed_t			ceilingheight;
 		mapvertex_t		v2;
 	};
-
-	fixed_t			floorheight;
 
 	uint16_t 		*clipbounds;
 } viswall_t;
