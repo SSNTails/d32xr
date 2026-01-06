@@ -130,12 +130,12 @@ fixed_t GetWatertopSec(const sector_t *sec)
 	if (sec->heightsec < 0)
 		return sec->floorheight - 512*FRACUNIT;
 
-	return dpsectors[sec->heightsec]->ceilingheight;
+	return I_TO_SEC(sec->heightsec)->ceilingheight;
 }
 
 fixed_t GetWatertopMo(const mobj_t *mo)
 {
-	const sector_t *sec = dpsectors[subsectors[mo->isubsector].isector];
+	const sector_t *sec = I_TO_SEC(subsectors[mo->isubsector].isector);
 	return GetWatertopSec(sec);
 }
 

@@ -61,7 +61,7 @@ fixed_t FloorZAtPos(const sector_t *sec, fixed_t z, fixed_t height)
    if (sec->fofsec >= 0)
    {
       const fixed_t thingtop = z + height;
-      sector_t *fof = dpsectors[sec->fofsec];
+      sector_t *fof = I_TO_SEC(sec->fofsec);
 
       fixed_t delta1 = z - (fof->floorheight + ((fof->ceilingheight - fof->floorheight)/2));
       fixed_t delta2 = thingtop - (fof->floorheight + ((fof->ceilingheight - fof->floorheight)/2));
@@ -78,7 +78,7 @@ fixed_t CeilingZAtPos(const sector_t *sec, fixed_t z, fixed_t height)
 
    if (sec->fofsec >= 0)
    {
-      sector_t *fof = dpsectors[sec->fofsec];
+      sector_t *fof = I_TO_SEC(sec->fofsec);
 
       fixed_t delta1 = z - (fof->floorheight + ((fof->ceilingheight - fof->floorheight)/2));
       fixed_t delta2 = thingtop - (fof->floorheight + ((fof->ceilingheight - fof->floorheight)/2));

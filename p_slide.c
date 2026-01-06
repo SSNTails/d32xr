@@ -207,7 +207,7 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
 
       if (ldflags[ld-lines] & ML_NOCLIMB)
       {
-         fixed_t nextHighest = dpsectors[P_FindNextHighestCeiling(iback, back->ceilingheight)]->ceilingheight;
+         fixed_t nextHighest = I_TO_SEC(P_FindNextHighestCeiling(iback, back->ceilingheight))->ceilingheight;
 
          if (nextHighest == back->ceilingheight)
             busting = false;
@@ -216,7 +216,7 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
       }
       else
       {
-         fixed_t nextLowest = dpsectors[P_FindNextLowestFloor(iback, back->floorheight)]->floorheight;
+         fixed_t nextLowest = I_TO_SEC(P_FindNextLowestFloor(iback, back->floorheight))->floorheight;
 
          if (nextLowest == back->floorheight)
             busting = false;

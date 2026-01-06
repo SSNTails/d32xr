@@ -138,8 +138,8 @@ typedef struct line_s
 	VINT		sidenum[2];			/* sidenum[1] will be -1 if one sided */
 } line_t;
 
-#define LD_FRONTSECTOR(ld) (dpsectors[sides[(ld)->sidenum[0]].sector])
-#define LD_BACKSECTOR(ld) ((ld)->sidenum[1] != -1 ? dpsectors[sides[ld->sidenum[1]].sector] : NULL)
+#define LD_FRONTSECTOR(ld) (I_TO_SEC(sides[(ld)->sidenum[0]].sector))
+#define LD_BACKSECTOR(ld) ((ld)->sidenum[1] != -1 ? I_TO_SEC(sides[ld->sidenum[1]].sector) : NULL)
 #define LD_IFRONTSECTOR(ld) (sides[(ld)->sidenum[0]].sector)
 #define LD_IBACKSECTOR(ld) ((ld)->sidenum[1] != -1 ? sides[ld->sidenum[1]].sector : -1)
 

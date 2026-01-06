@@ -294,14 +294,14 @@ void T_MoveFloor(floormove_t *floor)
 				floor->direction = -1;
 				floor->speed = floor->origSpeed;
 				floor->floorwasheight = floor->floordestheight;
-				floor->floordestheight = dpsectors[floor->lowestSector]->floorheight >> FRACBITS;
+				floor->floordestheight = I_TO_SEC(floor->lowestSector)->floorheight >> FRACBITS;
 			}
 			else
 			{
 				floor->direction = 1;
 				floor->speed = floor->origSpeed;
 				floor->floorwasheight = floor->floordestheight;
-				floor->floordestheight = dpsectors[floor->highestSector]->floorheight >> FRACBITS;
+				floor->floordestheight = I_TO_SEC(floor->highestSector)->floorheight >> FRACBITS;
 			}
 		}
 		else if (floor->type == continuousMoverFloor)
@@ -394,7 +394,7 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 	rtn = 0;
 	while ((secnum = P_FindSectorFromLineTagNum(tag,secnum)) >= 0)
 	{
-		sec = dpsectors[secnum];
+		sec = I_TO_SEC(secnum);
 		
 		/*	ALREADY MOVING?  IF SO, KEEP GOING... */
 //		if (sec->specialdata)
@@ -523,12 +523,12 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 				if (ldflags[line-lines] & ML_NOCLIMB)
 				{
 					floor->direction = 1;
-					floor->floordestheight = dpsectors[floor->highestSector]->floorheight >> FRACBITS;
+					floor->floordestheight = I_TO_SEC(floor->highestSector)->floorheight >> FRACBITS;
 				}
 				else
 				{
 					floor->direction = -1;
-					floor->floordestheight = dpsectors[floor->lowestSector]->floorheight >> FRACBITS;
+					floor->floordestheight = I_TO_SEC(floor->lowestSector)->floorheight >> FRACBITS;
 				}
 
 				floor->floorwasheight = sec->floorheight >> FRACBITS;
@@ -544,25 +544,25 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 				floor->direction = -1;
 				floor->speed = FLOORSPEED;
 				floor->floordestheight = 
-					dpsectors[P_FindHighestFloorSurrounding(sec)]->floorheight >> FRACBITS;
+					I_TO_SEC(P_FindHighestFloorSurrounding(sec))->floorheight >> FRACBITS;
 				break;
 			case lowerFloorToLowest:
 				floor->direction = -1;
 				floor->speed = FLOORSPEED;
 				floor->floordestheight = 
-					dpsectors[P_FindLowestFloorSurrounding(sec)]->floorheight >> FRACBITS;
+					I_TO_SEC(P_FindLowestFloorSurrounding(sec))->floorheight >> FRACBITS;
 				break;
 			case turboLower:
 				floor->direction = -1;
 				floor->speed = FLOORSPEED * 4;
 				floor->floordestheight = (8) + 
-					(dpsectors[P_FindHighestFloorSurrounding(sec)]->floorheight >> FRACBITS);
+					(I_TO_SEC(P_FindHighestFloorSurrounding(sec))->floorheight >> FRACBITS);
 				break;
 			case raiseFloor:
 				floor->direction = 1;
 				floor->speed = FLOORSPEED;
 				floor->floordestheight = 
-					dpsectors[P_FindLowestCeilingSurrounding(sec)]->ceilingheight >> FRACBITS;
+					I_TO_SEC(P_FindLowestCeilingSurrounding(sec))->ceilingheight >> FRACBITS;
 				if (floor->floordestheight > sec->ceilingheight)
 					floor->floordestheight = sec->ceilingheight;
 				break;
@@ -570,7 +570,7 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 				floor->direction = 1;
 				floor->speed = FLOORSPEED;
 				floor->floordestheight = 
-					dpsectors[P_FindNextHighestFloor(sec,sec->floorheight)]->floorheight >> FRACBITS;
+					I_TO_SEC(P_FindNextHighestFloor(sec,sec->floorheight))->floorheight >> FRACBITS;
 				break;
 			default:
 				break;

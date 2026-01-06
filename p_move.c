@@ -214,7 +214,7 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
    VINT ifront = LD_IFRONTSECTOR(ld);
    VINT iback = LD_IBACKSECTOR(ld);
 
-   front = dpsectors[ifront];
+   front = I_TO_SEC(ifront);
    back = iback < 0 ? NULL : I_TO_SEC(iback);
    fixed_t frontFloor = FloorZAtPos(front, tmthing->z, tmthing->theight << FRACBITS);
    fixed_t frontCeiling = CeilingZAtPos(front, tmthing->z, tmthing->theight << FRACBITS);
