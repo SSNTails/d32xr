@@ -1690,7 +1690,6 @@ sector_t *I_TO_SEC(VINT i)
 
 void P_SpawnSpecials (void)
 {
-	sector_t	**dpsector;
 	int		i;
 
 	lightningSpawner = NULL;

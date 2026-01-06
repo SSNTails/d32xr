@@ -218,13 +218,7 @@ static void G_AddMapinfoKey(char* key, char* value, dmapinfo_t* mi)
 				pp = skipspaces(pp + 1);
 			}
 
-			mi->lumpNum = W_CheckNumForName(stripquote(p));
-
-			if (mi->lumpNum == -1)
-			{
-				p = "\"MAP01\"";
-				mi->lumpNum = W_GetNumForName(stripquote(p));
-			}
+			mi->lumpNum = W_GetNumForName(stripquote(p));
 
 			p = pp;
 			if (p) {
@@ -245,10 +239,7 @@ static void G_AddMapinfoKey(char* key, char* value, dmapinfo_t* mi)
 	}
 
 	if (!D_strcasecmp(key, "next"))
-	{
-		int lump = W_CheckNumForName(value);
-		mi->next = lump = -1 ? W_GetNumForName("MAP01") : lump;
-	}
+		mi->next = W_GetNumForName(value);
 	else if (!D_strcasecmp(key, "zone"))
 		mi->zone = D_atoi(value);
 	else if (!D_strcasecmp(key, "act"))
