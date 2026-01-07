@@ -154,8 +154,8 @@ static boolean PA_ShootLine(shootWork_t *sw, line_t *li, fixed_t interceptfrac)
    }
 
    // crosses a two-sided line
-   front = &sectors[sides[li->sidenum[0]].sector];
-   back  = &sectors[sides[li->sidenum[1]].sector];
+   front = I_TO_SEC(sides[li->sidenum[0]].sector);
+   back  = I_TO_SEC(sides[li->sidenum[1]].sector);
 
    if(front->ceilingheight < back->ceilingheight)
       opentop = front->ceilingheight;
@@ -290,7 +290,7 @@ static boolean PA_CrossSubsector(shootWork_t *sw, int bspnum)
    VINT     vc;
 
    // check things
-   for(thing = SPTR_TO_LPTR(sectors[subsectors[bspnum].isector].thinglist); thing; thing = SPTR_TO_LPTR(thing->snext))
+   for(thing = SPTR_TO_LPTR(sector_thinglist[subsectors[bspnum].isector]); thing; thing = SPTR_TO_LPTR(thing->snext))
    {
       if(thing->isubsector != bspnum)
          continue;

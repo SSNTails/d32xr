@@ -12,6 +12,8 @@
 uint16_t			numvertexes;
 uint16_t			numsegs;
 uint16_t			numsectors;
+uint16_t            numstaticsectors;
+uint16_t            numdynamicsectors;
 uint16_t			numsubsectors;
 uint16_t			numnodes;
 uint16_t			numlines;
@@ -24,7 +26,10 @@ uint16_t        *linespecials;
 
 mapvertex_t	*vertexes;
 seg_t		*segs;
-sector_t	*sectors;
+sector_t	**dpsectors;
+sector_t    *static_sectors;
+sector_t    *dynamic_sectors;
+SPTR        *sector_thinglist;
 subsector_t	*subsectors;
 node_t		*nodes;
 line_t		*lines;
@@ -54,6 +59,7 @@ int16_t worldbbox[4];
 #define LOADFLAGS_SEGS 16
 #define LOADFLAGS_LINEDEFS 32
 #define LOADFLAGS_SUBSECTORS 64
+#define LOADFLAGS_SECTORS 128
 
 /*
 =================
@@ -133,44 +139,64 @@ void P_LoadSubsectors (int lump)
 =================
 */
 
-void P_LoadSectors (int lump)
+void P_LoadSectors (int staticlump, int dynamiclump)
 {
 	byte			*data;
 	int				i;
 	mapsector_t		*ms;
 	sector_t		*ss;
-			
-	numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
-	sectors = Z_Malloc (numsectors*sizeof(sector_t) + 16,PU_LEVEL);
-	sectors = (void*)(((uintptr_t)sectors + 15) & ~15); // aline on cacheline boundary
-	D_memset (sectors, 0, numsectors*sizeof(sector_t));
-	data = I_TempBuffer ();
-	W_ReadLump (lump,data);
-	
-	ms = (mapsector_t *)data;
-	ss = sectors;
-	for (i=0 ; i<numsectors ; i++, ss++, ms++)
+
+	// LOADFLAGS_SECTORS is actually handled at compile-time
+	numstaticsectors = W_LumpLength(staticlump) / sizeof(sector_t);
+	numdynamicsectors = W_LumpLength(dynamiclump) / sizeof(mapsector_t);
+	numsectors = numstaticsectors + numdynamicsectors;
+	static_sectors = W_POINTLUMPNUM(staticlump);
+
+	sector_thinglist = Z_Malloc(numsectors*sizeof(SPTR) + 16, PU_LEVEL);
+	sector_thinglist = (void*)(((uintptr_t)sector_thinglist + 15) & ~15); // aline on cacheline boundary
+	D_memset(sector_thinglist, 0, numsectors*sizeof(SPTR));
+
+	// Read in the dynamic sectors
+	if (numdynamicsectors > 0)
 	{
-		ss->floorheight = LITTLESHORT(ms->floorheight)<<FRACBITS;
-		ss->ceilingheight = LITTLESHORT(ms->ceilingheight)<<FRACBITS;
-		ss->floorpic = ms->floorpic;
-		ss->ceilingpic = ms->ceilingpic;
-		ss->thinglist = (SPTR)0;
+		dynamic_sectors = Z_Malloc(numdynamicsectors*sizeof(sector_t) + 16, PU_LEVEL);
+		dynamic_sectors = (void*)(((uintptr_t)dynamic_sectors + 15) & ~15); // aline on cacheline boundary
+		D_memset (dynamic_sectors, 0, numdynamicsectors*sizeof(sector_t));
 
-		ss->lightlevel = ms->lightlevel;
-		ss->special = ms->special;
+		data = I_TempBuffer();
+		W_ReadLump(dynamiclump, data);
+		
+		ms = (mapsector_t *)data;
+		ss = dynamic_sectors;
+		for (i=0 ; i<numdynamicsectors ; i++, ss++, ms++)
+		{
+			ss->floorheight = (ms->floorheight)<<FRACBITS;
+			ss->ceilingheight = (ms->ceilingheight)<<FRACBITS;
+			ss->floorpic = ms->floorpic;
+			ss->ceilingpic = ms->ceilingpic;
 
-		ss->tag = ms->tag;
-		ss->heightsec = -1; // sector used to get floor and ceiling height
-		ss->fofsec = -1;
-		ss->specline = -1;
-		ss->floor_xoffs = 0;
-		ss->flags = 0;
+			ss->lightlevel = ms->lightlevel;
+			ss->special = ms->special;
 
-		// killough 3/7/98:
-//		ss->floor_xoffs = 0;
-//		ss->floor_yoffs = 0;      // floor and ceiling flats offsets
+			ss->tag = ms->tag;
+			ss->heightsec = -1; // sector used to get floor and ceiling height
+			ss->fofsec = -1;
+			ss->specline = -1;
+			ss->floor_xoffs = 0;
+			ss->flags = 0;
+		}
 	}
+
+	// Now create the double pointers to the sectors
+	dpsectors = Z_Malloc(numsectors*sizeof(sector_t*) + 16, PU_LEVEL);
+	dpsectors = (void*)(((uintptr_t)dpsectors + 15) & ~15); // aline on cacheline boundary
+
+	int dpCount = 0;
+	for (i = 0; i < numstaticsectors; i++)
+		dpsectors[dpCount++] = &static_sectors[i];
+
+	for (i = 0; i < numdynamicsectors; i++)
+		dpsectors[dpCount++] = &dynamic_sectors[i];
 }
 
 
@@ -294,7 +320,7 @@ static short P_GetMaceLinkCount(mapthing_t *mthing)
 	const mapvertex_t *v1 = &vertexes[line->v1];
 	const mapvertex_t *v2 = &vertexes[line->v2];
 
-	sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
+	sector_t *frontsector = I_TO_SEC(sides[line->sidenum[0]].sector);
 	VINT mlength = D_abs(v1->x - v2->x);
 
 	VINT msublinks = frontsector->lightlevel; // number of links to subtract from the inside.
@@ -331,7 +357,7 @@ static void P_SetupMace(mapthing_t *mthing)
 
 	vector3_t axis, rotation;
 
-	sector_t *frontsector = &sectors[sides[line->sidenum[0]].sector];
+	sector_t *frontsector = I_TO_SEC(sides[line->sidenum[0]].sector);
 	const mapvertex_t *v1 = &vertexes[line->v1];
 	const mapvertex_t *v2 = &vertexes[line->v2];
 //	const VINT angle = frontsector->ceilingheight >> FRACBITS;
@@ -355,7 +381,7 @@ static void P_SetupMace(mapthing_t *mthing)
 
 	if (line->sidenum[1] >= 0)
 	{
-		sector_t *backsector = &sectors[sides[line->sidenum[1]].sector];
+		sector_t *backsector = I_TO_SEC(sides[line->sidenum[1]].sector);
 		VINT backtextureoffset = sides[line->sidenum[1]].textureoffset & 0xfff;
 		backtextureoffset <<= 4; // sign extend
 		backtextureoffset >>= 4; // sign extend
@@ -864,7 +890,7 @@ D_printf ("P_SetupLevel(%i)\n",lumpnum);
 /* note: most of this ordering is important	 */
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
 	P_LoadVertexes (lumpnum+ML_VERTEXES);
-	P_LoadSectors (lumpnum+ML_SECTORS);
+	P_LoadSectors (lumpnum+ML_SECTORS, lumpnum+ML_DSECTORS);
 	P_LoadSideDefs (lumpnum+ML_SIDEDEFS);
 	P_LoadSideTexes (lumpnum+ML_SIDETEX);
 	P_LoadLineDefs (lumpnum+ML_LINEDEFS);

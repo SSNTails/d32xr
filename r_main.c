@@ -832,40 +832,50 @@ static boolean IsWavyFlat(uint8_t flatnum)
 
 static boolean IsRotatedFlat(uint8_t flatnum)
 {
-	return flatnum == 7
+	return flatnum == 5
+		|| flatnum == 6
+		|| flatnum == 7
 		|| flatnum == 8
 		|| flatnum == 39
 		|| flatnum == 40
 		|| flatnum == 41
+		|| flatnum == 43
 		|| flatnum == 44
 		|| flatnum == 46
 		|| flatnum == 47
-		|| flatnum == 48
-		|| flatnum == 49
-		|| flatnum == 52
-		|| flatnum == 53
 		|| flatnum == 55
+		|| flatnum == 56
 		|| flatnum == 57
-		|| flatnum == 58
-		|| flatnum == 61
-		|| flatnum == 62
-		|| flatnum == 63
 		|| flatnum == 64
 		|| flatnum == 65
-		|| flatnum == 66
+		|| flatnum == 70
 		|| flatnum == 72
+		|| flatnum == 73
+		|| flatnum == 74
 		|| flatnum == 75
-		|| flatnum == 77
 		|| flatnum == 78
-		|| flatnum == 82
+		|| flatnum == 79
+		|| flatnum == 81
 		|| flatnum == 83
-		|| flatnum == 91
+		|| flatnum == 85
+		|| flatnum == 94
 		|| flatnum == 95
+		|| flatnum == 96
 		|| flatnum == 97
-		|| flatnum == 100
-		|| flatnum == 101
-		|| flatnum == 107
-		|| flatnum == 108;
+		|| flatnum == 98
+		|| flatnum == 99
+		|| flatnum == 105
+		|| flatnum == 108
+		|| flatnum == 110
+		|| flatnum == 115
+		|| flatnum == 116
+		|| flatnum == 124
+		|| flatnum == 128
+		|| flatnum == 130
+		|| flatnum == 133
+		|| flatnum == 134
+		|| flatnum == 140
+		|| flatnum == 141;
 }
 
 /*
@@ -1233,7 +1243,7 @@ extern	pixel_t	*screens[2];	/* [viewportWidth*viewportHeight];  */
 #define AIMINGTODY(a) ((finetangent((2048+(((int)a)>>ANGLETOFINESHIFT)) & FINEMASK)*160)>>FRACBITS)
 
 static void R_Setup (int displayplayer, visplane_t *visplanes_,
-	visplane_t **visplanes_hash_, sector_t **vissectors_, viswallextra_t *viswallex_)
+	visplane_t **visplanes_hash_, SPTR **vissectors_, viswallextra_t *viswallex_)
 {
 	VINT waterpal = 0;
 	int 		i;
@@ -1274,7 +1284,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.viewy = thiscam->y;
 		vd.viewz = thiscam->z + (20 << FRACBITS);
 		vd.viewangle = thiscam->angle;
-		vd.viewsector = &sectors[thiscam->subsector->isector];
+		vd.viewsector = I_TO_SEC(thiscam->subsector->isector);
 		vd.lightlevel = vd.viewsector->lightlevel;
 		vd.aimingangle = thiscam->aiming;
 		vd.heightsec = NULL;
@@ -1283,7 +1293,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 
 		if (vd.viewsector->heightsec >= 0)
 		{
-			vd.heightsec = &sectors[vd.viewsector->heightsec];
+			vd.heightsec = I_TO_SEC(vd.viewsector->heightsec);
 			const fixed_t waterheight = GetWatertopSec(vd.viewsector);
 			
 			if (waterheight > vd.viewz)
@@ -1302,7 +1312,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 			}
 		}
 		if (vd.viewsector->fofsec >= 0)
-			vd.fofsec = &sectors[vd.viewsector->fofsec];
+			vd.fofsec = I_TO_SEC(vd.viewsector->fofsec);
 	}
 	else
 	{
@@ -1316,10 +1326,10 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.fofsec = NULL;
 
 		if (vd.viewsector->heightsec >= 0)
-			vd.heightsec = &sectors[vd.viewsector->heightsec];
+			vd.heightsec = I_TO_SEC(vd.viewsector->heightsec);
 
 		if (vd.viewsector->fofsec >= 0)
-			vd.fofsec = &sectors[vd.viewsector->fofsec];
+			vd.fofsec = I_TO_SEC(vd.viewsector->fofsec);
 			
 		vd.lightlevel = vd.viewsector->lightlevel;
 	}
@@ -1797,73 +1807,6 @@ void R_Update (void) __attribute__((noinline));
 
 extern	boolean	debugscreenactive;
 
-#ifndef MARS
-int		phasetime[9] = {1,2,3,4,5,6,7,8,9};
-
-extern	ref1_start;
-extern	ref2_start;
-extern	ref3_start;
-extern	ref4_start;
-extern	ref5_start;
-extern	ref6_start;
-extern	ref7_start;
-extern	ref8_start;
-
-void R_RenderPlayerView(int displayplayer)
-{
-	visplane_t visplanes_[MAXVISPLANES];
-	visplane_t *visplanes_hash_[NUM_VISPLANES_BUCKETS];
-	sector_t *vissectors_[MAXVISSSEC];
-	viswallextra_t viswallex_[MAXWALLCMDS + 1] __attribute__((aligned(16)));
-
-	/* make sure its done now */
-#if defined(JAGUAR)
-	while (!I_RefreshCompleted())
-		;
-#endif
-
-	/* */
-	/* initial setup */
-	/* */
-	if (debugscreenactive)
-		I_DebugScreen();
-
-	R_Setup(displayplayer, visplanes_, visplanes_hash_, vissectors_, viswallex_);
-
-#ifndef JAGUAR
-	R_BSP();
-
-	R_WallPrep();
-	/* the rest of the refresh can be run in parallel with the next game tic */
-
-	R_SegCommands();
-
-	R_DrawPlanes();
-
-	R_SpritePrep();
-
-	R_Sprites();
-
-	R_Update();
-#else
-
-	/* start the gpu running the refresh */
-	phasetime[1] = 0;
-	phasetime[2] = 0;
-	phasetime[3] = 0;
-	phasetime[4] = 0;
-	phasetime[5] = 0;
-	phasetime[6] = 0;
-	phasetime[7] = 0;
-	phasetime[8] = 0;
-	gpufinished = zero;
-	gpucodestart = (int)&ref1_start;
-
-#endif
-}
-
-#else
-
 void R_RenderPlayerView(int displayplayer)
 {
 	int t_bsp, t_segs, t_planes, t_sprites, t_total;
@@ -1872,7 +1815,7 @@ void R_RenderPlayerView(int displayplayer)
 		visplane_t visplanes_[MAXVISPLANES];
 	__attribute__((aligned(16)))
 		visplane_t *visplanes_hash_[NUM_VISPLANES_BUCKETS];
-	sector_t *vissectors_[(MAXVISSSEC > MAXVISSPRITES ? MAXVISSSEC : MAXVISSPRITES) + 1];
+	SPTR *vissectors_[(MAXVISSSEC > MAXVISSPRITES ? MAXVISSSEC : MAXVISSPRITES) + 1];
 	viswallextra_t viswallex_[MAXWALLCMDS + 1] __attribute__((aligned(16)));
 
 	if (sky_in_view == 0) {
@@ -1937,5 +1880,3 @@ void R_RenderPlayerView(int displayplayer)
 	t_ref_sprites[t_ref_cnt] = t_sprites;
 	t_ref_total[t_ref_cnt] = t_total;
 }
-
-#endif

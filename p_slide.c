@@ -194,8 +194,10 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
    if(ld->sidenum[1] == -1 || (ldflags[ld-lines] & ML_BLOCKING))
       goto findfrac;
 
-   front = LD_FRONTSECTOR(ld);
-   back  = LD_BACKSECTOR(ld);
+   VINT ifront = LD_IFRONTSECTOR(ld);
+   VINT iback = LD_IBACKSECTOR(ld);
+   front = I_TO_SEC(ifront);
+   back  = iback < 0 ? NULL : I_TO_SEC(iback);
 
    if ((ldflags[ld-lines] & ML_HAS_SPECIAL_OR_TAG) && P_GetLineSpecial(ld) == 254 && P_GetLineTag(ld) > 0 && sw->slidething->player
       && (players[sw->slidething->player-1].pflags & PF_SPINNING)) // Bustable block
@@ -205,7 +207,7 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
 
       if (ldflags[ld-lines] & ML_NOCLIMB)
       {
-         fixed_t nextHighest = P_FindNextHighestCeiling(back, back->ceilingheight)->ceilingheight;
+         fixed_t nextHighest = I_TO_SEC(P_FindNextHighestCeiling(iback, back->ceilingheight))->ceilingheight;
 
          if (nextHighest == back->ceilingheight)
             busting = false;
@@ -214,7 +216,7 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
       }
       else
       {
-         fixed_t nextLowest = P_FindNextLowestFloor(back, back->floorheight)->floorheight;
+         fixed_t nextLowest = I_TO_SEC(P_FindNextLowestFloor(iback, back->floorheight))->floorheight;
 
          if (nextLowest == back->floorheight)
             busting = false;

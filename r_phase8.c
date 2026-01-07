@@ -36,23 +36,21 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
 //   if (texture->lumpnum < firstsprite || texture->lumpnum >= firstsprite + numsprites)
 //      return;
 
-   if (x <= seg->start && seg->start <= stopx)
-      seg->start = stopx + 1;
-   if (stopx >= seg->stop && seg->stop <= x)
-      seg->stop = x - 1;
+   const VINT segStart = seg->start;
+   const VINT segStop = seg->stop;
 
    patch     = texture->data[0];
 
    spropening = seg->clipbounds;
-   maskedcol  = seg->clipbounds + (seg->stop - seg->start + 1);
+   maskedcol  = seg->clipbounds + (segStop - segStart + 1);
 
    widthmask = texture->width - 1;
    fracstep  = seg->scalestep;
-   scalefrac = seg->scalefrac + (x - seg->start) * fracstep;
+   scalefrac = seg->scalefrac + (x - segStart) * fracstep;
 
    I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
 
-   const sector_t *fofSector = &sectors[seg->fofSector];
+   const sector_t *fofSector = I_TO_SEC(seg->fofSector);
    VINT thickness = ((fofSector->ceilingheight- fofSector->floorheight) >> FRACBITS) >> 1;
 
    for(; x <= stopx; x++)
@@ -764,7 +762,7 @@ void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
       const fixed_t gzt = vis->texturemid + vd.viewz;
       const fixed_t gz = gzt - (vis->patchheight << FRACBITS);
 
-      if ((mh = sectors[vis->heightsec].ceilingheight) > gz &&
+      if ((mh = I_TO_SEC(vis->heightsec)->ceilingheight) > gz &&
           (h = centerYViewportFrac - FixedMul(mh-=vd.viewz, vis->yscale)) >= 0 &&
           (h >>= FRACBITS) < viewportHeight)
       {

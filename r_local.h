@@ -98,8 +98,8 @@ typedef	struct
 
 	VINT        fofsec;
 
-	SPTR		thinglist;			/* list of mobjs in sector */
 	VINT        specline; // Reference to a line of the sector for special reasons (i.e., FOF control line)
+	VINT        extrasecdata; // TBD
 } sector_t;
 
 typedef struct sectorBBox_s
@@ -138,8 +138,18 @@ typedef struct line_s
 	VINT		sidenum[2];			/* sidenum[1] will be -1 if one sided */
 } line_t;
 
-#define LD_FRONTSECTOR(ld) (&sectors[sides[(ld)->sidenum[0]].sector])
-#define LD_BACKSECTOR(ld) ((ld)->sidenum[1] != -1 ? &sectors[sides[ld->sidenum[1]].sector] : NULL)
+#define I_TO_SS(x) (&subsectors[x])
+#define SS_TO_I(x) (x - subsectors)
+#define I_TO_SEC(x) (dpsectors[x])
+
+//sector_t *I_TO_SEC(int16_t i);
+
+#define SS_SECTOR(x) (I_TO_SEC(subsectors[x].isector))
+
+#define LD_FRONTSECTOR(ld) (I_TO_SEC(sides[(ld)->sidenum[0]].sector))
+#define LD_BACKSECTOR(ld) ((ld)->sidenum[1] >= 0 ? I_TO_SEC(sides[ld->sidenum[1]].sector) : NULL)
+#define LD_IFRONTSECTOR(ld) (sides[(ld)->sidenum[0]].sector)
+#define LD_IBACKSECTOR(ld) ((ld)->sidenum[1] >= 0 ? sides[ld->sidenum[1]].sector : -1)
 
 typedef struct subsector_s
 {
@@ -261,6 +271,8 @@ extern	spritedef_t		sprites[NUMSPRITES];
 extern	uint16_t			numvertexes;
 extern	uint16_t			numsegs;
 extern	uint16_t			numsectors;
+extern  uint16_t            numstaticsectors;
+extern  uint16_t            numdynamicsectors;
 extern	uint16_t			numsubsectors;
 extern	uint16_t			numnodes;
 extern	uint16_t			numlines;
@@ -273,7 +285,10 @@ extern  uint16_t        *linespecials;
 
 extern	mapvertex_t	*vertexes;
 extern	seg_t		*segs;
-extern	sector_t	*sectors;
+extern	sector_t	**dpsectors;
+extern  sector_t    *static_sectors;
+extern  sector_t    *dynamic_sectors;
+extern  SPTR        *sector_thinglist;
 extern	subsector_t	*subsectors;
 extern	node_t		*nodes;
 extern	line_t		*lines;
@@ -677,6 +692,9 @@ typedef struct
 /* */
 	VINT			start;
 	VINT			stop;					/* inclusive x coordinates */
+
+	fixed_t			floorheight;
+
 	union
 	{
 		seg_t			*seg;
@@ -688,8 +706,6 @@ typedef struct
 		fixed_t			ceilingheight;
 		mapvertex_t		v2;
 	};
-
-	fixed_t			floorheight;
 
 	uint16_t 		*clipbounds;
 } viswall_t;
@@ -826,7 +842,7 @@ __attribute__((aligned(16)))
 	/* */
 	/* subsectors */
 	/* */
-	sector_t		**vissectors/*[MAXVISSSEC]*/, **lastvissector;
+	SPTR		**vissectors/*[MAXVISSSEC]*/, **lastvissector;
 
 	/* */
 	/* planes */

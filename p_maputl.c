@@ -404,17 +404,19 @@ static void P_UnlinkSubsector(mobj_t *thing)
 	if (sprev)
 		sprev->snext = thing->snext;
 	else
-		SS_SECTOR(thing->isubsector)->thinglist = thing->snext;
+		sector_thinglist[subsectors[thing->isubsector].isector] = thing->snext;
 }
 
-static void P_LinkSubsector(mobj_t *thing, sector_t *sec)
+static void P_LinkSubsector(mobj_t *thing, VINT iss)
 {
+	VINT isector = subsectors[iss].isector;
+
 	// re-link to new subsector
 	thing->sprev = (SPTR)0;
-	thing->snext = sec->thinglist;
-	if (sec->thinglist)
-		((mobj_t *)SPTR_TO_LPTR(sec->thinglist))->sprev = LPTR_TO_SPTR(thing);
-	sec->thinglist = LPTR_TO_SPTR(thing);
+	thing->snext = sector_thinglist[isector];
+	if (sector_thinglist[isector])
+		((mobj_t *)SPTR_TO_LPTR(sector_thinglist[isector]))->sprev = LPTR_TO_SPTR(thing);
+	sector_thinglist[isector] = LPTR_TO_SPTR(thing);
 }
 
 static void P_UnlinkBlockmap(mobj_t *thing)
@@ -520,7 +522,7 @@ void P_SetThingPosition2 (mobj_t *thing,  VINT iss)
 
 	if ( ! (thing->flags & MF_NOSECTOR) )
 	{	/* invisible things don't go into the sector links */
-		P_LinkSubsector(thing, SS_SECTOR(iss));
+		P_LinkSubsector(thing, iss);
 	}
 	
 /* */
@@ -570,7 +572,7 @@ void P_SetThingPositionConditionally(mobj_t *thing, fixed_t x, fixed_t y, VINT i
 		{	
 			P_UnlinkSubsector(thing);
 			thing->isubsector = iss;
-			P_LinkSubsector(thing, SS_SECTOR(iss));
+			P_LinkSubsector(thing, iss);
 		}
 	}
 

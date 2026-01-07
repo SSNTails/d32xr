@@ -58,20 +58,18 @@ void 	P_UpdateSpecials (int8_t numframes);
 
 void 	P_PlayerInSpecialSector (player_t *player);
 
-sector_t *getSector(int currentSector,int line,int side);
-side_t	*getSide(int currentSector,int line, int side);
-sector_t *P_FindLowestFloorSurrounding(sector_t *sec);
-sector_t *P_FindHighestFloorSurrounding(sector_t *sec);
-sector_t *P_FindNextHighestFloor(sector_t *sec, fixed_t currentheight);
-sector_t *P_FindNextLowestFloor(sector_t *sec, fixed_t currentheight);
-sector_t *P_FindNextHighestCeiling(sector_t *sec, fixed_t currentheight);
-sector_t *P_FindLowestCeilingSurrounding(sector_t *sec);
-sector_t *P_FindHighestCeilingSurrounding(sector_t *sec);
+VINT P_FindLowestFloorSurrounding(VINT sec);
+VINT P_FindHighestFloorSurrounding(VINT sec);
+VINT P_FindNextHighestFloor(VINT sec, fixed_t currentheight);
+VINT P_FindNextLowestFloor(VINT sec, fixed_t currentheight);
+VINT P_FindNextHighestCeiling(VINT sec, fixed_t currentheight);
+VINT P_FindLowestCeilingSurrounding(VINT sec);
+VINT P_FindHighestCeilingSurrounding(VINT sec);
 VINT P_FindSectorWithTag(VINT tag, int start);
 int		P_FindSectorFromLineTag(line_t	*line,int start);
 int     P_FindSectorFromLineTagNum(uint8_t tag,int start);
-int		P_FindMinSurroundingLight(sector_t *sector,int max);
-sector_t *getNextSector(line_t *line,sector_t *sec);
+int		P_FindMinSurroundingLight(VINT isector,int max);
+VINT getNextSector(line_t *line, VINT sec);
 
 /*
 ===============================================================================
