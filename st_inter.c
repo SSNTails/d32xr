@@ -117,10 +117,10 @@ void Y_IntermissionDrawer(void)
 
 		V_DrawValueLeft(&titleNumberFont, BASEVIDWIDTH-72, 112-56+6+offset, gamemapinfo.act);
 
-		DrawJagobjLump(data.coop.ptimebonus, 68, 112+offset-squeeze, NULL, NULL);
+		DrawMaskedGraphicLump(data.coop.ptimebonus, 68, 112+offset-squeeze);
 		V_DrawValueRight(&hudNumberFont, BASEVIDWIDTH - 68, 112+1+offset-squeeze, data.coop.timebonus);
 
-		DrawJagobjLump(data.coop.pringbonus, 68, 112+16+offset-squeeze, NULL, NULL);
+		DrawMaskedGraphicLump(data.coop.pringbonus, 68, 112+16+offset-squeeze);
 		V_DrawValueRight(&hudNumberFont, BASEVIDWIDTH - 68, 112+16+1+offset-squeeze, data.coop.ringbonus);
 /*
 		//PERFECT BONUS
@@ -130,7 +130,7 @@ void Y_IntermissionDrawer(void)
 			Y_DrawNum(BASEVIDWIDTH - 68, 85 + ((9*SHORT(tallnum[0]->height))+1)/2, data.coop.perfbonus);
 		}*/
 
-		DrawJagobjLump(data.coop.ptotal, 88, 112+16+16+16+offset-squeeze, NULL, NULL);
+		DrawMaskedGraphicLump(data.coop.ptotal, 88, 112+16+16+16+offset-squeeze);
 		V_DrawValueRight(&hudNumberFont, BASEVIDWIDTH - 68, 112+16+16+16+1+offset-squeeze, data.coop.total);
 	}
 }

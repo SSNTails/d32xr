@@ -471,9 +471,7 @@ void IN_Drawer (void)
 
 			if (data.spec.bonuses[0].display)
 			{
-				int w;
-				GetJagobjSize(data.spec.bonuses[0].patch, &w, NULL);
-				DrawJagobjLump(data.spec.bonuses[0].patch, 152 - w + xoffset3, 108, NULL, NULL);
+				DrawMaskedGraphicLump(data.spec.bonuses[0].patch, 152 - 84 + xoffset3, 108);
 				V_DrawValuePaddedRight(&hudNumberFont, BASEVIDWIDTH + xoffset3 - 68, 109, data.spec.bonuses[0].points, 0);
 			}
 
@@ -489,9 +487,7 @@ void IN_Drawer (void)
 				xoffset5 = xoffset6;
 			}
 
-			int w;
-			GetJagobjSize(data.spec.pscore, &w, NULL);
-			DrawJagobjLump(data.spec.pscore, 152 - w + xoffset4, 124+yoffset, NULL, NULL);
+			DrawMaskedGraphicLump(data.spec.pscore, 152 - 46 + xoffset4, 124+yoffset);
 			V_DrawValuePaddedRight(&hudNumberFont, BASEVIDWIDTH + xoffset4 - 68, 125+yoffset, data.spec.score, 0);
 		}
 

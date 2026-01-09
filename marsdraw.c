@@ -1112,6 +1112,27 @@ void DrawScaledJagobj(jagobj_t* jo, int x, int y,
 	}
 }
 
+void DrawMaskedGraphicLump(int lumpnum, int x, int y)
+{
+	LZSTATE gfx_lz;
+	uint8_t lz_buf[LZ_BUF_SIZE];
+	byte* lump;
+
+	lump = W_POINTLUMPNUM(lumpnum);
+	if (!(lumpinfo[lumpnum].name[0] & 0x80))
+	{
+		// uncompressed
+		DrawMaskedGraphic3(lump, x, y, 0, 0);
+		return;
+	}
+
+	LzSetup(&gfx_lz, lump, lz_buf, LZ_BUF_SIZE);
+	if (LzReadPartial(&gfx_lz, 16) != 16)
+		return;
+
+	DrawMaskedGraphic3((byte *)gfx_lz.output, x, y, 0, 0);
+}
+
 void DrawMaskedGraphicWithColormap(byte *data, int x, int y, int colormap) {
 	DrawMaskedGraphic3(data, x, y, 0, colormap);
 }
