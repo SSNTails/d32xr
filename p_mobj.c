@@ -297,7 +297,15 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			ringmobj->flags = info->flags;
 
 			/* set subsector and/or block links */
+			boolean noblockmap = ringmobj->type == MT_FACESTABBERSTATUE || ringmobj->type == MT_CRAWLASTATUE
+				|| ringmobj->type == MT_FIRETORCH || ringmobj->type == MT_CANDLE
+				|| ringmobj->type == MT_CANDLEPRICKET;
+
+			if (noblockmap)
+				ringmobj->flags |= MF_NOBLOCKMAP;
 			P_SetThingPosition2 ((mobj_t*)ringmobj, R_PointInSubsector2(x, y));
+			if (noblockmap)
+				ringmobj->flags &= ~MF_NOBLOCKMAP;
 
 			numringmobjs++;
 
