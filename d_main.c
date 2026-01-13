@@ -41,6 +41,8 @@ boolean		sky_32x_layer = false;
 
 boolean		h40_sky = false;
 
+boolean		h32_adjust = true;
+
 VINT			gamevbls;		/* may not really be vbls in multiplayer */
 VINT			vblsinframe;		/* range from ticrate to ticrate*2 */
 

@@ -1469,7 +1469,7 @@ const int8_t water_filter[128] =
 void ApplyHorizontalDistortionFilter(int filter_offset)
 {
 	uint16_t *lines = Mars_FrameBufferLines();
-	short pixel_offset = (512/2) + ((~h40_sky)&1);
+	short pixel_offset = (512/2) + ((~h40_sky) & h32_adjust);
 
 	for (int i=0; i < 7; i++) {
 		distortion_line_bit_shift[i] = 0;
@@ -1500,7 +1500,7 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 	lines[202] = lines[21];
 
 	// The next eleven lines are unique.
-	pixel_offset = (((320*202)+512)/2) + ((~h40_sky)&1);
+	pixel_offset = (((320*202)+512)/2) + ((~h40_sky) & h32_adjust);
 	for (int i=203; i < 214; i++) {
 		lines[i] = pixel_offset;
 		pixel_offset += (320/2);
@@ -1519,7 +1519,7 @@ void RemoveDistortionFilters()
 	effects_flags &= (~EFFECTS_DISTORTION_ENABLED);
 
 	uint16_t *lines = Mars_FrameBufferLines();
-	short pixel_offset = (512/2) + ((~h40_sky)&1);
+	short pixel_offset = (512/2) + ((~h40_sky) & h32_adjust);
 
 	if (IsLevel()) {
 		// Set line offsets for the entire viewport (180 pixels) and top border (22 pixels)
@@ -1549,5 +1549,5 @@ void RemoveDistortionFilters()
 		}
 	}
 
-	MARS_VDP_SCRSHFT = ((~h40_sky)&1);
+	MARS_VDP_SCRSHFT = ((~h40_sky) & h32_adjust);
 }

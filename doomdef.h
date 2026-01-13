@@ -761,6 +761,8 @@ extern  boolean		sky_md_layer;
 extern	boolean		sky_32x_layer;
 extern	boolean		h40_sky;
 
+extern	boolean		h32_adjust;
+
 extern  uint8_t     lightning_count;
 
 extern 	VINT 		*gamemapnumbers;
