@@ -20,11 +20,13 @@ typedef struct camera_s
 	fixed_t distFromPlayer;
 } camera_t;
 
-#define CAM_HEIGHT (20<<FRACBITS)
-#define CAM_RADIUS (20<<FRACBITS)
-#define CAM_DIST (192<<FRACBITS)
+#define CAM_HEIGHT			(20<<FRACBITS)
+#define CAM_RADIUS			(20<<FRACBITS)
+#define CAM_DIST_NORMAL		(192<<FRACBITS)
+#define CAM_DIST_ANAMORPHIC	(256<<FRACBITS)
 
 extern boolean invertCamera;
+extern fixed_t cameraTargetDistance;
 
 extern mobj_t *camBossMobj;
 extern VINT camBossMobjCounter;

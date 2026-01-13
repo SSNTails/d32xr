@@ -340,14 +340,18 @@ void R_SetViewportSize(int num)
 
 	if (anamorphicview)
 	{
-		stretch = ((FRACUNIT * 16 * height) / 180 * 28) / width;
+		//stretch = ((FRACUNIT * 16 * height) / 180 * 28) / width;
+		//stretch = FRACUNIT * 1.333333f * 2;
+		stretch = 174763;
 	}
 	else
 	{
 		/* proper screen size would be 160*100, stretched to 224 is 2.2 scale */
 		//stretch = (fixed_t)((160.0f / width) * ((float)height / 180.0f) * 2.2f * FRACUNIT);
 		//stretch = ((FRACUNIT * 16 * height) / 180 * 22) / width;
-		stretch = ((FRACUNIT * 16 * 180) / 180 * 20) / 160;
+		//stretch = ((FRACUNIT * 16 * 180) / 180 * 20) / 160;
+		//stretch = FRACUNIT * 1.000000f * 2;
+		stretch = 131072;
 	}
 	//stretchX = stretch * centerX;
 	stretchX = stretch * (160 >> 1);

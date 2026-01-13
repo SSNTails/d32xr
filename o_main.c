@@ -433,6 +433,7 @@ void O_Control (player_t *player)
 					break;
 				case mi_anamorphic:
 					anamorphicview = slider->curval;
+					cameraTargetDistance = (anamorphicview ? CAM_DIST_ANAMORPHIC : CAM_DIST_NORMAL);
 					R_SetViewportSize(viewportNum);
 					break;
 				case mi_camerapan:
@@ -555,8 +556,10 @@ void O_Control (player_t *player)
 				{
 					switch (itemno) {
 					case mi_anamorphic:
-						if (++anamorphicview > 1)
+						if (++anamorphicview > 1) {
 							anamorphicview = 1;
+						}
+						cameraTargetDistance = CAM_DIST_ANAMORPHIC;
 						break;
 					}
 				}
@@ -565,8 +568,10 @@ void O_Control (player_t *player)
 				{
 					switch (itemno) {
 					case mi_anamorphic:
-						if (--anamorphicview < 0)
+						if (--anamorphicview < 0) {
 							anamorphicview = 0;
+						}
+						cameraTargetDistance = CAM_DIST_NORMAL;
 						break;
 					}
 				}

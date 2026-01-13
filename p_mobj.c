@@ -501,9 +501,9 @@ void P_SpawnPlayer (mapthing_t *mthing)
 	camera.x = mobj->x;
 	camera.y = mobj->y;
 	if (gamemapinfo.act == 3)
-		P_ThrustValues(mobj->angle, -CAM_DIST, &camera.x, &camera.y);
+		P_ThrustValues(mobj->angle, -cameraTargetDistance, &camera.x, &camera.y);
 	else
-		P_ThrustValues(mobj->angle + (ANG45 * 3), -CAM_DIST, &camera.x, &camera.y);
+		P_ThrustValues(mobj->angle + (ANG45 * 3), -cameraTargetDistance, &camera.x, &camera.y);
 	camera.x = (camera.x >> FRACBITS) << FRACBITS;
 	camera.y = (camera.y >> FRACBITS) << FRACBITS;
 	camera.subsector = I_TO_SS(R_PointInSubsector2(camera.x, camera.y));

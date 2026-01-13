@@ -6,6 +6,8 @@ camera_t camera;
 
 boolean invertCamera = false;
 
+fixed_t cameraTargetDistance = CAM_DIST_NORMAL;
+
 boolean PM_CheckPosition(pmovework_t *mw);
 
 static boolean P_CameraTryMove2(ptrymove_t *tm, boolean checkposonly)
@@ -37,7 +39,7 @@ static boolean P_CameraTryMove2(ptrymove_t *tm, boolean checkposonly)
       if(mw.tmceilingz - mw.tmfloorz < (tmthing->theight << FRACBITS))
          return false; // doesn't fit
       tm->floatok = true;
-      if((fixed_t)tm->tmthing->angle <= CAM_DIST && mw.tmceilingz - tmthing->z < (tmthing->theight << FRACBITS))
+      if((fixed_t)tm->tmthing->angle <= cameraTargetDistance && mw.tmceilingz - tmthing->z < (tmthing->theight << FRACBITS))
          return false; // mobj must lower itself to fit
       if(mw.tmfloorz - tmthing->z > 24*FRACUNIT)
          return false; // too big a step up
@@ -229,7 +231,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	P_CameraThinker(player, thiscam);
 
 	camspeed = FRACUNIT >> 2;
-	camdist = CAM_DIST;
+	camdist = cameraTargetDistance;
 	camheight = 20 << FRACBITS;
 
    if (!player->exiting && player->stillTimer > TICRATE/2)
