@@ -7,14 +7,14 @@
 #include "doomdef.h"
 #include "p_local.h"
 
-static void R_PrepMobj(mobj_t* thing) ATTR_DATA_CACHE_ALIGN;
-static void R_PrepRing(ringmobj_t* thing, int scenery) ATTR_DATA_CACHE_ALIGN;
+static void R_PrepMobj(mobj_t* thing, VINT isector) ATTR_DATA_CACHE_ALIGN;
+static void R_PrepRing(ringmobj_t* thing, VINT isector, int scenery) ATTR_DATA_CACHE_ALIGN;
 void R_SpritePrep(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 
 //
 // Project vissprite for potentially visible actor
 //
-static void R_PrepMobj(mobj_t *thing)
+static void R_PrepMobj(mobj_t *thing, VINT isector)
 {
    fixed_t tr_x, tr_y;
    fixed_t tx, tz, x1, x2;
@@ -208,7 +208,7 @@ static void R_PrepMobj(mobj_t *thing)
 //   vis->colormaps = dc_colormaps;
 }
 
-static void R_PrepRing(ringmobj_t *thing, int scenery)
+static void R_PrepRing(ringmobj_t *thing, VINT isector, int scenery)
 {
    fixed_t tr_x, tr_y;
    fixed_t tx, tz, x1, x2;
@@ -398,18 +398,19 @@ static void R_PrepRing(ringmobj_t *thing, int scenery)
 //
 void R_SpritePrep(void)
 {
-   SPTR **pse = vd.vissectors;
+   VINT *pse = vd.vissectors;
 
    while(pse < vd.lastvissector)
    {
-      mobj_t *thing = SPTR_TO_LPTR(**pse);
+      const VINT secnum = *pse;
+      mobj_t *thing = SPTR_TO_LPTR(sector_thinglist[secnum]);
 
       while(thing) // walk sector thing list
       {
          if (thing->flags & MF_RINGMOBJ)
-            R_PrepRing((ringmobj_t*)thing, !!(thing->flags & MF_NOBLOCKMAP)); // Devolve the MF_BLOCKMAP flag into a 1 or 0
+            R_PrepRing((ringmobj_t*)thing, secnum, !!(thing->flags & MF_NOBLOCKMAP)); // Devolve the MF_BLOCKMAP flag into a 1 or 0
          else if (!(thing->flags2 & MF2_DONTDRAW))
-            R_PrepMobj(thing);
+            R_PrepMobj(thing, secnum);
 
          thing = SPTR_TO_LPTR(thing->snext);
       }

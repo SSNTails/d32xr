@@ -842,7 +842,7 @@ __attribute__((aligned(16)))
 	/* */
 	/* subsectors */
 	/* */
-	SPTR		**vissectors/*[MAXVISSSEC]*/, **lastvissector;
+	VINT		*vissectors/*[MAXVISSSEC]*/, *lastvissector;
 
 	/* */
 	/* planes */
