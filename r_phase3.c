@@ -7,14 +7,14 @@
 #include "doomdef.h"
 #include "p_local.h"
 
-static void R_PrepMobj(mobj_t* thing, VINT isector) ATTR_DATA_CACHE_ALIGN;
-static void R_PrepRing(ringmobj_t* thing, VINT isector, int scenery) ATTR_DATA_CACHE_ALIGN;
+static void R_PrepMobj(mobj_t* thing, const VINT isector) ATTR_DATA_CACHE_ALIGN;
+static void R_PrepRing(ringmobj_t* thing, const VINT isector, const int scenery) ATTR_DATA_CACHE_ALIGN;
 void R_SpritePrep(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 
 //
 // Project vissprite for potentially visible actor
 //
-static void R_PrepMobj(mobj_t *thing, VINT isector)
+static void R_PrepMobj(mobj_t *thing, const VINT isector)
 {
    fixed_t tr_x, tr_y;
    fixed_t tx, tz, x1, x2;
@@ -208,7 +208,7 @@ static void R_PrepMobj(mobj_t *thing, VINT isector)
 //   vis->colormaps = dc_colormaps;
 }
 
-static void R_PrepRing(ringmobj_t *thing, VINT isector, int scenery)
+static void R_PrepRing(ringmobj_t *thing, const VINT isector, const int scenery)
 {
    fixed_t tr_x, tr_y;
    fixed_t tx, tz, x1, x2;
@@ -218,7 +218,6 @@ static void R_PrepRing(ringmobj_t *thing, VINT isector, int scenery)
    VINT         *sprlump;
    patch_t      *patch;
    vissprite_t  *vis;
-   const scenerymobj_t *scenerymobj = NULL;
    VINT          lump;
    int      flip;
    int    doubleWide = scenery ? 2 : 1;
@@ -232,7 +231,7 @@ static void R_PrepRing(ringmobj_t *thing, VINT isector, int scenery)
    }
    else
    {
-      scenerymobj = (const scenerymobj_t*)thing;
+      const scenerymobj_t *scenerymobj = (const scenerymobj_t*)thing;
 
       // transform origin relative to viewpoint
       x = scenerymobj->x;
@@ -268,7 +267,7 @@ static void R_PrepRing(ringmobj_t *thing, VINT isector, int scenery)
    if(!(lump & SL_SINGLESIDED))
    {
       // select proper rotation depending on player's view point
-      angle_t ang  = R_PointToAngle2(vd.viewx, vd.viewy, thing->x << FRACBITS, thing->y << FRACBITS);
+      angle_t ang  = R_PointToAngle2(vd.viewx, vd.viewy, x << FRACBITS, y << FRACBITS);
       lump = sprlump[(ang - (thing->pad << ANGLETOFINESHIFT) + (unsigned int)(ANG45 / 2)*9) >> 29];
 
       if (lump & SL_FLIPPED)
@@ -325,16 +324,17 @@ static void R_PrepRing(ringmobj_t *thing, VINT isector, int scenery)
    // killough 3/27/98: exclude things totally separated
    // from the viewer, by either water or fake ceilings
    // killough 4/11/98: improve sprite clipping for underwater/fake ceilings
-   const sector_t *sec = SS_SECTOR(thing->isubsector);
+   const sector_t *sec = I_TO_SEC(isector);
    const VINT heightsec = sec->heightsec;
    const fixed_t thingz = scenery ? (thing->type < MT_STALAGMITE0 || thing->type > MT_STALAGMITE7 ? sec->floorheight : sec->ceilingheight - mobjinfo[thing->type].height) : thing->z << FRACBITS;
+
    if (heightsec >= 0 && vd.heightsec)   // only clip things which are in special sectors
-      {
-         const fixed_t localgzt = thingz + ((fixed_t)BIGSHORT(patch->topoffset) << FRACBITS);
-         const fixed_t thingHeight = I_TO_SEC(heightsec)->ceilingheight;
-   
-         if ((vd.underwater) != (localgzt < thingHeight))
-            return;
+   {
+      const fixed_t localgzt = thingz + ((fixed_t)BIGSHORT(patch->topoffset) << FRACBITS);
+      const fixed_t thingHeight = I_TO_SEC(heightsec)->ceilingheight;
+
+      if ((vd.underwater) != (localgzt < thingHeight))
+         return;
    }
    // TODO: This is not technically correct, but is a quick way to remove some draw-through
    if (sec == vd.viewsector && sec->fofsec >= 0)
