@@ -290,11 +290,11 @@ typedef struct mobj_s
 {
 	uint8_t		type;
 	uint8_t		flags;
-	VINT        isubsector;
 	SPTR	snext;		/* links in sector (if needed) */
-	SPTR    sprev;
 	SPTR	bnext;		/* links in blocks (if needed) */
 	SPTR    bprev;
+	SPTR    sprev;
+	VINT        isubsector;
 	struct	mobj_s* prev, * next;
 
 	fixed_t			x, y, z;
@@ -333,9 +333,7 @@ typedef struct scenerymobj_s
 {
 	uint8_t		type;
 	uint8_t		flags;
-	VINT isubsector;
 	SPTR	snext;		/* links in sector (if needed) */
-	SPTR    sprev;
 	// SIMILARITIES END HERE
 	int16_t x, y;
 } scenerymobj_t;
@@ -344,11 +342,11 @@ typedef struct ringmobj_s
 {
 	uint8_t		type;
 	uint8_t		flags;
-	VINT        isubsector;
 	SPTR	snext;		/* links in sector (if needed) */
-	SPTR    sprev;
 	SPTR	bnext;		/* links in blocks (if needed) */
 	SPTR bprev;
+	SPTR    sprev;
+	VINT        isubsector;
 	// SIMILARITIES END HERE
 	VINT			x, y, z;
 	VINT pad;
@@ -358,11 +356,11 @@ typedef struct degenmobj_s
 {
 	uint8_t		type;
 	uint8_t		flags;
-	VINT isubsector;
 	SPTR	snext;		/* links in sector (if needed) */
-	SPTR    sprev;
 	SPTR	bnext;		/* links in blocks (if needed) */
 	SPTR bprev;
+	SPTR    sprev;
+	VINT isubsector;
 	void 			*prev, *next;
 } degenmobj_t;
 
@@ -370,11 +368,1549 @@ typedef struct consistencymobj_s
 {
 	uint8_t		type;
 	uint8_t		flags;
-	VINT isubsector;
 	SPTR	snext;		/* links in sector (if needed) */
-	SPTR    sprev;
 	SPTR	bnext;		/* links in blocks (if needed) */
 	SPTR bprev;
+	SPTR    sprev;
+	VINT isubsector;
+	void 			*prev, *next;
+	fixed_t			x, y, z;
+} consistencymobj_t;
+
+#define static_mobj_size (offsetof(mobj_t,movedir))
+
+/* */
+/* frame flags */
+/* */
+#define	FF_FULLBRIGHT	0x8000		/* flag in thing->frame to render full light */
+#define FF_FLIPPED      0x4000      /* flag in thing->frame to flip a 0-sprite */
+#define FF_FRAMEMASK	0x3fff
+
+/* */
+/* sprite lump flags */
+/* */
+#define	SL_SINGLESIDED	0x8000
+#define	SL_FLIPPED 		0x4000
+#define SL_LUMPMASK		0x3fff
+
+/* */
+/* mobj flags */
+/* */
+#define	MF_SPECIAL		0x0001			/* call P_SpecialThing when touched */
+#define	MF_NOCLIP		0x0002          /* player cheat */
+#define	MF_SOLID		0x0004
+#define	MF_NOBLOCKMAP	0x0008			/* don't use the sector links */
+									/* (invisible but touchable)  */
+#define	MF_NOSECTOR 	0x0010			/* don't use the blocklinks  */
+									/* (inert but displayable) */
+
+#define	MF_RINGMOBJ		0x0020      /* This mobj is in the ringmobj list, animation is controlled globally */
+#define	MF_STATIC    	0x0040		/* can't move or think */
+#define	MF_NOGRAVITY	0x0080		/* don't apply gravity every tic */
+
+#define MF2_DONTDRAW       1
+#define MF2_FRET           2           // Multi-hit enemy is reeling from a hit
+#define MF2_FIRING         4           // Boss currently firing
+#define MF2_FORWARDOFFSET  8         // Offset the Z position of this object to be closer when rendering (shields, etc.)
+#define MF2_SKULLFLY      16          // Doom will never die. Only the players.
+#define MF2_JUSTATTACKED  32
+#define MF2_BOSSFLEE      64
+#define MF2_SPAWNEDJETS  128
+#define	MF2_FLOAT		 256		/* allow moves to any height, no gravity */
+#define	MF2_SHOOTABLE	 512
+#define MF2_MISSILE		1024		/* don't hit same species, explode on block */
+#define	MF2_INFLOAT		2048	/* floating to a height for a move, don't */
+									/* auto float to target's height */
+#define	MF2_SEETARGET	4096	/* is target visible? */
+#define MF2_ENEMY		8192
+#define MF2_NARROWGFX  16384    // Narrow graphic
+
+/*============================================================================= */
+typedef enum
+{
+	PST_LIVE,			/* playing */
+	PST_DEAD,			/* dead on the ground */
+	PST_REBORN			/* ready to restart */
+} playerstate_t;
+
+typedef enum
+{
+	pw_invulnerability,
+	pw_flashing,
+	pw_sneakers,
+	pw_extralife,
+	pw_underwater,
+	pw_spacetime,
+	NUMPOWERS
+} powertype_t;
+
+#define	INVULNTICS		(20*TICRATE)
+#define SNEAKERTICS		(20*TICRATE)
+#define	UNDERWATERTICS	(30*TICRATE)
+#define FLASHINGTICS    (3*TICRATE)
+#define EXTRALIFETICS   (4*TICRATE)
+#define SPACETIMETICS   (11*TICRATE + (TICRATE/2))
+#define GRAVBOOTSTICS   (20*TICRATE)
+
+#define PF_ONGROUND 1
+#define PF_THOKKED  2
+#define PF_UNDERWATER 4
+#define PF_JUMPED 8
+#define PF_STARTJUMP 16
+#define PF_VERTICALFLIP 32 // May as well prepare...
+#define PF_SPINNING 64
+#define PF_GASPEDAL 128
+#define PF_USEDOWN 256
+#define PF_STARTDASH 512
+#define PF_JUMPDOWN 1024
+#define PF_TOUCHWATER 2048
+#define PF_DROWNED 4096
+#define PF_ELEMENTALBOUNCE 8192
+#define PF_CONTROLDISABLED 16384
+#define PF_MACESPIN 32768
+#define PF_CHANGESECTOR 65536
+#define PF_SPRINGSHELL 131072
+
+boolean P_IsObjectOnGround(mobj_t *mo);
+int8_t P_MobjFlip(mobj_t *mo);
+
+/*
+================
+=
+= player_t
+=
+================
+*/
+
+typedef enum
+{
+	SH_ARMAGEDDON = 1,
+	SH_ATTRACT,
+	SH_ELEMENTAL,
+	SH_FORCE1,
+	SH_FORCE2,
+	SH_WHIRLWIND,
+} shieldpower_t;
+
+#define REALMOMX(player) (player->mo->momx - player->cmomx)
+#define REALMOMY(player) (player->mo->momy - player->cmomy)
+#define MAX_TOUCHING_SECTORS 8
+typedef struct player_s
+{
+	mobj_t		*mo;
+	playerstate_t	playerstate;
+
+	int32_t     pflags;
+	fixed_t     speed;
+	
+	fixed_t		forwardmove, sidemove;	/* built from ticbuttons */
+	int         buttons;
+	
+	fixed_t		viewz;					/* focal origin above r.z */
+
+	fixed_t     cmomx, cmomy;
+
+	int			score;
+	VINT        onconveyor;
+	VINT		health;					/* only used between levels, mo->health */
+										/* is used during levels	 */
+	VINT		shield;
+	
+	VINT		powers[NUMPOWERS];		/* invinc and invis are tic counters	 */
+	
+	VINT		killcount, itemcount, secretcount;		/* for intermission */
+	VINT		whiteFlash;/* for screen flashing */
+
+	VINT        touching_sectorlist[MAX_TOUCHING_SECTORS]; // These can potentially be duplicates
+	VINT        num_touching_sectors;
+
+	VINT        exiting;
+	VINT        deadTimer;
+
+	VINT        starpostnum;
+	VINT        starpostx, starposty, starpostz;
+	VINT        starpostangle;
+
+	VINT        lossCount;
+	VINT        stillTimer;
+	VINT        justSprung;
+	VINT        scoreAdd;
+	VINT        lives;
+	VINT		dashSpeed;
+	VINT        homingTimer;
+	VINT        xtralife;
+	VINT        skidTime;
+} player_t;
+
+void P_PlayerHitFloor(player_t* player);
+
+// stuff player keeps between respawns in single player
+typedef struct
+{
+	VINT		health;
+	VINT		armorpoints, armortype;
+	VINT		cheats;
+	VINT		weapon;
+	char		backpack;
+} playerresp_t;
+
+#define CF_NOCLIP		1
+#define	CF_GODMODE		2
+
+#define	AF_ACTIVE		1				/* automap active */
+#define	AF_FOLLOW		2
+#define	AF_ALLLINES		4
+#define	AF_ALLMOBJ		8
+
+extern boolean optionsMenuOn; /* options screen running */
+
+/*
+===============================================================================
+
+					GLOBAL VARIABLES
+
+===============================================================================
+*/
+
+/*================================== */
+
+extern	VINT 	ticrate;	/* 4 for NTSC, 3 for PAL */
+extern	VINT		ticsinframe;	/* how many tics since last drawer */
+extern	int		ticon;
+extern	int		frameon;
+extern	int		ticbuttons[MAXPLAYERS];
+extern	int		oldticbuttons[MAXPLAYERS];
+extern	int		ticrealbuttons, oldticrealbuttons; /* buttons for the console player before reading the demo file */
+
+int MiniLoop ( void (*start)(void),  void (*stop)(void)
+		,  int (*ticker)(void), void (*drawer)(void)
+		,  void (*update)(void) );
+
+int	G_Ticker (void);
+void G_Drawer (void);
+void G_RunGame (void);
+void G_LoadGame(int saveslot);
+
+/*================================== */
+
+#include "d_mapinfo.h"
+
+extern	gameaction_t	gameaction;
+extern	byte			gamemode;
+
+
+typedef enum
+{
+	LevelType_Normal = 0x10,
+	LevelType_SpecialStage = 0x11,
+	LevelType_NiGHTS = 0x12,
+	LevelType_Final = 0x13,
+} leveltype_t;
+
+typedef enum
+{
+	DemoMode_None = 0x00,
+	DemoMode_Playback = 0x08,
+	DemoMode_Recording = 0x0C,
+} demomodetype_t;
+
+typedef enum
+{
+	TransitionType_None = 0x00,
+	TransitionType_Entering = 0x80,
+	TransitionType_Leaving = 0xC0,
+} transitiontype_t;
+
+
+// LEVEL has a mode value of '1x', where x is the low nybble that carries attributes
+// Attributes: Ddll
+// D - Demo enable/disable
+// d - When demo is enabled, this determines playback (0) or recording (1).
+// l - This determines if the level type is normal (00), special stage (01), NiGHTS (10), or final (11).
+
+#define GAMEMODE_NONE						0x00
+
+#define GAMEMODE_COMPATIBILITY				0x01
+#define GAMEMODE_DISCLAIMER					0x02
+#define GAMEMODE_TITLEINTRO					0x03
+#define GAMEMODE_TITLESCREEN				0x04
+#define GAMEMODE_LEVELSELECT				0x05
+#define GAMEMODE_CREDITS					0x06
+#define GAMEMODE_SPECIALSTAGEINTERMISSION	0x07
+
+#define GAMEMODE_LEVEL_ACTIVE				0x10
+#define GAMEMODE_LEVEL						0x30
+#define GAMEMODE_LEVEL_TYPE					0x33
+
+#define GAMEMODE_DEMO						0x08
+#define GAMEMODE_DEMO_MODETYPE				0x0C
+
+#define GAMEMODE_TRANSITION					0x80
+#define GAMEMODE_TRANSITION_TYPE			0xC0
+
+
+#define LEVELTYPE_NORMAL					0x10
+#define LEVELTYPE_SPECIALSTAGE				0x11
+#define LEVELTYPE_NIGHTS					0x12
+#define LEVELTYPE_FINAL						0x13
+
+#define DEMOMODE_PLAYBACK					0x08
+#define DEMOMODE_RECORDING					0x0C
+
+#define TRANSITIONTYPE_ENTERING				0x80
+#define TRANSITIONTYPE_LEAVING				0xC0
+
+
+extern void MD_SetGamemode(int gamemode);
+
+
+// General
+static inline boolean IsCompatibility()
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_COMPATIBILITY; }
+static inline boolean IsDisclaimer()
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_DISCLAIMER; }
+static inline boolean IsTitleIntro()
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_TITLEINTRO; }
+static inline boolean IsTitleScreen()
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_TITLESCREEN; }
+static inline boolean IsLevelSelect()
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_LEVELSELECT; }
+static inline boolean IsCredits()
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_CREDITS; }
+static inline boolean IsSpecialStageIntermission()
+	{ return (gamemode & (~GAMEMODE_TRANSITION_TYPE)) == GAMEMODE_SPECIALSTAGEINTERMISSION; }
+
+static inline void SetCompatibility()
+	{ gamemode = GAMEMODE_COMPATIBILITY; MD_SetGamemode(gamemode); }
+static inline void SetDisclaimer()
+	{ gamemode = GAMEMODE_DISCLAIMER; MD_SetGamemode(gamemode); }
+static inline void SetTitleIntro()
+	{ gamemode = GAMEMODE_TITLEINTRO; MD_SetGamemode(gamemode); }
+static inline void SetTitleScreen()
+	{ gamemode = GAMEMODE_TITLESCREEN; MD_SetGamemode(gamemode); }
+static inline void SetLevelSelect()
+	{ gamemode = GAMEMODE_LEVELSELECT; MD_SetGamemode(gamemode); }
+static inline void SetCredits()
+	{ gamemode = GAMEMODE_CREDITS; MD_SetGamemode(gamemode); }
+static inline void SetSpecialStageIntermission()
+	{ gamemode = GAMEMODE_SPECIALSTAGEINTERMISSION; MD_SetGamemode(gamemode); }
+
+// Level
+static inline boolean IsLevel()
+	{ return (gamemode & GAMEMODE_LEVEL) == GAMEMODE_LEVEL_ACTIVE; }
+static inline boolean IsLevelType(leveltype_t type)
+	{ return (gamemode & GAMEMODE_LEVEL_TYPE) == type; }
+
+static inline void SetLevel(leveltype_t type)
+	{ gamemode = (gamemode & (~GAMEMODE_LEVEL_TYPE)) | type; MD_SetGamemode(gamemode); }
+
+// Demo
+static inline boolean IsDemo()
+	{ return (gamemode & GAMEMODE_DEMO) == GAMEMODE_DEMO; }
+static inline boolean IsDemoModeType(demomodetype_t type)
+	{ return (gamemode & GAMEMODE_DEMO_MODETYPE) == type; }
+
+static inline void SetDemoMode(demomodetype_t type)
+	{ gamemode = (gamemode & (~GAMEMODE_DEMO_MODETYPE)) | type; MD_SetGamemode(gamemode); }
+
+// Transition
+static inline boolean IsTransition()
+	{ return (gamemode & GAMEMODE_TRANSITION) == GAMEMODE_TRANSITION; }
+static inline boolean IsTransitionType(transitiontype_t type)
+	{ return (gamemode & GAMEMODE_TRANSITION_TYPE) == type; }
+
+static inline void SetTransition(transitiontype_t type)
+	{ gamemode = (gamemode & (~GAMEMODE_TRANSITION_TYPE)) | type; MD_SetGamemode(gamemode); }
+
+
+
+extern uint8_t      cheats_enabled;
+
+#define CHEAT_METRICS			0x01
+#define CHEAT_GAMEMODE_SELECT	0x02
+
+
+
+#define	SBARHEIGHT	0			/* status bar height at bottom of screen */
+
+typedef enum
+{
+	gt_single,
+	gt_coop,
+	gt_deathmatch	
+} gametype_t;
+
+#ifdef MARS
+__attribute__((aligned(2)))
+#endif
+extern	gametype_t	netgame;
+
+extern	boolean		playeringame[MAXPLAYERS];
+extern	VINT		consoleplayer;		/* player taking events and displaying */
+extern	player_t	players[MAXPLAYERS];
+extern	playerresp_t	playersresp[MAXPLAYERS];
+
+extern	uint8_t		totalitems, totalsecret;	/* for intermission */
+extern	uint8_t		totaltokens;
+extern	VINT		gamemaplump;
+extern	dmapinfo_t	gamemapinfo;
+extern	dgameinfo_t	gameinfo;
+extern  boolean		sky_md_layer;
+extern	boolean		sky_32x_layer;
+extern	boolean		h40_sky;
+
+extern	boolean		h32_adjust;
+
+extern  uint8_t     lightning_count;
+
+extern 	VINT 		*gamemapnumbers;
+extern 	VINT 		*gamemaplumps;
+extern 	VINT 		gamemapcount;
+
+extern 	int 		gametic;
+extern  int         leveltime;
+extern  VINT        fadetime;
+extern  uint8_t     emeralds;
+extern  uint8_t     tokens;
+extern  uint8_t     tokenbits;
+
+extern	mapthing_t	playerstarts[MAXPLAYERS];
+
+/*
+===============================================================================
+
+					GLOBAL FUNCTIONS
+
+===============================================================================
+*/
+
+
+#ifdef MARS
+#define FixedMul(a,b) (((int64_t)(a) * (b))>>16)
+fixed_t	FixedDiv (fixed_t a, fixed_t b);
+fixed_t IDiv (fixed_t a, fixed_t b);
+#else
+fixed_t	FixedMul (fixed_t a, fixed_t b);
+fixed_t	FixedDiv (fixed_t a, fixed_t b);
+#define IDiv(a,b) ((a) / (b))
+#endif
+
+typedef struct
+{
+	fixed_t m[16];
+} matrix_t;
+
+typedef struct
+{
+	fixed_t x, y, z;
+} vector3_t;
+
+typedef struct
+{
+	fixed_t x, y, z, a;
+} vector4_t;
+
+vector4_t *FV4_Load(vector4_t *vec, fixed_t x, fixed_t y, fixed_t z, fixed_t a);
+void FM_LoadIdentity(matrix_t* matrix);
+matrix_t *FM_RotateX(matrix_t *dest, angle_t rad);
+matrix_t *FM_RotateZ(matrix_t *dest, angle_t rad);
+const vector4_t *FM_MultMatrixVec4(const matrix_t *matrix, const vector4_t *vec, vector4_t *out);
+vector4_t *FV4_Copy(vector4_t *a_o, const vector4_t *a_i);
+vector3_t *FV3_Cross(const vector3_t *a_1, const vector3_t *a_2, vector3_t *a_o);
+fixed_t FV3_Magnitude(const vector3_t *a_normal);
+fixed_t FV3_Normalize(const vector3_t *a_normal, vector3_t *a_o);
+fixed_t FV3_Dot(const vector3_t *a_1, const vector3_t *a_2);
+fixed_t FixedSqrt(fixed_t x);
+
+#define	ACC_FIXEDMUL	4
+#define	ACC_FIXEDDIV	8
+#define	ACC_MULSI3		12
+#define	ACC_UDIVSI3		16
+
+
+#if defined(JAGUAR) || (defined(MARS)&&!defined(NeXT))
+#ifndef __BIG_ENDIAN__
+#define __BIG_ENDIAN__
+#endif
+#endif
+
+short ShortSwap (short dat);
+long LongSwap (long dat);
+
+#ifdef __BIG_ENDIAN__
+
+#define	BIGSHORT(x) (x)
+#define	BIGLONG(x) (x)
+/*define	LITTLESHORT(x) ShortSwap(x) */
+#define	LITTLESHORT(x) (short)((((x)&255)<<8)+(((x)>>8)&255))
+#define	LITTLELONG(x) LongSwap(x)
+
+#else
+
+#define	BIGSHORT(x) ShortSwap(x)
+#define	BIGLONG(x) LongSwap(x)
+#define	LITTLESHORT(x) (x)
+#define	LITTLELONG(x) (x)
+
+#endif
+
+
+
+/*----------- */
+/*MEMORY ZONE */
+/*----------- */
+/* tags < 100 are not overwritten until freed */
+#define	PU_STATIC		1			/* static entire execution time */
+#define	PU_SOUND		2			/* static while playing */
+#define	PU_MUSIC		3			/* static while playing */
+#define	PU_LEVEL		50			/* static until level exited */
+#define	PU_LEVSPEC		51			/* a special thinker in a level */
+
+#define	ZONEID	0x1d4a
+
+
+typedef struct memblock_s
+{
+	int		size;           /* including the header and possibly tiny fragments */
+	short   tag;            /* purgelevel */
+	short   id;             /* should be ZONEID */
+//#ifdef MEMDEBUG
+//	char file[16];
+//	int line;
+//#endif
+#ifndef MARS
+	int		lockframe;		/* don't purge on the same frame */
+#endif
+	struct memblock_s   *next;
+	struct memblock_s	*prev;
+} memblock_t;
+
+typedef struct
+{
+	int		size;				/* total bytes malloced, including header */
+	memblock_t	*rover;
+	memblock_t	blocklist;		/* start / end cap for linked list */
+} memzone_t;
+
+typedef void (*memblockcall_t) (void *, void*);
+
+extern VINT framecount;
+
+extern	memzone_t	*mainzone;
+extern	memzone_t	*refzone;
+
+void	Z_Init (void);
+memzone_t *Z_InitZone (byte *base, int size);
+
+int		Z_CalculateAllocSize(int datasize);
+
+#ifdef MEMDEBUG
+void 	*Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err, const char *file, int line);
+void    *Z_Calloc2 (memzone_t *mainzone, int size, int tag, boolean err, const char *file, int line);
+void 	Z_Free2 (memzone_t *mainzone,void *ptr, const char *file, int line);
+#else
+void 	*Z_Malloc2 (memzone_t *mainzone, int size, int tag, boolean err);
+void    *Z_Calloc2 (memzone_t *mainzone, int size, int tag, boolean err);
+void    Z_Free2 (memzone_t *mainzone,void *ptr);
+#endif
+
+#ifdef MEMDEBUG
+#define Z_Malloc(x,y) Z_Malloc2(mainzone,x,y,true,__FILE__,__LINE__)
+#define Z_Calloc(x,y) Z_Calloc2(mainzone,x,y,true,__FILE__,__LINE__)
+#define Z_Free(x) Z_Free2(mainzone,x,__FILE__,__LINE__)
+#else
+#define Z_Malloc(x,y) Z_Malloc2(mainzone,x,y,true)
+#define Z_Calloc(x,y) Z_Calloc2(mainzone,x,y,true)
+#define Z_Free(x) Z_Free2(mainzone,x)
+#endif
+
+
+#ifdef MEMDEBUG
+void Z_DumpHeap(memzone_t *mainzone, int skipCount);
+#endif
+
+void 	Z_FreeTags (memzone_t *mainzone);
+void	Z_CheckHeap (memzone_t *mainzone);
+void	Z_ChangeTag (void *ptr, int tag);
+int 	Z_FreeMemory (memzone_t *mainzone);
+int 	Z_LargestFreeBlock(memzone_t *mainzone);
+void 	Z_ForEachBlock(memzone_t *mainzone, memblockcall_t cb, void *userp);
+int		Z_FreeBlocks(memzone_t* mainzone);
+
+#ifdef MEMDEBUG
+extern boolean debugStop;
+#endif
+
+/*------- */
+/*WADFILE */
+/*------- */
+typedef struct
+{
+	int			filepos;					/* also texture_t * for comp lumps */
+	int			size;
+	char		name[8];
+} lumpinfo_t;
+
+#define	MAXLUMPS	2048
+
+extern	byte		*wadfileptr;
+
+extern	lumpinfo_t	*lumpinfo;			/* points directly to rom image */
+extern	int			numlumps;
+extern	void		*lumpcache[MAXLUMPS];
+
+void	W_Init (void);
+
+int		W_CheckNumForName (const char *name);
+int		W_GetNumForName (const char *name);
+int		W_CheckRangeForName (const char *name, int start, int end);
+
+int		W_LumpLength (int lump);
+int 	W_ReadLump (int lump, void *dest);
+
+void	*W_CacheLumpNum (int lump, int tag);
+void	*W_CacheLumpName (const char *name, int tag);
+
+const char *W_GetNameForNum (int lump);
+#ifdef SHOW_DISCLAIMER
+void* W_GetLumpData(int lump) ATTR_DATA_CACHE_ALIGN;
+#define W_POINTLUMPNUM(x) W_GetLumpData(x)
+#else
+void* W_GetLumpData(int lump, const char *file, int line) ATTR_DATA_CACHE_ALIGN;
+#define W_POINTLUMPNUM(x) W_GetLumpData(x, __FILE__, __LINE__)
+#endif
+
+
+
+/*---------- */
+/*BASE LEVEL */
+/*---------- */
+void D_DoomMain (void);
+void D_DoomLoop (void);
+
+#ifndef SHOW_DISCLAIMER
+extern VINT debugCounter;
+#endif
+
+extern	boolean onscreen_prompt;
+extern	boolean titlescreen;
+extern	unsigned char *demo_p, *demobuffer;
+
+extern  fixed_t prev_rec_values[4];
+
+extern	VINT		startmap;
+extern	gametype_t	starttype;
+extern	VINT		startsave;
+extern 	boolean 	startsplitscreen;
+
+extern boolean clearedGame;
+
+/*--------- */
+/*SYSTEM IO */
+/*--------- */
+#define	SCREENWIDTH		320
+#define	SCREENHEIGHT	180
+
+void I_Init (void);
+byte *I_WadBase (void);
+byte *I_ZoneBase (int *size);
+void* I_RemapLumpPtr (void* ptr) ATTR_DATA_CACHE_ALIGN;
+
+/* return a pointer to a 64k or so temp work buffer for level setup uses */
+/*(non-displayed frame buffer) */
+/* Vic: changed this to always return buffer memset to 0 */
+byte *I_TempBuffer (void);
+
+/* temp work buffer which may contain garbage data */
+byte *I_WorkBuffer (void);
+void I_FreeWorkBuffer(void);
+byte *I_AllocWorkBuffer(int size);
+
+pixel_t *I_FrameBuffer (void);
+pixel_t* I_OverwriteBuffer(void);
+
+pixel_t *I_ViewportBuffer (void);
+int I_ViewportYPos(void);
+int I_FrameBufferHeight(void);
+int I_IsPAL(void);
+
+void I_FillFrameBuffer (unsigned char palette_index);
+void I_ClearFrameBuffer (void);
+void I_ClearWorkBuffer(void);
+void I_ResetLineTable(void);
+
+void I_SetPalette (const byte *palette);
+
+int I_ReadControls(void);
+int I_ReadControls2(void);
+
+void I_NetSetup (void);
+unsigned I_NetTransfer (unsigned buttons);
+void I_NetStop(void);
+
+boolean	I_RefreshCompleted (void);
+boolean	I_RefreshLatched (void);
+int	I_GetTime (void);
+int     I_GetFRTCounter (void);
+
+void I_Update (void);
+
+void I_Error (char *error, ...) __attribute__((noreturn));
+void CONS_Printf(char *msg, ...);
+
+#ifdef MARS
+//#define USE_C_DRAW
+
+#ifdef USE_C_DRAW
+
+#define I_DrawColumnLow I_DrawColumnLowC
+#define I_DrawSkyColumnLow I_DrawSkyColumnLowC
+#define I_Draw32XSkyColumnLow I_Draw32XSkyColumnLowC
+#define I_DrawColumnNPo2Low I_DrawColumnNPo2LowC
+#define I_DrawSpanLow I_DrawSpanLowC
+#define I_DrawSpanColorLow I_DrawSpanColorLowC
+
+#define I_DrawColumn I_DrawColumnC
+#define I_DrawSkyColumn I_DrawSkyColumnC
+#define I_Draw32XSkyColumn I_Draw32XSkyColumnC
+#define I_DrawColumnNPo2 I_DrawColumnNPo2C
+
+#else
+
+#define I_DrawColumnLow I_DrawColumnLowA
+#define I_DrawSkyColumnLow I_DrawSkyColumnLowA
+#define I_Draw32XSkyColumnLow I_Draw32XSkyColumnLowA
+#define I_DrawColumnNPo2Low I_DrawColumnNPo2LowA
+#define I_DrawSpanLow I_DrawSpanLowA
+#define I_DrawSpanColorLow I_DrawSpanColorLowA
+
+#define I_DrawColumn I_DrawColumnA
+#define I_DrawColumnFlipped I_DrawColumnFlippedA
+#define I_DrawSkyColumn I_DrawSkyColumnA
+#define I_Draw32XSkyColumn I_Draw32XSkyColumnA
+#define I_DrawColumnNPo2 I_DrawColumnNPo2A
+
+#endif
+
+#endif
+
+void I_DrawColumnLow(int dc_x, int dc_yl, int dc_yh, int light, fixed_t dc_iscale,
+	fixed_t dc_texturemid, inpixel_t* dc_source, int dc_texheight);
+
+void I_DrawColumnNPo2Low(int dc_x, int dc_yl, int dc_yh, int light, fixed_t dc_iscale,
+	fixed_t dc_texturemid, inpixel_t* dc_source, int dc_texheight);
+
+void I_DrawSpanLow(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
+	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight);
+
+void I_DrawColumn(int dc_x, int dc_yl, int dc_yh, int light, fixed_t dc_iscale,
+	fixed_t dc_texturemid, inpixel_t* dc_source, int dc_texheight);
+
+void I_DrawColumnFlipped(int dc_x, int dc_yl, int dc_yh, int light, fixed_t dc_iscale,
+	fixed_t dc_texturemid, inpixel_t* dc_source, int dc_texheight);
+
+#ifdef MDSKY
+void I_DrawSkyColumn(int dc_x, int dc_yl, int dc_yh);
+
+void I_DrawSkyColumnLow(int dc_x, int dc_yl, int dc_yh);
+#endif
+
+void I_Draw32XSkyColumn(int dc_x, int dc_yl, int dc_yh, int light, fixed_t dc_iscale,
+	fixed_t dc_texturemid, inpixel_t* dc_source, int dc_y_offset);
+
+void I_Draw32XSkyColumnLow(int dc_x, int dc_yl, int dc_yh, int light, fixed_t dc_iscale,
+	fixed_t dc_texturemid, inpixel_t* dc_source, int dc_y_offset);
+
+void I_DrawColumnNPo2(int dc_x, int dc_yl, int dc_yh, int light, fixed_t dc_iscale,
+	fixed_t dc_texturemid, inpixel_t* dc_source, int dc_texheight);
+
+void I_DrawSpanColorLow(int ds_y, int ds_x1, int ds_x2, int color_index);
+
+#ifdef POTATO_MODE
+void I_DrawSpanPotatoLow(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
+	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight);
+#endif
+
+void I_DrawColumnNoDraw(int dc_x, int dc_yl, int dc_yh, int light, fixed_t frac_,
+	fixed_t fracstep, inpixel_t* dc_source, int dc_texheight);
+
+void I_DrawSpanNoDraw(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
+	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight);
+
+void I_DrawSpanColorNoDraw(int ds_y, int ds_x1, int ds_x2, int color_index);
+
+void I_DrawSkyColumnNoDraw(int dc_x, int dc_yl, int dc_yh);
+
+void I_Print8 (int x, int y, const char *string);
+int I_Print8Len(const char* string);
+
+void I_DebugScreen (void);
+
+/*---- */
+/*GAME */
+/*---- */
+
+void G_Init(void);
+void G_InitNew (int map, gametype_t gametype, boolean splitscreen);
+void G_ExitLevel (void);
+void G_SecretExitLevel (void);
+void G_WorldDone (void);
+void ClearCopper();
+
+void G_RecordInputDemo  (void);
+void G_RecordPositionDemo (void);
+int G_PlayInputDemoPtr (unsigned char *demo);
+#ifdef PLAY_POS_DEMO
+int G_PlayPositionDemoPtr (unsigned char *demo);
+#endif
+
+int G_LumpNumForMapNum(int map);
+
+/*----- */
+/*PLAY */
+/*----- */
+
+void P_SetupLevel (int lumpnum);
+void P_Init (void);
+
+void P_Start (void);
+void P_Stop (void);
+extern VINT accum_time;
+int P_Ticker (void);
+void P_Drawer (void);
+void P_Update (void);
+
+void IN_Start (void);
+void IN_Stop (void);
+int IN_Ticker (void);
+void IN_Drawer (void);
+
+void M_Start (void);
+void M_Start2(boolean startup);
+void M_Stop (void);
+int M_Ticker (void);
+void M_Drawer (void);
+
+void F_Start (void);
+void F_Stop (void);
+int F_Ticker (void);
+void F_Drawer (void);
+
+/*----- */
+/*OPTIONS */
+/*----- */
+
+extern	VINT	o_musictype;
+
+void O_Init (void);
+void O_Control (player_t *player);
+void O_Drawer (void);
+void O_SetButtonsFromControltype(void);
+
+
+/*----- */
+/*STATUS */
+/*----- */
+
+void ST_Init (void);
+void ST_Ticker (void);
+void ST_Drawer (void);
+void ST_ForceDraw(void);
+void ST_InitEveryLevel(void);
+
+
+/*------- */
+/*REFRESH */
+/*------- */
+struct seg_s;
+
+void R_RenderPlayerView (int displayplayer);
+void R_Init (void);
+int	R_FlatNumForName (const char *name);
+int	R_TextureNumForName (const char *name);
+int	R_CheckTextureNumForName (const char *name);
+angle_t R_PointToAngle2 (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2) ATTR_DATA_CACHE_ALIGN;
+fixed_t R_PointToDist2(fixed_t dx, fixed_t dy) ATTR_DATA_CACHE_ALIGN;
+VINT R_PointInSubsector2(fixed_t x, fixed_t y) ATTR_DATA_CACHE_ALIGN;
+
+/*---- */
+/*MISC */
+/*---- */
+int M_Random (void) ATTR_DATA_CACHE_ALIGN;
+int P_Random (void) ATTR_DATA_CACHE_ALIGN;
+fixed_t P_RandomFixed (void);
+int P_RandomKey (int max);
+void M_ClearRandom (void);
+void P_RandomSeed(int seed);
+uint16_t P_Random16();
+void M_ClearBox (fixed_t *box);
+void M_AddToBox (fixed_t *box, fixed_t x, fixed_t y);
+
+/* header generated by Dave's sound utility */
+#include "sounds.h"
+
+/*============================================================================ */
+/* */
+/* jag additions */
+/* */
+/*============================================================================ */
+
+#ifndef MARS
+extern	pixel_t	*workingscreen;
+extern	int		junk, spincount;
+#endif
+
+#ifdef JAGUAR
+extern	volatile int		ticcount, joybuttons;
+
+#define BLITWAIT while ( ! ((junk=*(int *)0xf02238) & 1) )	;
+
+#define	JP_NUM		1
+#define	JP_9		2
+#define	JP_6		4
+#define	JP_3		8
+#define	JP_0		0x10
+#define	JP_8		0x20
+#define	JP_5		0x40
+#define	JP_2		0x80
+
+#define	JP_OPTION	0x200
+#define	JP_C		0x2000
+#define JP_PWEAPN   0x4000 // CALICO: previous weapon input
+#define JP_NWEAPN   0x8000 // CALICO: next weapon input
+#define	JP_STAR		0x10000
+#define	JP_7		0x20000
+#define	JP_4		0x40000
+#define	JP_1		0x80000
+#define	JP_UP		0x100000
+#define	JP_DOWN		0x200000
+#define	JP_LEFT		0x400000
+#define	JP_RIGHT	0x800000
+
+#define	JP_B		0x2000000
+#define	JP_PAUSE	0x10000000
+#define	JP_A		0x20000000
+
+#define	BT_A			JP_A
+#define	BT_B			JP_B
+#define	BT_C			JP_C
+#define	BT_OPTION		JP_OPTION
+#define	BT_PAUSE		JP_PAUSE
+#define BT_STAR			JP_STAR
+#define	BT_HASH			JP_NUM
+#define	BT_1			JP_1
+#define	BT_2			JP_2
+#define	BT_3			JP_3
+#define	BT_4			JP_4
+#define	BT_5			JP_5
+#define	BT_6			JP_6
+#define	BT_7			JP_7
+#define	BT_8			JP_8
+#define	BT_9			JP_9
+#define	BT_0			JP_0
+#define	BT_PWEAPN		JP_PWEAPN
+#define	BT_NWEAPN		JP_NWEAPN
+
+#define	BT_LMBTN		0
+#define	BT_RMBTN		0
+#define	BT_MMBTN		0
+
+#else
+
+enum
+{
+	// hardware-agnostic game button actions
+	// transmitted over network
+	// should fit into a single word
+	BT_UP			= SEGA_CTRL_UP,
+	BT_DOWN			= SEGA_CTRL_DOWN,
+	BT_LEFT			= SEGA_CTRL_LEFT,
+	BT_RIGHT		= SEGA_CTRL_RIGHT,
+	BT_C			= SEGA_CTRL_C,
+	BT_B			= SEGA_CTRL_B,
+	BT_A			= SEGA_CTRL_A,
+	BT_START		= SEGA_CTRL_START,
+	BT_Z			= SEGA_CTRL_Z,
+	BT_Y			= SEGA_CTRL_Y,
+	BT_X			= SEGA_CTRL_X,
+	BT_MODE			= SEGA_CTRL_MODE,
+
+	BT_FLIP			= (SEGA_CTRL_A << 16),
+	BT_JUMP		    = (SEGA_CTRL_B << 16),
+	BT_SPIN			= (SEGA_CTRL_C << 16),
+
+	BT_CAMLEFT		= (SEGA_CTRL_X << 16),
+	BT_GASPEDAL		= (SEGA_CTRL_Y << 16),
+	BT_CAMRIGHT		= (SEGA_CTRL_Z << 16),
+
+	BT_LMBTN		= SEGA_CTRL_LMB,
+	BT_RMBTN		= SEGA_CTRL_RMB,
+	BT_MMBTN		= SEGA_CTRL_MMB,
+	BT_PAUSE		= SEGA_CTRL_STARTMB,
+};
+
+#endif
+
+#define MENU_BTNMASK (BT_RMBTN|BT_LMBTN|BT_MODE|BT_START|BT_A|BT_C|BT_B|BT_RIGHT|BT_LEFT|BT_DOWN|BT_UP)
+
+typedef enum
+{
+	SFU,
+	NUMCONTROLOPTIONS,
+} control_t;
+
+/* action buttons can be set to BT_A, BT_B, or BT_C */
+/* strafe and use should be set to the same thing */
+extern unsigned configuration[NUMCONTROLOPTIONS][3];
+extern	VINT	controltype;				/* 0 to 5 */
+extern	boolean	splitscreen;
+
+extern	VINT	sfxvolume, musicvolume;		/* range from 0 to 255 */
+extern	VINT 	sfxdriver;
+
+/* */
+/* comnjag.c */
+/*  */
+extern	int		samplecount;
+
+
+void C_Init (void);
+void NumToStr (int num, char *str);
+void PrintNumber (int x, int y, int num);
+
+
+#define	BASEORGX	(7)
+/*define	BASEORGY	(24) */
+extern	unsigned BASEORGY;
+
+/*================= */
+
+void DoubleBufferSetup (void);
+void EraseBlock (int x, int y, int width, int height);
+void GetJagobjSize (int lumpnum, int* ow, int* oh);
+void DrawJagobj (jagobj_t *jo, int x, int y);
+void DrawJagobj2 (jagobj_t *jo, int x, int y, int canvas_width);
+void DrawJagobjLump (int lumpnum, int x, int y, int* ow, int* oh);
+void DrawJagobjLumpWithColormap (int lumpnum, int x, int y, int* ow, int* oh, int colormap);
+void DrawJagobjWithColormap (jagobj_t* jo, int x, int y, 
+	int src_x, int src_y, int src_w, int src_h, pixel_t *fb, int colormap);
+void DrawJagobj3 (jagobj_t* jo, int x, int y, 
+	int src_x, int src_y, int src_w, int src_h, int canvas_width, pixel_t* fb);
+void DrawScaledJagobj (jagobj_t* jo, int x, int y, 
+	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb);
+void DrawMaskedGraphic(byte *data, int x, int y);
+void DrawMaskedGraphic2(byte *data, int x, int y, int src_y);
+void DrawMaskedGraphic3(byte *data, int x, int y, int src_y, int colormap);
+void DrawMaskedGraphicWithColormap(byte *data, int x, int y, int colormap);
+void DrawMaskedGraphicLump(int lumpnum, int x, int y);
+void DrawFillRect (int x, int y, int w, int h, int c);
+void DrawLine (int x, int y, int length, int c, boolean vertical);
+void UpdateBuffer (void);
+
+#ifndef MARS
+extern	byte	*bufferpage;		/* draw here */
+extern	byte	*displaypage;		/* copied to here when finished */
+
+/*================= */
+
+extern	int	gpucodestart, gpucodeend;		/* gpu funtion control */
+extern int gpufinished;
+
+extern		volatile int	dspcodestart, dspcodeend, dspfinished;
+
+void ReloadWad (void);
+
+int DSPFunction(void* start);
+
+extern short *palette8;
+extern int zero, ZERO, zero2;
+int DSPRead(void volatile* adr);
+#else
+
+#define DSPRead(adr) (intptr_t)(*(adr))
+
+#endif
+
+extern	boolean		gamepaused;
+extern	jagobj_t	*pausepic;
+
+#ifndef MARS
+extern	pixel_t	*screens[2];
+extern	int		workpage;
+#endif
+
+void WriteEEProm (void);
+void SaveGame(int slotnum);
+void ReadGame(int slotnum);
+void QuickSave(int nextmap);
+int SaveCount(void);
+int MaxSaveCount(void);
+boolean GetSaveInfo(int slotnumber, VINT* mapnum, VINT* skill, VINT *mode);
+
+void PrintHex (int x, int y, unsigned num);
+void DrawPlaque (jagobj_t *pl);
+void DrawTiledLetterbox2(int flat);
+void DrawTiledLetterbox(void);
+void DrawTiledBackground2(int flat);
+void DrawTiledBackground(void);
+void DrawScrollingBanner(short ltzz_lump, int x, int y_shift);
+void DrawScrollingChevrons(short chev_lump, int x, int y_shift);
+
+void ApplyHorizontalDistortionFilter(int filter_offset);
+void RemoveDistortionFilters();
+
+extern	VINT		maxlevel;			/* highest level selectable in menu (1-25) */
+
+extern	VINT		gamevbls;			/* may not really be vbls in multiplayer */
+extern	VINT		vblsinframe;			/* range from 4 to 8 */
+
+#define MAX_FRAME_SKIP		3
+
+typedef enum
+{
+	DEBUGMODE_NONE,
+
+	DEBUGMODE_FPSCOUNT,
+	DEBUGMODE_ALLCOUNT,
+	DEBUGMODE_NOTEXCACHE,
+	DEBUGMODE_NODRAW,
+	DEBUGMODE_TEXCACHE,
+
+	DEBUGMODE_NUM_MODES
+} debugmode_t;
+
+extern VINT debugmode;
+extern char clearscreen;
+extern char clear_h32_borders;
+
+typedef enum
+{
+	DISTORTION_NONE,
+	DISTORTION_ADD,
+	DISTORTION_REMOVE,
+	DISTORTION_NORMALIZE_H32,
+	DISTORTION_NORMALIZE_H40
+} distortion_e;
+extern VINT distortion_action;
+extern VINT initmathtables;
+
+extern VINT COLOR_BLACK;
+extern VINT COLOR_WHITE;
+
+void I_InitMenuFire(jagobj_t* titlepic, byte* titlepic_a, byte* titlepic_b);
+void I_StopMenuFire(void);
+void I_DrawMenuFire(void);
+
+void S_StartSong(int musiclump, int looping, int cdtrack);
+int S_SongForMapnum(int mapnum);
+void S_StopSong(void);
+void S_RestartSounds (void);
+void S_SetSoundDriver (int newdrv);
+
+/*================= */
+/*TLS */
+/*================= */
+
+// !!! if this is changed, it must be changed in mars_tls_t too!
+#define DOOMTLS_BANKPAGE 		0
+#define DOOMTLS_SETBANKPAGEPTR 	4
+
+#define DOOMTLS_COLUMNCACHE		12
+#define DOOMTLS_COLORMAP		16
+// !!! if this is changed, it must be changed in mars_tls_t too!
+
+#ifdef MARS
+#define STR_INDIR(x) #x
+#define STR(x) STR_INDIR(x)
+
+# define I_SetThreadLocalVar(offs,val) \
+	__asm volatile(	"mov %0,r0\n\t" "mov.l r0,@(" STR(offs) ",gbr)\n\t" : : "r"(val) : "r0", "gbr")
+
+# define I_GetThreadLocalVar(offs,val) \
+	__asm volatile(	"mov.l @(" STR(offs) ",gbr),r0\n\t" "mov r0,%0\n\t" : "=r"(val) : : "r0", "gbr")
+#else
+
+void I_SetThreadLocalVar(uintptr_t offs, uint32_t val);
+void I_GetThreadLocalVar(uintptr_t offs, uint32_t val);
+
+#endif
+
+#endif
+/* DoomDef.h */
+
+#ifndef DOOMDEF_H__
+#define DOOMDEF_H__
+
+#include "32x.h"
+
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+
+/* JAGUAR should be defined on the compiler command line for console builds */
+/* if MARS isn't defined, assume jaguar version */
+
+/*define	MARS */
+
+/* if rangecheck is undefined, most parameter validation debugging code */
+/* will not be compiled */
+#define	RANGECHECK
+
+/* if SIMULATOR is defined, compile in extra code for things like console */
+/* debugging aids */
+#ifndef JAGUAR
+#ifndef MARS
+#define SIMULATOR
+#endif
+#endif
+
+typedef unsigned short pixel_t;
+
+#ifdef MARS
+typedef unsigned char inpixel_t;
+#else
+typedef unsigned short inpixel_t;
+#endif
+
+#ifdef MARS
+#define DATA_START_ADDRESS 0x06000000
+#else
+#define DATA_START_ADDRESS 0
+#endif
+
+/* the structure sizes are frozen at ints for jaguar asm code, but shrunk */
+/* down for mars memory cramming */
+#ifdef MARS
+#define	VINT	short
+#else
+#define	VINT	int
+#endif
+
+#ifdef MARS
+#define ATTR_DATA_OPTIMIZE_NONE __attribute__((section(".sdata"), aligned(16), optimize("O1")))
+#define ATTR_DATA_CACHE_ALIGN __attribute__((section(".sdata"), aligned(16), optimize("Os")))
+#define ATTR_OPTIMIZE_SIZE __attribute__((optimize("Os")))
+#define ATTR_OPTIMIZE_EXTREME __attribute__((optimize("O3", "no-align-loops", "no-align-functions", "no-align-jumps", "no-align-labels")))
+#else
+#define ATTR_DATA_OPTIMIZE_NONE
+#define ATTR_DATA_CACHE_ALIGN
+#define ATTR_OPTIMIZE_SIZE
+#define ATTR_OPTIMIZE_EXTREME
+#endif
+
+#ifdef MARS
+#define SPTR uint16_t
+#define LPTR_TO_SPTR(p) ((p) ? (uint16_t)(((uintptr_t)(p) - DATA_START_ADDRESS)>>2) : 0) // use with caution as pointer at the beginning of RAM address space will be mapped to a NULL pointer!
+#define SPTR_TO_LPTR(p) ((p) ? (void*)(((uintptr_t)(p) << 2) + DATA_START_ADDRESS) : NULL)
+#else
+#define SPTR void *
+#define LPTR_TO_SPTR(p) (p)
+#define SPTR_TO_LPTR(p) (p)
+#endif
+
+/*============================================================================= */
+
+/* all external data is defined here */
+#include "doomdata.h"
+
+/* header generated by multigen utility */
+#include "info.h"
+
+#define D_MAXCHAR  ((char)0x7f)
+#define D_MAXSHORT ((short)0x7fff)
+#define D_MAXINT   ((int)0x7fffffff)  // max pos 32-bit int
+#define D_MAXLONG  ((long)0x7fffffff)
+
+#define D_MINCHAR  ((char)0x80)
+#define D_MINSHORT ((short)0x8000)
+#define D_MININT   ((int)0x80000000) // max negative 32-bit integer
+#define D_MINLONG  ((long)0x80000000)
+
+#ifndef NULL
+#define	NULL	0
+#endif
+
+typedef struct
+{
+	short	width;		/* in pixels */
+	short	height;
+	short	depth;		/* 1-5 */
+	short	index;		/* location in palette of color 0 */
+	short	flags,pad2,pad3,pad4;	/* future expansion */
+	byte	data[8];		/* as much as needed */
+} jagobj_t;
+
+//extern int free_memory;
+
+// Special stage HUD
+extern	jagobj_t	*narrow9_jagobj;
+extern	jagobj_t	*nbrackt_jagobj;
+extern	jagobj_t	*nbrackl_jagobj;
+extern	jagobj_t	*nbrackr_jagobj;
+extern	jagobj_t	*nbrackb_jagobj;
+extern	jagobj_t	*nrng1_jagobj;
+extern	jagobj_t	*nsshud_jagobj;
+extern	jagobj_t	*chaos_jagobj;
+
+#ifdef SKYDEBUG
+extern uint8_t load_sky_lump_scroll_a;
+extern uint8_t load_sky_lump_scroll_b;
+extern uint8_t load_sky_lump_copper;
+extern uint8_t load_sky_lump_metadata;
+extern uint8_t load_sky_lump_palette;
+extern uint8_t load_sky_lump_tiles;
+#endif
+
+#ifdef CPUDEBUG
+extern uint16_t cpu_pulse_count;
+extern uint16_t cpu_pulse_timeout;
+
+extern uint32_t cpu_debug_pr;
+#endif
+
+int D_vsnprintf(char *str, size_t nmax, const char *format, va_list ap) __attribute__((nonnull));
+int D_snprintf(char *buf, size_t nsize, const char *fmt, ...) __attribute__((nonnull));
+void D_printf (char *str, ...) __attribute__((nonnull));
+
+void D_isort(int* a, int len) __attribute__((nonnull)) ATTR_DATA_CACHE_ALIGN;
+
+/*
+===============================================================================
+
+						GLOBAL TYPES
+
+===============================================================================
+*/
+
+#define MAXPLAYERS	2
+
+#define TICRATE		30				/* number of tics / second */
+#define TICVBLS		(60/TICRATE)	/* vblanks per tic */
+									/* change this to 'ticrate' if you want */
+									/* to use a different rate on PAL */
+
+#define	FRACBITS		16
+#define	FRACUNIT		(1<<FRACBITS)
+typedef int fixed_t;
+
+#define REC_DEMO_TIMEOUT	(30*TICRATE)	// Stop recording after 30 seconds
+
+#ifdef KIOSK_MODE
+	#define KIOSK_TIMEOUT				(30*TICRATE)
+	#define KIOSK_LEVELSELECT_TIMEOUT	(20*(2*TICRATE))
+#endif
+
+#ifdef MARS
+//#define THINKERS_30HZ
+#endif
+
+#ifdef THINKERS_30HZ
+#define THINKERS_TICS 1
+#else
+#define THINKERS_TICS 2
+#endif
+
+#define ANGLE_1 0x00B60B61 // Not exact, so rounded up
+#define	ANG45	0x20000000
+#define	ANG90	0x40000000
+#define	ANG180	0x80000000
+#define	ANG270	0xc0000000
+#define ANGLE_MAX  0xFFFFFFFF
+typedef unsigned angle_t;
+
+#define	FINEANGLES			8192
+#define	FINEMASK			(FINEANGLES-1)
+#define	ANGLETOFINESHIFT	19	/* 0x100000000 to 0x2000 */
+
+#define TITLE_ANGLE_INC		0x555555
+
+#define TITLE_MAP_NUMBER	30
+#define SSTAGE_START        60
+#define SSTAGE_END          66
+
+#define COLOR_THRU			0xFF
+#define COLOR_THRU_2		0xFFFF
+
+#ifdef MARS
+
+fixed_t finesine(angle_t angle) ATTR_DATA_CACHE_ALIGN;
+#define finecosine(angle) finesine((angle) + FINEANGLES / 4)
+
+#else
+
+extern	const fixed_t		finesine_[5*FINEANGLES/4];
+extern	const fixed_t		*finecosine_;
+
+#define finesine(x) finesine_[x]
+#define finecosine(x) finecosine_[x]
+
+#endif
+
+short G_ClipAimingPitch(int* aiming);
+
+typedef enum 
+{
+	ga_nothing, 
+	ga_died,
+	ga_completed,
+	ga_secretexit,
+	ga_warped,
+	ga_exitdemo,
+	ga_startnew,
+	ga_backtotitle,
+	ga_specialstageexit,
+	ga_closeprompt,
+	ga_titleexpired,
+	ga_demoending,
+	ga_showcredits,
+} gameaction_t;
+
+#ifdef KIOSK_MODE
+extern uint16_t kiosk_timeout_count;
+#endif
+
+/* */
+/* library replacements */
+/* */
+
+#define D_max(a,b) (((a) > (b)) ? (a) : (b))
+#define D_min(a,b) (((a) < (b)) ? (a) : (b))
+#define D_abs(x) ((x < 0) ? -(x) : x)
+void D_memset (void *dest, int val, size_t count) __attribute__((nonnull));
+void D_memcpy (void *dest, const void *src, size_t count) __attribute__((nonnull));
+void D_strncpy (char *dest, const char *src, int maxcount) __attribute__((nonnull));
+int D_strncasecmp (const char *s1, const char *s2, int len) __attribute__((nonnull));
+int D_strcasecmp (const char *s1, const char *s2) __attribute__((nonnull));
+int mystrlen(const char *string) __attribute__((nonnull));
+int D_atoi(const char* str) __attribute__((nonnull));
+char* D_strchr(const char* str, char chr) __attribute__((nonnull));
+
+/*
+===============================================================================
+
+							MAPOBJ DATA
+
+===============================================================================
+*/
+
+struct mobj_s;
+
+/* think_t is a function pointer to a routine to handle an actor */
+typedef void (*think_t) ();
+
+/* a latecall is a function that needs to be called after p_base is done */
+enum
+{
+	LC_INVALID = -1,
+	LC_NONE,
+	LC_SKULL_BASH,
+	LC_MISSILE_HIT,
+	LC_EXPLODE_MISSILE,
+	LC_REMOVE_MOBJ
+};
+
+typedef struct thinker_s
+{
+	struct		thinker_s	*prev, *next;
+	think_t		function;
+} thinker_t;
+
+struct player_s;
+
+typedef struct
+{
+	unsigned short	x, y;
+	unsigned short	angle;
+	unsigned short	type;
+} spawnthing_t;
+
+typedef struct mobj_s
+{
+	uint8_t		type;
+	uint8_t		flags;
+	SPTR	snext;		/* links in sector (if needed) */
+	SPTR	bnext;		/* links in blocks (if needed) */
+	SPTR    bprev;
+	SPTR    sprev;
+	VINT        isubsector;
+	struct	mobj_s* prev, * next;
+
+	fixed_t			x, y, z;
+
+	/* info for drawing */
+	angle_t			angle;
+
+	/* interaction info */
+	fixed_t			floorz, ceilingz;	/* closest together of contacted secs */
+
+	uint8_t			health;
+	uint8_t			player;		/* only valid if type == MT_PLAYER */
+	int8_t			tics;				/* state tic counter	 */
+	uint8_t        	theight;			// 'tiny' height: << FRACBITS to get real height
+
+	VINT 			state;
+
+	VINT            flags2;
+
+	/* STATIC OBJECTS END HERE */
+	unsigned char	movedir;		/* 0-7 */
+	char			movecount;		/* when 0, select a new dir */
+	unsigned char		reactiontime;	/* if non 0, don't attack yet */
+	unsigned char		threshold;		/* if >0, the target will be chased */
+
+	fixed_t			momx, momy, momz;	/* momentums */
+
+	struct mobj_s	*target;		/* thing being chased/attacked (or NULL) */
+									/* also the originator for missiles */
+
+	VINT		latecall;		/* set in p_base if more work needed */
+	SPTR		extradata;		/* for latecall functions */
+} mobj_t;
+
+typedef struct scenerymobj_s
+{
+	uint8_t		type;
+	uint8_t		flags;
+	SPTR	snext;		/* links in sector (if needed) */
+	// SIMILARITIES END HERE
+	int16_t x, y;
+} scenerymobj_t;
+
+typedef struct ringmobj_s
+{
+	uint8_t		type;
+	uint8_t		flags;
+	SPTR	snext;		/* links in sector (if needed) */
+	SPTR	bnext;		/* links in blocks (if needed) */
+	SPTR bprev;
+	SPTR    sprev;
+	VINT        isubsector;
+	// SIMILARITIES END HERE
+	VINT			x, y, z;
+	VINT pad;
+} ringmobj_t;
+
+typedef struct degenmobj_s
+{
+	uint8_t		type;
+	uint8_t		flags;
+	SPTR	snext;		/* links in sector (if needed) */
+	SPTR	bnext;		/* links in blocks (if needed) */
+	SPTR bprev;
+	SPTR    sprev;
+	VINT isubsector;
+	void 			*prev, *next;
+} degenmobj_t;
+
+typedef struct consistencymobj_s
+{
+	uint8_t		type;
+	uint8_t		flags;
+	SPTR	snext;		/* links in sector (if needed) */
+	SPTR	bnext;		/* links in blocks (if needed) */
+	SPTR bprev;
+	SPTR    sprev;
+	VINT isubsector;
 	void 			*prev, *next;
 	fixed_t			x, y, z;
 } consistencymobj_t;

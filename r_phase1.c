@@ -893,7 +893,7 @@ static void R_Subsector(rbspWork_t *rbsp, int num)
          validcount[secnum+1] = validcount[0];  // mark it as processed
          if (vd.lastvissector < vd.vissectors + MAXVISSSEC)
          {
-           *vd.lastvissector++ = &sector_thinglist[secnum]; // frontsector
+           *vd.lastvissector++ = secnum; // frontsector
          }
       }
    }

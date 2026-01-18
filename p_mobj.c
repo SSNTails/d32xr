@@ -278,7 +278,7 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			scenerymobj->flags = info->flags;
 
 			/* set subsector and/or block links */
-			P_SetThingPosition2 ((mobj_t*)scenerymobj, R_PointInSubsector2(x, y));
+			P_LinkSubsector((mobj_t*)scenerymobj, R_PointInSubsector2(x, y));
 
 			numscenerymobjs++;
 

@@ -218,6 +218,7 @@ typedef boolean(*blockthingsiter_t)(mobj_t*, void*);
 boolean P_BlockLinesIterator (int x, int y, blocklinesiter_t, void *userp );
 boolean P_BlockThingsIterator (int x, int y, blockthingsiter_t, void *userp );
 
+void P_LinkSubsector(mobj_t *thing, VINT iss);
 void 	P_UnsetThingPosition (mobj_t *thing);
 void	P_SetThingPosition (mobj_t *thing);
 void	P_SetThingPosition2 (mobj_t *thing, VINT iss);

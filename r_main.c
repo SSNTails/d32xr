@@ -1247,7 +1247,7 @@ extern	pixel_t	*screens[2];	/* [viewportWidth*viewportHeight];  */
 #define AIMINGTODY(a) ((finetangent((2048+(((int)a)>>ANGLETOFINESHIFT)) & FINEMASK)*160)>>FRACBITS)
 
 static void R_Setup (int displayplayer, visplane_t *visplanes_,
-	visplane_t **visplanes_hash_, SPTR **vissectors_, viswallextra_t *viswallex_)
+	visplane_t **visplanes_hash_, VINT *vissectors_, viswallextra_t *viswallex_)
 {
 	VINT waterpal = 0;
 	int 		i;
@@ -1819,7 +1819,7 @@ void R_RenderPlayerView(int displayplayer)
 		visplane_t visplanes_[MAXVISPLANES];
 	__attribute__((aligned(16)))
 		visplane_t *visplanes_hash_[NUM_VISPLANES_BUCKETS];
-	SPTR *vissectors_[(MAXVISSSEC > MAXVISSPRITES ? MAXVISSSEC : MAXVISSPRITES) + 1];
+	VINT vissectors_[((MAXVISSSEC > MAXVISSPRITES ? MAXVISSSEC : MAXVISSPRITES) + 1) * 2];
 	viswallextra_t viswallex_[MAXWALLCMDS + 1] __attribute__((aligned(16)));
 
 	if (sky_in_view == 0) {
