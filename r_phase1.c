@@ -859,9 +859,10 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
         backsector->floorheight == frontsector->floorheight)
    {
       // reject empty lines used for triggers and special events
+      // ...except SRB2 doesn't really use them! Is it worth tossing?
       if (!(backsector->fofsec || frontsector->fofsec) &&
-         *(int16_t *)&backsector->floorpic == *(int16_t *)&frontsector->floorpic && // compares both floorpic and ceilingpic
-         *(int8_t *)&backsector->lightlevel == *(int8_t *)&frontsector->lightlevel && // hack to get rid of the extu.w on SH-2
+         *(int32_t *)&backsector->floorpic == *(int32_t *)&frontsector->floorpic && // compares both floorpic, ceilingpic, lightlevel, and special
+         // hack to get rid of the extu.w on SH-2
          SIDETEX(sidedef)->midtexture == 0)
          return;
    }
