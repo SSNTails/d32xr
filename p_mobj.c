@@ -17,22 +17,22 @@ void G_PlayerReborn (int player);
 static void P_AddMobjToList (mobj_t *mobj_, mobj_t *head_)
 {
 	degenmobj_t *mobj = (void*)mobj_, *head = (void *)head_;
-	((degenmobj_t *)head->prev)->next = mobj;
-	mobj->next = head;
+	((degenmobj_t *)SPTR_TO_LPTR(head->prev))->next = LPTR_TO_SPTR(mobj);
+	mobj->next = LPTR_TO_SPTR(head);
 	mobj->prev = head->prev;
-	head->prev = mobj;
+	head->prev = LPTR_TO_SPTR(mobj);
 }
 
 static void P_RemoveMobjFromCurrList (mobj_t *mobj_)
 {
 	degenmobj_t *mobj = (void*)mobj_;
-	((degenmobj_t *)mobj->next)->prev = mobj->prev;
-	((degenmobj_t *)mobj->prev)->next = mobj->next;
+	((degenmobj_t *)SPTR_TO_LPTR(mobj->next))->prev = mobj->prev;
+	((degenmobj_t *)SPTR_TO_LPTR(mobj->prev))->next = mobj->next;
 }
 
 mobj_t *P_FindFirstMobjOfType(uint16_t type)
 {
-	for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+	for (mobj_t *node = SPTR_TO_LPTR(mobjhead.next); node != (void*)&mobjhead; node = SPTR_TO_LPTR(node->next))
     {
 		if (node->type == type)
 			return node;
@@ -302,10 +302,9 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 				|| ringmobj->type == MT_CANDLEPRICKET;
 
 			if (noblockmap)
-				ringmobj->flags |= MF_NOBLOCKMAP;
-			P_SetThingPosition2 ((mobj_t*)ringmobj, R_PointInSubsector2(x, y));
-			if (noblockmap)
-				ringmobj->flags &= ~MF_NOBLOCKMAP;
+				P_LinkSubsector((mobj_t*)ringmobj, R_PointInSubsector2(x, y));
+			else
+				P_SetThingPosition2 ((mobj_t*)ringmobj, R_PointInSubsector2(x, y));
 
 			numringmobjs++;
 
@@ -314,9 +313,9 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	}
 	else if (info->flags & MF_STATIC)
 	{
-		if (freestaticmobjhead.next != (void *)&freestaticmobjhead)
+		if (SPTR_TO_LPTR(freestaticmobjhead.next) != (void *)&freestaticmobjhead)
 		{
-			mobj = freestaticmobjhead.next;
+			mobj = SPTR_TO_LPTR(freestaticmobjhead.next);
 			P_RemoveMobjFromCurrList(mobj);
 		}
 		else
@@ -327,9 +326,9 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	}
 	else
 	{
-		if (freemobjhead.next != (void *)&freemobjhead)
+		if (SPTR_TO_LPTR(freemobjhead.next) != (void *)&freemobjhead)
 		{
-			mobj = freemobjhead.next;
+			mobj = SPTR_TO_LPTR(freemobjhead.next);
 			P_RemoveMobjFromCurrList(mobj);
 		}
 		else

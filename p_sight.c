@@ -377,7 +377,7 @@ static void P_CheckSights2(int c)
 static void P_CheckSights2(void)
 #endif
 {
-   for (mobj_t *mobj = mobjhead.next; mobj != (mobj_t*)&mobjhead; mobj = mobj->next)
+   for (mobj_t *mobj = SPTR_TO_LPTR(mobjhead.next); mobj != (mobj_t*)&mobjhead; mobj = SPTR_TO_LPTR(mobj->next))
    {
       if (!(mobj->flags2 & MF2_ENEMY))
          continue;

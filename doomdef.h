@@ -62,6 +62,8 @@ typedef unsigned short inpixel_t;
 
 #ifdef MARS
 #define SPTR uint16_t
+#define LPTR_TO_SPTR_NN(p) ((uint16_t)(((uintptr_t)(p) - DATA_START_ADDRESS)>>2))
+#define SPTR_TO_LPTR_NN(p) ((void*)(((uintptr_t)(p) << 2) + DATA_START_ADDRESS))
 #define LPTR_TO_SPTR(p) ((p) ? (uint16_t)(((uintptr_t)(p) - DATA_START_ADDRESS)>>2) : 0) // use with caution as pointer at the beginning of RAM address space will be mapped to a NULL pointer!
 #define SPTR_TO_LPTR(p) ((p) ? (void*)(((uintptr_t)(p) << 2) + DATA_START_ADDRESS) : NULL)
 #else
@@ -295,7 +297,7 @@ typedef struct mobj_s
 	SPTR    bprev;
 	SPTR    sprev;
 	VINT        isubsector;
-	struct	mobj_s* prev, * next;
+	SPTR prev, next;
 
 	fixed_t			x, y, z;
 
@@ -361,7 +363,7 @@ typedef struct degenmobj_s
 	SPTR bprev;
 	SPTR    sprev;
 	VINT isubsector;
-	void 			*prev, *next;
+	SPTR 			prev, next;
 } degenmobj_t;
 
 typedef struct consistencymobj_s
@@ -373,7 +375,7 @@ typedef struct consistencymobj_s
 	SPTR bprev;
 	SPTR    sprev;
 	VINT isubsector;
-	void 			*prev, *next;
+	SPTR			prev, next;
 	fixed_t			x, y, z;
 } consistencymobj_t;
 

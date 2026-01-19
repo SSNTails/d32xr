@@ -18,7 +18,7 @@ void P_Telefrag (mobj_t *thing, fixed_t x, fixed_t y)
 	int		size;
 	mobj_t	*m;
 	
-	for (m=mobjhead.next ; m != (void *)&mobjhead ; m=m->next)
+	for (m=SPTR_TO_LPTR(mobjhead.next); m != (void *)&mobjhead; m=SPTR_TO_LPTR(m->next))
 	{
 		if (!Mobj_HasFlags2(m, MF2_SHOOTABLE))
 			continue;		/* not shootable */

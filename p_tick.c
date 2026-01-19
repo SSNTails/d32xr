@@ -72,10 +72,10 @@ VINT ringmobjcount = 0;
 void P_InitThinkers (void)
 {
 	thinkercap.prev = thinkercap.next  = &thinkercap;
-	mobjhead.next = mobjhead.prev = (void *)&mobjhead;
-	freemobjhead.next = freemobjhead.prev = (void *)&freemobjhead;
-	freestaticmobjhead.next = freestaticmobjhead.prev = (void *)&freestaticmobjhead;
-	limbomobjhead.next = limbomobjhead.prev = (void*)&limbomobjhead;
+	mobjhead.next = mobjhead.prev = LPTR_TO_SPTR_NN(&mobjhead);
+	freemobjhead.next = freemobjhead.prev = LPTR_TO_SPTR_NN(&freemobjhead);
+	freestaticmobjhead.next = freestaticmobjhead.prev = LPTR_TO_SPTR_NN(&freestaticmobjhead);
+	limbomobjhead.next = limbomobjhead.prev = LPTR_TO_SPTR_NN(&limbomobjhead);
 	scenerymobjlist = NULL;
 	ringmobjlist = NULL;
 	sectorBBoxes.next = sectorBBoxes.prev = (void *)&sectorBBoxes;

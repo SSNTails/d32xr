@@ -16,7 +16,7 @@
 
 void P_SetStarPosts(uint8_t starpostnum)
 {
-	for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+	for (mobj_t *node = SPTR_TO_LPTR(mobjhead.next); node != (void*)&mobjhead; node = SPTR_TO_LPTR(node->next))
     {
 		if (node->type != MT_STARPOST)
 			continue;
@@ -553,7 +553,7 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 
 			if (target->type == MT_EGGMOBILE2)
 			{
-				for (mobj_t *mo = mobjhead.next ; mo != (void *)&mobjhead; mo = mo->next)
+				for (mobj_t *mo = SPTR_TO_LPTR(mobjhead.next); mo != (void *)&mobjhead; mo = SPTR_TO_LPTR(mo->next))
 				{					
 					if (mo->type == MT_GOOP)
 						mo->latecall = LC_REMOVE_MOBJ;
@@ -636,7 +636,7 @@ void P_BlackOw(player_t *player)
 	}
 
 	// TODO: Use blockmap!
-	for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+	for (mobj_t *node = SPTR_TO_LPTR(mobjhead.next); node != (void*)&mobjhead; node = SPTR_TO_LPTR(node->next))
     {
 		if ((node->flags2 & MF2_ENEMY) && P_AproxDistance(node->x - player->mo->x, node->y - player->mo->y) < 1536*FRACUNIT)
 			P_DamageMobj(node, player->mo, player->mo, 1);

@@ -562,7 +562,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				break;
 			}
 
-			for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+			for (mobj_t *node = SPTR_TO_LPTR(mobjhead.next); node != (void*)&mobjhead; node = SPTR_TO_LPTR(node->next))
 			{
 				if (node->type == MT_ALTVIEWMAN && node->angle / ANGLE_1 == tag)
 				{

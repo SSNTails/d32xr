@@ -336,7 +336,7 @@ void T_MoveFloor(floormove_t *floor)
 				case thz2DropBlock:
 				{
 					// Find the turret, destroy it
-					for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+					for (mobj_t *node = SPTR_TO_LPTR(mobjhead.next); node != (void*)&mobjhead; node = SPTR_TO_LPTR(node->next))
 					{
 						if (node->type == MT_TURRET && node->health > 0)
 						{

@@ -921,7 +921,7 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
                {
                   if (mobj->type == MT_EGGMOBILE_TARGET)
                   {
-                     for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+                     for (mobj_t *node = SPTR_TO_LPTR(mobjhead.next); node != (void*)&mobjhead; node = SPTR_TO_LPTR(node->next))
                      {
                         if (node->target == mobj)
                            node->target = NULL;
@@ -1101,9 +1101,9 @@ void P_RunMobjBase2(void)
     mobj_t* mo;
     mobj_t* next;
 
-    for (mo = mobjhead.next; mo != (void*)&mobjhead; mo = next)
+    for (mo = SPTR_TO_LPTR(mobjhead.next); mo != (void*)&mobjhead; mo = next)
     {
-      next = mo->next;	// in case mo is removed this time
+      next = SPTR_TO_LPTR(mo->next);	// in case mo is removed this time
 /*
          if (mo->flags & MF_RINGMOBJ) // rings or scenery (they don't think, they don't uniquely animate)
             continue;
@@ -1148,9 +1148,9 @@ void P_RunMobjLate(void)
     mobj_t* next;
 
     /* move entities, removed this frame, from limbo to free list */
-    for (mo = limbomobjhead.next; mo != (void*)&limbomobjhead; mo = next)
+    for (mo = SPTR_TO_LPTR(limbomobjhead.next); mo != (void*)&limbomobjhead; mo = next)
     {
-        next = mo->next;
+        next = SPTR_TO_LPTR(mo->next);
         P_FreeMobj(mo);
     }
 }
