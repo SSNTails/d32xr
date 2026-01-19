@@ -91,7 +91,7 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 		rtn = 1;
 		ceiling = Z_Calloc (sizeof(*ceiling), PU_LEVSPEC);
 		P_AddThinker (&ceiling->thinker);
-		sec->specialdata = LPTR_TO_SPTR(ceiling);
+		sec->specialdata = LPTR_TO_SPTR_NN(ceiling);
 		ceiling->thinker.function = T_MoveCeiling;
 		ceiling->sector = sec;
 		ceiling->crush = false;

@@ -529,7 +529,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 					floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
 					P_AddThinker (&floor->thinker);
-					sec->specialdata = LPTR_TO_SPTR(floor);
+					sec->specialdata = LPTR_TO_SPTR_NN(floor);
 					floor->thinker.function = T_MoveFloor;
 					floor->type = lowerFloor;
 					floor->crush = false;
@@ -607,7 +607,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 					ceiling_t *ceiling = Z_Calloc(sizeof(*ceiling), PU_LEVSPEC);
 					P_AddThinker (&ceiling->thinker);
-					sec->specialdata = LPTR_TO_SPTR(ceiling);
+					sec->specialdata = LPTR_TO_SPTR_NN(ceiling);
 					ceiling->thinker.function = T_MoveCeiling;
 					ceiling->type = raiseCeiling;
 					ceiling->crush = true;
@@ -1028,7 +1028,7 @@ void T_ScrollFlat (scrollflat_t *scrollflat)
 
 		if (scrollflat->carry)
 		{
-			sec->specialdata = LPTR_TO_SPTR(scrollflat);
+			sec->specialdata = LPTR_TO_SPTR_NN(scrollflat);
 			sec->flags |= SF_CONVEYOR;
 		}
 	}

@@ -861,7 +861,7 @@ void P_DoBossVictory(mobj_t *mo)
 	// Move the outer
 	floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
 	P_AddThinker (&floor->thinker);
-	outer->specialdata = LPTR_TO_SPTR(floor);
+	outer->specialdata = LPTR_TO_SPTR_NN(floor);
 	floor->thinker.function = T_MoveFloor;
 	floor->type = eggCapsuleOuter;
 	floor->crush = true;
@@ -875,7 +875,7 @@ void P_DoBossVictory(mobj_t *mo)
 	floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
 	D_memset(floor, 0, sizeof(*floor));
 	P_AddThinker (&floor->thinker);
-	inner->specialdata = LPTR_TO_SPTR(floor);
+	inner->specialdata = LPTR_TO_SPTR_NN(floor);
 	floor->thinker.function = T_MoveFloor;
 	floor->type = eggCapsuleInner;
 	floor->crush = true;
@@ -2314,12 +2314,11 @@ void A_DetonChase(mobj_t *actor, int16_t var1, int16_t var2)
 void L_MissileHit (mobj_t *mo)
 {
 	int	damage;
-	mobj_t	*missilething;
 	const mobjinfo_t* moinfo = &mobjinfo[mo->type];
 
-	missilething = (mobj_t *)SPTR_TO_LPTR(mo->extradata);
-	if (missilething)
+	if (mo->extradata)
 	{
+		mobj_t *missilething = SPTR_TO_LPTR_NN(mo->extradata);
 		mo->extradata = 0;
 		damage = ((P_Random()&7)+1)* moinfo->damage;
 		P_DamageMobj (missilething, mo, mo->target, damage);

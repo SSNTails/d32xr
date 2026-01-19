@@ -406,7 +406,7 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 		rtn = 1;
 		floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
 		P_AddThinker (&floor->thinker);
-		sec->specialdata = LPTR_TO_SPTR(floor);
+		sec->specialdata = LPTR_TO_SPTR_NN(floor);
 		floor->thinker.function = T_MoveFloor;
 		floor->type = floortype;
 		floor->crush = false;
