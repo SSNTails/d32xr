@@ -25,10 +25,11 @@ typedef struct
 {
    cliprange_t *newend;
    cliprange_t *solidsegs;
-   seg_t       *curline;
-   sector_t    *curfsector, *curbsector;
-   side_t      *curside;
-   line_t      *curldef;
+   const seg_t       *curline;
+   const sector_t *curfsector;
+   const sector_t *curbsector;
+   const side_t      *curside;
+   const line_t      *curldef;
    angle_t    lineangle1;
    int        splitspans; /* generate wall splits until this reaches 0 */
    VINT lastv1;
@@ -183,11 +184,11 @@ static boolean R_CheckBBox(rbspWork_t *rbsp, int16_t bspcoord[4])
 static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    fixed_t *restrict floorheight, fixed_t *restrict  floornewheight, fixed_t *restrict ceilingnewheight, fixed_t *restrict fofInfo)
 {
-   seg_t     *seg  = segl->seg;
-   line_t    *li   = rbsp->curldef;
+   const seg_t     *seg  = segl->seg;
+   const line_t    *li   = rbsp->curldef;
    short      offset = seg->sideoffset >> 1;
-   side_t    *si   = rbsp->curside;
-   sector_t  *front_sector = rbsp->curfsector, *back_sector = rbsp->curbsector;
+   const side_t    *si   = rbsp->curside;
+   const sector_t  *front_sector = rbsp->curfsector, *back_sector = rbsp->curbsector;
    fixed_t    f_floorheight, f_ceilingheight;
    fixed_t    b_floorheight, b_ceilingheight;
    int        f_lightlevel, b_lightlevel, lightshift;
@@ -701,7 +702,7 @@ crunch:
 //
 // killough 4/11/98, 4/13/98: fix bugs, add 'back' parameter
 //
-sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
+const sector_t *R_FakeFlat(const sector_t *sec, sector_t *tempsec,
                      boolean back)
 {
    if (sec->fofsec >= 0 && (sec->flags & SF_FOF_SWAPHEIGHTS))
@@ -799,11 +800,11 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    fixed_t x1, x2;
    const mapvertex_t *v1 = &vertexes[line->v1], *v2 = &vertexes[line->v2];
    int side;
-   line_t *ldef;
-   side_t *sidedef;
+   const line_t *ldef;
+   const side_t *sidedef;
    boolean solid;
 
-   if ((ldflags[line->linedef] & ML_UNDERWATERONLY) && !vd.underwater)
+   if (!vd.underwater && (ldflags[line->linedef] & ML_UNDERWATERONLY))
       return;
 
    if ((ldflags[line->linedef] & ML_CULLING) && (D_abs(vd.viewx_t - v1->x) > 2048 || D_abs(vd.viewy_t - v1->y) > 2048))
@@ -839,38 +840,46 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
 
    sidedef = &sides[ldef->sidenum[side]];
    const sector_t *frontsector = rbsp->curfsector;
-   sector_t *backsector = (ldef->sidenum[1] >= 0) ? I_TO_SEC(sides[ldef->sidenum[side^1]].sector) : NULL;
-
    solid = false;
 
-   if (!backsector)
+   if (ldef->sidenum[1] < 0)
+   {
       solid = true;
-   else if (*(int8_t *)&backsector->ceilingpic == -1 || *(int8_t *)&frontsector->ceilingpic == -1)
-   {
-      // When both ceilings are skies, consider them always "open" to prevent HOM
-      solid = false;
+      rbsp->curbsector = NULL;
    }
-   else if (backsector->ceilingheight <= frontsector->floorheight ||
-       backsector->floorheight >= frontsector->ceilingheight)
+   else
    {
-       solid = true;
+      const sector_t *backsector = I_TO_SEC(sides[ldef->sidenum[side^1]].sector);
+      rbsp->curbsector = backsector;
+
+      if (*(int8_t *)&backsector->ceilingpic == -1 || *(int8_t *)&frontsector->ceilingpic == -1)
+      {
+         // When both ceilings are skies, consider them always "open" to prevent HOM
+         solid = false;
+      }
+      else if (backsector->ceilingheight <= frontsector->floorheight ||
+         backsector->floorheight >= frontsector->ceilingheight)
+      {
+         solid = true;
+      }
+   /*   else if (backsector->ceilingheight == frontsector->ceilingheight &&
+         backsector->floorheight == frontsector->floorheight)
+      {
+         // reject empty lines used for triggers and special events
+         // ...except SRB2 doesn't really use them! Is it worth tossing?
+         if (!(backsector->fofsec || frontsector->fofsec) &&
+            *(int32_t *)&backsector->floorpic == *(int32_t *)&frontsector->floorpic && // compares both floorpic, ceilingpic, lightlevel, and special
+            // hack to get rid of the extu.w on SH-2
+            SIDETEX(sidedef)->midtexture == 0)
+            return;
+      }*/
+      rbsp->curbsector = backsector;
    }
-/*   else if (backsector->ceilingheight == frontsector->ceilingheight &&
-        backsector->floorheight == frontsector->floorheight)
-   {
-      // reject empty lines used for triggers and special events
-      // ...except SRB2 doesn't really use them! Is it worth tossing?
-      if (!(backsector->fofsec || frontsector->fofsec) &&
-         *(int32_t *)&backsector->floorpic == *(int32_t *)&frontsector->floorpic && // compares both floorpic, ceilingpic, lightlevel, and special
-         // hack to get rid of the extu.w on SH-2
-         SIDETEX(sidedef)->midtexture == 0)
-         return;
-   }*/
 
    rbsp->curline = line;
    rbsp->curside = sidedef;
    rbsp->curldef = ldef;
-   rbsp->curbsector = backsector;
+   
    rbsp->lineangle1 = angle1;
    R_ClipWallSegment(rbsp, x1, x2, solid);
 }
