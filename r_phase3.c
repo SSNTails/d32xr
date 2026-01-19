@@ -398,21 +398,23 @@ static void R_PrepRing(ringmobj_t *thing, const VINT isector, const int scenery)
 //
 void R_SpritePrep(void)
 {
-   VINT *pse = vd.vissectors;
+   const VINT *pse = vd.vissectors;
 
    while(pse < vd.lastvissector)
    {
       const VINT secnum = *pse;
-      mobj_t *thing = SPTR_TO_LPTR(sector_thinglist[secnum]);
+      SPTR tlist = sector_thinglist[secnum];
 
-      while(thing) // walk sector thing list
+      while(tlist) // walk sector thing list
       {
+         mobj_t *thing = SPTR_TO_LPTR_NN(tlist);
+
          if (thing->flags & MF_RINGMOBJ)
             R_PrepRing((ringmobj_t*)thing, secnum, !!(thing->flags & MF_NOBLOCKMAP)); // Devolve the MF_BLOCKMAP flag into a 1 or 0
          else if (!(thing->flags2 & MF2_DONTDRAW))
             R_PrepMobj(thing, secnum);
 
-         thing = SPTR_TO_LPTR(thing->snext);
+         tlist = thing->snext;
       }
       ++pse;
    }
