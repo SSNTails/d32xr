@@ -845,7 +845,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
 
    if (!backsector)
       solid = true;
-   else if (backsector->ceilingpic == (uint8_t)-1 || frontsector->ceilingpic == (uint8_t)-1)
+   else if (*(int8_t *)&backsector->ceilingpic == -1 || *(int8_t *)&frontsector->ceilingpic == -1)
    {
       // When both ceilings are skies, consider them always "open" to prevent HOM
       solid = false;
@@ -855,7 +855,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    {
        solid = true;
    }
-   else if (backsector->ceilingheight == frontsector->ceilingheight &&
+/*   else if (backsector->ceilingheight == frontsector->ceilingheight &&
         backsector->floorheight == frontsector->floorheight)
    {
       // reject empty lines used for triggers and special events
@@ -865,7 +865,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
          // hack to get rid of the extu.w on SH-2
          SIDETEX(sidedef)->midtexture == 0)
          return;
-   }
+   }*/
 
    rbsp->curline = line;
    rbsp->curside = sidedef;
