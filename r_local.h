@@ -772,8 +772,8 @@ typedef struct visplane_s
 	fixed_t		height;
 	VINT		minx, maxx;
 	VINT 		flatandlight;
-	VINT        flags;
 	uint16_t    offs;
+	VINT        flags;
 	struct visplane_s	*next;
 	unsigned short		*open/*[SCREENWIDTH+2]*/;		/* top<<8 | bottom */ /* leave pads for [minx-1]/[maxx+1] */
 } visplane_t;
