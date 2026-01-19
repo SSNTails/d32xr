@@ -403,7 +403,7 @@ static void P_UnlinkSubsector(mobj_t *thing)
 		snext->sprev = thing->sprev;
 	if (thing->sprev)
 	{
-		mobj_t *sprev = SPTR_TO_LPTR(thing->sprev);
+		mobj_t *sprev = SPTR_TO_LPTR_NN(thing->sprev);
 		sprev->snext = thing->snext;
 	}
 	else
@@ -419,9 +419,14 @@ void P_LinkSubsector(mobj_t *thing, VINT iss)
 		thing->sprev = (SPTR)0;
 
 	thing->snext = sector_thinglist[isector];
-	mobj_t *firstOne = (mobj_t *)SPTR_TO_LPTR(sector_thinglist[isector]);
-	if (sector_thinglist[isector] && !(((firstOne->flags & (MF_RINGMOBJ|MF_NOBLOCKMAP)) == (MF_RINGMOBJ|MF_NOBLOCKMAP))))
-		firstOne->sprev = LPTR_TO_SPTR_NN(thing);
+	
+	if (sector_thinglist[isector])
+	{
+		mobj_t *firstOne = (mobj_t *)SPTR_TO_LPTR_NN(sector_thinglist[isector]);
+		if (!(((firstOne->flags & (MF_RINGMOBJ|MF_NOBLOCKMAP)) == (MF_RINGMOBJ|MF_NOBLOCKMAP))))
+			firstOne->sprev = LPTR_TO_SPTR_NN(thing);
+	}
+
 	sector_thinglist[isector] = LPTR_TO_SPTR_NN(thing);
 }
 
