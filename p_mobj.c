@@ -277,8 +277,8 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			scenerymobj->y = y >> FRACBITS;
 
 			// Encode some z information
-			scenerymobj->x &= ~1;
-			scenerymobj->y &= ~1;
+			scenerymobj->x &= ~3;
+			scenerymobj->y &= ~3;
 
 			int16_t isubsec = R_PointInSubsector2(x, y);
 			if (type < MT_STALAGMITE0 || type > MT_STALAGMITE7)
@@ -289,13 +289,19 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 				if (z > 0)
 				{
-					z >>= FRACBITS+6;
+					z >>= FRACBITS+5;
 
 					if (z == 0)
-						z = 3;
+						z = 15;
+
+					if (z & 8)
+						scenerymobj->x |= 2;
+
+					if (z & 4)
+						scenerymobj->x |= 1;
 
 					if (z & 2)
-						scenerymobj->x |= 1;
+						scenerymobj->y |= 2;
 					
 					if (z & 1)
 						scenerymobj->y |= 1;

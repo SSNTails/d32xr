@@ -468,11 +468,6 @@ void P_LoadThings (int lump)
 	mt = (mapthing_t *)data;
 	for (i=0 ; i<numthings ; i++, mt++)
 	{
-#ifdef BAREBONESMAP
-		if (mt->type >= 100 && mt->type < 200)
-			continue; // Don't count
-#endif
-
 		if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
 		{
 #ifndef BAREBONESMAP
@@ -534,11 +529,6 @@ void P_LoadThings (int lump)
 	mt = (mapthing_t *)data;
 	for (i=0 ; i<numthings ; i++, mt++)
 	{
-#ifdef BAREBONESMAP
-		if (mt->type >= 100 && mt->type < 200)
-			continue; // Don't count
-#endif
-
 		if (mt->type == 600) // 5 vertical rings (yellow spring)
 			P_SpawnItemRow(mt, mobjinfo[MT_RING].doomednum, 5, 0, 64);
 		else if (mt->type == 601) // 5 vertical rings (red spring)
