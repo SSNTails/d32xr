@@ -68,6 +68,9 @@ void R_InitTexCacheZone(r_texcache_t* c, int zonesize)
 */
 boolean R_InTexCache(r_texcache_t* c, void *p)
 {
+	if (!c->zone)
+		return false;
+
 	if (((uintptr_t)p >= (uintptr_t)c->zone && (uintptr_t)p < (uintptr_t)c->zone + c->zonesize)) {
 		return true;
 	}
