@@ -480,6 +480,12 @@ void P_XYMovement(mobj_t *mo)
 //
 void P_ZMovement(mobj_t *mo)
 {
+   if (mo->type == MT_EGGGUARD)
+   {
+      mo->z = mo->floorz;
+      return;
+   }
+   
    mo->z += mo->momz;
 /*
    if((mo->flags2 & MF2_FLOAT) && (mo->flags2 & MF2_ENEMY) && mo->target)

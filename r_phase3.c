@@ -328,7 +328,7 @@ static void R_PrepRing(ringmobj_t *thing, const VINT isector, const int scenery)
    // killough 4/11/98: improve sprite clipping for underwater/fake ceilings
    const sector_t *sec = I_TO_SEC(isector);
    const VINT heightsec = sec->heightsec;
-   const fixed_t thingz = scenery ? (thing->type < MT_STALAGMITE0 || thing->type > MT_STALAGMITE7 ? (sec->floorheight + (zoff << FRACBITS+5)) : sec->ceilingheight - mobjinfo[thing->type].height) : zoff << FRACBITS;
+   const fixed_t thingz = scenery ? (thing->type < MT_STALAGMITE0 || thing->type > MT_STALAGMITE7 ? (sec->floorheight + (zoff << (FRACBITS+5))) : sec->ceilingheight - mobjinfo[thing->type].height) : zoff << FRACBITS;
 
    if (heightsec >= 0 && vd.heightsec)   // only clip things which are in special sectors
    {

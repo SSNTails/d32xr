@@ -497,6 +497,8 @@ void P_LoadThings (int lump)
 					numthingsreal++;
 					if (mt->type == 118)
 						numthingsreal++; // Jet fume
+					else if (mt->type == 119) // MT_EGGGUARD
+						numringthings++;
 					break;
 				case 2:
 					numstaticthings++;

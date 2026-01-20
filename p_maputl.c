@@ -596,8 +596,17 @@ void P_SetThingPositionConditionally(mobj_t *thing, fixed_t x, fixed_t y, VINT i
 		P_LinkBlockmap(thing, x, y);
 	}
 
-	thing->x = x;
-	thing->y = y;
+	if (thing->flags & MF_RINGMOBJ)
+	{
+		ringmobj_t *ring = (ringmobj_t*)thing;
+		ring->x = x >> FRACBITS;
+		ring->y = y >> FRACBITS;
+	}
+	else
+	{
+		thing->x = x;
+		thing->y = y;
+	}
 }
 
 /*

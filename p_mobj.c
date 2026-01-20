@@ -727,7 +727,7 @@ return;	/*DEBUG */
 	else if (mobj->type == MT_EGGGUARD)
 	{
 		mobj_t *shield = P_SpawnMobj(x, y, z, MT_EGGSHIELD);
-		shield->target = mobj;
+		mobj->momz = (fixed_t)shield;
 
 		if (mthing->options & MTF_AMBUSH)
 			mobj->flags2 |= MF2_SPAWNEDJETS; // We use this as an extra flag for all kinds of fun stuff. :)

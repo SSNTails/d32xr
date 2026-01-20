@@ -1919,8 +1919,33 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		100,             // mass
 		0,               // damage
 		sfx_None,        // activesound
-		MF_SPECIAL|MF_NOGRAVITY, // flags
+		MF_SPECIAL|MF_NOGRAVITY|MF_RINGMOBJ, // flags
 		MF2_SHOOTABLE           // flags2
+	},
+	{           // MT_EGGSHIELDSHATTER
+		-1,              // doomednum
+		S_EGGSHIELDBREAK,     // spawnstate
+		1,               // spawnhealth
+		S_EGGSHIELD,     // seestate
+		sfx_None,        // seesound
+		35,              // reactiontime
+		sfx_s3k_7b,       // attacksound
+		S_NULL,          // painstate
+		0,               // painchance
+		sfx_s3k_7b,       // painsound
+		S_NULL,          // meleestate
+		S_NULL,          // missilestate
+		S_EGGSHIELDBREAK,// deathstate
+		S_NULL,          // xdeathstate
+		sfx_wbreak,      // deathsound
+		3,               // speed
+		24*FRACUNIT,     // radius
+		128*FRACUNIT,    // height
+		100,             // mass
+		0,               // damage
+		sfx_None,        // activesound
+		MF_NOBLOCKMAP, // flags
+		0           // flags2
 	},
 	{           // MT_DETON
 		108,            // doomednum
