@@ -275,10 +275,37 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			scenerymobj->type = type;
 			scenerymobj->x = x >> FRACBITS;
 			scenerymobj->y = y >> FRACBITS;
+
+			// Encode some z information
+			scenerymobj->x &= ~1;
+			scenerymobj->y &= ~1;
+
+			int16_t isubsec = R_PointInSubsector2(x, y);
+			if (type < MT_STALAGMITE0 || type > MT_STALAGMITE7)
+			{
+				sector_t *sec = SS_SECTOR(isubsec);
+
+				z -= sec->floorheight;
+
+				if (z > 0)
+				{
+					z >>= FRACBITS+6;
+
+					if (z == 0)
+						z = 3;
+
+					if (z & 2)
+						scenerymobj->x |= 1;
+					
+					if (z & 1)
+						scenerymobj->y |= 1;
+				}
+			}
+
 			scenerymobj->flags = info->flags;
 
 			/* set subsector and/or block links */
-			P_LinkSubsector((mobj_t*)scenerymobj, R_PointInSubsector2(x, y));
+			P_LinkSubsector((mobj_t*)scenerymobj, isubsec);
 
 			numscenerymobjs++;
 

@@ -2728,7 +2728,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		100,            // mass
 		0,              // damage
 		sfx_None,       // activesound
-		MF_NOGRAVITY|MF_STATIC|MF_RINGMOBJ, // flags
+		MF_NOGRAVITY|MF_STATIC|MF_RINGMOBJ|MF_NOBLOCKMAP, // flags
 		0          // flags2
 	},
 
@@ -2754,7 +2754,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		100,            // mass
 		0,              // damage
 		sfx_None,       // activesound
-		MF_NOGRAVITY|MF_STATIC|MF_RINGMOBJ,       // flags
+		MF_NOGRAVITY|MF_STATIC|MF_RINGMOBJ|MF_NOBLOCKMAP,       // flags
 		0          // flags2
 	},
 
@@ -2806,7 +2806,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		100,            // mass
 		0,              // damage
 		sfx_None,       // activesound
-		MF_NOGRAVITY|MF_STATIC|MF_RINGMOBJ, // flags
+		MF_NOGRAVITY|MF_STATIC|MF_RINGMOBJ|MF_NOBLOCKMAP, // flags
 		0          // flags2
 	},
 	{           // MT_MACEPOINT
