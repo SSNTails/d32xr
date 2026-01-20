@@ -180,6 +180,8 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 	return true;
 }
 
+void A_EggShieldBroken(mobj_t *actor, int16_t var1, int16_t var2);
+
 void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 {
 	player_t	*player;
@@ -220,7 +222,7 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 				touchspeed = FRACUNIT;
 
 			// Blocked by the shield?
-			if (!(angle > ANG90 && angle < ANG270))
+			if (!(angle > ANG90 && angle < ANG270) && !player->powers[pw_flashing])
 			{
 				toucher->momx = P_ReturnThrustX(specialAngle, touchspeed);
 				toucher->momy = P_ReturnThrustY(specialAngle, touchspeed);
@@ -230,7 +232,7 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 				// Play a bounce sound?
 				S_StartSound(toucher, sInfo->painsound);
 			}
-			else
+			else if (player->pflags & (PF_SPINNING|PF_JUMPED))
 			{
 				// Shatter the shield!
 				toucher->momx = -toucher->momx >> 1;
@@ -250,7 +252,7 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 
 				for (mobj_t *guard = mobjhead.next; guard != (void*)&mobjhead; guard = guard->next)
 				{
-					mobj_t *shieldPtr = (ringmobj_t*)guard->momz;
+					ringmobj_t *shieldPtr = (ringmobj_t*)guard->momz;
 
 					if (shieldPtr == shield)
 					{
@@ -259,7 +261,7 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 					}
 				}
 
-				P_RemoveMobj(shield);
+				P_RemoveMobj((mobj_t*)shield);
 			}
 			return;
 		}
@@ -352,6 +354,17 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 	// Ignore eggman in "ouchie" mode
 	if ((mobjinfo[special->type].spawnhealth > 1) && (special->flags2 & MF2_FRET))
 		return;
+
+	if (special->type == MT_EGGGUARD && special->momz)
+	{
+		if ((player->pflags & PF_JUMPED) || (player->pflags & PF_SPINNING) || player->powers[pw_invulnerability])
+		{
+			// Nothin'
+		}
+		else
+			P_DamageMobj(toucher, special, special, 1);
+		return;
+	}
 
 	if ((special->flags2 & MF2_SHOOTABLE) && !(special->flags2 & MF2_MISSILE))
 	{

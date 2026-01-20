@@ -2041,8 +2041,8 @@ void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
 	fixed_t newx, newy;
 	fixed_t movex, movey;
 	angle_t angle;
-	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
 	ringmobj_t *shield = (ringmobj_t*)actor->momz;
+	const mobjinfo_t *aInfo = &mobjinfo[shield->type];
 
 	if (!actor->health)
 	{
@@ -2050,8 +2050,8 @@ void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
 		return;
 	}
 
-	newx = actor->x + P_ReturnThrustX(actor->angle, FRACUNIT);
-	newy = actor->y + P_ReturnThrustY(actor->angle, FRACUNIT);
+	newx = actor->x + P_ReturnThrustX(actor->angle, 2*FRACUNIT);
+	newy = actor->y + P_ReturnThrustY(actor->angle, 2*FRACUNIT);
 
 	movex = newx - (shield->x << FRACBITS);
 	movey = newy - (shield->y << FRACBITS);
@@ -2062,7 +2062,7 @@ void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
 	if (!movex && !movey)
 		return;
 
-	P_SetThingPositionConditionally(shield, newx, newy, R_PointInSubsector2(newx, newy));
+	P_SetThingPositionConditionally((mobj_t*)shield, newx, newy, actor->isubsector);
 
 	fixed_t shieldHeight = mobjinfo[shield->type].height;
 
@@ -2081,6 +2081,9 @@ void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
 			continue;
 
 		if (player->mo->z + shieldHeight < (shield->z << FRACBITS))
+			continue;
+
+		if (player->powers[pw_flashing])
 			continue;
 
 		const mobjinfo_t *pInfo = &mobjinfo[MT_PLAYER];
@@ -2113,7 +2116,6 @@ void A_EggShieldBroken(mobj_t *actor, int16_t var1, int16_t var2)
 	guard->momz = 0;
 	guard->threshold = 42;
 	P_SetMobjState(guard, mobjinfo[guard->type].painstate);
-	guard->flags2 |= MF2_SHOOTABLE;
 }
 
 // Function: A_GuardChase
@@ -2130,6 +2132,12 @@ void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
 
 	if (actor->reactiontime)
 		actor->reactiontime--;
+
+	if (var1)
+	{
+		actor->flags2 |= MF2_ENEMY;
+		actor->flags2 |= MF2_SHOOTABLE;
+	}
 
 	if (actor->threshold != 42) // In formation...
 	{
