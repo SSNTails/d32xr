@@ -612,10 +612,10 @@ void I_DebugScreen(void)
 			D_snprintf(buf[8], sizeof(buf[0]), "d:%2d", Mars_FRTCounter2Msec(drawtics));
 			D_snprintf(buf[9], sizeof(buf[0]), "t:%2d", Mars_FRTCounter2Msec(I_GetFRTCounter() - ticstart));
 			D_snprintf(buf[10], sizeof(buf[0]), "mt:%d", thingmem);
-			D_snprintf(buf[11], sizeof(buf[0]), "ml:%d", numlines * sizeof(line_t));
-			D_snprintf(buf[12], sizeof(buf[0]), "msd:%d", numsides * sizeof(side_t));
-			D_snprintf(buf[13], sizeof(buf[0]), "mss:%d", numsubsectors *sizeof(subsector_t));
-			D_snprintf(buf[14], sizeof(buf[0]), "ms:%d", numsectors *sizeof(sector_t));
+			D_snprintf(buf[11], sizeof(buf[0]), "ml:%d", (numlines*sizeof(uint16_t)) + (sizeof(*lineinfos)*numlineinfos));
+			D_snprintf(buf[12], sizeof(buf[0]), "msd:%d", (numsides*sizeof(side_t)) + (numsidetexes*sizeof(sidetex_t)));
+			D_snprintf(buf[13], sizeof(buf[0]), "bm:%d", sizeof(*blocklinks)* bmapwidth*bmapheight);
+			D_snprintf(buf[14], sizeof(buf[0]), "ms:%d", (numdynamicsectors*sizeof(sector_t)) + (numsectors*sizeof(SPTR)) + (numsectors*sizeof(sector_t*)));
 			D_snprintf(buf[15], sizeof(buf[0]), "scenm:%d", numscenerymobjs);
 			D_snprintf(buf[16], sizeof(buf[0]), "ringm:%d", numringmobjs);
 			D_snprintf(buf[17], sizeof(buf[0]), "statm:%d", numstaticmobjs);

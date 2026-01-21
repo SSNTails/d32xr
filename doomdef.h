@@ -294,9 +294,9 @@ typedef struct mobj_s
 	uint8_t		flags;
 	SPTR	snext;		/* links in sector (if needed) */
 	SPTR	bnext;		/* links in blocks (if needed) */
+	VINT        isubsector;
 	SPTR    bprev;
 	SPTR    sprev;
-	VINT        isubsector;
 	struct	mobj_s* prev, * next;
 
 	fixed_t			x, y, z;
@@ -346,9 +346,9 @@ typedef struct ringmobj_s
 	uint8_t		flags;
 	SPTR	snext;		/* links in sector (if needed) */
 	SPTR	bnext;		/* links in blocks (if needed) */
+	VINT        isubsector;
 	SPTR bprev;
 	SPTR    sprev;
-	VINT        isubsector;
 	// SIMILARITIES END HERE
 	VINT			x, y, z;
 	VINT pad;
@@ -360,9 +360,9 @@ typedef struct degenmobj_s
 	uint8_t		flags;
 	SPTR	snext;		/* links in sector (if needed) */
 	SPTR	bnext;		/* links in blocks (if needed) */
+	VINT isubsector;
 	SPTR bprev;
 	SPTR    sprev;
-	VINT isubsector;
 	void 			*prev, *next;
 } degenmobj_t;
 
@@ -372,9 +372,9 @@ typedef struct consistencymobj_s
 	uint8_t		flags;
 	SPTR	snext;		/* links in sector (if needed) */
 	SPTR	bnext;		/* links in blocks (if needed) */
+	VINT isubsector;
 	SPTR bprev;
 	SPTR    sprev;
-	VINT isubsector;
 	void 			*prev, *next;
 	fixed_t			x, y, z;
 } consistencymobj_t;

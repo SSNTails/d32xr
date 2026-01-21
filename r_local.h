@@ -138,6 +138,13 @@ typedef struct line_s
 	VINT		sidenum[2];			/* sidenum[1] will be -1 if one sided */
 } line_t;
 
+typedef struct lineinfo_s
+{
+	VINT line;
+	uint8_t special;
+	uint8_t tag;
+} lineinfo_t;
+
 #define I_TO_SS(x) (&subsectors[x])
 #define SS_TO_I(x) (x - subsectors)
 #define I_TO_SEC(x) (dpsectors[x])
@@ -263,11 +270,6 @@ extern	spritedef_t		sprites[NUMSPRITES];
 ===============================================================================
 */
 
-#define LINETAGS_HASH_BSHIFT 	4
-#define LINETAGS_HASH_SIZE 		(1<<LINETAGS_HASH_BSHIFT)
-#define LINESPECIALS_HASH_BSHIFT 	4
-#define LINESPECIALS_HASH_SIZE 		(1<<LINESPECIALS_HASH_BSHIFT)
-
 extern	uint16_t			numvertexes;
 extern	uint16_t			numsegs;
 extern	uint16_t			numsectors;
@@ -277,11 +279,10 @@ extern	uint16_t			numsubsectors;
 extern	uint16_t			numnodes;
 extern	uint16_t			numlines;
 extern	uint16_t			numsides;
+extern  uint16_t            numsidetexes;
 
-extern 	uint16_t 		numlinetags;
-extern 	uint16_t 		*linetags;
-extern  uint16_t        numlinespecials;
-extern  uint16_t        *linespecials;
+extern 	uint16_t 		numlineinfos;
+extern 	lineinfo_t 		*lineinfos;
 
 extern	mapvertex_t	*vertexes;
 extern	seg_t		*segs;

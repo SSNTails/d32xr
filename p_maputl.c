@@ -683,10 +683,10 @@ uint8_t P_GetLineTag(line_t *line)
 	if (!(ldflags[line-lines] & ML_HAS_SPECIAL_OR_TAG))
 		return 0;
 
-	for (int i = 0; i < numlinetags*2; i += 2)
+	for (int i = 0; i < numlineinfos; i++)
 	{
-		if (linetags[i] == line-lines)
-			return (uint8_t)linetags[i+1];
+		if (lineinfos[i].line == line-lines)
+			return lineinfos[i].tag;
 	}
 
 	return 0;
@@ -697,10 +697,10 @@ uint8_t P_GetLineSpecial(line_t *line)
 	if (!(ldflags[line-lines] & ML_HAS_SPECIAL_OR_TAG))
 		return 0;
 
-	for (int i = 0; i < numlinespecials*2; i += 2)
+	for (int i = 0; i < numlineinfos; i++)
 	{
-		if (linespecials[i] == line-lines)
-			return (uint8_t)linespecials[i+1];
+		if (lineinfos[i].line == line-lines)
+			return lineinfos[i].special;
 	}
 
 	return 0;

@@ -18,11 +18,10 @@ uint16_t			numsubsectors;
 uint16_t			numnodes;
 uint16_t			numlines;
 uint16_t			numsides;
+uint16_t            numsidetexes;
 
-uint16_t 		numlinetags;
-uint16_t 		*linetags;
-uint16_t        numlinespecials;
-uint16_t        *linespecials;
+uint16_t 		numlineinfos;
+lineinfo_t 		*lineinfos;
 
 mapvertex_t	*vertexes;
 seg_t		*segs;
@@ -598,8 +597,9 @@ void P_LoadLineDefs (int lump)
 	byte *ldData = I_TempBuffer ();
 	W_ReadLump (lump + 1, ldData);
 
-	numlinetags = 0;
-	numlinespecials = 0;
+	int numlinetags = 0;
+	int numlinespecials = 0;
+	numlineinfos = 0;
 
 	uint16_t *ldFlagsPtr = ldflags;
 	mapldflags_t *mapldFlags = (mapldflags_t*)ldData;
@@ -647,38 +647,25 @@ void P_LoadLineDefs (int lump)
 		if (special)
 			numlinespecials++;
 
+		if (tag || special)
+			numlineinfos++;
+
 		*ldFlagsPtr = flags;
 	}
 
-	if (numlinetags)
+	if (numlineinfos)
 	{
-		linetags = Z_Malloc(sizeof(*linetags)*numlinetags*2, PU_LEVEL);
-		uint16_t *linetagPtr = linetags;
+		lineinfos = Z_Malloc(sizeof(*lineinfos)*numlineinfos, PU_LEVEL);
+		lineinfo_t *lineinfoPtr = lineinfos;
 		mapldFlags = (mapldflags_t*)ldData;
-		for (i=0 ; i<numlines ; i++, mapldFlags++)
+		for (i = 0; i < numlines; i++, mapldFlags++)
 		{
-			uint8_t tag = mapldFlags->tag;
-			if (tag)
+			if (mapldFlags->special || mapldFlags->tag)
 			{
-				*linetagPtr++ = i;
-				*linetagPtr++ = tag;
-			}
-		}
-	}
-
-	if (numlinespecials)
-	{
-		// load specials into hash table
-		linespecials = Z_Malloc(sizeof(*linespecials)*numlinespecials*2, PU_LEVEL);
-		uint16_t *linespecialPtr = linespecials;
-		mapldFlags = (mapldflags_t*)ldData;
-		for (i=0 ; i<numlines ; i++, mapldFlags++)
-		{
-			uint8_t special = mapldFlags->special;
-			if (special)
-			{
-				*linespecialPtr++ = i;
-				*linespecialPtr++ = special;
+				lineinfoPtr->line = i;
+				lineinfoPtr->special = mapldFlags->special;
+				lineinfoPtr->tag = mapldFlags->tag;
+				lineinfoPtr++;
 			}
 		}
 	}
@@ -730,7 +717,7 @@ void P_LoadSideDefs (int lump)
 
 void P_LoadSideTexes(int lump)
 {
-	int numsidetexes = W_LumpLength (lump) / sizeof(sidetex_t);
+	numsidetexes = W_LumpLength (lump) / sizeof(sidetex_t);
 	sidetexes = Z_Malloc (numsidetexes*sizeof(sidetex_t)+16,PU_LEVEL);
 	sidetexes = (void*)(((uintptr_t)sidetexes + 15) & ~15); // aline on cacheline boundary
 	W_ReadLump(lump, sidetexes);

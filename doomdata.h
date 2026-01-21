@@ -24,7 +24,6 @@ typedef unsigned char byte;
 enum {ML_LABEL, ML_THINGS, ML_LINEDEFS, ML_LDFLAGS, ML_SIDEDEFS, ML_SIDETEX, ML_VERTEXES, ML_SEGS,
 ML_SSECTORS, ML_NODES, ML_SECTORS , ML_DSECTORS, ML_REJECT, ML_BLOCKMAP};
 
-
 typedef struct
 {
 	short		x,y;
