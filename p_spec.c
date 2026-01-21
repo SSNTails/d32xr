@@ -408,7 +408,7 @@ int	P_FindSectorFromLineTagNum(uint8_t tag, int start)
 // Pass '-1' to this to start
 VINT P_FindNextLineWithTag(uint8_t tag, int *start)
 {
-	for (int i = *start; i < numlineinfos; i ++)
+	for (int i = (*start) + 1; i < numlineinfos; i++)
 	{
 		if (lineinfos[i].tag == tag)
 		{
