@@ -2028,6 +2028,96 @@ void A_FaceStabUnPain(mobj_t *actor, int16_t var1, int16_t var2)
 	actor->flags2 &= ~MF2_FRET;
 }
 
+// Function: A_EggShield
+//
+// Description: Modified A_Chase for Egg Guard's shield
+//
+// var1 = unused
+// var2 = unused
+//
+void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	fixed_t blockdist;
+	fixed_t newx, newy;
+	fixed_t movex, movey;
+	angle_t angle;
+	ringmobj_t *shield = (ringmobj_t*)actor->momz;
+	const mobjinfo_t *aInfo = &mobjinfo[shield->type];
+
+	if (!actor->health)
+	{
+		actor->latecall = LC_REMOVE_MOBJ;
+		return;
+	}
+
+	newx = actor->x + P_ReturnThrustX(actor->angle, 2*FRACUNIT);
+	newy = actor->y + P_ReturnThrustY(actor->angle, 2*FRACUNIT);
+
+	movex = newx - (shield->x << FRACBITS);
+	movey = newy - (shield->y << FRACBITS);
+
+	shield->pad = actor->angle >> ANGLETOFINESHIFT;
+	shield->z = actor->z >> FRACBITS;
+
+	if (!movex && !movey)
+		return;
+
+	P_SetThingPositionConditionally((mobj_t*)shield, newx, newy, actor->isubsector);
+
+	fixed_t shieldHeight = mobjinfo[shield->type].height;
+
+	// Search for players to push
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		const player_t *player = &players[i];
+
+		if (!player->mo)
+			continue;
+
+		if (player->mo->z > (shield->z << FRACBITS) + shieldHeight)
+			continue;
+
+		if (player->mo->z + shieldHeight < (shield->z << FRACBITS))
+			continue;
+
+		if (player->powers[pw_flashing])
+			continue;
+
+		const mobjinfo_t *pInfo = &mobjinfo[MT_PLAYER];
+
+		blockdist = aInfo->radius + pInfo->radius;
+
+		if (D_abs((shield->x << FRACBITS) - player->mo->x) >= blockdist || D_abs((shield->y << FRACBITS) - player->mo->y) >= blockdist)
+			continue; // didn't hit it
+
+		angle = R_PointToAngle2(shield->x << FRACBITS, shield->y << FRACBITS, player->mo->x, player->mo->y) - actor->angle;
+
+		if (angle > ANG90 && angle < ANG270)
+			continue;
+
+		// Blocked by the shield
+		player->mo->momx += movex;
+		player->mo->momy += movey;
+		return;
+	}
+}
+
+void A_EggShieldBroken(mobj_t *actor, int16_t var1, int16_t var2)
+{
+	mobj_t *guard = actor;
+
+	if (!guard || guard->health == 0)
+		return;
+
+	// Lost the shield, so get mad!!!
+	guard->momz = 0;
+	guard->threshold = 42;
+	P_SetMobjState(guard, mobjinfo[guard->type].painstate);
+}
+
 // Function: A_GuardChase
 //
 // Description: Modified A_Chase for Egg Guard
@@ -2042,6 +2132,12 @@ void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
 
 	if (actor->reactiontime)
 		actor->reactiontime--;
+
+	if (var1)
+	{
+		actor->flags2 |= MF2_ENEMY;
+		actor->flags2 |= MF2_SHOOTABLE;
+	}
 
 	if (actor->threshold != 42) // In formation...
 	{
@@ -2110,6 +2206,10 @@ void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
 	// They are spawned immediately after the guard, so it will think
 	// next all by itself, no need to call it here.
 
+	ringmobj_t *shield = (ringmobj_t*)actor->momz;
+	if (shield)
+		A_EggShield(actor, 0, 0);
+
 /*
 	// Now that we've moved, its time for our shield to move!
 	// Otherwise it'll never act as a proper overlay.
@@ -2119,94 +2219,6 @@ void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
 		var1 = actor->tracer->state->var1, var2 = actor->tracer->state->var2;
 		actor->tracer->state->action.acp1(actor->tracer);
 	}*/
-}
-
-// Function: A_EggShield
-//
-// Description: Modified A_Chase for Egg Guard's shield
-//
-// var1 = unused
-// var2 = unused
-//
-void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
-{
-	fixed_t blockdist;
-	fixed_t newx, newy;
-	fixed_t movex, movey;
-	angle_t angle;
-	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
-
-	if (!actor->target || !actor->target->health)
-	{
-		actor->latecall = LC_REMOVE_MOBJ;
-		return;
-	}
-
-	newx = actor->target->x + P_ReturnThrustX(actor->target->angle, FRACUNIT);
-	newy = actor->target->y + P_ReturnThrustY(actor->target->angle, FRACUNIT);
-
-	movex = newx - actor->x;
-	movey = newy - actor->y;
-
-	actor->angle = actor->target->angle;
-	actor->z = actor->target->z;
-
-	actor->floorz = actor->target->floorz;
-	actor->ceilingz = actor->target->ceilingz;
-
-	if (!movex && !movey)
-		return;
-
-	P_SetThingPositionConditionally(actor, newx, newy, R_PointInSubsector2(actor->x, actor->y));
-
-	// Search for players to push
-	for (int i = 0; i < MAXPLAYERS; i++)
-	{
-		if (!playeringame[i])
-			continue;
-
-		const player_t *player = &players[i];
-
-		if (!player->mo)
-			continue;
-
-		if (player->mo->z > actor->z + (actor->theight << FRACBITS))
-			continue;
-
-		if (player->mo->z + (player->mo->theight << FRACBITS) < actor->z)
-			continue;
-
-		const mobjinfo_t *pInfo = &mobjinfo[MT_PLAYER];
-
-		blockdist = aInfo->radius + pInfo->radius;
-
-		if (D_abs(actor->x - player->mo->x) >= blockdist || D_abs(actor->y - player->mo->y) >= blockdist)
-			continue; // didn't hit it
-
-		angle = R_PointToAngle2(actor->x, actor->y, player->mo->x, player->mo->y) - actor->angle;
-
-		if (angle > ANG90 && angle < ANG270)
-			continue;
-
-		// Blocked by the shield
-		player->mo->momx += movex;
-		player->mo->momy += movey;
-		return;
-	}
-}
-
-void A_EggShieldBroken(mobj_t *actor, int16_t var1, int16_t var2)
-{
-	mobj_t *guard = actor->target;
-
-	if (!guard || guard->health == 0)
-		return;
-
-	// Lost the shield, so get mad!!!
-	actor->target = NULL;
-	guard->threshold = 42;
-	P_SetMobjState(guard, mobjinfo[guard->type].painstate);
-	guard->flags2 |= MF2_SHOOTABLE;
 }
 
 void A_TurretPower(mobj_t *actor, int16_t var1, int16_t var2)

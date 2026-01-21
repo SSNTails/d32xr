@@ -180,6 +180,8 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 	return true;
 }
 
+void A_EggShieldBroken(mobj_t *actor, int16_t var1, int16_t var2);
+
 void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 {
 	player_t	*player;
@@ -207,6 +209,60 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 			temp.theight = mobjinfo[spring->type].height >> FRACBITS;
 			temp.angle = spring->pad << ANGLETOFINESHIFT;
 			P_DoSpring(&temp, player);
+			return;
+		}
+		else if (special->type == MT_EGGSHIELD)
+		{
+			ringmobj_t *shield = (ringmobj_t*)special;
+			const mobjinfo_t *sInfo = &mobjinfo[shield->type];
+			const angle_t specialAngle = shield->pad << ANGLETOFINESHIFT;
+			angle_t angle = R_PointToAngle2(shield->x << FRACBITS, shield->y << FRACBITS, toucher->x, toucher->y) - specialAngle;
+			fixed_t touchspeed = P_AproxDistance(toucher->momx, toucher->momy);
+			if (touchspeed < FRACUNIT)
+				touchspeed = FRACUNIT;
+
+			// Blocked by the shield?
+			if (!(angle > ANG90 && angle < ANG270) && !player->powers[pw_flashing])
+			{
+				toucher->momx = P_ReturnThrustX(specialAngle, touchspeed);
+				toucher->momy = P_ReturnThrustY(specialAngle, touchspeed);
+				toucher->momz = -toucher->momz >> 1;
+				player->homingTimer = 0;
+
+				// Play a bounce sound?
+				S_StartSound(toucher, sInfo->painsound);
+			}
+			else if (player->pflags & (PF_SPINNING|PF_JUMPED))
+			{
+				// Shatter the shield!
+				toucher->momx = -toucher->momx >> 1;
+				toucher->momy = -toucher->momy >> 1;
+				toucher->momz = -toucher->momz >> 1;
+				player->homingTimer = 0;
+
+				// Swap out the shield with a full mobj for animating it
+				mobj_t *busted = P_SpawnMobj(shield->x << FRACBITS, shield->y << FRACBITS, shield->z << FRACBITS, MT_EGGSHIELDSHATTER);
+				busted->angle = specialAngle;
+
+				P_InstaThrust(busted, busted->angle, 3*FRACUNIT);
+				busted->momz = 4*FRACUNIT;
+
+//				S_StartSound(toucher, sInfo->deathsound);
+				S_StartSound(toucher, sfx_wbreak);
+
+				for (mobj_t *guard = mobjhead.next; guard != (void*)&mobjhead; guard = guard->next)
+				{
+					ringmobj_t *shieldPtr = (ringmobj_t*)guard->momz;
+
+					if (shieldPtr == shield)
+					{
+						A_EggShieldBroken(guard, 0, 0);
+						break;
+					}
+				}
+
+				P_RemoveMobj((mobj_t*)shield);
+			}
 			return;
 		}
 
@@ -299,6 +355,17 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 	if ((mobjinfo[special->type].spawnhealth > 1) && (special->flags2 & MF2_FRET))
 		return;
 
+	if (special->type == MT_EGGGUARD && special->momz)
+	{
+		if ((player->pflags & PF_JUMPED) || (player->pflags & PF_SPINNING) || player->powers[pw_invulnerability])
+		{
+			// Nothin'
+		}
+		else
+			P_DamageMobj(toucher, special, special, 1);
+		return;
+	}
+
 	if ((special->flags2 & MF2_SHOOTABLE) && !(special->flags2 & MF2_MISSILE))
 	{
 		if (special->flags2 & MF2_ENEMY) // enemy rules
@@ -352,46 +419,6 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 			{
 				toucher->momx = -toucher->momx;
 				toucher->momy = -toucher->momy;
-			}
-		}
-		else if (special->type == MT_EGGSHIELD)
-		{
-			const mobjinfo_t *sInfo = &mobjinfo[special->type];
-			angle_t angle = R_PointToAngle2(special->x, special->y, toucher->x, toucher->y) - special->angle;
-			fixed_t touchspeed = P_AproxDistance(toucher->momx, toucher->momy);
-			if (touchspeed < FRACUNIT)
-				touchspeed = FRACUNIT;
-
-			// Blocked by the shield?
-			if (!(angle > ANG90 && angle < ANG270))
-			{
-				toucher->momx = P_ReturnThrustX(special->angle, touchspeed);
-				toucher->momy = P_ReturnThrustY(special->angle, touchspeed);
-				toucher->momz = -toucher->momz >> 1;
-				player->homingTimer = 0;
-
-				// Play a bounce sound?
-				S_StartSound(toucher, sInfo->painsound);
-
-				// experimental bounce
-				if (special->target)
-					SETLOWER8(special->target->extradata, 0);
-			}
-			else
-			{
-				// Shatter the shield!
-				toucher->momx = -toucher->momx >> 1;
-				toucher->momy = -toucher->momy >> 1;
-				toucher->momz = -toucher->momz >> 1;
-				player->homingTimer = 0;
-
-				P_SetMobjState(special, sInfo->deathstate);
-				P_InstaThrust(special, special->angle, 3*FRACUNIT);
-				special->momz = 4*FRACUNIT;
-				special->flags &= ~MF_NOGRAVITY;
-
-//				S_StartSound(toucher, sInfo->deathsound);
-				S_StartSound(toucher, sfx_wbreak);
 			}
 		}
 		else // A monitor or something else we can pop
