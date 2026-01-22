@@ -43,7 +43,7 @@ SPTR		*blocklinks;			/* for thing chains */
 
 byte		*rejectmatrix;			/* for fast sight rejection */
 
-VINT		*validcount;			/* increment every time a check is made */
+int8_t		*validcount;			/* increment every time a check is made */
 
 mapthing_t	playerstarts[MAXPLAYERS];
 

@@ -499,7 +499,7 @@ extern	const fixed_t		finetangent_[FINEANGLES/2];
 #define finetangent(x)		finetangent_[x]
 #endif
 
-extern	VINT			*validcount;
+extern	int8_t			*validcount;
 extern	VINT			framecount;
 
 #ifndef MARS
