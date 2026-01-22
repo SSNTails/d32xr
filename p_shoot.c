@@ -286,8 +286,8 @@ static boolean PA_CrossSubsector(shootWork_t *sw, int bspnum)
    mobj_t  *thing;
    intercept_t  in;
    mapvertex_t tv1, tv2;
-   VINT     *lvalidcount = validcount;
-   VINT     vc;
+   int8_t     *lvalidcount = validcount;
+   int8_t     vc;
 
    // check things
    for(thing = SPTR_TO_LPTR(sector_thinglist[subsectors[bspnum].isector]); thing; thing = SPTR_TO_LPTR(thing->snext))

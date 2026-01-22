@@ -636,8 +636,8 @@ boolean P_BlockLinesIterator (int x, int y, blocklinesiter_t func, void *userp )
 	int			offset;
 	short		*list;
 	line_t		*ld;
-	VINT *lvalidcount = validcount;
-	VINT 		vc;
+	int8_t *lvalidcount = validcount;
+	int8_t 		vc;
 
 	//if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
 	//	return true;
