@@ -420,7 +420,7 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 		{
 			case thz2DropBlock:
 			{
-				side_t *side = &sides[line->sidenum[0]];
+				const side_t *side = &sides[line->sidenum[0]];
 				int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
       			rowoffset >>= 4; // sign extend
 
@@ -434,7 +434,7 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 			{
 				mapvertex_t *v1 = &vertexes[line->v1];
 				mapvertex_t *v2 = &vertexes[line->v2];
-				side_t *side = &sides[line->sidenum[0]];
+				const side_t *side = &sides[line->sidenum[0]];
 				int16_t textureoffset = side->textureoffset & 0xfff;
 				textureoffset <<= 4; // sign extend
 				textureoffset >>= 4; // sign extend
@@ -468,7 +468,7 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 			{
 				mapvertex_t *v1 = &vertexes[line->v1];
 				mapvertex_t *v2 = &vertexes[line->v2];
-				side_t *side = &sides[line->sidenum[0]];
+				const side_t *side = &sides[line->sidenum[0]];
 				int16_t textureoffset = side->textureoffset & 0xfff;
 				textureoffset <<= 4; // sign extend
 				textureoffset >>= 4; // sign extend
@@ -533,7 +533,7 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 
 				floor->floorwasheight = sec->floorheight >> FRACBITS;
 
-				side_t *side = &sides[line->sidenum[0]];
+				const side_t *side = &sides[line->sidenum[0]];
 				int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
       			rowoffset >>= 4; // sign extend
 

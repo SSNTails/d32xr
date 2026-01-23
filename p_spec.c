@@ -499,7 +499,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 		}
 		case 220: // Move Floor According to Front Texture Offsets
 		{
-			side_t *side = &sides[line->sidenum[0]];
+			const side_t *side = &sides[line->sidenum[0]];
 			int16_t textureoffset = side->textureoffset & 0xfff;
 	    	textureoffset <<= 4; // sign extend
     	  	textureoffset >>= 4; // sign extend
@@ -548,7 +548,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 		{
 			// Find object with angle matching tag
 			uint8_t tag = P_GetLineTag(line);
-			side_t *side = &sides[line->sidenum[0]];
+			const side_t *side = &sides[line->sidenum[0]];
 			int16_t textureoffset = side->textureoffset & 0xfff;
 	    	textureoffset <<= 4; // sign extend
     	  	textureoffset >>= 4; // sign extend
@@ -577,7 +577,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 		}
 		case 222: // Move ceiling according to front texture offsets
 		{
-			side_t *side = &sides[line->sidenum[0]];
+			const side_t *side = &sides[line->sidenum[0]];
 			int16_t textureoffset = side->textureoffset & 0xfff;
 	    	textureoffset <<= 4; // sign extend
     	  	textureoffset >>= 4; // sign extend

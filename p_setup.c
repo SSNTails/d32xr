@@ -59,6 +59,7 @@ int16_t worldbbox[4];
 #define LOADFLAGS_LINEDEFS 32
 #define LOADFLAGS_SUBSECTORS 64
 #define LOADFLAGS_SECTORS 128
+#define LOADFLAGS_SIDEDEFS_ROM 256
 
 /*
 =================
@@ -684,36 +685,15 @@ void P_LoadLineDefs (int lump)
 
 void P_LoadSideDefs (int lump)
 {
-	byte			*data;
-	int				i;
-	mapsidedef_t	*msd;
-	side_t			*sd;
-
-#ifndef MARS
-	for (i=0 ; i<numtextures ; i++)
-		textures[i].usecount = 0;
-#endif	
 	numsides = W_LumpLength (lump) / sizeof(mapsidedef_t);
-	sides = Z_Malloc (numsides*sizeof(side_t)+16,PU_LEVEL);
-	sides = (void*)(((uintptr_t)sides + 15) & ~15); // aline on cacheline boundary
-	D_memset (sides, 0, numsides*sizeof(side_t));
-	data = I_TempBuffer ();
-	W_ReadLump (lump,data);
-	
-	msd = (mapsidedef_t *)data;
-	sd = sides;
-	for (i=0 ; i<numsides ; i++, msd++, sd++)
-	{
-		sd->sector = LITTLESHORT(msd->sector);
-		sd->rowoffset = msd->rowoffset;
-		sd->textureoffset = LITTLESHORT(msd->textureoffset);
-		sd->texIndex = msd->texIndex;
 
-#ifndef MARS
-		textures[sd->toptexture].usecount++;
-		textures[sd->bottomtexture].usecount++;
-		textures[sd->midtexture].usecount++;
-#endif
+	if (gamemapinfo.loadFlags & LOADFLAGS_SIDEDEFS_ROM)
+		sides = (side_t*)W_POINTLUMPNUM(lump);
+	else
+	{
+		sides = Z_Malloc (numsides*sizeof(side_t)+16,PU_LEVEL);
+		sides = (void*)(((uintptr_t)sides + 15) & ~15); // aline on cacheline boundary
+		W_ReadLump(lump, sides);
 	}
 }
 
