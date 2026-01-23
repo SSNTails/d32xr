@@ -46,7 +46,9 @@ typedef struct
 	VINT afterBossMusic;
 	VINT spheresNeeded;
 	VINT timeLimit;
-	VINT loadFlags;
+	int32_t loadFlags;
+	VINT mapBank;
+	VINT spriteBank;
 	char lumpName[9];
 	void *data;
 } dmapinfo_t;

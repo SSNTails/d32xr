@@ -280,6 +280,10 @@ static void G_AddMapinfoKey(char* key, char* value, dmapinfo_t* mi)
 		mi->timeLimit = D_atoi(value) * TICRATE;
 	else if (!D_strcasecmp(key, "loadFlags"))
 		mi->loadFlags = D_atoi(value);
+	else if (!D_strcasecmp(key, "mapBank"))
+		mi->mapBank = D_atoi(value);
+	else if (!D_strcasecmp(key, "spriteBank"))
+		mi->spriteBank = D_atoi(value);
 }
 
 static void G_AddGameinfoKey(char* key, char* value, dgameinfo_t* gi)
