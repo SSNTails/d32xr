@@ -1145,6 +1145,377 @@ void DRAW_LevelSelect (void)
 
 /*============================================================================= */
 
+int offsetX_Gen = 0;
+int offsetY_Gen = 0;
+int offsetX_32x = 0;
+int offsetY_32x = 0;
+int genRes = 0x81;
+
+					//   LOW     HIGH    BLACK
+uint16_t colorGen[3] = { 0x00E0, 0x000E, 0x0000 };
+uint16_t color32x[3] = { 0x3000, 0xD100, 0x03FF };
+					//   THRU    HIGH    LOW
+
+int colorSelect = 0;
+
+int TIC_Test(void)
+{
+	screenCount++;
+
+	// Read directly from the controller. Works better in this function. Don't know why!
+	if ((Mars_ReadController(0) & BT_START)) {
+		return ga_closeprompt;
+	}
+
+	if (ticrealbuttons & BT_A) {
+		if (ticrealbuttons & BT_UP && !(oldticrealbuttons & BT_UP)) {
+			colorGen[colorSelect] = (colorGen[colorSelect] & 0xEE0) | ((colorGen[colorSelect] + 0x2) & 0xE);
+		}
+		if (ticrealbuttons & BT_DOWN && !(oldticrealbuttons & BT_DOWN)) {
+			colorGen[colorSelect] = (colorGen[colorSelect] & 0xEE0) | ((colorGen[colorSelect] - 0x2) & 0xE);
+		}
+	}
+	if (ticrealbuttons & BT_B) {
+		if (ticrealbuttons & BT_UP && !(oldticrealbuttons & BT_UP)) {
+			colorGen[colorSelect] = (colorGen[colorSelect] & 0xE0E) | ((colorGen[colorSelect] + 0x20) & 0xE0);
+		}
+		if (ticrealbuttons & BT_DOWN && !(oldticrealbuttons & BT_DOWN)) {
+			colorGen[colorSelect] = (colorGen[colorSelect] & 0xE0E) | ((colorGen[colorSelect] - 0x20) & 0xE0);
+		}
+	}
+	if (ticrealbuttons & BT_C) {
+		if (ticrealbuttons & BT_UP && !(oldticrealbuttons & BT_UP)) {
+			colorGen[colorSelect] = (colorGen[colorSelect] & 0x0EE) | ((colorGen[colorSelect] + 0x200) & 0xE00);
+		}
+		if (ticrealbuttons & BT_DOWN && !(oldticrealbuttons & BT_DOWN)) {
+			colorGen[colorSelect] = (colorGen[colorSelect] & 0x0EE) | ((colorGen[colorSelect] - 0x200) & 0xE00);
+		}
+	}
+	if (ticrealbuttons & BT_X) {
+		if (ticrealbuttons & BT_UP && !(oldticrealbuttons & BT_UP)) {
+			color32x[colorSelect] = (color32x[colorSelect] & 0xFFE0) | ((color32x[colorSelect] + 0x4) & 0x1F);
+		}
+		if (ticrealbuttons & BT_DOWN && !(oldticrealbuttons & BT_DOWN)) {
+			color32x[colorSelect] = (color32x[colorSelect] & 0xFFE0) | ((color32x[colorSelect] - 0x4) & 0x1F);
+		}
+	}
+	if (ticrealbuttons & BT_Y) {
+		if (ticrealbuttons & BT_UP && !(oldticrealbuttons & BT_UP)) {
+			color32x[colorSelect] = (color32x[colorSelect] & 0xFC1F) | ((color32x[colorSelect] + 0x80) & 0x3E0);
+		}
+		if (ticrealbuttons & BT_DOWN && !(oldticrealbuttons & BT_DOWN)) {
+			color32x[colorSelect] = (color32x[colorSelect] & 0xFC1F) | ((color32x[colorSelect] - 0x80) & 0x3E0);
+		}
+	}
+	if (ticrealbuttons & BT_Z) {
+		if (ticrealbuttons & BT_UP && !(oldticrealbuttons & BT_UP)) {
+			color32x[colorSelect] = (color32x[colorSelect] & 0x83FF) | ((color32x[colorSelect] + 0x1000) & 0x7C00);
+		}
+		if (ticrealbuttons & BT_DOWN && !(oldticrealbuttons & BT_DOWN)) {
+			color32x[colorSelect] = (color32x[colorSelect] & 0x83FF) | ((color32x[colorSelect] - 0x1000) & 0x7C00);
+		}
+	}
+
+	if (ticrealbuttons & BT_MODE && !(oldticrealbuttons & BT_MODE)) {
+		colorSelect++;
+		if (colorSelect > 2) {
+			colorSelect = 0;
+		}
+	}
+/*
+	if (ticrealbuttons & BT_MODE) {
+		if (ticrealbuttons & BT_UP && !(oldticrealbuttons & BT_UP)) {
+			offsetY_32x--;
+			Mars_ScrollMDSky(430 + offsetX_32x, 40 + offsetY_32x, 0, 0);
+		}
+		else if (ticrealbuttons & BT_DOWN && !(oldticrealbuttons & BT_DOWN)) {
+			offsetY_32x++;
+			Mars_ScrollMDSky(430 + offsetX_32x, 40 + offsetY_32x, 0, 0);
+		}
+
+		if (ticrealbuttons & BT_LEFT && !(oldticrealbuttons & BT_LEFT)) {
+			offsetX_32x--;
+			Mars_ScrollMDSky(430 + offsetX_32x, 40 + offsetY_32x, 0, 0);
+		}
+		else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
+			offsetX_32x++;
+			Mars_ScrollMDSky(430 + offsetX_32x, 40 + offsetY_32x, 0, 0);
+		}
+	}
+	else {
+		if (ticrealbuttons & BT_UP && !(oldticrealbuttons & BT_UP)) {
+			offsetY_Gen--;
+			Mars_ScrollMDSky(430 + offsetX_Gen, 40 + offsetY_Gen, 0, 0);
+		}
+		else if (ticrealbuttons & BT_DOWN && !(oldticrealbuttons & BT_DOWN)) {
+			offsetY_Gen++;
+			Mars_ScrollMDSky(430 + offsetX_Gen, 40 + offsetY_Gen, 0, 0);
+		}
+
+		if (ticrealbuttons & BT_LEFT && !(oldticrealbuttons & BT_LEFT)) {
+			offsetX_Gen--;
+			Mars_ScrollMDSky(430 + offsetX_Gen, 40 + offsetY_Gen, 0, 0);
+		}
+		else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
+			offsetX_Gen++;
+			Mars_ScrollMDSky(430 + offsetX_Gen, 40 + offsetY_Gen, 0, 0);
+		}
+	}
+
+	if (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B)) {
+		int reg12_write = 0x8C00;
+		genRes ^= 0x81;
+		reg12_write |= genRes;
+		Mars_WriteMDVDPRegister(reg12_write);
+	}
+*/
+	return ga_nothing;
+}
+
+void START_Test (void)
+{
+	//DoubleBufferSetup();	// Clear frame buffers to black.
+
+	for (int i = 0; i < 2; i++)
+	{
+		I_ClearFrameBuffer();
+		UpdateBuffer();
+	}
+	
+	//vd.viewangle = 0;
+	//I_Update();
+	Mars_ScrollMDSky(430, 128+40, 0, 0);
+	//Mars_SetScrollPositions(0, 0, 0, 0);
+
+	screenCount = 0;
+
+	I_SetPalette(dc_playpals);
+	Mars_FadeMDPaletteFromBlack(0xEEE);
+
+	R_InitColormap();
+
+	// Custom colors
+	unsigned short* cram = (unsigned short *)&MARS_CRAM;
+	cram[0x01] = 0x8000 | (0x0B << 10) | (0x00 << 5) | (0x00);		// Blue (high)
+	cram[0x02] = 0x8000 | (0x00 << 10) | (0x0F << 5) | (0x00);		// Green (high)
+	cram[0x81] = 0x0000 | (0x0B << 10) | (0x00 << 5) | (0x00);		// Blue (high)
+	cram[0x82] = 0x0000 | (0x00 << 10) | (0x0F << 5) | (0x00);		// Green (high)
+
+	R_SetupBackground("TEST", 1, 1);
+	effects_flags &= (~EFFECTS_COPPER_ENABLED);
+
+	clearscreen = 2;
+
+	for (int i = 0; i < 2; i++)
+	{
+		I_FillFrameBuffer(COLOR_THRU);
+		UpdateBuffer();
+	}
+}
+
+void STOP_Test (void)
+{
+	// Set to totally black
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+}
+
+void DRAW_Test (void)
+{
+	//I_SetPalette(dc_playpals);
+	if (screenCount < 4) {
+		Mars_FadeMDPaletteFromBlack(0xEEE);
+	}
+
+	while (frame_sync == mars_vblank_count);
+	frame_sync = mars_vblank_count;
+
+	// Custom colors
+	unsigned short* cram = (unsigned short *)&MARS_CRAM;
+	//cram[0x00] = 0x0000 | (0x0C << 10);
+
+	//cram[0x01] = 0x8000 | (0x1F << 10) | (0x1F << 5) | (0x1F);		// White (high)
+	//cram[0x81] = 0x0000 | (0x0F << 10) | (0x0F << 5) | (0x0F);		// Grey (high)
+
+	cram[0xFF] = color32x[0];
+	cram[0x81] = color32x[1];
+	cram[0x01] = color32x[2];
+
+	Mars_SetMDColor(colorGen[0], 0);
+	Mars_SetMDColor(colorGen[1], 17);
+	Mars_SetMDColor(colorGen[2], 18);
+
+	cram[0x20] = 0x8000 | (0x0C << 10) | (0x00 << 5) | (0x0C);
+	cram[0x21] = 0x0000 | (0x00 << 10) | (0x0C << 5) | (0x00);
+	
+	if (clearscreen > 0) {
+		I_ResetLineTable();
+		clearscreen--;
+	}
+
+	pixel_t *framebuffer = I_FrameBuffer();
+
+
+	framebuffer[((320/2) * 160) + ((64+0)/2)] = 0x2021;
+	framebuffer[((320/2) * 160) + ((64+2)/2)] = 0x2021;
+	framebuffer[((320/2) * 160) + ((64+4)/2)] = 0x2021;
+	framebuffer[((320/2) * 160) + ((64+6)/2)] = 0x2021;
+
+
+	/*for (int i=0; i < (160*224); i++) {
+		framebuffer[i] = 0x0000;
+	}*/
+
+	// LOW | LOW
+	framebuffer[((320/2) * 85) + ((14+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 85) + ((16+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 85) + ((18+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 85) + ((20+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 88) + ((14+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 88) + ((16+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 88) + ((18+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 88) + ((20+0)/2)] = 0x8181;
+
+	framebuffer[((320/2) * 93) + ((14+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 93) + ((16+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 93) + ((18+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 93) + ((20+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 96) + ((14+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 96) + ((16+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 96) + ((18+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 96) + ((20+0)/2)] = 0x8181;
+
+	framebuffer[((320/2) * 101) + ((14+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 101) + ((16+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 101) + ((18+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 101) + ((20+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 104) + ((14+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 104) + ((16+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 104) + ((18+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 104) + ((20+0)/2)] = 0x8181;
+
+	framebuffer[((320/2) * 109) + ((14+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 109) + ((16+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 109) + ((18+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 109) + ((20+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 112) + ((14+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 112) + ((16+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 112) + ((18+0)/2)] = 0x8181;
+	framebuffer[((320/2) * 112) + ((20+0)/2)] = 0x8181;
+
+	// LOW | HIGH
+	framebuffer[((320/2) * 85) + ((14+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 85) + ((16+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 85) + ((18+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 85) + ((20+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 88) + ((14+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 88) + ((16+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 88) + ((18+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 88) + ((20+16)/2)] = 0x0101;
+
+	framebuffer[((320/2) * 93) + ((14+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 93) + ((16+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 93) + ((18+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 93) + ((20+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 96) + ((14+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 96) + ((16+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 96) + ((18+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 96) + ((20+16)/2)] = 0x0101;
+
+	framebuffer[((320/2) * 101) + ((14+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 101) + ((16+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 101) + ((18+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 101) + ((20+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 104) + ((14+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 104) + ((16+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 104) + ((18+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 104) + ((20+16)/2)] = 0x0101;
+
+	framebuffer[((320/2) * 109) + ((14+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 109) + ((16+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 109) + ((18+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 109) + ((20+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 112) + ((14+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 112) + ((16+16)/2)] = 0x8181;
+	framebuffer[((320/2) * 112) + ((18+16)/2)] = 0x0101;
+	framebuffer[((320/2) * 112) + ((20+16)/2)] = 0x0101;
+
+	// HIGH | LOW
+	framebuffer[((320/2) * 85) + ((14+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 85) + ((16+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 85) + ((18+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 85) + ((20+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 88) + ((14+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 88) + ((16+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 88) + ((18+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 88) + ((20+32)/2)] = 0x8181;
+
+	framebuffer[((320/2) * 93) + ((14+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 93) + ((16+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 93) + ((18+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 93) + ((20+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 96) + ((14+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 96) + ((16+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 96) + ((18+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 96) + ((20+32)/2)] = 0x8181;
+
+	framebuffer[((320/2) * 101) + ((14+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 101) + ((16+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 101) + ((18+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 101) + ((20+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 104) + ((14+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 104) + ((16+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 104) + ((18+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 104) + ((20+32)/2)] = 0x8181;
+
+	framebuffer[((320/2) * 109) + ((14+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 109) + ((16+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 109) + ((18+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 109) + ((20+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 112) + ((14+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 112) + ((16+32)/2)] = 0x0101;
+	framebuffer[((320/2) * 112) + ((18+32)/2)] = 0x8181;
+	framebuffer[((320/2) * 112) + ((20+32)/2)] = 0x8181;
+
+	// HIGH | HIGH
+	framebuffer[((320/2) * 85) + ((14+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 85) + ((16+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 85) + ((18+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 85) + ((20+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 88) + ((14+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 88) + ((16+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 88) + ((18+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 88) + ((20+48)/2)] = 0x0101;
+
+	framebuffer[((320/2) * 93) + ((14+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 93) + ((16+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 93) + ((18+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 93) + ((20+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 96) + ((14+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 96) + ((16+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 96) + ((18+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 96) + ((20+48)/2)] = 0x0101;
+
+	framebuffer[((320/2) * 101) + ((14+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 101) + ((16+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 101) + ((18+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 101) + ((20+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 104) + ((14+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 104) + ((16+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 104) + ((18+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 104) + ((20+48)/2)] = 0x0101;
+
+	framebuffer[((320/2) * 109) + ((14+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 109) + ((16+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 109) + ((18+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 109) + ((20+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 112) + ((14+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 112) + ((16+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 112) + ((18+48)/2)] = 0x0101;
+	framebuffer[((320/2) * 112) + ((20+48)/2)] = 0x0101;
+}
+
+/*============================================================================= */
+
 #ifdef SHOW_COMPATIBILITY_PROMPT
 int TIC_Compatibility(void)
 {
@@ -1790,6 +2161,7 @@ D_printf ("DM_Main\n");
 				case ga_startnew:
 					// Level selection screen
 					SetLevelSelect();
+					MiniLoop (START_Test, STOP_Test, TIC_Test, DRAW_Test, UpdateBuffer);
 					exit = MiniLoop (START_LevelSelect, STOP_LevelSelect, TIC_LevelSelect, DRAW_LevelSelect, UpdateBuffer);
 
 					// Start a new game

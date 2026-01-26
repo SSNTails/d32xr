@@ -224,7 +224,7 @@ void Mars_InitVideo(int lines)
 		Mars_FlipFrameBuffers(1);
 	}
 
-	Mars_SetMDColor(1, 0);
+	//Mars_SetMDColor(1, 0);
 }
 
 void Mars_Init(void)
@@ -538,10 +538,12 @@ void Mars_GetMDCrsr(int *x, int *y)
 	*x = t >> 6;
 }
 
-void Mars_SetMDColor(int fc, int bc)
+void Mars_SetMDColor(int rgb, int index)
 {
 	while (MARS_SYS_COMM0);
-	MARS_SYS_COMM0 = 0x0A00 | (bc << 4) | fc;			/* set font fg and bg colors */
+	MARS_SYS_COMM2 = rgb;
+	MARS_SYS_COMM0 = 0x0A00 | index;
+	while (MARS_SYS_COMM0);
 }
 
 void Mars_GetMDColor(int *fc, int *bc)

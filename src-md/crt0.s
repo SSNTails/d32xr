@@ -1471,6 +1471,43 @@ get_crsr:
         bra     main_loop
 
 set_color:
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a2,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+
+        moveq   #0,d0
+        moveq   #0,d1
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.l  #0xC0000000,d2        /* Write CRAM address 0 */
+        move.w  0xA15120,d0
+        andi.w  #0xFF,d0
+        lsl.l   #8,d0
+        lsl.l   #8,d0
+        lsl.l   #1,d0
+        add.l   d0,d2
+        move.l  d2,(a0)
+        move.w  0xA15122,d1
+        move.w  d1,(a1)
+
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a2
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        move.w  #0,0xA15120         /* done */
+
+        bra     main_loop
+
+
+
+
         /* the foreground color is in the LS nibble of COMM0 */
         move.w  0xA15120,d0
         andi.l  #0x000F,d0
@@ -1894,14 +1931,14 @@ load_md_sky:
         move.l  d0,a2
         lea     bank1_palette_1,a3
         move.w  #47,d1
-        cmpi.b  #1,legacy_emulator      /* Check for legacy emulator (not Ares) */
-        bgt.s   1f
+        |cmpi.b  #1,legacy_emulator      /* Check for legacy emulator (not Ares) */
+        |bgt.s   1f
 
-        moveq   #0,d0
-        move.w  d0,(a3)+                /* Use black for the background (hardware H32-safe) */
-        addq    #2,a2
-        subq    #1,d1
-        bra.s   2f
+        |moveq   #0,d0
+        |move.w  d0,(a3)+                /* Use black for the background (hardware H32-safe) */
+        |addq    #2,a2
+        |subq    #1,d1
+        |bra.s   2f
 1:
         move.w  (a2),d0                 /* Use background color from palette lump (best for legacy emulators) */
 2:
