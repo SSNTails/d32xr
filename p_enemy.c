@@ -2130,6 +2130,13 @@ void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
 	int32_t delta;
 	const mobjinfo_t *aInfo = &mobjinfo[actor->type];
 
+	if (actor->target)
+	{
+		if (D_abs(actor->target->x - actor->x) > 2048*FRACUNIT
+			|| D_abs(actor->target->y - actor->y) > 2048*FRACUNIT)
+			return;
+	}
+
 	if (actor->reactiontime)
 		actor->reactiontime--;
 
