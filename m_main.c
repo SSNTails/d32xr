@@ -155,8 +155,8 @@ void M_Start2 (boolean startup_)
 
 	if (startup)
 	{
-		m_titlea = i != -1 ? W_CacheLumpNum(gameinfo.titlePageA, PU_STATIC) : NULL;
-		m_titleb = i != -1 ? W_CacheLumpNum(gameinfo.titlePageB, PU_STATIC) : NULL;
+		m_titlea = W_CacheLumpNum(gameinfo.titlePageA, PU_STATIC);
+		m_titleb = W_CacheLumpNum(gameinfo.titlePageB, PU_STATIC);
 
 		/*if (legacy_emulator == LEGACY_EMULATOR_KEGA) {
 			// Kega Fusion doesn't support copper. Use solid orange for the "32X" logo instead.
