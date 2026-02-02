@@ -117,6 +117,16 @@ void P_ChangeSectorPlayer(player_t *player);
 
 typedef struct
 {
+	VINT tag;
+	VINT bbox[4];
+	mapvertex_t delta;
+} polyobj_t;
+
+extern VINT numpolyobjects;
+extern polyobj_t *polyobjects;
+
+typedef struct
+{
 	VINT		sector;
 	uint8_t		texIndex;
 	uint8_t		rowoffset;			/* add this to the calculated texture top */
