@@ -264,6 +264,20 @@ uint16_t* Mars_FrameBufferLines(void)
 	return lines;
 }
 
+
+
+
+//DLG: REMOVE ME!
+void Mars_TestNewSoundDriver(int var1, int var2, int var3, int var4)
+{
+	while (MARS_SYS_COMM0);
+	//MARS_SYS_COMM0 = 0x2400;		// Load voice
+	MARS_SYS_COMM0 = 0x2500;		// Play sequence
+}
+
+
+
+
 void Mars_ReadSRAM(uint8_t * buffer, int offset, int len)
 {
 	uint8_t *ptr = buffer;

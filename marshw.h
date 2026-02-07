@@ -113,6 +113,8 @@ void Mars_WriteSRAM(const uint8_t * buffer, int offset, int len) MARS_ATTR_DATA_
 
 void Mars_WaitTicks(int ticks);
 
+void Mars_TestNewSoundDriver(int var1, int var2, int var3, int var4);	//DLG: REMOVE ME!
+
 // MD network functions
 int Mars_GetNetByte(int wait);
 int Mars_PutNetByte(int val);

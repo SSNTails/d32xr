@@ -443,6 +443,10 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 		buttons = I_ReadControls();
 
+		if (gamepaused && buttons & BT_Y /* && !(oldticrealbuttons & BT_Y)*/) {
+			Mars_TestNewSoundDriver(0, 0, 0, 0);	//DLG: REMOVE ME!
+		}
+
 #ifdef SKYDEBUG
 		if (!gamepaused && oldticrealbuttons == BT_MODE && buttons & BT_MODE) {
 			if (buttons & BT_A) {
