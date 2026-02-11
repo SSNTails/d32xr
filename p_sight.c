@@ -138,8 +138,8 @@ static boolean PS_CrossSubsector(sightWork_t *sw, int num)
    i16divline_t *strace = &sw->strace;
    int16_t      t2x = sw->t2x, t2y = sw->t2y;
    fixed_t      sightzstart = sw->sightzstart;
-   VINT         *lvalidcount = validcount;
-   VINT         vc;
+   int8_t         *lvalidcount = validcount;
+   int8_t         vc;
    VINT         side;
 
    sub = &subsectors[num];
@@ -345,7 +345,7 @@ static boolean PS_RejectCheckSight(mobj_t *t1, mobj_t *t2)
 static boolean PS_CheckSight2(mobj_t *t1, mobj_t *t2)
 {
    sightWork_t sw;
-   VINT *lvalidcount = validcount;
+   int8_t *lvalidcount = validcount;
 
    *lvalidcount = *lvalidcount + 1;
    if (*lvalidcount == 0)
