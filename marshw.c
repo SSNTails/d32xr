@@ -292,6 +292,8 @@ void Mars_TestLoadMusic(void *ptr, int size)
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x2601+i;
 	}
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM0 = 0x2605;
 }
 
 
