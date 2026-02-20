@@ -54,6 +54,8 @@ void Mars_SetBrightness(int16_t brightness);
 int Mars_BackBuffer(void);
 void Mars_SetPalette(const uint8_t *palette);
 
+extern volatile unsigned int mars_tic;
+
 extern volatile uint8_t legacy_emulator;
 
 extern volatile unsigned int mars_hblank_count_peak;
@@ -114,6 +116,7 @@ void Mars_WriteSRAM(const uint8_t * buffer, int offset, int len) MARS_ATTR_DATA_
 void Mars_WaitTicks(int ticks);
 
 void Mars_TestNewSoundDriver(int var1, int var2, int var3, int var4);	//DLG: REMOVE ME!
+void Mars_TestLoadMusic(void *ptr, int size);	//DLG: REMOVE ME!
 
 // MD network functions
 int Mars_GetNetByte(int wait);

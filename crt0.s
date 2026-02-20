@@ -679,6 +679,28 @@ do_distortion:
         nop
 
         ! handle H IRQ (remove nops if more than 8 cycles)
+        ! handle V IRQ - save registers
+        sts.l   pr,@-r15
+        mov.l   r3,@-r15
+        mov.l   r4,@-r15
+        mov.l   r5,@-r15
+        mov.l   r6,@-r15
+        mov.l   r7,@-r15
+        sts.l   mach,@-r15
+        sts.l   macl,@-r15
+        ! Run the handler code
+        mov.l   phbi_handler_ptr,r0
+        jsr     @r0
+        nop
+        ! restore registers
+        lds.l   @r15+,macl
+        lds.l   @r15+,mach
+        mov.l   @r15+,r7
+        mov.l   @r15+,r6
+        mov.l   @r15+,r5
+        mov.l   @r15+,r4
+        mov.l   @r15+,r3
+        lds.l   @r15+,pr
 
         rts
         nop
@@ -721,6 +743,28 @@ do_copper:
         nop
 
         ! handle H IRQ (remove nops if more than 8 cycles)
+        ! handle V IRQ - save registers
+        sts.l   pr,@-r15
+        mov.l   r3,@-r15
+        mov.l   r4,@-r15
+        mov.l   r5,@-r15
+        mov.l   r6,@-r15
+        mov.l   r7,@-r15
+        sts.l   mach,@-r15
+        sts.l   macl,@-r15
+        ! Run the handler code
+        mov.l   phbi_handler_ptr,r0
+        jsr     @r0
+        nop
+        ! restore registers
+        lds.l   @r15+,macl
+        lds.l   @r15+,mach
+        mov.l   @r15+,r7
+        mov.l   @r15+,r6
+        mov.l   @r15+,r5
+        mov.l   @r15+,r4
+        mov.l   @r15+,r3
+        lds.l   @r15+,pr
 
         rts
         nop
@@ -728,6 +772,9 @@ do_copper:
         .align  4
 phi_mars_adapter:
         .long   0x20004000
+
+phbi_handler_ptr:
+        .long   _pri_hbi_handler
 
 phi_sh2_frtctl:
         .long   0xfffffe10

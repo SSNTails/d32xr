@@ -524,6 +524,8 @@ main_loop:
         /* send controller values to primary sh2 */
         nop                         /* prevent soft lock in Gens (why does this work?) */
         nop                         /* prevent soft lock in Gens (why does this work?) */
+        nop                         /* prevent soft lock in Gens (why does this work?) */
+        nop                         /* prevent soft lock in Gens (why does this work?) */
         move.w  #0x0001,0xA15102    /* assert CMD INT to primary SH2 */
 10:
         move.w  0xA15120,d0         /* wait on handshake in COMM0 */
@@ -639,6 +641,7 @@ no_cmd:
         dc.w    flush_sfx - prireqtbl             /* 0x23 */
         dc.w    load_voice - prireqtbl            /* 0x24 */
         dc.w    play_sequence - prireqtbl         /* 0x25 */
+        dc.w    load_sequence - prireqtbl         /* 0x26 */
 
 | process request from Secondary SH2
 handle_sec_req:
@@ -3542,11 +3545,51 @@ new_sound_driver:
 
 
 
-load_voice:
+load_sequence:
+        move.w  #0x2700,sr          /* disable ints */
+
         move.l  a0,-(sp)
         move.l  a1,-(sp)
         move.l  a2,-(sp)
-        move.l  a3,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+
+        bsr     get_lump_source_and_size
+        lea     sequence_data,a1
+        move.l  lump_ptr,d0
+        andi.l  #0x7FFFF,d0
+        addi.l  #0x880000,d0
+        movea.l d0,a2
+
+        move.l  lump_size,d1
+        cmpi.l  #0x2000,d1
+        bls.s   0f
+        move.l  #0x2000,d1
+
+        move.l  (a2)+,(a1)+
+        dbra    d1,1b
+
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a2
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        move.w  #0,0xA15120         /* done */
+
+        move.w  #0x2000,sr              /* enable interrupts */
+
+        bra     main_loop
+
+
+
+load_voice:
+        |move.l  a0,-(sp)
+        |move.l  a1,-(sp)
+        |move.l  a2,-(sp)
+        |move.l  a3,-(sp)
         move.l  a6,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
@@ -3554,7 +3597,7 @@ load_voice:
 
 
 
-        move.w  #0x0100,0xA11100    /* Z80 assert bus request */
+        |move.w  #0x0100,0xA11100    /* Z80 assert bus request */
         |move.w  #0x0100,0xA11200    /* Z80 deassert reset */
 1:
         |move.w  0xA11100,d0
@@ -3566,13 +3609,13 @@ load_voice:
 
 
 
-        move.l  #0xA04000,a0
-        move.l  #0xA04001,a1
-        move.l  #0xA04002,a2
-        move.l  #0xA04003,a3
+        |move.l  #0xA04000,a0
+        |move.l  #0xA04001,a1
+        |move.l  #0xA04002,a2
+        |move.l  #0xA04003,a3
 
         move.b  #0,d0           | D0 = channel number
-        move.b  #1,d1           | D1 = voice number
+        move.b  #0,d1           | D1 = voice number
 
         /* Calculate the address of the voice data */
         lea     voice_param_table,a6
@@ -3603,7 +3646,7 @@ load_voice_byte_loop:
 
         |move.w  #0x0000,0xA11200        /* Z80 assert reset */
 
-        move.w  #0x0000,0xA11100        /* Z80 deassert bus request */
+        |move.w  #0x0000,0xA11100        /* Z80 deassert bus request */
 7:
         |move.w  0xA11100,d0
         |andi.w  #0x0100,d0
@@ -3617,14 +3660,15 @@ load_voice_byte_loop:
         move.l  (sp)+,d1
         move.l  (sp)+,d0
         move.l  (sp)+,a6
-        move.l  (sp)+,a3
-        move.l  (sp)+,a2
-        move.l  (sp)+,a1
-        move.l  (sp)+,a0
+        |move.l  (sp)+,a3
+        |move.l  (sp)+,a2
+        |move.l  (sp)+,a1
+        |move.l  (sp)+,a0
 
-        move.w  #0,0xA15120         /* done */
+        |move.w  #0,0xA15120         /* done */
 
-        bra     main_loop
+        |bra     main_loop
+        rts
 
 
 
@@ -3639,6 +3683,7 @@ play_sequence:
         move.l  d0,-(sp)
         move.l  d1,-(sp)
         move.l  d2,-(sp)
+        move.l  d3,-(sp)
 
         move.w  #0x0100,0xA11100    /* Z80 assert bus request */
         move.l  #0xA04000,a0
@@ -3646,26 +3691,71 @@ play_sequence:
         move.l  #0xA04002,a2
         move.l  #0xA04003,a3
 
+        move.b  #0,d0           | D0 = channel number
+
         lea     sequence_data,a6
+        move.l  a6,test_a6_before
         move.l  a6,a4
         add.w   song_fm1_pos,a6
+        move.l  a6,test_a6_after
 
-        moveq   #0,d0
+        cmpi.w  #0,song_fm1_wait
+        bne.w   play_sequence_tic
+
+play_sequence_read_next:
         moveq   #0,d1
-        move.b  (a6)+,d0
+        moveq   #0,d2
+        moveq   #0,d3
 
-        cmpi.b  #0,d0
-        beq.s   play_sequence_rest
-        cmpi.b  #0x3F,d0
-        ble.s   play_sequence_wait
-        cmpi.b  #0xBF,d0
-        bhi.s   play_sequence_command
+        move.l  #0,test_last_read1      | erase 1, 2, 3, and 4
+
+        move.b  (a6)+,d3
+        move.b  d3,test_last_read1
+
+        cmpi.b  #0,d3
+        beq.w   play_sequence_rest
+        cmpi.b  #0x3F,d3
+        bls.w   play_sequence_wait
+        cmpi.b  #0xBF,d3
+        bls.w   play_sequence_note
+
+        subi.b  #0xC0,d3
+        add.b   d3,d3
+        lea     play_sequence_command_table,a5
+        add.w   d3,a5
+        move.w  (a5),d2
+        lea     play_sequence_command_table,a5
+        add.w   d2,a5
+        jmp     (a5)
 
 play_sequence_note:
+        | Note off
+        move.b  #0x28,d2        | D2 = register 0x28
+        add.b   d0,d2           | D2 = register 0x28 + D0
+        move.b  d2,(a0)         | Port 0 = address (D2)
+        move.b  #0x00,(a1)      | Port 1 = data (note off)
+        | TESTING STOP ALL CHANNELS!
+        move.b  #0x29,d2        | D2 = register 0x29
+        move.b  d2,(a0)         | Port 0 = address (D2)
+        move.b  #0x00,(a1)      | Port 1 = data (note off)
+        move.b  #0x2A,d2        | D2 = register 0x2A
+        move.b  d2,(a0)         | Port 0 = address (D2)
+        move.b  #0x00,(a1)      | Port 1 = data (note off)
+        move.b  #0x28,d2        | D2 = register 0x29
+        move.b  d2,(a2)         | Port 0 = address (D2)
+        move.b  #0x00,(a3)      | Port 1 = data (note off)
+        move.b  #0x29,d2        | D2 = register 0x2A
+        move.b  d2,(a2)         | Port 0 = address (D2)
+        move.b  #0x00,(a3)      | Port 1 = data (note off)
+        move.b  #0x2A,d2        | D2 = register 0x2A
+        move.b  d2,(a2)         | Port 0 = address (D2)
+        move.b  #0x00,(a3)      | Port 1 = data (note off)
+        | Reference frequency
         lea     freq_table,a5
-        sub.b   #0x40,d0
-        lsl.b   #1,d0
-        add.w   d0,a5
+        |sub.b   #0x40,d3
+        sub.b   #0x28,d3
+        lsl.w   #1,d3
+        add.w   d3,a5
         | Set frequency
         move.b  #0xA4,d2        | D2 = register 0xA4
         add.b   d0,d2           | D2 = register 0xA4 + D0
@@ -3680,7 +3770,7 @@ play_sequence_note:
         add.b   d0,d2           | D2 = register 0x28 + D0
         move.b  d2,(a0)         | Port 0 = address (D2)
         move.b  #0xF0,(a1)      | Port 1 = data (note on)
-        bra.s   play_sequence_tic
+        bra.w   play_sequence_read_next
 
 play_sequence_rest:
         | Note off
@@ -3688,17 +3778,76 @@ play_sequence_rest:
         add.b   d0,d2           | D2 = register 0x28 + D0
         move.b  d2,(a0)         | Port 0 = address (D2)
         move.b  #0x00,(a1)      | Port 1 = data (note off)
-        bra.s   play_sequence_tic
+        bra.w   play_sequence_read_next
 
 play_sequence_wait:
-        addi.b  #1,d0                   | DLG: Should this be done??
-        move.b  d0,song_fm1_wait
-        bra.s   play_sequence_tic
+        addi.w  #1,d3                   | DLG: Should this be done??
+        move.w  d3,song_fm1_wait
+        bra.w   play_sequence_tic
 
-play_sequence_command:
+play_sequence_command_table:
+        dc.w    seqcmd_wait_byte - play_sequence_command_table          /* 0xC0 */
+        dc.w    seqcmd_wait_word - play_sequence_command_table          /* 0xC1 */
+        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC2 */
+        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC3 */
+        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC4 */
+        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC5 */
+        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC6 */
+        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC7 */
+        dc.w    seqcmd_stereo_off - play_sequence_command_table         /* 0xC8 */
+        dc.w    seqcmd_stereo_left - play_sequence_command_table        /* 0xC9 */
+        dc.w    seqcmd_stereo_right - play_sequence_command_table       /* 0xCA */
+        dc.w    seqcmd_stereo_both - play_sequence_command_table        /* 0xCB */
+        dc.w    seqcmd_octave - play_sequence_command_table             /* 0xCC */
+        dc.w    seqcmd_voice - play_sequence_command_table              /* 0xCD */
+        dc.w    seqcmd_vibrato_off - play_sequence_command_table        /* 0xCE */
+        dc.w    seqcmd_vibrato_speed - play_sequence_command_table      /* 0xCF */
+
+seqcmd_no_cmd:
+        nop
+        bra.w   play_sequence_read_next
+
+seqcmd_wait_byte:
+        move.b  (a6)+,d2
+        move.b  d2,test_last_read2
+        addi.w  #1,d2                   | DLG: Should this be done??
+        move.w  d2,song_fm1_wait
+        bra.s   play_sequence_tic
+seqcmd_wait_word:
+        move.b  (a6)+,d2
+        move.b  d2,test_last_read2
+        lsl.w   #8,d2
+        move.b  (a6)+,d2
+        move.b  d2,test_last_read3
+        addi.w  #1,d2                   | DLG: Should this be done??
+        move.w  d2,song_fm1_wait
+        bra.s   play_sequence_tic
+seqcmd_stereo_off:
+        bra.w   play_sequence_read_next
+seqcmd_stereo_left:
+        bra.w   play_sequence_read_next
+seqcmd_stereo_right:
+        bra.w   play_sequence_read_next
+seqcmd_stereo_both:
+        bra.w   play_sequence_read_next
+seqcmd_octave:
+        move.b  (a6)+,d2
+        move.b  d2,test_last_read2
+        bra.w   play_sequence_read_next
+seqcmd_voice:
+        move.b  (a6)+,d2
+        move.b  d2,test_last_read2
+        jsr     load_voice
+        bra.w   play_sequence_read_next
+seqcmd_vibrato_off:
+        bra.w   play_sequence_read_next
+seqcmd_vibrato_speed:
+        move.b  (a6)+,d2
+        move.b  d2,test_last_read2
+        bra.w   play_sequence_read_next
+
         | finish me
         nop
-        |bra.s   play_sequence_tic
 
 play_sequence_tic:
         cmpi.w  #0,song_fm1_wait
@@ -3706,14 +3855,15 @@ play_sequence_tic:
         subi.w  #1,song_fm1_wait
 1:
 9:
-        move.w  a4,d0
+        move.w  a4,d2
         move.w  a6,d1
-        sub.w   d0,d1
-        add.w   d1,song_fm1_pos
+        sub.w   d2,d1
+        move.w  d1,song_fm1_pos
 
 play_sequence_done:
         |move.w  #0x0000,0xA11100        /* Z80 deassert bus request */
 
+        move.l  (sp)+,d3
         move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
@@ -3736,6 +3886,14 @@ play_sequence_done:
 
 
 
+        .align 4
+testabc:        dc.l    0x08257368
+test_a6_before: dc.l    0
+test_a6_after:  dc.l    0
+test_last_read1:    dc.b    0
+test_last_read2:    dc.b    0
+test_last_read3:    dc.b    0
+test_last_read4:    dc.b    0
 song_fm1_pos:       dc.w    0x0000
 song_fm2_pos:       dc.w    0x0000
 song_fm3_pos:       dc.w    0x0000
@@ -3797,6 +3955,16 @@ song_fm_voices:
 
         .align 2
 voice_param_table:
+        /* GFZ1 - 05 - 01_title_52 */
+        dc.b    0x3D                        | 0xB0 : FB/ALG
+        dc.b    0x01, 0x51, 0x21, 0x01      | 0x30 : DT/MUL
+        dc.b    0x19, 0x11, 0x15, 0x11      | 0x40 : TL
+        dc.b    0x12, 0x14, 0x14, 0x0F      | 0x50 : RS/AR
+        dc.b    0x0A, 0x05, 0x05, 0x05      | 0x60 : AM/D1R
+        dc.b    0x00, 0x00, 0x00, 0x00      | 0x70 : D2R
+        dc.b    0x2B, 0x2B, 0x2B, 0x1B      | 0x80 : D1L/RR
+        | dc.b    0x00, 0x00, 0x00, 0x00      | 0x90 : SSG-EG
+
         /* Guitar (Kid Chameleon) */
         dc.b    0x38                        | 0xB0 : FB/ALG
         dc.b    0x71, 0x72, 0x64, 0x73      | 0x30 : DT/MUL
@@ -3979,11 +4147,23 @@ freq_table:
         dc.w     (2048*7)+1933  | G
 
 
+        .align 4
 sequence_data:
+        .space  8192
+
+        |       wait(byte)  inst(byte)  note  wait  note  wait  note  wait  note  wait  note  wait  note  wait
         dc.b    0xC0, 0x89, 0xCD, 0x00, 0x70, 0x03, 0x70, 0x02, 0x70, 0x03, 0x70, 0x02, 0x70, 0x03, 0x70, 0x02,
+
+        |       note  wait  note  wait  note  wait  inst(byte)  note  wait  note  wait  note  wait  note  wait
         dc.b    0x65, 0x03, 0x66, 0x02, 0x83, 0x21, 0xCD, 0x05, 0x7E, 0x0A, 0x83, 0x0A, 0x85, 0x0A, 0x87, 0x0A,
-        dc.b    0x85, 0x0A, 0xCF, 0x74, 0x0F, 0x00, 0x05, 0xCE, 0x81, 0x02, 0x82, 0x08, 0x7E, 0x0A, 0xCF, 0x74, 
-        dc.b    0x05, 0x00, 0x05, 0xCE, 0x7B, 0x0A, 0xCF, 0x74, 0x05, 0x00, 0x05, 0xCE, 0x7C, 0x0A, 0xCF, 0x74, 
+
+        |       note  wait  vibr(byte)  wait  rest  wait  voff  note  wait  note  wait  note  wait  vibr(byte)
+        dc.b    0x85, 0x0A, 0xCF, 0x74, 0x0F, 0x00, 0x05, 0xCE, 0x81, 0x02, 0x82, 0x08, 0x7E, 0x0A, 0xCF, 0x74,
+
+        |       wait  rest  wait  voff  note  wait  vibr(byte)  wait  rest  wait  voff  note  wait  vibr(byte) 
+        dc.b    0x05, 0x00, 0x05, 0xCE, 0x7B, 0x0A, 0xCF, 0x74, 0x05, 0x00, 0x05, 0xCE, 0x7C, 0x0A, 0xCF, 0x74,
+
+        | 
         dc.b    0x0A, 0xCE, 0x83, 0x0A, 0xCF, 0x74, 0x28, 0x00, 0x0A, 0xCE, 0x7B, 0x0A, 0x7C, 0x0A, 0xCF, 0x74, 
         dc.b    0x05, 0x00, 0x05, 0xCE, 0x7B, 0x02, 0x7C, 0x0A, 0x7B, 0x03, 0x00, 0x0F, 0x79, 0x05, 0x00, 0x0F, 
         dc.b    0x7B, 0x0A, 0xCF, 0x74, 0x1E, 0xCE, 0x7E, 0x0A, 0x83, 0x0A, 0xCF, 0x74, 0x05, 0xCE, 0x85, 0x0A, 

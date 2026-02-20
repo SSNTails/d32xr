@@ -37,6 +37,8 @@ static volatile uint16_t next_buttons_pressed[2];
 static volatile uint16_t next_buttons_released[2];
 static volatile uint16_t previous_buttons[2];
 
+volatile unsigned int mars_tic = 0;
+
 volatile uint8_t legacy_emulator = 0;
 
 volatile unsigned int mars_thru_rgb = 0;
@@ -273,6 +275,23 @@ void Mars_TestNewSoundDriver(int var1, int var2, int var3, int var4)
 	while (MARS_SYS_COMM0);
 	//MARS_SYS_COMM0 = 0x2400;		// Load voice
 	MARS_SYS_COMM0 = 0x2500;		// Play sequence
+}
+
+//DLG: REMOVE ME!
+void Mars_TestLoadMusic(void *ptr, int size)
+{
+	int i;
+
+	uint16_t s[4];
+
+	s[0] = (uint32_t)size >> 16, s[1] = (uint32_t)size & 0xFFFF;
+	s[2] = (uintptr_t)ptr >> 16, s[3] = (uintptr_t)ptr & 0xFFFF;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM0);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x2601+i;
+	}
 }
 
 
@@ -868,6 +887,19 @@ void pri_vbi_debug(void)
 	//while(true);
 }
 #endif
+
+void pri_hbi_handler(void)
+{
+	mars_tic++;
+
+	if (IsLevelSelect()) {
+		if (ticrealbuttons & BT_Y /* && !(oldticrealbuttons & BT_Y)*/) {
+			if (mars_tic % 284 == 0) {
+				Mars_TestNewSoundDriver(0, 0, 0, 0);	//DLG: REMOVE ME!
+			}
+		}
+	}
+}
 
 void pri_vbi_handler(void)
 {

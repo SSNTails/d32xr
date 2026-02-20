@@ -443,10 +443,6 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 		buttons = I_ReadControls();
 
-		if (gamepaused && buttons & BT_Y /* && !(oldticrealbuttons & BT_Y)*/) {
-			Mars_TestNewSoundDriver(0, 0, 0, 0);	//DLG: REMOVE ME!
-		}
-
 #ifdef SKYDEBUG
 		if (!gamepaused && oldticrealbuttons == BT_MODE && buttons & BT_MODE) {
 			if (buttons & BT_A) {
@@ -799,6 +795,11 @@ int TIC_LevelSelect (void)
 	}
 
 	effects_flags |= effects_flags_queue;
+
+	if (ticrealbuttons & BT_A && !(oldticrealbuttons & BT_A)) {
+		int lump = W_GetNumForName("M_GFZ1");
+		Mars_TestLoadMusic(W_POINTLUMPNUM(lump), W_LumpLength(lump));		//DLG: REMOVE ME!
+	}
 
 	return exit;
 }
