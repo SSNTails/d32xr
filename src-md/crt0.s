@@ -3597,6 +3597,7 @@ load_voice:
         move.l  d0,-(sp)
         move.l  d1,-(sp)
         move.l  d2,-(sp)
+        move.l  d4,-(sp)
 
 
 
@@ -3618,6 +3619,7 @@ load_voice:
         |move.l  #0xA04003,a3
 
         |moveq   #0,d0           | D0 = channel number
+        |moveq   #0,d4           | D4 = channel number % 3
         moveq   #0,d1           | D1 = voice number
 
         /* Calculate the address of the voice data */
@@ -3631,16 +3633,16 @@ load_voice:
 
         /* Load the feedback/algorithm register value */
         move.b  #0xB0,d2        | D2 = register 0xB0
-        add.b   d0,d2           | D2 = register 0xB0 + D0
+        add.b   d4,d2           | D2 = register 0xB0 + D0
         move.b  d2,(a0)         | Port 0 = address (D2)
-        move.b  (a6)+,(a1)      | Port 1 = data (read byte from voice data)
+        move.b  (a6)+,(1,a0)      | Port 1 = data (read byte from voice data)
 
         /* Load all other values into registers 0x30-0x8E */
         move.w  #0x30,d2
-        add.b   d0,d2
+        add.b   d4,d2
 load_voice_byte_loop:
         move.b  d2,(a0)
-        move.b  (a6)+,(a1)
+        move.b  (a6)+,(1,a0)
         add.b   #4,d2
         cmpi.w  #0x90,d2
         blt.s   load_voice_byte_loop
@@ -3659,6 +3661,7 @@ load_voice_byte_loop:
 
 
 
+        move.l  (sp)+,d4
         move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
@@ -3687,14 +3690,33 @@ play_sequence:
         move.l  d1,-(sp)
         move.l  d2,-(sp)
         move.l  d3,-(sp)
+        move.l  d4,-(sp)
+        move.l  d5,-(sp)
+        move.l  d6,-(sp)
 
         move.w  #0x0100,0xA11100    /* Z80 assert bus request */
-        move.l  #0xA04000,a0
-        move.l  #0xA04001,a1
-        move.l  #0xA04002,a2
-        move.l  #0xA04003,a3
 
-        moveq   #0,d0           | D0 = channel number
+        move.l  #0xA04000,a1    | Sometimes we need to always use this port, regardless of channel.
+
+        moveq   #5,d0           | D0 = channel number
+
+play_sequence_channel_loop:
+        move.l  d0,d4
+
+        cmpi.b  #3,d0
+        bhs.s   0f
+        move.l  #0xA04000,a0
+        bra.s   1f
+0:
+        move.l  #0xA04002,a0
+        subq    #3,d4           | D4 = channel number % 3
+1:
+        lea     song_fm1_pos,a2
+        add.l   d0,a2
+        add.l   d0,a2
+        lea     song_fm1_wait,a3
+        add.l   d0,a3
+        add.l   d0,a3
 
         lea     sequence_data,a6
         moveq   #0,d1
@@ -3704,10 +3726,10 @@ play_sequence:
         add.w   d1,a6
         move.l  a6,test_a6_before
         move.l  a6,a4
-        add.w   song_fm1_pos,a6
+        add.w   (a2),a6
         move.l  a6,test_a6_after
 
-        cmpi.w  #0,song_fm1_wait
+        cmpi.w  #0,(a3)
         bne.w   play_sequence_tic
 
 play_sequence_read_next:
@@ -3739,58 +3761,52 @@ play_sequence_read_next:
 play_sequence_note:
         | Note off
         move.b  #0x28,d2        | D2 = register 0x28
-        move.b  d2,(a0)         | Port 0 = address (D2)
-        move.b  d0,(a1)         | Port 1 = data (note off)
-        | TESTING STOP ALL CHANNELS!
-        |move.b  #0x29,d2        | D2 = register 0x29
-        |move.b  d2,(a0)         | Port 0 = address (D2)
-        |move.b  #0x00,(a1)      | Port 1 = data (note off)
-        |move.b  #0x2A,d2        | D2 = register 0x2A
-        |move.b  d2,(a0)         | Port 0 = address (D2)
-        |move.b  #0x00,(a1)      | Port 1 = data (note off)
-        |move.b  #0x28,d2        | D2 = register 0x29
-        |move.b  d2,(a2)         | Port 0 = address (D2)
-        |move.b  #0x00,(a3)      | Port 1 = data (note off)
-        |move.b  #0x29,d2        | D2 = register 0x2A
-        |move.b  d2,(a2)         | Port 0 = address (D2)
-        |move.b  #0x00,(a3)      | Port 1 = data (note off)
-        |move.b  #0x2A,d2        | D2 = register 0x2A
-        |move.b  d2,(a2)         | Port 0 = address (D2)
-        |move.b  #0x00,(a3)      | Port 1 = data (note off)
+        move.b  d2,(a1)         | Port 0 = address (D2)
+        move.b  d4,d5
+        cmpi.b  #3,d0
+        blo.s   0f
+        ori.b   #0x04,d5
+0:
+        move.b  d5,(1,a1)         | Port 1 = data (note off)
+
         | Reference frequency
         lea     freq_table,a5
-        |sub.b   #0x40,d3
         sub.b   #0x28,d3
         lsl.w   #1,d3
         add.w   d3,a5
+
         | Set frequency
         move.b  #0xA4,d2        | D2 = register 0xA4
-        add.b   d0,d2           | D2 = register 0xA4 + D0
+        add.b   d4,d2           | D2 = register 0xA4 + D0
         move.b  d2,(a0)         | Port 0 = address (D2)
-        move.b  (a5)+,(a1)      | Port 1 = data (read byte from frequency table)
+        move.b  (a5)+,(1,a0)      | Port 1 = data (read byte from frequency table)
         move.b  #0xA0,d2        | D2 = register 0xA0
-        add.b   d0,d2           | D2 = register 0xA0 + D0
+        add.b   d4,d2           | D2 = register 0xA0 + D0
         move.b  d2,(a0)         | Port 0 = address (D2)
-        move.b  (a5)+,(a1)      | Port 1 = data (read byte from frequency table)
+        move.b  (a5)+,(1,a0)      | Port 1 = data (read byte from frequency table)
+
         | Note on
         move.b  #0x28,d2        | D2 = register 0x28
-        move.b  d2,(a0)         | Port 0 = address (D2)
-        ori.b   #0xF0,d0
-        move.b  d0,(a1)         | Port 1 = data (note on)
-        andi.b  #0x0F,d0
+        move.b  d2,(a1)         | Port 0 = address (D2)
+        ori.b   #0xF0,d5
+        move.b  d5,(1,a1)         | Port 1 = data (note on)
         bra.w   play_sequence_read_next
 
 play_sequence_rest:
         | Note off
         move.b  #0x28,d2        | D2 = register 0x28
-        add.b   d0,d2           | D2 = register 0x28 + D0
-        move.b  d2,(a0)         | Port 0 = address (D2)
-        move.b  #0x00,(a1)      | Port 1 = data (note off)
+        move.b  d2,(a1)         | Port 0 = address (D2)
+        cmpi.b  #3,d0
+        blo.s   0f
+        ori.b   #0x04,d4
+0:
+        move.b  d4,(1,a1)      | Port 1 = data (note off)
+        andi.b  #0x03,d4
         bra.w   play_sequence_read_next
 
 play_sequence_wait:
-        addi.w  #1,d3                   | DLG: Should this be done??
-        move.w  d3,song_fm1_wait
+        |addi.w  #1,d3                   | DLG: Should this be done??
+        move.w  d3,(a3)
         bra.w   play_sequence_tic
 
 play_sequence_command_table:
@@ -3818,8 +3834,8 @@ seqcmd_no_cmd:
 seqcmd_wait_byte:
         move.b  (a6)+,d2
         move.b  d2,test_last_read2
-        addi.w  #1,d2                   | DLG: Should this be done??
-        move.w  d2,song_fm1_wait
+        |addi.w  #1,d2                   | DLG: Should this be done??
+        move.w  d2,(a3)
         bra.s   play_sequence_tic
 seqcmd_wait_word:
         move.b  (a6)+,d2
@@ -3827,8 +3843,8 @@ seqcmd_wait_word:
         lsl.w   #8,d2
         move.b  (a6)+,d2
         move.b  d2,test_last_read3
-        addi.w  #1,d2                   | DLG: Should this be done??
-        move.w  d2,song_fm1_wait
+        |addi.w  #1,d2                   | DLG: Should this be done??
+        move.w  d2,(a3)
         bra.s   play_sequence_tic
 seqcmd_stereo_off:
         bra.w   play_sequence_read_next
@@ -3858,19 +3874,25 @@ seqcmd_vibrato_speed:
         nop
 
 play_sequence_tic:
-        cmpi.w  #0,song_fm1_wait
+        cmpi.w  #0,(a3)
         beq.s   1f
-        subi.w  #1,song_fm1_wait
+        subi.w  #1,(a3)
 1:
 9:
         move.w  a4,d2
         move.w  a6,d1
         sub.w   d2,d1
-        move.w  d1,song_fm1_pos
+        move.w  d1,(a2)
+
+play_sequence_channel_done:
+        dbra    d0,play_sequence_channel_loop
 
 play_sequence_done:
         |move.w  #0x0000,0xA11100        /* Z80 deassert bus request */
 
+        move.l  (sp)+,d6
+        move.l  (sp)+,d5
+        move.l  (sp)+,d4
         move.l  (sp)+,d3
         move.l  (sp)+,d2
         move.l  (sp)+,d1
