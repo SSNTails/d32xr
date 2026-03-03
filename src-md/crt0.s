@@ -3593,7 +3593,7 @@ load_voice:
         |move.l  a1,-(sp)
         |move.l  a2,-(sp)
         |move.l  a3,-(sp)
-        move.l  a6,-(sp)
+        |move.l  a5,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
         move.l  d2,-(sp)
@@ -3618,31 +3618,20 @@ load_voice:
         |move.l  #0xA04002,a2
         |move.l  #0xA04003,a3
 
-        |moveq   #0,d0           | D0 = channel number
         |moveq   #0,d4           | D4 = channel number % 3
-        moveq   #0,d1           | D1 = voice number
-
-        /* Calculate the address of the voice data */
-        lea     voice_param_table,a6
-        andi.w  #0x00FF,d1
-        add.w   d1,a6
-        lsl.w   #3,d1
-        add.w   d1,a6
-        lsl.w   #1,d1
-        add.w   d1,a6
 
         /* Load the feedback/algorithm register value */
         move.b  #0xB0,d2        | D2 = register 0xB0
         add.b   d4,d2           | D2 = register 0xB0 + D0
         move.b  d2,(a0)         | Port 0 = address (D2)
-        move.b  (a6)+,(1,a0)      | Port 1 = data (read byte from voice data)
+        move.b  (a5)+,(1,a0)      | Port 1 = data (read byte from voice data)
 
         /* Load all other values into registers 0x30-0x8E */
         move.w  #0x30,d2
         add.b   d4,d2
 load_voice_byte_loop:
         move.b  d2,(a0)
-        move.b  (a6)+,(1,a0)
+        move.b  (a5)+,(1,a0)
         add.b   #4,d2
         cmpi.w  #0x90,d2
         blt.s   load_voice_byte_loop
@@ -3665,7 +3654,7 @@ load_voice_byte_loop:
         move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
-        move.l  (sp)+,a6
+        |move.l  (sp)+,a5
         |move.l  (sp)+,a3
         |move.l  (sp)+,a2
         |move.l  (sp)+,a1
@@ -3719,8 +3708,8 @@ play_sequence_channel_loop:
         add.l   d0,a3
 
         lea     sequence_data,a6
-        moveq   #0,d1
-        move.w  d0,d1
+        moveq   #1,d1
+        add.w   d0,d1
         add.w   d1,d1
         move.w  (d1,a6),d1
         add.w   d1,a6
@@ -3859,9 +3848,29 @@ seqcmd_octave:
         move.b  d2,test_last_read2
         bra.w   play_sequence_read_next
 seqcmd_voice:
+        |moveq   #0,d0           | D0 = channel number
+        |moveq   #0,d4           | D4 = channel number % 3
+        |moveq   #0,d1           | D1 = voice number
+
+        move.l  a5,-(sp)
+
+        lea     sequence_data,a5
+        move.w  (a5),d2
+        add.w   d2,a5
+
+        moveq   #0,d2
         move.b  (a6)+,d2
-        move.b  d2,test_last_read2
+        andi.w  #0x00FF,d2
+        add.w   d2,a5
+        lsl.w   #2,d2
+        add.w   d2,a5
+        lsl.w   #1,d2
+        add.w   d2,a5
+        lsl.w   #1,d2
+        add.w   d2,a5
+
         jsr     load_voice
+        move.l  (sp)+,a5
         bra.w   play_sequence_read_next
 seqcmd_vibrato_off:
         bra.w   play_sequence_read_next
@@ -3965,7 +3974,7 @@ voice_param_table:
         dc.b    0x0A, 0x05, 0x05, 0x05      | 0x60 : AM/D1R
         dc.b    0x00, 0x00, 0x00, 0x00      | 0x70 : D2R
         dc.b    0x2B, 0x2B, 0x2B, 0x1B      | 0x80 : D1L/RR
-        | dc.b    0x00, 0x00, 0x00, 0x00      | 0x90 : SSG-EG
+        dc.b    0x00, 0x00, 0x00, 0x00      | 0x90 : SSG-EG
 
         /* Guitar (Kid Chameleon) */
         dc.b    0x38                        | 0xB0 : FB/ALG
@@ -3975,6 +3984,7 @@ voice_param_table:
         dc.b    0x02, 0x8F, 0x0F, 0x04      | 0x60 : AM/D1R
         dc.b    0x03, 0x00, 0x03, 0x01      | 0x70 : D2R
         dc.b    0x66, 0x03, 0x13, 0x56      | 0x80 : D1L/RR
+        dc.b    0x00, 0x00, 0x00, 0x00      | 0x90 : SSG-EG
 
         /* Bass (Sonic 2 (SW) - Casino Night Zone 2P) */
         dc.b    0x08                        | 0xB0 : FB/ALG
@@ -3984,6 +3994,7 @@ voice_param_table:
         dc.b    0x12, 0x0A, 0x0E, 0x0A      | 0x60 : AM/D1R
         dc.b    0x00, 0x04, 0x04, 0x03      | 0x70 : D2R
         dc.b    0x2F, 0x2F, 0x2F, 0x2F      | 0x80 : D1L/RR
+        dc.b    0x00, 0x00, 0x00, 0x00      | 0x90 : SSG-EG
 
         /* Lead (Sonic 2 (SW) - Casino Night Zone 2P) */
         dc.b    0x3A                        | 0xB0 : FB/ALG
@@ -3993,6 +4004,7 @@ voice_param_table:
         dc.b    0x0E, 0x0E, 0x0E, 0x03      | 0x60 : AM/D1R
         dc.b    0x00, 0x00, 0x00, 0x00      | 0x70 : D2R
         dc.b    0x1F, 0x1F, 0xFF, 0x0F      | 0x80 : D1L/RR
+        dc.b    0x00, 0x00, 0x00, 0x00      | 0x90 : SSG-EG
 
         .align 2
 freq_table:
