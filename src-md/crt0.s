@@ -3588,12 +3588,105 @@ load_sequence:
 
 
 
+set_channel_volume:
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+        move.l  d3,-(sp)
+        move.l  d4,-(sp)
+        move.l  d5,-(sp)
+
+        |ALG    CARRIERS
+        |0:     4
+        |1:     4
+        |2:     4
+        |3:     4
+        |4:     4,2
+        |5:     4,2,3
+        |6:     4,2,3
+        |7:     4,2,3,3
+
+        | Get the algorithm
+        moveq   #0,d1
+        move.b  (a5),d1
+        andi.b  #7,d1
+
+        | Adjust volume of OP4
+        moveq   #9,d3
+        add.w   d3,a5
+        moveq   #0,d3
+        move.b  -(a5),d3
+
+        add.b   d2,d3
+        cmp.b   #0x80,d3
+        blo.s   0f
+        move.b  #0x7F,d3        | Cap the volume at 0x7F (no sound).
+0:
+        move.b  #0x4C,d5        | D2 = register 0x40
+        add.b   d4,d5           | D2 = register 0x40 + D0
+        move.b  d5,(a0)         | Port 0 = address (D2)
+        move.b  d3,(1,a0)       | Port 1 = data (read byte from voice data)
+
+        cmpi.b  #4,d1
+        blo.s   4f
+        
+        | Adjust volume of OP3
+        move.b  -(a5),d3
+        add.b   d2,d3
+        cmp.b   #0x80,d3
+        blo.s   1f
+        move.b  #0x7F,d3        | Cap the volume at 0x7F (no sound).
+1:
+        move.b  #0x48,d5        | D2 = register 0x44
+        add.b   d4,d5           | D2 = register 0x44 + D0
+        move.b  d5,(a0)         | Port 0 = address (D2)
+        move.b  d3,(1,a0)       | Port 1 = data (read byte from voice data)
+
+        cmpi.b  #5,d1
+        blo.s   4f
+
+        | Adjust volume of OP2
+        move.b  -(a5),d3
+        add.b   d2,d3
+        cmp.b   #0x80,d3
+        blo.s   2f
+        move.b  #0x7F,d3        | Cap the volume at 0x7F (no sound).
+2:
+        move.b  #0x44,d5        | D2 = register 0x48
+        add.b   d4,d5           | D2 = register 0x48 + D0
+        move.b  d5,(a0)         | Port 0 = address (D2)
+        move.b  d3,(1,a0)       | Port 1 = data (read byte from voice data)
+
+        cmpi.b  #7,d1
+        blo.s   4f
+
+        | Adjust volume of OP1
+        move.b  -(a5),d3
+        add.b   d2,d3
+        cmp.b   #0x80,d3
+        blo.s   3f
+        move.b  #0x7F,d3        | Cap the volume at 0x7F (no sound).
+3:
+        move.b  #0x40,d5        | D2 = register 0x4C
+        add.b   d4,d5           | D2 = register 0x4C + D0
+        move.b  d5,(a0)         | Port 0 = address (D2)
+        move.b  d3,(1,a0)       | Port 1 = data (read byte from voice data)
+4:
+
+
+
+        move.l  (sp)+,d5
+        move.l  (sp)+,d4
+        move.l  (sp)+,d3
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+
+        rts
+
+
+
 load_voice:
-        |move.l  a0,-(sp)
-        |move.l  a1,-(sp)
-        |move.l  a2,-(sp)
-        |move.l  a3,-(sp)
-        |move.l  a5,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
         move.l  d2,-(sp)
@@ -3619,6 +3712,13 @@ load_voice:
         |move.l  #0xA04003,a3
 
         |moveq   #0,d4           | D4 = channel number % 3
+
+        move.l  a6,-(sp)
+        lea     song_fm1_voice_addr,a6
+        add.w   d0,a6
+        add.w   d0,a6
+        move.w  a5,(a6)
+        move.l  (sp)+,a6
 
         /* Load the feedback/algorithm register value */
         move.b  #0xB0,d2        | D2 = register 0xB0
@@ -3654,11 +3754,6 @@ load_voice_byte_loop:
         move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
-        |move.l  (sp)+,a5
-        |move.l  (sp)+,a3
-        |move.l  (sp)+,a2
-        |move.l  (sp)+,a1
-        |move.l  (sp)+,a0
 
         |move.w  #0,0xA15120         /* done */
 
@@ -3815,6 +3910,7 @@ play_sequence_command_table:
         dc.w    seqcmd_voice - play_sequence_command_table              /* 0xCD */
         dc.w    seqcmd_vibrato_off - play_sequence_command_table        /* 0xCE */
         dc.w    seqcmd_vibrato_speed - play_sequence_command_table      /* 0xCF */
+        dc.w    seqcmd_volume - play_sequence_command_table             /* 0xD0 */
 
 seqcmd_no_cmd:
         nop
@@ -3825,7 +3921,7 @@ seqcmd_wait_byte:
         move.b  d2,test_last_read2
         |addi.w  #1,d2                   | DLG: Should this be done??
         move.w  d2,(a3)
-        bra.s   play_sequence_tic
+        bra.w   play_sequence_tic
 seqcmd_wait_word:
         move.b  (a6)+,d2
         move.b  d2,test_last_read2
@@ -3878,9 +3974,24 @@ seqcmd_vibrato_speed:
         move.b  (a6)+,d2
         move.b  d2,test_last_read2
         bra.w   play_sequence_read_next
+seqcmd_volume:
+        move.l  a5,-(sp)
 
-        | finish me
-        nop
+        lea     song_fm1_voice_addr,a5
+        add.w   d0,a5
+        add.w   d0,a5
+        move.l  #0xFF0000,d3
+        move.w  (a5),d3
+        move.l  d3,a5
+
+        move.b  (a6)+,d2
+        |moveq   #0x7F,d3
+        |sub.b   d2,d3
+        |move.b  d3,d2
+
+        jsr     set_channel_volume
+        move.l  (sp)+,a5
+        bra.w   play_sequence_read_next
 
 play_sequence_tic:
         cmpi.w  #0,(a3)
@@ -3957,6 +4068,27 @@ song_fm6_wait:      dc.w    0x0000
 song_psg1_wait:     dc.w    0x0000
 song_psg2_wait:     dc.w    0x0000
 song_psg3_wait:     dc.w    0x0000
+
+
+song_fm1_ch_vol:    dc.b    0x00
+song_fm2_ch_vol:    dc.b    0x00
+song_fm3_ch_vol:    dc.b    0x00
+song_fm4_ch_vol:    dc.b    0x00
+song_fm5_ch_vol:    dc.b    0x00
+song_fm6_ch_vol:    dc.b    0x00
+song_psg1_ch_vol:   dc.b    0x00
+song_psg2_ch_vol:   dc.b    0x00
+song_psg3_ch_vol:   dc.b    0x00
+
+        .align 2
+
+
+song_fm1_voice_addr:    dc.w    0x0000
+song_fm2_voice_addr:    dc.w    0x0000
+song_fm3_voice_addr:    dc.w    0x0000
+song_fm4_voice_addr:    dc.w    0x0000
+song_fm5_voice_addr:    dc.w    0x0000
+song_fm6_voice_addr:    dc.w    0x0000
 
 
         .align 4
