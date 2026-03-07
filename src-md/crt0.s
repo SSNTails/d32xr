@@ -3854,20 +3854,63 @@ play_sequence_note:
         move.b  d5,(1,a1)         | Port 1 = data (note off)
 
         | Reference frequency
-        lea     freq_table,a5
+        lea     song_fm1_detune,a5
+        move.b  (d0,a5),d1
+        lea     pitch_modulation_table,a5
         sub.b   #0x28,d3
+        move.b  d3,d2
+        cmp.b   #0,d1
+        beq.s   5f
+        btst    #4,d1
+        bne.s   3f
+
+1:      | Calculate frequency increase
+        move.b  (d2,a5),d2      | Get the delta between the current frequency and the next
+        sub.b   #1,d1           | Subtract 1
+        moveq   #0,d6
+2:
+        add.w   d2,d6
+        dbra    d1,2b
+        bra.s   5f
+
+3:      | Calculate frequency decrease
+        subi.b  #1,d2
+        move.b  (d2,a5),d2      | Get the delta between the current frequency and the previous
+        sub.b   #0x11,d1        | Subtract 1, Bitwise-And 0xF
+        moveq   #0,d6
+4:
+        sub.w   d2,d6
+        dbra    d1,4b
+        |bra.s   5f
+
+5:
+        lea     freq_table,a5
         lsl.w   #1,d3
         add.w   d3,a5
+        move.w  (a5),d1         | Get the frequency from the table
+        |lsl.l   #4,d1
+        |ext.l   d6
+        |add.l   d6,d1           | Detune the frequency
+        |lsr.l   #4,d1
+        asr.w   #4,d6
+        add.w   d6,d1           | Detune the frequency
 
-        | Set frequency
+        | Record frequency in RAM
+        lea     song_fm1_freq,a5
+        move.w  d1,(d0,a5)
+
+        | Set frequency registers
         move.b  #0xA4,d2        | D2 = register 0xA4
         add.b   d4,d2           | D2 = register 0xA4 + D0
         move.b  d2,(a0)         | Port 0 = address (D2)
-        move.b  (a5)+,(1,a0)      | Port 1 = data (read byte from frequency table)
+        ror.w   #8,d1
+        move.b  d1,(1,a0)       | Port 1 = data (read byte from frequency table)
+
         move.b  #0xA0,d2        | D2 = register 0xA0
         add.b   d4,d2           | D2 = register 0xA0 + D0
         move.b  d2,(a0)         | Port 0 = address (D2)
-        move.b  (a5)+,(1,a0)      | Port 1 = data (read byte from frequency table)
+        ror.w   #8,d1
+        move.b  d1,(1,a0)       | Port 1 = data (read byte from frequency table)
 
         | Note on
         move.b  #0x28,d2        | D2 = register 0x28
@@ -3911,6 +3954,10 @@ play_sequence_command_table:
         dc.w    seqcmd_vibrato_off - play_sequence_command_table        /* 0xCE */
         dc.w    seqcmd_vibrato_speed - play_sequence_command_table      /* 0xCF */
         dc.w    seqcmd_volume - play_sequence_command_table             /* 0xD0 */
+        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xD1 */
+        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xD2 */
+        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xD3 */
+        dc.w    seqcmd_pitch - play_sequence_command_table              /* 0xD4 */
 
 seqcmd_no_cmd:
         nop
@@ -3930,14 +3977,20 @@ seqcmd_wait_word:
         move.b  d2,test_last_read3
         |addi.w  #1,d2                   | DLG: Should this be done??
         move.w  d2,(a3)
-        bra.s   play_sequence_tic
+        bra.w   play_sequence_tic
 seqcmd_stereo_off:
-        bra.w   play_sequence_read_next
+        | Fall thru
 seqcmd_stereo_left:
-        bra.w   play_sequence_read_next
+        | Fall thru
 seqcmd_stereo_right:
-        bra.w   play_sequence_read_next
+        | Fall thru
 seqcmd_stereo_both:
+        andi.b  #0x6,d3
+        ror.b   #3,d3           | Rotate 2 bits, plus 1 (since D3 has been doubled)
+        move.b  #0xB4,d5        | D2 = register 0x40
+        add.b   d4,d5           | D2 = register 0x40 + D0
+        move.b  d5,(a0)         | Port 0 = address (D2)
+        move.b  d3,(1,a0)
         bra.w   play_sequence_read_next
 seqcmd_octave:
         move.b  (a6)+,d2
@@ -3990,6 +4043,17 @@ seqcmd_volume:
         |move.b  d3,d2
 
         jsr     set_channel_volume
+        move.l  (sp)+,a5
+        bra.w   play_sequence_read_next
+seqcmd_pitch:
+        move.l  a5,-(sp)
+
+        lea     song_fm1_detune,a5
+        add.w   d0,a5
+
+        move.b  (a6)+,d2
+        move.b  d2,(a5)
+
         move.l  (sp)+,a5
         bra.w   play_sequence_read_next
 
@@ -4081,14 +4145,44 @@ song_psg2_ch_vol:   dc.b    0x00
 song_psg3_ch_vol:   dc.b    0x00
 
         .align 2
-
-
 song_fm1_voice_addr:    dc.w    0x0000
 song_fm2_voice_addr:    dc.w    0x0000
 song_fm3_voice_addr:    dc.w    0x0000
 song_fm4_voice_addr:    dc.w    0x0000
 song_fm5_voice_addr:    dc.w    0x0000
 song_fm6_voice_addr:    dc.w    0x0000
+
+
+song_fm1_note:      dc.b    0x00
+song_fm2_note:      dc.b    0x00
+song_fm3_note:      dc.b    0x00
+song_fm4_note:      dc.b    0x00
+song_fm5_note:      dc.b    0x00
+song_fm6_note:      dc.b    0x00
+
+
+song_fm1_detune:    dc.b    0x00
+song_fm2_detune:    dc.b    0x00
+song_fm3_detune:    dc.b    0x00
+song_fm4_detune:    dc.b    0x00
+song_fm5_detune:    dc.b    0x00
+song_fm6_detune:    dc.b    0x00
+
+        .align 4
+song_fm1_freq:      dc.l    0x00
+song_fm2_freq:      dc.l    0x00
+song_fm3_freq:      dc.l    0x00
+song_fm4_freq:      dc.l    0x00
+song_fm5_freq:      dc.l    0x00
+song_fm6_freq:      dc.l    0x00
+
+
+song_fm1_mod_index:     dc.b    0x00
+song_fm2_mod_index:     dc.b    0x00
+song_fm3_mod_index:     dc.b    0x00
+song_fm4_mod_index:     dc.b    0x00
+song_fm5_mod_index:     dc.b    0x00
+song_fm6_mod_index:     dc.b    0x00
 
 
         .align 4
@@ -4291,6 +4385,152 @@ freq_table:
         dc.w     (2048*7)+1722  | F
         dc.w     (2048*7)+1825  | F#
         dc.w     (2048*7)+1933  | G
+
+
+        dc.b     (81-76)        | This index is for frequency decreases
+pitch_modulation_table:
+        dc.b     (85-81)
+        dc.b     (91-85)
+        dc.b     (96-91)
+        dc.b     (102-96)
+        dc.b     (108-102)
+        dc.b     (114-108)
+        dc.b     (121-114)
+        dc.b     (128-121)
+        dc.b     (136-128)
+        dc.b     (144-136)
+        dc.b     (152-144)
+        dc.b     (161-152)
+        dc.b     (171-161)
+        dc.b     (181-171)
+        dc.b     (192-181)
+        dc.b     (203-192)
+        dc.b     (215-203)
+        dc.b     (228-215)
+        dc.b     (242-228)
+        dc.b     (256-242)
+        dc.b     (271-256)
+        dc.b     (287-271)
+        dc.b     (304-287)
+        dc.b     (323-304)
+        dc.b     (342-323)
+        dc.b     (362-342)
+        dc.b     (384-362)
+        dc.b     (406-384)
+        dc.b     (431-406)
+        dc.b     (456-431)
+        dc.b     (483-456)
+        dc.b     (512-483)
+        dc.b     (542-512)
+        dc.b     (575-542)
+        dc.b     (609-575)
+        dc.b     (645-609)
+        dc.b     (683-645)
+        dc.b     (724-683)
+        dc.b     (767-724)
+        dc.b     (813-767)
+        dc.b     (861-813)
+        dc.b     (912-861)
+        dc.b     (967-912)
+        dc.b     (1024-967)
+        dc.b     (1085-1024)
+        dc.b     (1149-1085)
+        dc.b     (1218-1149)
+        dc.b     (1290-1218)
+        dc.b     (1367-1290)
+        dc.b     (1448-1367)
+        dc.b     (1534-1448)
+        dc.b     (1625-1534)
+        dc.b     (1722-1625)
+        dc.b     (1825-1722)
+        dc.b     (1933-1825)
+        dc.b     (2048-1933)
+        dc.b     (1085-1024)
+        dc.b     (1149-1085)
+        dc.b     (1218-1149)
+        dc.b     (1290-1218)
+        dc.b     (1367-1290)
+        dc.b     (1448-1367)
+        dc.b     (1534-1448)
+        dc.b     (1625-1534)
+        dc.b     (1722-1625)
+        dc.b     (1825-1722)
+        dc.b     (1933-1825)
+        dc.b     (2048-1933)
+        dc.b     (1085-1024)
+        dc.b     (1149-1085)
+        dc.b     (1218-1149)
+        dc.b     (1290-1218)
+        dc.b     (1367-1290)
+        dc.b     (1448-1367)
+        dc.b     (1534-1448)
+        dc.b     (1625-1534)
+        dc.b     (1722-1625)
+        dc.b     (1825-1722)
+        dc.b     (1933-1825)
+        dc.b     (2048-1933)
+        dc.b     (1085-1024)
+        dc.b     (1149-1085)
+        dc.b     (1218-1149)
+        dc.b     (1290-1218)
+        dc.b     (1367-1290)
+        dc.b     (1448-1367)
+        dc.b     (1534-1448)
+        dc.b     (1625-1534)
+        dc.b     (1722-1625)
+        dc.b     (1825-1722)
+        dc.b     (1933-1825)
+        dc.b     (2048-1933)
+        dc.b     (1085-1024)
+        dc.b     (1149-1085)
+        dc.b     (1218-1149)
+        dc.b     (1290-1218)
+        dc.b     (1367-1290)
+        dc.b     (1448-1367)
+        dc.b     (1534-1448)
+        dc.b     (1625-1534)
+        dc.b     (1722-1625)
+        dc.b     (1825-1722)
+        dc.b     (1933-1825)
+        dc.b     (2048-1933)
+        dc.b     (1085-1024)
+        dc.b     (1149-1085)
+        dc.b     (1218-1149)
+        dc.b     (1290-1218)
+        dc.b     (1367-1290)
+        dc.b     (1448-1367)
+        dc.b     (1534-1448)
+        dc.b     (1625-1534)
+        dc.b     (1722-1625)
+        dc.b     (1825-1722)
+        dc.b     (1933-1825)
+        dc.b     (2048-1933)
+        dc.b     (1085-1024)
+        dc.b     (1149-1085)
+        dc.b     (1218-1149)
+        dc.b     (1290-1218)
+        dc.b     (1367-1290)
+        dc.b     (1448-1367)
+        dc.b     (1534-1448)
+        dc.b     (1625-1534)
+        dc.b     (1722-1625)
+        dc.b     (1825-1722)    | index 125
+        dc.b     (1933-1825)    | index 126
+        dc.b     (2048-1933)
+        dc.b     (1085-1024)
+        dc.b     (1149-1085)
+        dc.b     (1218-1149)
+        dc.b     (1290-1218)
+        dc.b     (1367-1290)
+        dc.b     (1448-1367)
+        dc.b     (1534-1448)
+        dc.b     (1625-1534)
+        dc.b     (1722-1625)
+        dc.b     (1825-1722)
+        dc.b     (1933-1825)
+        dc.b     (2048-1933)
+
+        .align 2
 
 
 

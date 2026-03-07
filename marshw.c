@@ -896,7 +896,7 @@ void pri_hbi_handler(void)
 
 	if (IsLevelSelect()) {
 		if (ticrealbuttons & BT_C /* && !(oldticrealbuttons & BT_C)*/) {
-			if (mars_tic % 320 == 0) {
+			if (mars_tic % 308 == 0) {
 				Mars_TestNewSoundDriver(0, 0, 0, 0);	//DLG: REMOVE ME!
 			}
 		}
