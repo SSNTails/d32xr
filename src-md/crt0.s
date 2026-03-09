@@ -3777,6 +3777,7 @@ play_sequence:
         move.l  d4,-(sp)
         move.l  d5,-(sp)
         move.l  d6,-(sp)
+        move.l  d7,-(sp)
 
         move.w  #0x0100,0xA11100    /* Z80 assert bus request */
 
@@ -3888,16 +3889,8 @@ play_sequence_note:
         lsl.w   #1,d3
         add.w   d3,a5
         move.w  (a5),d1         | Get the frequency from the table
-        |lsl.l   #4,d1
-        |ext.l   d6
-        |add.l   d6,d1           | Detune the frequency
-        |lsr.l   #4,d1
         asr.w   #4,d6
         add.w   d6,d1           | Detune the frequency
-
-        | Record frequency in RAM
-        lea     song_fm1_freq,a5
-        move.w  d1,(d0,a5)
 
         | Set frequency registers
         move.b  #0xA4,d2        | D2 = register 0xA4
@@ -3917,9 +3910,25 @@ play_sequence_note:
         move.b  d2,(a1)         | Port 0 = address (D2)
         ori.b   #0xF0,d5
         move.b  d5,(1,a1)         | Port 1 = data (note on)
+
+        | Record frequency in RAM
+        lea     song_fm1_freq,a5
+        add.b   d0,d0
+        add.b   d0,d0
+        lsl.l   #4,d1
+        move.l  d1,(d0,a5)
+        lsr.b   #2,d0
+
         bra.w   play_sequence_read_next
 
 play_sequence_rest:
+        lea     song_fm1_freq,a5
+        moveq   #0,d1
+        add.b   d0,d0
+        add.b   d0,d0
+        move.l  d1,(d0,a5)
+        lsr.b   #2,d0
+
         | Note off
         move.b  #0x28,d2        | D2 = register 0x28
         move.b  d2,(a1)         | Port 0 = address (D2)
@@ -3951,8 +3960,8 @@ play_sequence_command_table:
         dc.w    seqcmd_stereo_both - play_sequence_command_table        /* 0xCB */
         dc.w    seqcmd_octave - play_sequence_command_table             /* 0xCC */
         dc.w    seqcmd_voice - play_sequence_command_table              /* 0xCD */
-        dc.w    seqcmd_vibrato_off - play_sequence_command_table        /* 0xCE */
-        dc.w    seqcmd_vibrato_speed - play_sequence_command_table      /* 0xCF */
+        dc.w    seqcmd_pitch_mod_off - play_sequence_command_table      /* 0xCE */
+        dc.w    seqcmd_pitch_mod_on - play_sequence_command_table       /* 0xCF */
         dc.w    seqcmd_volume - play_sequence_command_table             /* 0xD0 */
         dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xD1 */
         dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xD2 */
@@ -4021,11 +4030,16 @@ seqcmd_voice:
         jsr     load_voice
         move.l  (sp)+,a5
         bra.w   play_sequence_read_next
-seqcmd_vibrato_off:
+seqcmd_pitch_mod_off:
+        lea     song_fm1_mod_index,a5
+        move.b  #0,(d0,a5)
+        lea     song_fm1_mod_value,a5
+        move.b  #0,(d0,a5)
         bra.w   play_sequence_read_next
-seqcmd_vibrato_speed:
+seqcmd_pitch_mod_on:
         move.b  (a6)+,d2
-        move.b  d2,test_last_read2
+        lea     song_fm1_mod_value,a5
+        move.b  d2,(d0,a5)
         bra.w   play_sequence_read_next
 seqcmd_volume:
         move.l  a5,-(sp)
@@ -4062,11 +4076,133 @@ play_sequence_tic:
         beq.s   1f
         subi.w  #1,(a3)
 1:
-9:
         move.w  a4,d2
         move.w  a6,d1
         sub.w   d2,d1
         move.w  d1,(a2)
+
+play_sequency_mod_tic:
+        move.l  a5,-(sp)
+
+        move.l  d5,-(sp)
+        move.l  d6,-(sp)
+        move.l  d7,-(sp)
+
+        | Read nominal frequency from RAM
+        lea     song_fm1_freq,a5
+        add.b   d0,d0
+        add.b   d0,d0
+        move.l  (d0,a5),d1      | D1 = freq
+        lsr.b   #2,d0
+
+        cmpi.w  #0,d1
+        beq.w   play_sequence_mod_done
+
+        lea     song_fm1_mod_value,a5
+        moveq   #0,d2
+        move.b  (d0,a5),d2
+
+        cmpi.b  #0,d2
+        beq.w   play_sequence_mod_done
+
+        moveq   #0,d3
+        move.b  d2,d3
+        andi.w  #0x000F,d3      | D3 = mod_depth
+        subq    #1,d3
+        lsr.b   #4,d2           | D2 = mod_speed
+        subq    #1,d2
+        andi.w  #0x000F,d2
+
+        lea     song_fm1_mod_index,a5
+        moveq   #0,d5
+        move.b  (d0,a5),d5      | D5 = mod_index
+
+        lea     song_fm1_note,a5
+        moveq   #0,d6
+        move.b  (d0,a5),d6
+        lea     pitch_modulation_table,a5
+        subq    #1,d6
+        add.w   d6,a5
+        moveq   #0,d6
+        move.b  (1,a5),d6       | D6 = freq_inc
+        ||||| move.l  d6,-(sp)        | TESTING
+        ||||| add.l   d6,d1           | Make modulation range less biased toward lower-frequencies
+
+1:
+        cmpi.b  #16,d5
+        bhs.s   2f
+        moveq   #0,d6
+        move.b  (1,a5),d6       | D6 = pitch_modulation_table[note]
+        move.w  d3,d7
+11:
+        add.l   d6,d1
+        dbra    d7,11b
+        bra.s   5f
+2:
+        cmpi.b  #32,d5
+        bhs.s   3f
+        moveq   #0,d6
+        move.b  (1,a5),d6       | D6 = pitch_modulation_table[note]
+        move.w  d3,d7
+21:
+        sub.l   d6,d1
+        dbra    d7,21b
+        bra.s   5f
+3:
+        cmpi.b  #48,d5
+        bhs.s   4f
+        moveq   #0,d6
+        move.b  (a5),d6         | D6 = pitch_modulation_table[note-1]
+        move.w  d3,d7
+31:
+        sub.l   d6,d1
+        dbra    d7,31b
+        bra.s   5f
+4:
+        moveq   #0,d6
+        move.b  (a5),d6         | D6 = pitch_modulation_table[note-1]
+        move.w  d3,d7
+41:
+        add.l   d6,d1
+        dbra    d7,41b
+        |bra.s   5f
+5:
+        addq    #1,d5
+        andi.b  #63,d5
+
+        dbra    d2,1b
+
+        lea     song_fm1_mod_index,a5
+        move.b  d5,(d0,a5)      | Store the mod_index in RAM
+
+        | Store frequency in RAM
+        lea     song_fm1_freq,a5
+        add.b   d0,d0
+        add.b   d0,d0
+        move.l  d1,(d0,a5)      | D1 = freq
+        lsr.b   #2,d0
+
+        lsr.l   #4,d1
+
+        | Set frequency registers
+        move.b  #0xA4,d2        | D2 = register 0xA4
+        add.b   d4,d2           | D2 = register 0xA4 + D0
+        move.b  d2,(a0)         | Port 0 = address (D2)
+        ror.w   #8,d1
+        move.b  d1,(1,a0)       | Port 1 = data (read byte from frequency table)
+
+        move.b  #0xA0,d2        | D2 = register 0xA0
+        add.b   d4,d2           | D2 = register 0xA0 + D0
+        move.b  d2,(a0)         | Port 0 = address (D2)
+        ror.w   #8,d1
+        move.b  d1,(1,a0)       | Port 1 = data (read byte from frequency table)
+
+play_sequence_mod_done:
+        move.l  (sp)+,d7
+        move.l  (sp)+,d6
+        move.l  (sp)+,d5
+
+        move.l  (sp)+,a5
 
 play_sequence_channel_done:
         dbra    d0,play_sequence_channel_loop
@@ -4074,6 +4210,7 @@ play_sequence_channel_done:
 play_sequence_done:
         |move.w  #0x0000,0xA11100        /* Z80 deassert bus request */
 
+        move.l  (sp)+,d7
         move.l  (sp)+,d6
         move.l  (sp)+,d5
         move.l  (sp)+,d4
@@ -4134,6 +4271,7 @@ song_psg2_wait:     dc.w    0x0000
 song_psg3_wait:     dc.w    0x0000
 
 
+        .align 2
 song_fm1_ch_vol:    dc.b    0x00
 song_fm2_ch_vol:    dc.b    0x00
 song_fm3_ch_vol:    dc.b    0x00
@@ -4153,6 +4291,7 @@ song_fm5_voice_addr:    dc.w    0x0000
 song_fm6_voice_addr:    dc.w    0x0000
 
 
+        .align 2
 song_fm1_note:      dc.b    0x00
 song_fm2_note:      dc.b    0x00
 song_fm3_note:      dc.b    0x00
@@ -4161,6 +4300,7 @@ song_fm5_note:      dc.b    0x00
 song_fm6_note:      dc.b    0x00
 
 
+        .align 2
 song_fm1_detune:    dc.b    0x00
 song_fm2_detune:    dc.b    0x00
 song_fm3_detune:    dc.b    0x00
@@ -4177,6 +4317,7 @@ song_fm5_freq:      dc.l    0x00
 song_fm6_freq:      dc.l    0x00
 
 
+        .align 2
 song_fm1_mod_index:     dc.b    0x00
 song_fm2_mod_index:     dc.b    0x00
 song_fm3_mod_index:     dc.b    0x00
@@ -4185,52 +4326,19 @@ song_fm5_mod_index:     dc.b    0x00
 song_fm6_mod_index:     dc.b    0x00
 
 
+        .align 2
+song_fm1_mod_value:     dc.b    0x00
+song_fm2_mod_value:     dc.b    0x00
+song_fm3_mod_value:     dc.b    0x00
+song_fm4_mod_value:     dc.b    0x00
+song_fm5_mod_value:     dc.b    0x00
+song_fm6_mod_value:     dc.b    0x00
+
+
         .align 4
 sequence_data:
         .space  16384
 
-
-        .align 2
-voice_param_table:
-        /* GFZ1 - 05 - 01_title_52 */
-        dc.b    0x3D                        | 0xB0 : FB/ALG
-        dc.b    0x01, 0x51, 0x21, 0x01      | 0x30 : DT/MUL
-        dc.b    0x19, 0x11, 0x15, 0x11      | 0x40 : TL
-        dc.b    0x12, 0x14, 0x14, 0x0F      | 0x50 : RS/AR
-        dc.b    0x0A, 0x05, 0x05, 0x05      | 0x60 : AM/D1R
-        dc.b    0x00, 0x00, 0x00, 0x00      | 0x70 : D2R
-        dc.b    0x2B, 0x2B, 0x2B, 0x1B      | 0x80 : D1L/RR
-        dc.b    0x00, 0x00, 0x00, 0x00      | 0x90 : SSG-EG
-
-        /* Guitar (Kid Chameleon) */
-        dc.b    0x38                        | 0xB0 : FB/ALG
-        dc.b    0x71, 0x72, 0x64, 0x73      | 0x30 : DT/MUL
-        dc.b    0x25, 0x19, 0x07, 0x11      | 0x40 : TL
-        dc.b    0x55, 0x5B, 0x1D, 0x1D      | 0x50 : RS/AR
-        dc.b    0x02, 0x8F, 0x0F, 0x04      | 0x60 : AM/D1R
-        dc.b    0x03, 0x00, 0x03, 0x01      | 0x70 : D2R
-        dc.b    0x66, 0x03, 0x13, 0x56      | 0x80 : D1L/RR
-        dc.b    0x00, 0x00, 0x00, 0x00      | 0x90 : SSG-EG
-
-        /* Bass (Sonic 2 (SW) - Casino Night Zone 2P) */
-        dc.b    0x08                        | 0xB0 : FB/ALG
-        dc.b    0x09, 0x30, 0x70, 0x00      | 0x30 : DT/MUL
-        dc.b    0x25, 0x13, 0x30, 0x80      | 0x40 : TL
-        dc.b    0x1F, 0x5F, 0x1F, 0x5F      | 0x50 : RS/AR
-        dc.b    0x12, 0x0A, 0x0E, 0x0A      | 0x60 : AM/D1R
-        dc.b    0x00, 0x04, 0x04, 0x03      | 0x70 : D2R
-        dc.b    0x2F, 0x2F, 0x2F, 0x2F      | 0x80 : D1L/RR
-        dc.b    0x00, 0x00, 0x00, 0x00      | 0x90 : SSG-EG
-
-        /* Lead (Sonic 2 (SW) - Casino Night Zone 2P) */
-        dc.b    0x3A                        | 0xB0 : FB/ALG
-        dc.b    0x01, 0x01, 0x07, 0x01      | 0x30 : DT/MUL
-        dc.b    0x17, 0x27, 0x28, 0x80      | 0x40 : TL
-        dc.b    0x8E, 0x8D, 0x8E, 0x53      | 0x50 : RS/AR
-        dc.b    0x0E, 0x0E, 0x0E, 0x03      | 0x60 : AM/D1R
-        dc.b    0x00, 0x00, 0x00, 0x00      | 0x70 : D2R
-        dc.b    0x1F, 0x1F, 0xFF, 0x0F      | 0x80 : D1L/RR
-        dc.b    0x00, 0x00, 0x00, 0x00      | 0x90 : SSG-EG
 
         .align 2
 freq_table:
@@ -4387,6 +4495,8 @@ freq_table:
         dc.w     (2048*7)+1933  | G
 
 
+        .align 2
+        dc.b     0
         dc.b     (81-76)        | This index is for frequency decreases
 pitch_modulation_table:
         dc.b     (85-81)
@@ -4514,8 +4624,8 @@ pitch_modulation_table:
         dc.b     (1534-1448)
         dc.b     (1625-1534)
         dc.b     (1722-1625)
-        dc.b     (1825-1722)    | index 125
-        dc.b     (1933-1825)    | index 126
+        dc.b     (1825-1722)
+        dc.b     (1933-1825)
         dc.b     (2048-1933)
         dc.b     (1085-1024)
         dc.b     (1149-1085)
