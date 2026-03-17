@@ -800,6 +800,10 @@ int TIC_LevelSelect (void)
 		int lump = W_GetNumForName("M_GFZ1");
 		Mars_TestLoadMusic(W_POINTLUMPNUM(lump), W_LumpLength(lump));		//DLG: REMOVE ME!
 	}
+	else if (ticrealbuttons & BT_X && !(oldticrealbuttons & BT_X)) {
+		int lump = W_GetNumForName("M_TITLE");
+		Mars_TestLoadMusic(W_POINTLUMPNUM(lump), W_LumpLength(lump));		//DLG: REMOVE ME!
+	}
 
 	return exit;
 }

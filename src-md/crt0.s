@@ -3595,6 +3595,19 @@ set_channel_volume:
         move.l  d3,-(sp)
         move.l  d4,-(sp)
         move.l  d5,-(sp)
+        move.l  a5,-(sp)
+
+        lea     song_fm1_ch_vol,a5
+        add.b   d0,d0
+        move.w  d2,(d0,a5)      | Store volume in RAM
+        lsr.w   #8,d2
+
+        lea     song_fm1_voice_addr,a5
+        add.w   d0,a5
+        lsr.b   #1,d0
+        move.l  #0xFF0000,d3
+        move.w  (a5),d3
+        move.l  d3,a5
 
         |ALG    CARRIERS
         |0:     4
@@ -3604,7 +3617,7 @@ set_channel_volume:
         |4:     4,2
         |5:     4,2,3
         |6:     4,2,3
-        |7:     4,2,3,3
+        |7:     4,2,3,1
 
         | Get the algorithm
         moveq   #0,d1
@@ -3675,6 +3688,7 @@ set_channel_volume:
 
 
 
+        move.l  (sp)+,a5
         move.l  (sp)+,d5
         move.l  (sp)+,d4
         move.l  (sp)+,d3
@@ -3691,6 +3705,7 @@ load_voice:
         move.l  d1,-(sp)
         move.l  d2,-(sp)
         move.l  d4,-(sp)
+        move.l  a6,-(sp)
 
 
 
@@ -3713,12 +3728,10 @@ load_voice:
 
         |moveq   #0,d4           | D4 = channel number % 3
 
-        move.l  a6,-(sp)
         lea     song_fm1_voice_addr,a6
         add.w   d0,a6
         add.w   d0,a6
         move.w  a5,(a6)
-        move.l  (sp)+,a6
 
         /* Load the feedback/algorithm register value */
         move.b  #0xB0,d2        | D2 = register 0xB0
@@ -3736,6 +3749,15 @@ load_voice_byte_loop:
         cmpi.w  #0x90,d2
         blt.s   load_voice_byte_loop
 
+        lea     song_fm1_ch_vol,a6
+        add.b   d0,d0
+        move.w  (d0,a6),d2      | Read volume from RAM
+        lsr.w   #1,d0
+        cmpi.w  #0,d2
+        beq.s   1f
+        jsr     set_channel_volume
+1:
+
 
 
         |move.w  #0x0000,0xA11200        /* Z80 assert reset */
@@ -3750,6 +3772,7 @@ load_voice_byte_loop:
 
 
 
+        move.l  (sp)+,a6
         move.l  (sp)+,d4
         move.l  (sp)+,d2
         move.l  (sp)+,d1
@@ -3763,21 +3786,7 @@ load_voice_byte_loop:
 
 
 play_sequence:
-        move.l  a0,-(sp)
-        move.l  a1,-(sp)
-        move.l  a2,-(sp)
-        move.l  a3,-(sp)
-        move.l  a4,-(sp)
-        move.l  a5,-(sp)
-        move.l  a6,-(sp)
-        move.l  d0,-(sp)
-        move.l  d1,-(sp)
-        move.l  d2,-(sp)
-        move.l  d3,-(sp)
-        move.l  d4,-(sp)
-        move.l  d5,-(sp)
-        move.l  d6,-(sp)
-        move.l  d7,-(sp)
+        movem.l d0-d7/a0-a6,-(sp)
 
         move.w  #0x0100,0xA11100    /* Z80 assert bus request */
 
@@ -3963,7 +3972,7 @@ play_sequence_command_table:
         dc.w    seqcmd_pitch_mod_off - play_sequence_command_table      /* 0xCE */
         dc.w    seqcmd_pitch_mod_on - play_sequence_command_table       /* 0xCF */
         dc.w    seqcmd_volume - play_sequence_command_table             /* 0xD0 */
-        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xD1 */
+        dc.w    seqcmd_volume_slide - play_sequence_command_table       /* 0xD1 */
         dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xD2 */
         dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xD3 */
         dc.w    seqcmd_pitch - play_sequence_command_table              /* 0xD4 */
@@ -4042,22 +4051,14 @@ seqcmd_pitch_mod_on:
         move.b  d2,(d0,a5)
         bra.w   play_sequence_read_next
 seqcmd_volume:
-        move.l  a5,-(sp)
-
-        lea     song_fm1_voice_addr,a5
-        add.w   d0,a5
-        add.w   d0,a5
-        move.l  #0xFF0000,d3
-        move.w  (a5),d3
-        move.l  d3,a5
-
         move.b  (a6)+,d2
-        |moveq   #0x7F,d3
-        |sub.b   d2,d3
-        |move.b  d3,d2
-
+        lsl.w   #8,d2
         jsr     set_channel_volume
-        move.l  (sp)+,a5
+        bra.w   play_sequence_read_next
+seqcmd_volume_slide:
+        move.b  (a6)+,d2
+        lea     song_fm1_vol_slide_value,a5
+        move.b  d2,(d0,a5)
         bra.w   play_sequence_read_next
 seqcmd_pitch:
         move.l  a5,-(sp)
@@ -4080,6 +4081,66 @@ play_sequence_tic:
         move.w  a6,d1
         sub.w   d2,d1
         move.w  d1,(a2)
+
+play_sequence_vol_slide_tic:
+        move.l  a5,-(sp)
+
+        move.l  d5,-(sp)
+        move.l  d6,-(sp)
+        move.l  d7,-(sp)
+
+        | Read nominal volume from RAM
+        lea     song_fm1_vol_slide_value,a5
+        moveq   #0,d1
+        move.b  (d0,a5),d1      | D1 = volume slide
+        cmpi.w  #0,d1
+        beq.w   play_sequence_vol_slide_done
+        subq    #1,d1
+
+        lea     song_fm1_ch_vol,a5
+        add.b   d0,d0
+        move.w  (d0,a5),d2      | D2 = volume
+        lsr.b   #1,d0
+
+        moveq   #0,d3
+        move.b  #0x80,d3
+
+        cmpi.b  #0,d1
+        beq.w   play_sequence_vol_slide_done
+        btst.b  #4,d1
+        beq.s   2f
+
+1:      | Increase volume
+        |nop
+        |bra.s   1b
+        sub.w   d3,d2
+        dbra    d1,1b
+        cmpi.w  #0,d2
+        bge.s   4f
+        move.w  #0,d2
+        bra.s   4f
+
+2:      | Decrease volume
+        |nop
+        |nop
+        |bra.s   2b
+        andi.b  #0x0F,d1
+3:
+        add.w   d3,d2
+        dbra    d1,3b
+        cmpi.w  #0x7F00,d2
+        bls.s   4f
+        move.w  #0x7F00,d2
+
+4:
+        jsr     set_channel_volume
+        | IS IT FINISHED?!?
+play_sequence_vol_slide_done:
+        move.l  (sp)+,d7
+        move.l  (sp)+,d6
+        move.l  (sp)+,d5
+
+        move.l  (sp)+,a5
 
 play_sequency_mod_tic:
         move.l  a5,-(sp)
@@ -4210,21 +4271,7 @@ play_sequence_channel_done:
 play_sequence_done:
         |move.w  #0x0000,0xA11100        /* Z80 deassert bus request */
 
-        move.l  (sp)+,d7
-        move.l  (sp)+,d6
-        move.l  (sp)+,d5
-        move.l  (sp)+,d4
-        move.l  (sp)+,d3
-        move.l  (sp)+,d2
-        move.l  (sp)+,d1
-        move.l  (sp)+,d0
-        move.l  (sp)+,a6
-        move.l  (sp)+,a5
-        move.l  (sp)+,a4
-        move.l  (sp)+,a3
-        move.l  (sp)+,a2
-        move.l  (sp)+,a1
-        move.l  (sp)+,a0
+        movem.l (sp)+,d0-d7/a0-a6
 
         move.w  #0,0xA15120         /* done */
 
@@ -4272,15 +4319,15 @@ song_psg3_wait:     dc.w    0x0000
 
 
         .align 2
-song_fm1_ch_vol:    dc.b    0x00
-song_fm2_ch_vol:    dc.b    0x00
-song_fm3_ch_vol:    dc.b    0x00
-song_fm4_ch_vol:    dc.b    0x00
-song_fm5_ch_vol:    dc.b    0x00
-song_fm6_ch_vol:    dc.b    0x00
-song_psg1_ch_vol:   dc.b    0x00
-song_psg2_ch_vol:   dc.b    0x00
-song_psg3_ch_vol:   dc.b    0x00
+song_fm1_ch_vol:    dc.w    0x00
+song_fm2_ch_vol:    dc.w    0x00
+song_fm3_ch_vol:    dc.w    0x00
+song_fm4_ch_vol:    dc.w    0x00
+song_fm5_ch_vol:    dc.w    0x00
+song_fm6_ch_vol:    dc.w    0x00
+song_psg1_ch_vol:   dc.w    0x00
+song_psg2_ch_vol:   dc.w    0x00
+song_psg3_ch_vol:   dc.w    0x00
 
         .align 2
 song_fm1_voice_addr:    dc.w    0x0000
@@ -4308,6 +4355,7 @@ song_fm4_detune:    dc.b    0x00
 song_fm5_detune:    dc.b    0x00
 song_fm6_detune:    dc.b    0x00
 
+
         .align 4
 song_fm1_freq:      dc.l    0x00
 song_fm2_freq:      dc.l    0x00
@@ -4333,6 +4381,15 @@ song_fm3_mod_value:     dc.b    0x00
 song_fm4_mod_value:     dc.b    0x00
 song_fm5_mod_value:     dc.b    0x00
 song_fm6_mod_value:     dc.b    0x00
+
+
+        .align 2
+song_fm1_vol_slide_value:   dc.b    0x00
+song_fm2_vol_slide_value:   dc.b    0x00
+song_fm3_vol_slide_value:   dc.b    0x00
+song_fm4_vol_slide_value:   dc.b    0x00
+song_fm5_vol_slide_value:   dc.b    0x00
+song_fm6_vol_slide_value:   dc.b    0x00
 
 
         .align 4
