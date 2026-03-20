@@ -3957,12 +3957,12 @@ play_sequence_wait:
 play_sequence_command_table:
         dc.w    seqcmd_wait_byte - play_sequence_command_table          /* 0xC0 */
         dc.w    seqcmd_wait_word - play_sequence_command_table          /* 0xC1 */
-        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC2 */
-        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC3 */
-        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC4 */
-        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC5 */
-        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC6 */
-        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xC7 */
+        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC2 */
+        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC3 */
+        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC4 */
+        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC5 */
+        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC6 */
+        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC7 */
         dc.w    seqcmd_stereo_off - play_sequence_command_table         /* 0xC8 */
         dc.w    seqcmd_stereo_left - play_sequence_command_table        /* 0xC9 */
         dc.w    seqcmd_stereo_right - play_sequence_command_table       /* 0xCA */
@@ -3973,12 +3973,17 @@ play_sequence_command_table:
         dc.w    seqcmd_pitch_mod_on - play_sequence_command_table       /* 0xCF */
         dc.w    seqcmd_volume - play_sequence_command_table             /* 0xD0 */
         dc.w    seqcmd_volume_slide - play_sequence_command_table       /* 0xD1 */
-        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xD2 */
-        dc.w    seqcmd_no_cmd - play_sequence_command_table             /* 0xD3 */
+        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xD2 */
+        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xD3 */
         dc.w    seqcmd_pitch - play_sequence_command_table              /* 0xD4 */
+        dc.w    seqcmd_ignore_1_cmd - play_sequence_command_table       /* 0xD5 */
+        dc.w    seqcmd_ignore_2_cmd - play_sequence_command_table       /* 0xD6 */
 
-seqcmd_no_cmd:
-        nop
+seqcmd_ignore_2_cmd:
+        move.b  (a6)+,d2
+seqcmd_ignore_1_cmd:
+        move.b  (a6)+,d2
+seqcmd_ignore_0_cmd:
         bra.w   play_sequence_read_next
 
 seqcmd_wait_byte:
@@ -4103,12 +4108,12 @@ play_sequence_vol_slide_tic:
         lsr.b   #1,d0
 
         moveq   #0,d3
-        move.b  #0x80,d3
+        move.b  #0x40,d3
 
         cmpi.b  #0,d1
         beq.w   play_sequence_vol_slide_done
         btst.b  #4,d1
-        beq.s   2f
+        bne.s   2f
 
 1:      | Increase volume
         |nop

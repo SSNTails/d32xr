@@ -894,9 +894,19 @@ void pri_hbi_handler(void)
 {
 	mars_tic++;
 
+	const int rate_gfz1 = 308;
+	const int rate_title = 214;
+
 	if (IsLevelSelect()) {
 		if (ticrealbuttons & BT_C /* && !(oldticrealbuttons & BT_C)*/) {
-			if (mars_tic % 308 == 0) {
+			if (mars_tic % rate_gfz1 == 0)
+			{
+				Mars_TestNewSoundDriver(0, 0, 0, 0);	//DLG: REMOVE ME!
+			}
+		}
+		else if (ticrealbuttons & BT_Z /* && !(oldticrealbuttons & BT_Z)*/) {
+			if (mars_tic % rate_title == 0)
+			{
 				Mars_TestNewSoundDriver(0, 0, 0, 0);	//DLG: REMOVE ME!
 			}
 		}
