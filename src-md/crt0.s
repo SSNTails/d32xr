@@ -3588,81 +3588,81 @@ reset_sequence:
 reset_sequence_1:
         moveq   #0,d0
 
-        lea     song_fm1_pos,a6
+        lea     song_fm1_pos,a2
         moveq   #5,d1
 0:
-        move.w  d0,(a6)+
+        move.w  d0,(a2)+
         dbra    d1,0b
 
-        lea     song_fm1_wait,a6
+        lea     song_fm1_wait,a2
         moveq   #5,d1
 1:
-        move.w  d0,(a6)+
+        move.w  d0,(a2)+
         dbra    d1,1b
 
-        lea     song_fm1_ch_vol,a6
+        lea     song_fm1_ch_vol,a2
         moveq   #5,d1
 2:
-        move.w  d0,(a6)+
+        move.w  d0,(a2)+
         dbra    d1,2b
 
-        lea     song_fm1_voice_addr,a6
+        lea     song_fm1_voice_addr,a2
         moveq   #5,d1
 3:
-        move.w  d0,(a6)+
+        move.w  d0,(a2)+
         dbra    d1,3b
 
-        lea     song_fm1_note,a6
+        lea     song_fm1_note,a2
         moveq   #5,d1
 4:
-        move.b  d0,(a6)+
+        move.b  d0,(a2)+
         dbra    d1,4b
 
-        lea     song_fm1_detune,a6
+        lea     song_fm1_detune,a2
         moveq   #5,d1
 5:
-        move.b  d0,(a6)+
+        move.b  d0,(a2)+
         dbra    d1,5b
 
-        lea     song_fm1_freq,a6
+        lea     song_fm1_freq,a2
         moveq   #5,d1
 6:
-        move.l  d0,(a6)+
+        move.l  d0,(a2)+
         dbra    d1,6b
 
-        lea     song_fm1_mod_index,a6
+        lea     song_fm1_mod_index,a2
         moveq   #5,d1
 7:
-        move.b  d0,(a6)+
+        move.b  d0,(a2)+
         dbra    d1,7b
 
-        lea     song_fm1_mod_value,a6
+        lea     song_fm1_mod_value,a2
         moveq   #5,d1
 8:
-        move.b  d0,(a6)+
+        move.b  d0,(a2)+
         dbra    d1,8b
 
-        lea     song_fm1_vol_slide_value,a6
+        lea     song_fm1_vol_slide_value,a2
         moveq   #5,d1
 9:
-        move.b  d0,(a6)+
+        move.b  d0,(a2)+
         dbra    d1,9b
 
-        lea     song_fm1_pitch_slide_value,a6
+        lea     song_fm1_pitch_slide_value,a2
         moveq   #5,d1
 10:
-        move.b  d0,(a6)+
+        move.b  d0,(a2)+
         dbra    d1,10b
 
-        lea     song_fm1_pitch_slide_index,a6
+        lea     song_fm1_pitch_slide_index,a2
         moveq   #5,d1
 11:
-        move.b  d0,(a6)+
+        move.b  d0,(a2)+
         dbra    d1,11b
 
         move.l  (sp)+,d1
         move.l  (sp)+,d0
-        move.l  (sp)+,a6
+        move.l  (sp)+,a2
 
         move.w  #0,0xA15120         /* done */
 
