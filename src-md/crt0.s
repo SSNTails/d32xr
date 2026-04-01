@@ -3548,12 +3548,11 @@ new_sound_driver:
 load_sequence:
         move.w  #0x2700,sr          /* disable ints */
 
-        move.l  a0,-(sp)
-        move.l  a1,-(sp)
         move.l  a2,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
-        move.l  d2,-(sp)
+
+        move.l  a1,-(sp)        | This must be last!
 
         bsr     get_lump_source_and_size
         lea     sequence_data,a1
@@ -3573,18 +3572,104 @@ load_sequence:
         move.l  (a2)+,(a1)+
         dbra    d1,0b
 
-        move.l  (sp)+,d2
+        move.l  (sp)+,a1
+
+        bra.s   reset_sequence_1
+
+
+
+reset_sequence:
+        move.w  #0x2700,sr          /* disable ints */
+
+        move.l  a2,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+
+reset_sequence_1:
+        moveq   #0,d0
+
+        lea     song_fm1_pos,a6
+        moveq   #5,d1
+0:
+        move.w  d0,(a6)+
+        dbra    d1,0b
+
+        lea     song_fm1_wait,a6
+        moveq   #5,d1
+1:
+        move.w  d0,(a6)+
+        dbra    d1,1b
+
+        lea     song_fm1_ch_vol,a6
+        moveq   #5,d1
+2:
+        move.w  d0,(a6)+
+        dbra    d1,2b
+
+        lea     song_fm1_voice_addr,a6
+        moveq   #5,d1
+3:
+        move.w  d0,(a6)+
+        dbra    d1,3b
+
+        lea     song_fm1_note,a6
+        moveq   #5,d1
+4:
+        move.b  d0,(a6)+
+        dbra    d1,4b
+
+        lea     song_fm1_detune,a6
+        moveq   #5,d1
+5:
+        move.b  d0,(a6)+
+        dbra    d1,5b
+
+        lea     song_fm1_freq,a6
+        moveq   #5,d1
+6:
+        move.l  d0,(a6)+
+        dbra    d1,6b
+
+        lea     song_fm1_mod_index,a6
+        moveq   #5,d1
+7:
+        move.b  d0,(a6)+
+        dbra    d1,7b
+
+        lea     song_fm1_mod_value,a6
+        moveq   #5,d1
+8:
+        move.b  d0,(a6)+
+        dbra    d1,8b
+
+        lea     song_fm1_vol_slide_value,a6
+        moveq   #5,d1
+9:
+        move.b  d0,(a6)+
+        dbra    d1,9b
+
+        lea     song_fm1_pitch_slide_value,a6
+        moveq   #5,d1
+10:
+        move.b  d0,(a6)+
+        dbra    d1,10b
+
+        lea     song_fm1_pitch_slide_index,a6
+        moveq   #5,d1
+11:
+        move.b  d0,(a6)+
+        dbra    d1,11b
+
         move.l  (sp)+,d1
         move.l  (sp)+,d0
-        move.l  (sp)+,a2
-        move.l  (sp)+,a1
-        move.l  (sp)+,a0
+        move.l  (sp)+,a6
 
         move.w  #0,0xA15120         /* done */
 
-        move.w  #0x2000,sr              /* enable interrupts */
+        move.w  #0x2000,sr          /* enable interrupts */
 
         bra     main_loop
+
 
 
 
@@ -3928,6 +4013,17 @@ play_sequence_note:
         move.l  d1,(d0,a5)
         lsr.b   #2,d0
 
+        lea     song_fm1_pitch_slide_index,a5
+        moveq   #0,d2
+        move.b  (d0,a5),d2      | D2 = pitch_slide_index
+        cmpi.b  #0,d2
+        beq.w   play_sequence_read_next
+
+        moveq   #0,d2
+        move.b  d2,(d0,a5)
+        lea     song_fm1_pitch_slide_value,a5
+        move.b  d2,(d0,a5)
+
         bra.w   play_sequence_read_next
 
 play_sequence_rest:
@@ -3976,7 +4072,7 @@ play_sequence_command_table:
         dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xD2 */
         dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xD3 */
         dc.w    seqcmd_pitch - play_sequence_command_table              /* 0xD4 */
-        dc.w    seqcmd_ignore_1_cmd - play_sequence_command_table       /* 0xD5 */
+        dc.w    seqcmd_pitch_slide_small - play_sequence_command_table  /* 0xD5 */
         dc.w    seqcmd_ignore_2_cmd - play_sequence_command_table       /* 0xD6 */
 
 seqcmd_ignore_2_cmd:
@@ -4076,6 +4172,14 @@ seqcmd_pitch:
 
         move.l  (sp)+,a5
         bra.w   play_sequence_read_next
+seqcmd_pitch_slide_small:
+        move.b  (a6)+,d2
+        lea     song_fm1_pitch_slide_value,a5
+        move.b  d2,(d0,a5)
+        lea     song_fm1_pitch_slide_index,a5
+        move.b  #0,(d0,a5)
+        bra.w   play_sequence_read_next
+
 
 play_sequence_tic:
         cmpi.w  #0,(a3)
@@ -4270,6 +4374,132 @@ play_sequence_mod_done:
 
         move.l  (sp)+,a5
 
+play_sequency_pitch_slide_tic:
+        move.l  a5,-(sp)
+
+        move.l  d5,-(sp)
+        move.l  d6,-(sp)
+        move.l  d7,-(sp)
+
+        | Read nominal frequency from RAM
+        lea     song_fm1_freq,a5
+        add.b   d0,d0
+        add.b   d0,d0
+        move.l  (d0,a5),d1      | D1 = freq
+        lsr.b   #2,d0
+
+        cmpi.w  #0,d1
+        beq.w   play_sequence_pitch_slide_done
+
+        lea     song_fm1_pitch_slide_value,a5
+        moveq   #0,d2
+        move.b  (d0,a5),d2
+
+        cmpi.b  #0,d2
+        beq.w   play_sequence_pitch_slide_done
+
+        moveq   #0,d3
+        move.b  d2,d3
+        andi.w  #0x000F,d3      | D3 = pitch_slide_delta
+        lsl.w   #4,d3
+        subq    #1,d3
+        subq    #1,d3
+        lsr.b   #4,d2           | D2 = pitch_slide_speed
+        ||subq    #1,d2
+        ||andi.w  #0x000F,d2
+        lsl.b   #1,d2           | TESTING: Double speed
+        subq    #1,d2           | TESTING: Double speed
+        andi.w  #0x001F,d2      | TESTING: Double speed
+
+        lea     song_fm1_pitch_slide_index,a5
+        moveq   #0,d5
+        move.b  (d0,a5),d5      | D5 = pitch_slide_index
+
+        lea     song_fm1_note,a5
+        moveq   #0,d6
+        move.b  (d0,a5),d6
+        lea     pitch_modulation_table,a5
+        subq    #1,d6
+        add.w   d6,a5
+        moveq   #0,d6
+        move.b  (1,a5),d6       | D6 = freq_inc
+        ||||| move.l  d6,-(sp)        | TESTING
+        ||||| add.l   d6,d1           | Make modulation range less biased toward lower-frequencies
+
+1:
+        btst    #7,d3
+        bne.s   2f
+        moveq   #0,d6
+        move.b  (1,a5),d6       | D6 = pitch_modulation_table[note]
+        mulu.w  #6,d6
+        move.w  d2,d7
+11:
+        add.l   d6,d1
+        dbra    d7,11b
+        bra.s   5f
+2:
+        bclr    #7,d3
+        moveq   #0,d6
+        move.b  (1,a5),d6       | D6 = pitch_modulation_table[note]
+        mulu.w  #6,d6
+        move.w  d2,d7
+21:
+        sub.l   d6,d1
+        dbra    d7,21b
+        |bra.s   5f
+5:
+        add.w   d2,d5
+        addq    #1,d5
+
+        add.w   #1,d3
+        add.w   d3,d3
+        add.w   d3,d3
+        move.w  d3,d6
+        add.w   d3,d3
+        add.w   d6,d3
+        cmp.b   d5,d3
+        bhs.s   6f
+
+        lea     song_fm1_pitch_slide_value,a5
+        move.b  #0,(d0,a5)
+        lea     song_fm1_pitch_slide_index,a5
+        move.b  #0,(d0,a5)
+        bra.s   7f
+6:
+        dbra    d2,1b
+7:
+        lea     song_fm1_pitch_slide_index,a5
+        move.b  d5,(d0,a5)      | Store the pitch_slide_index in RAM
+
+        | Store frequency in RAM
+        lea     song_fm1_freq,a5
+        add.b   d0,d0
+        add.b   d0,d0
+        move.l  d1,(d0,a5)      | D1 = freq
+        lsr.b   #2,d0
+
+        lsr.l   #4,d1
+
+        | Set frequency registers
+        move.b  #0xA4,d2        | D2 = register 0xA4
+        add.b   d4,d2           | D2 = register 0xA4 + D0
+        move.b  d2,(a0)         | Port 0 = address (D2)
+        ror.w   #8,d1
+        move.b  d1,(1,a0)       | Port 1 = data (read byte from frequency table)
+
+        move.b  #0xA0,d2        | D2 = register 0xA0
+        add.b   d4,d2           | D2 = register 0xA0 + D0
+        move.b  d2,(a0)         | Port 0 = address (D2)
+        ror.w   #8,d1
+        move.b  d1,(1,a0)       | Port 1 = data (read byte from frequency table)
+
+play_sequence_pitch_slide_done:
+        move.l  (sp)+,d7
+        move.l  (sp)+,d6
+        move.l  (sp)+,d5
+
+        move.l  (sp)+,a5
+
 play_sequence_channel_done:
         dbra    d0,play_sequence_channel_loop
 
@@ -4395,6 +4625,24 @@ song_fm3_vol_slide_value:   dc.b    0x00
 song_fm4_vol_slide_value:   dc.b    0x00
 song_fm5_vol_slide_value:   dc.b    0x00
 song_fm6_vol_slide_value:   dc.b    0x00
+
+
+        .align 2
+song_fm1_pitch_slide_value:     dc.b    0x00
+song_fm2_pitch_slide_value:     dc.b    0x00
+song_fm3_pitch_slide_value:     dc.b    0x00
+song_fm4_pitch_slide_value:     dc.b    0x00
+song_fm5_pitch_slide_value:     dc.b    0x00
+song_fm6_pitch_slide_value:     dc.b    0x00
+
+
+        .align 2
+song_fm1_pitch_slide_index:     dc.b    0x00
+song_fm2_pitch_slide_index:     dc.b    0x00
+song_fm3_pitch_slide_index:     dc.b    0x00
+song_fm4_pitch_slide_index:     dc.b    0x00
+song_fm5_pitch_slide_index:     dc.b    0x00
+song_fm6_pitch_slide_index:     dc.b    0x00
 
 
         .align 4

@@ -29,6 +29,8 @@
 #include "r_local.h"
 #include "v_font.h"
 
+boolean buttonLock = false;	//DLG: REMOVE ME!
+
 static volatile uint16_t mars_activescreen = 0;
 
 static char mars_gamepadport[MARS_MAX_CONTROLLERS];
@@ -898,17 +900,29 @@ void pri_hbi_handler(void)
 	const int rate_title = 214;
 
 	if (IsLevelSelect()) {
-		if (ticrealbuttons & BT_C /* && !(oldticrealbuttons & BT_C)*/) {
+		if (ticrealbuttons & BT_C) {
 			if (mars_tic % rate_gfz1 == 0)
 			{
 				Mars_TestNewSoundDriver(0, 0, 0, 0);	//DLG: REMOVE ME!
 			}
 		}
-		else if (ticrealbuttons & BT_Z /* && !(oldticrealbuttons & BT_Z)*/) {
+		else if (ticrealbuttons & BT_Z) {
 			if (mars_tic % rate_title == 0)
 			{
 				Mars_TestNewSoundDriver(0, 0, 0, 0);	//DLG: REMOVE ME!
 			}
+		}
+		else if (ticrealbuttons & BT_Y) {
+			if (!buttonLock) {
+				if (mars_tic % rate_title == 0)
+				{
+					Mars_TestNewSoundDriver(0, 0, 0, 0);	//DLG: REMOVE ME!
+					buttonLock = true;
+				}
+			}
+		}
+		else {
+			buttonLock = false;
 		}
 	}
 }
