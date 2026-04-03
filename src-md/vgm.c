@@ -13,7 +13,8 @@ extern int pcm_baseoffs;
 extern int vgm_size;
 extern uint16_t cd_ok;
 
-__attribute__((aligned(4))) uint8_t vgm_lzexe_buf[VGM_LZEXE_BUF_SIZE];
+//__attribute__((aligned(4))) uint8_t vgm_lzexe_buf[VGM_LZEXE_BUF_SIZE];
+extern uint8_t *sequence_data;
 
 void lzexe_setup(lzexe_state_t* lzexe, uint8_t* base, uint8_t *buf, uint32_t buf_size) __attribute__((section(".data"), aligned(16)));
 int lzexe_read_partial(lzexe_state_t* lzexe, uint16_t chunk) __attribute__((section(".data"), aligned(16)));
@@ -33,9 +34,9 @@ int vgm_setup(void* fm_ptr)
         fm_ptr = scdWordRam;
     }
 
-    lzexe_setup(&vgm_lzexe, fm_ptr, vgm_lzexe_buf, VGM_LZEXE_BUF_SIZE);
+    lzexe_setup(&vgm_lzexe, fm_ptr, &sequence_data, VGM_LZEXE_BUF_SIZE);
 
-    vgm_ptr = vgm_lzexe_buf;
+    vgm_ptr = &sequence_data;
     vgm_preread_len = 0;
 
     return vgm_read();
@@ -45,7 +46,7 @@ void vgm_reset(void)
 {
     lzexe_reset(&vgm_lzexe);
     vgm_preread_len = 0;
-    vgm_ptr = vgm_lzexe_buf;
+    vgm_ptr = &sequence_data;
 }
 
 int vgm_read2(int length)

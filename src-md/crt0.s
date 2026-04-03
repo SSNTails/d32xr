@@ -4645,11 +4645,6 @@ song_fm5_pitch_slide_index:     dc.b    0x00
 song_fm6_pitch_slide_index:     dc.b    0x00
 
 
-        .align 4
-sequence_data:
-        .space  16384
-
-
         .align 2
 freq_table:
         dc.w     (2048*0)+81    | C
@@ -5318,6 +5313,12 @@ FMReset:
         .align  4
 
         .bss
+
+        .align 4
+        .global    sequence_data
+sequence_data:
+        .space  16384
+
         .align  2
 col_store:                      /* Is this label still needed? */
 decomp_buffer:
