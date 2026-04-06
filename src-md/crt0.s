@@ -3951,7 +3951,7 @@ play_sequence_note:
         | Reference frequency
         lea     song_fm1_detune,a5
         move.b  (d0,a5),d1
-        lea     pitch_modulation_table,a5
+        lea     fm_pitch_modulation_table,a5
         sub.b   #0x28,d3
         move.b  d3,d2
         cmp.b   #0,d1
@@ -3979,7 +3979,7 @@ play_sequence_note:
         |bra.s   5f
 
 5:
-        lea     freq_table,a5
+        lea     fm_freq_table,a5
         lsl.w   #1,d3
         add.w   d3,a5
         move.w  (a5),d1         | Get the frequency from the table
@@ -4290,7 +4290,7 @@ play_sequency_mod_tic:
         lea     song_fm1_note,a5
         moveq   #0,d6
         move.b  (d0,a5),d6
-        lea     pitch_modulation_table,a5
+        lea     fm_pitch_modulation_table,a5
         subq    #1,d6
         add.w   d6,a5
         moveq   #0,d6
@@ -4302,7 +4302,7 @@ play_sequency_mod_tic:
         cmpi.b  #16,d5
         bhs.s   2f
         moveq   #0,d6
-        move.b  (1,a5),d6       | D6 = pitch_modulation_table[note]
+        move.b  (1,a5),d6       | D6 = fm_pitch_modulation_table[note]
         move.w  d3,d7
 11:
         add.l   d6,d1
@@ -4312,7 +4312,7 @@ play_sequency_mod_tic:
         cmpi.b  #32,d5
         bhs.s   3f
         moveq   #0,d6
-        move.b  (1,a5),d6       | D6 = pitch_modulation_table[note]
+        move.b  (1,a5),d6       | D6 = fm_pitch_modulation_table[note]
         move.w  d3,d7
 21:
         sub.l   d6,d1
@@ -4322,7 +4322,7 @@ play_sequency_mod_tic:
         cmpi.b  #48,d5
         bhs.s   4f
         moveq   #0,d6
-        move.b  (a5),d6         | D6 = pitch_modulation_table[note-1]
+        move.b  (a5),d6         | D6 = fm_pitch_modulation_table[note-1]
         move.w  d3,d7
 31:
         sub.l   d6,d1
@@ -4330,7 +4330,7 @@ play_sequency_mod_tic:
         bra.s   5f
 4:
         moveq   #0,d6
-        move.b  (a5),d6         | D6 = pitch_modulation_table[note-1]
+        move.b  (a5),d6         | D6 = fm_pitch_modulation_table[note-1]
         move.w  d3,d7
 41:
         add.l   d6,d1
@@ -4418,7 +4418,7 @@ play_sequency_pitch_slide_tic:
         lea     song_fm1_note,a5
         moveq   #0,d6
         move.b  (d0,a5),d6
-        lea     pitch_modulation_table,a5
+        lea     fm_pitch_modulation_table,a5
         subq    #1,d6
         add.w   d6,a5
         moveq   #0,d6
@@ -4430,7 +4430,7 @@ play_sequency_pitch_slide_tic:
         btst    #7,d3
         bne.s   2f
         moveq   #0,d6
-        move.b  (1,a5),d6       | D6 = pitch_modulation_table[note]
+        move.b  (1,a5),d6       | D6 = fm_pitch_modulation_table[note]
         mulu.w  #6,d6
         move.w  d2,d7
 11:
@@ -4440,7 +4440,7 @@ play_sequency_pitch_slide_tic:
 2:
         bclr    #7,d3
         moveq   #0,d6
-        move.b  (1,a5),d6       | D6 = pitch_modulation_table[note]
+        move.b  (1,a5),d6       | D6 = fm_pitch_modulation_table[note]
         mulu.w  #6,d6
         move.w  d2,d7
 21:
@@ -4646,7 +4646,86 @@ song_fm6_pitch_slide_index:     dc.b    0x00
 
 
         .align 2
-freq_table:
+psg_freq_table:
+        dc.w    1017    | A
+        dc.w    960     | A#
+        dc.w    906     | B
+        dc.w    855     | C
+        dc.w    807     | C#
+        dc.w    762     | D
+        dc.w    719     | D#
+        dc.w    679     | E
+        dc.w    641     | F
+        dc.w    605     | F#
+        dc.w    571     | G
+        dc.w    539     | G#
+        dc.w    508     | A
+        dc.w    480     | A#
+        dc.w    453     | B
+        dc.w    428     | C
+        dc.w    404     | C#
+        dc.w    381     | D
+        dc.w    360     | D#
+        dc.w    339     | E
+        dc.w    320     | F
+        dc.w    302     | F#
+        dc.w    285     | G
+        dc.w    269     | G#
+        dc.w    254     | A
+        dc.w    240     | A#
+        dc.w    226     | B
+        dc.w    214     | C
+        dc.w    202     | C#
+        dc.w    190     | D
+        dc.w    180     | D#
+        dc.w    170     | E
+        dc.w    160     | F
+        dc.w    151     | F#
+        dc.w    143     | G
+        dc.w    135     | G#
+        dc.w    127     | A
+        dc.w    120     | A#
+        dc.w    113     | B
+        dc.w    107     | C
+        dc.w    101     | C#
+        dc.w    95      | D
+        dc.w    90      | D#
+        dc.w    85      | E
+        dc.w    80      | F
+        dc.w    76      | F#
+        dc.w    71      | G
+        dc.w    67      | G#
+        dc.w    64      | A
+        dc.w    60      | A#
+        dc.w    57      | B
+        dc.w    53      | C
+        dc.w    50      | C#
+        dc.w    48      | D
+        dc.w    45      | D#
+        dc.w    42      | E
+        dc.w    40      | F
+        dc.w    38      | F#
+        dc.w    36      | G
+        dc.w    34      | G#
+        dc.w    32      | A
+        dc.w    30      | A#
+        dc.w    28      | B
+        dc.w    27      | C
+        dc.w    25      | C#
+        dc.w    24      | D
+        dc.w    22      | D#
+        dc.w    21      | E
+        dc.w    20      | F
+        dc.w    19      | F#
+        dc.w    18      | G
+        dc.w    17      | G#
+        dc.w    16      | A
+        dc.w    15      | A#
+        dc.w    14      | B
+
+
+        .align 2
+fm_freq_table:
         dc.w     (2048*0)+81    | C
         dc.w     (2048*0)+85    | C#
         dc.w     (2048*0)+91    | D
@@ -4803,7 +4882,7 @@ freq_table:
         .align 2
         dc.b     0
         dc.b     (81-76)        | This index is for frequency decreases
-pitch_modulation_table:
+fm_pitch_modulation_table:
         dc.b     (85-81)
         dc.b     (91-85)
         dc.b     (96-91)
