@@ -3877,17 +3877,17 @@ play_sequence:
 
         move.l  #0xA04000,a1    | Sometimes we need to always use this port, regardless of channel.
 
-        moveq   #5,d0           | D0 = channel number
+        moveq   #8,d0           | D0 = channel number
 
 play_sequence_channel_loop:
         move.l  d0,d4
 
         cmpi.b  #3,d0
         bhs.s   0f
-        move.l  #0xA04000,a0
+        move.l  #0xA04000,a0    | Use port 0 for channels 1-3
         bra.s   1f
 0:
-        move.l  #0xA04002,a0
+        move.l  #0xA04002,a0    | Use port 2 for channels 4-6
         subq    #3,d4           | D4 = channel number % 3
 1:
         lea     song_fm1_pos,a2
@@ -3898,15 +3898,15 @@ play_sequence_channel_loop:
         add.l   d0,a3
 
         lea     sequence_data,a6
+        | Fetch the channel offset from the sequence data.
         moveq   #1,d1
         add.w   d0,d1
         add.w   d1,d1
         move.w  (d1,a6),d1
-        add.w   d1,a6
-        move.l  a6,test_a6_before
-        move.l  a6,a4
-        add.w   (a2),a6
-        move.l  a6,test_a6_after
+
+        add.w   d1,a6           | Add channel offset to sequence data address.
+        move.l  a6,a4           | A4 = Start of channel data.
+        add.w   (a2),a6         | A6 = Current channel data position.
 
         cmpi.w  #0,(a3)
         bne.w   play_sequence_tic
@@ -3916,11 +3916,17 @@ play_sequence_read_next:
         moveq   #0,d2
         moveq   #0,d3
 
-        move.l  #0,test_last_read1      | erase 1, 2, 3, and 4
+        move.b  (a6)+,d3        | Read the next byte in the sequence data.
 
-        move.b  (a6)+,d3
-        move.b  d3,test_last_read1
+        cmpi.b  #6,d0
+        blt.w   play_fm_sequence_parse
 
+play_psg_sequence_parse:
+        | TODO: FINISH ME!
+        |bra.w   play_sequence_read_next
+        bra.w   play_sequence_tic
+
+play_fm_sequence_parse:
         cmpi.b  #0,d3
         beq.w   play_sequence_rest
         cmpi.b  #0x3F,d3
@@ -3928,12 +3934,12 @@ play_sequence_read_next:
         cmpi.b  #0xBF,d3
         bls.w   play_sequence_note
 
-        subi.b  #0xC0,d3
+        subi.b  #0xC0,d3        | Treat the byte as a command (0xC0-0xFF).
         add.b   d3,d3
-        lea     play_sequence_command_table,a5
+        lea     play_fm_sequence_command_table,a5
         add.w   d3,a5
         move.w  (a5),d2
-        lea     play_sequence_command_table,a5
+        lea     play_fm_sequence_command_table,a5
         add.w   d2,a5
         jmp     (a5)
 
@@ -4050,30 +4056,56 @@ play_sequence_wait:
         move.w  d3,(a3)
         bra.w   play_sequence_tic
 
-play_sequence_command_table:
-        dc.w    seqcmd_wait_byte - play_sequence_command_table          /* 0xC0 */
-        dc.w    seqcmd_wait_word - play_sequence_command_table          /* 0xC1 */
-        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC2 */
-        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC3 */
-        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC4 */
-        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC5 */
-        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC6 */
-        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xC7 */
-        dc.w    seqcmd_stereo_off - play_sequence_command_table         /* 0xC8 */
-        dc.w    seqcmd_stereo_left - play_sequence_command_table        /* 0xC9 */
-        dc.w    seqcmd_stereo_right - play_sequence_command_table       /* 0xCA */
-        dc.w    seqcmd_stereo_both - play_sequence_command_table        /* 0xCB */
-        dc.w    seqcmd_octave - play_sequence_command_table             /* 0xCC */
-        dc.w    seqcmd_voice - play_sequence_command_table              /* 0xCD */
-        dc.w    seqcmd_pitch_mod_off - play_sequence_command_table      /* 0xCE */
-        dc.w    seqcmd_pitch_mod_on - play_sequence_command_table       /* 0xCF */
-        dc.w    seqcmd_volume - play_sequence_command_table             /* 0xD0 */
-        dc.w    seqcmd_volume_slide - play_sequence_command_table       /* 0xD1 */
-        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xD2 */
-        dc.w    seqcmd_ignore_0_cmd - play_sequence_command_table       /* 0xD3 */
-        dc.w    seqcmd_pitch - play_sequence_command_table              /* 0xD4 */
-        dc.w    seqcmd_pitch_slide_small - play_sequence_command_table  /* 0xD5 */
-        dc.w    seqcmd_ignore_2_cmd - play_sequence_command_table       /* 0xD6 */
+play_fm_sequence_command_table:
+        dc.w    seqcmd_wait_byte - play_fm_sequence_command_table         /* 0xC0 */
+        dc.w    seqcmd_wait_word - play_fm_sequence_command_table         /* 0xC1 */
+        dc.w    seqcmd_ignore_0_cmd - play_fm_sequence_command_table      /* 0xC2 */
+        dc.w    seqcmd_ignore_0_cmd - play_fm_sequence_command_table      /* 0xC3 */
+        dc.w    seqcmd_ignore_0_cmd - play_fm_sequence_command_table      /* 0xC4 */
+        dc.w    seqcmd_ignore_0_cmd - play_fm_sequence_command_table      /* 0xC5 */
+        dc.w    seqcmd_ignore_0_cmd - play_fm_sequence_command_table      /* 0xC6 */
+        dc.w    seqcmd_ignore_0_cmd - play_fm_sequence_command_table      /* 0xC7 */
+        dc.w    seqcmd_stereo_off - play_fm_sequence_command_table        /* 0xC8 */
+        dc.w    seqcmd_stereo_left - play_fm_sequence_command_table       /* 0xC9 */
+        dc.w    seqcmd_stereo_right - play_fm_sequence_command_table      /* 0xCA */
+        dc.w    seqcmd_stereo_both - play_fm_sequence_command_table       /* 0xCB */
+        dc.w    seqcmd_octave - play_fm_sequence_command_table            /* 0xCC */
+        dc.w    seqcmd_voice - play_fm_sequence_command_table             /* 0xCD */
+        dc.w    seqcmd_pitch_mod_off - play_fm_sequence_command_table     /* 0xCE */
+        dc.w    seqcmd_pitch_mod_on - play_fm_sequence_command_table      /* 0xCF */
+        dc.w    seqcmd_volume - play_fm_sequence_command_table            /* 0xD0 */
+        dc.w    seqcmd_volume_slide - play_fm_sequence_command_table      /* 0xD1 */
+        dc.w    seqcmd_ignore_0_cmd - play_fm_sequence_command_table      /* 0xD2 */
+        dc.w    seqcmd_ignore_0_cmd - play_fm_sequence_command_table      /* 0xD3 */
+        dc.w    seqcmd_pitch - play_fm_sequence_command_table             /* 0xD4 */
+        dc.w    seqcmd_pitch_slide_small - play_fm_sequence_command_table /* 0xD5 */
+        dc.w    seqcmd_ignore_2_cmd - play_fm_sequence_command_table      /* 0xD6 */
+
+play_psg_sequence_command_table:
+                                        | TODO: Replace these with PSG-specific command branches.
+        dc.w    seqcmd_wait_byte - play_psg_sequence_command_table            /* 0xC0 */
+        dc.w    seqcmd_wait_word - play_psg_sequence_command_table            /* 0xC1 */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xC2 */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xC3 */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xC4 */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xC5 */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xC6 */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xC7 */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xC8 */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xC9 */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xCA */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xCB */
+        dc.w    seqcmd_octave - play_psg_sequence_command_table               /* 0xCC */
+        dc.w    seqcmd_voice - play_psg_sequence_command_table                /* 0xCD */
+        dc.w    seqcmd_pitch_mod_off - play_psg_sequence_command_table        /* 0xCE */
+        dc.w    seqcmd_pitch_mod_on - play_psg_sequence_command_table         /* 0xCF */
+        dc.w    seqcmd_volume - play_psg_sequence_command_table               /* 0xD0 */
+        dc.w    seqcmd_volume_slide - play_psg_sequence_command_table         /* 0xD1 */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xD2 */
+        dc.w    seqcmd_ignore_0_cmd - play_psg_sequence_command_table         /* 0xD3 */
+        dc.w    seqcmd_pitch - play_psg_sequence_command_table                /* 0xD4 */
+        dc.w    seqcmd_pitch_slide_small - play_psg_sequence_command_table    /* 0xD5 */
+        dc.w    seqcmd_ignore_2_cmd - play_psg_sequence_command_table         /* 0xD6 */
 
 seqcmd_ignore_2_cmd:
         move.b  (a6)+,d2
@@ -4084,16 +4116,13 @@ seqcmd_ignore_0_cmd:
 
 seqcmd_wait_byte:
         move.b  (a6)+,d2
-        move.b  d2,test_last_read2
         |addi.w  #1,d2                   | DLG: Should this be done??
         move.w  d2,(a3)
         bra.w   play_sequence_tic
 seqcmd_wait_word:
         move.b  (a6)+,d2
-        move.b  d2,test_last_read2
         lsl.w   #8,d2
         move.b  (a6)+,d2
-        move.b  d2,test_last_read3
         |addi.w  #1,d2                   | DLG: Should this be done??
         move.w  d2,(a3)
         bra.w   play_sequence_tic
@@ -4113,7 +4142,6 @@ seqcmd_stereo_both:
         bra.w   play_sequence_read_next
 seqcmd_octave:
         move.b  (a6)+,d2
-        move.b  d2,test_last_read2
         bra.w   play_sequence_read_next
 seqcmd_voice:
         |moveq   #0,d0           | D0 = channel number
@@ -4521,12 +4549,6 @@ play_sequence_done:
 
         .align 4
 testabc:        dc.l    0x08257368
-test_a6_before: dc.l    0
-test_a6_after:  dc.l    0
-test_last_read1:    dc.b    0
-test_last_read2:    dc.b    0
-test_last_read3:    dc.b    0
-test_last_read4:    dc.b    0
 song_fm1_pos:       dc.w    0x0000
 song_fm2_pos:       dc.w    0x0000
 song_fm3_pos:       dc.w    0x0000
