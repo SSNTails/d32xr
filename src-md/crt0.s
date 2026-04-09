@@ -518,6 +518,12 @@ main_loop_start:
         move.l  #0,0xA15120         /* let Master SH2 run */
 
 main_loop:
+        move.b  0xA1512D,d0     | Copy the music cue byte into D0.
+        move.b  #0,0xA1512D     | Clear the music cue.
+        cmpi.b  #0xFF,d0        | Advance the music?
+        bne.s   1f
+        bsr     play_sequence   | If so, branch.
+1:
         tst.b   need_ctrl_int
         beq.b   main_loop_bump_fm
         move.b  #0,need_ctrl_int
@@ -640,7 +646,7 @@ no_cmd:
         dc.w    stop_sfx - prireqtbl              /* 0x22 */
         dc.w    flush_sfx - prireqtbl             /* 0x23 */
         dc.w    load_voice - prireqtbl            /* 0x24 */
-        dc.w    play_sequence - prireqtbl         /* 0x25 */
+        dc.w    no_cmd - prireqtbl                /* 0x25 */
         dc.w    load_sequence - prireqtbl         /* 0x26 */
 
 | process request from Secondary SH2
@@ -2208,25 +2214,25 @@ set_scroll_positions:
 
         move.w  0xA15122,current_scroll_b_top_y
 
-        move.w  #0,0xA15120         /* request more data */
+        move.w  #0x1AF1,0xA15120         /* request more data */
 1:
-        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        move.w  0xA15120,d0         /* wait on handshake in COMM0 */
         cmpi.b  #0x02,d0
         bne.b   1b
 
         move.w  0xA15122,current_scroll_b_bottom_y
 
-        move.w  #0,0xA15120         /* request more data */
+        move.w  #0x1AF2,0xA15120         /* request more data */
 2:
-        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        move.w  0xA15120,d0         /* wait on handshake in COMM0 */
         cmpi.b  #0x03,d0
         bne.b   2b
 
         move.w  0xA15122,current_scroll_a_top_y
 
-        move.w  #0,0xA15120         /* request more data */
+        move.w  #0x1AF3,0xA15120         /* request more data */
 3:
-        move.b  0xA15121,d0         /* wait on handshake in COMM0 */
+        move.w  0xA15120,d0         /* wait on handshake in COMM0 */
         cmpi.b  #0x04,d0
         bne.b   3b
 
@@ -2983,8 +2989,8 @@ play_drum_sound:
         /* check for space in Z80 sram buffer */
         lea     STRM_DRUMI.w,a0     | 8
         move.b  (a0),d0             | 8     /* D0 = drum sample ID */
-        tst.b   d0                  | 4     /* is the drum sample ID == 0? */
-        beq.s   20f                 | 10/8
+        cmpi.b  #0,d0               | 4     /* is the drum sample ID <= 0? */
+        ble.s   20f                 | 10/8
         move.b  #0,(a0)+            | 12    /* clear the drum sample ID from RAM */
         move.w  (a0)+,d1            | 8     /* D1 = drum volume and panning */
 
@@ -3877,7 +3883,7 @@ play_sequence:
 
         move.l  #0xA04000,a1    | Sometimes we need to always use this port, regardless of channel.
 
-        moveq   #8,d0           | D0 = channel number
+        moveq   #5,d0           | D0 = channel number
 
 play_sequence_channel_loop:
         move.l  d0,d4
@@ -4538,7 +4544,8 @@ play_sequence_done:
 
         move.w  #0,0xA15120         /* done */
 
-        bra     main_loop
+        |bra     main_loop
+        rts
 
 
 

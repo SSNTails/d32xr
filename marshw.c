@@ -274,9 +274,11 @@ uint16_t* Mars_FrameBufferLines(void)
 //DLG: REMOVE ME!
 void Mars_TestNewSoundDriver(int var1, int var2, int var3, int var4)
 {
-	while (MARS_SYS_COMM0);
+	//while (MARS_SYS_COMM0);
 	//MARS_SYS_COMM0 = 0x2400;		// Load voice
-	MARS_SYS_COMM0 = 0x2500;		// Play sequence
+	//MARS_SYS_COMM0 = 0x2500;		// Play sequence
+
+	MARS_SYS_COMM13_BYTE = 0xFF;	// Play sequence
 }
 
 //DLG: REMOVE ME!
@@ -773,15 +775,15 @@ void Mars_SetScrollPositions(
 	MARS_SYS_COMM2 = scroll_b_top_y;
 	MARS_SYS_COMM0 = 0x1A01;
 
-	while (MARS_SYS_COMM0);
+	while (MARS_SYS_COMM1_BYTE != 0xF1);
 	MARS_SYS_COMM2 = scroll_b_bottom_y;
 	MARS_SYS_COMM0 = 0x1A02;
 
-	while (MARS_SYS_COMM0);
+	while (MARS_SYS_COMM1_BYTE != 0xF2);
 	MARS_SYS_COMM2 = scroll_a_top_y;
 	MARS_SYS_COMM0 = 0x1A03;
 
-	while (MARS_SYS_COMM0);
+	while (MARS_SYS_COMM1_BYTE != 0xF3);
 	MARS_SYS_COMM2 = scroll_a_bottom_y;
 	MARS_SYS_COMM0 = 0x1A04;
 }
