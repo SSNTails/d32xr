@@ -278,7 +278,9 @@ void Mars_TestNewSoundDriver(int var1, int var2, int var3, int var4)
 	//MARS_SYS_COMM0 = 0x2400;		// Load voice
 	//MARS_SYS_COMM0 = 0x2500;		// Play sequence
 
-	MARS_SYS_COMM13_BYTE = 0xFF;	// Play sequence
+	if (MARS_SYS_COMM13_BYTE == 0) {
+		MARS_SYS_COMM13_BYTE = 0xFF;	// Play sequence
+	}
 }
 
 //DLG: REMOVE ME!

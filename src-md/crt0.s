@@ -4542,9 +4542,6 @@ play_sequence_done:
 
         movem.l (sp)+,d0-d7/a0-a6
 
-        move.w  #0,0xA15120         /* done */
-
-        |bra     main_loop
         rts
 
 
