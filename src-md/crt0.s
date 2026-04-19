@@ -3888,14 +3888,22 @@ play_sequence:
 play_sequence_channel_loop:
         move.l  d0,d4
 
+        cmpi.b  #6,d0
+        bhs.s   1f
         cmpi.b  #3,d0
         bhs.s   0f
-        move.l  #0xA04000,a0    | Use port 0 for channels 1-3
-        bra.s   1f
+
+        move.l  #0xA04000,a0    | Use OPN2 port 0 for channels 1-3
+        bra.s   2f
 0:
-        move.l  #0xA04002,a0    | Use port 2 for channels 4-6
+        move.l  #0xA04002,a0    | Use OPN2 port 2 for channels 4-6
         subq    #3,d4           | D4 = channel number % 3
+        bra.s   2f
 1:
+        move.l  #0xC00011,a0    | Use PSG port for channels 7-9
+        subq    #6,d4           | D4 = (channel number % 6) << 5
+        lsl.b   #5,d4
+2:
         lea     song_fm1_pos,a2
         add.l   d0,a2
         add.l   d0,a2
@@ -3929,16 +3937,24 @@ play_sequence_read_next:
 
 play_psg_sequence_parse:
         | TODO: FINISH ME!
-        |bra.w   play_sequence_read_next
+        cmpi.b  #0,d3
+        beq.w   play_psg_sequence_rest
+        cmpi.b  #0x3F,d3
+        bls.w   play_psg_sequence_wait
+        cmpi.b  #0xBF,d3
+        bls.w   play_psg_sequence_note
+
+        | TODO: Handle commands here...
+
         bra.w   play_sequence_tic
 
 play_fm_sequence_parse:
         cmpi.b  #0,d3
-        beq.w   play_sequence_rest
+        beq.w   play_fm_sequence_rest
         cmpi.b  #0x3F,d3
-        bls.w   play_sequence_wait
+        bls.w   play_fm_sequence_wait
         cmpi.b  #0xBF,d3
-        bls.w   play_sequence_note
+        bls.w   play_fm_sequence_note
 
         subi.b  #0xC0,d3        | Treat the byte as a command (0xC0-0xFF).
         add.b   d3,d3
@@ -3949,7 +3965,49 @@ play_fm_sequence_parse:
         add.w   d2,a5
         jmp     (a5)
 
-play_sequence_note:
+play_psg_sequence_note:
+        | TODO: FINISH ME!
+
+        | Reference frequency
+        lea     song_fm1_detune,a5
+        move.b  (d0,a5),d1
+        lea     psg_pitch_modulation_table,a5
+        sub.b   #0x28,d3
+        move.b  d3,d2
+        cmp.b   #0,d1
+        beq.s   5f
+        btst    #4,d1
+        bne.s   3f
+
+1:      | Calculate frequency increase
+        nop     | FINISH ME!
+2:
+        nop     | FINISH ME!
+3:      | Calculate frequency decrease
+        nop     | FINISH ME!
+4:
+        nop     | FINISH ME!
+5:
+        lea     fm_freq_table,a5
+        lsl.w   #1,d3
+        add.w   d3,a5
+        move.w  (a5),d1         | Get the frequency from the table
+        moveq   #0,d6           | TODO: REMOVE THIS LINE!!!
+        asr.w   #4,d6
+        add.w   d6,d1           | Detune the frequency
+
+        | Set frequency registers
+        nop     | FINISH ME!
+
+        | Note on
+        nop     | FINISH ME!
+
+        | Record frequency in RAM
+        nop     | FINISH ME!
+        
+        bra.w   play_sequence_read_next
+
+play_fm_sequence_note:
         | Note off
         move.b  #0x28,d2        | D2 = register 0x28
         move.b  d2,(a1)         | Port 0 = address (D2)
@@ -4038,7 +4096,18 @@ play_sequence_note:
 
         bra.w   play_sequence_read_next
 
-play_sequence_rest:
+play_psg_sequence_rest:
+        | TODO: FINISH ME!
+        | %1 10 1 1111      Latch, channel 2, volume, data %1111
+        | %0 0  000000      Data %000000
+        move.b  #0x9F,d1
+        or.b    d4,d1
+        moveq   #0,d2
+        move.b  d1,(a0)
+        move.b  d2,(a0)
+        bra.w   play_sequence_read_next
+
+play_fm_sequence_rest:
         lea     song_fm1_freq,a5
         moveq   #0,d1
         add.b   d0,d0
@@ -4057,7 +4126,8 @@ play_sequence_rest:
         andi.b  #0x03,d4
         bra.w   play_sequence_read_next
 
-play_sequence_wait:
+play_psg_sequence_wait:
+play_fm_sequence_wait:
         |addi.w  #1,d3                   | DLG: Should this be done??
         move.w  d3,(a3)
         bra.w   play_sequence_tic
@@ -4597,6 +4667,9 @@ song_fm3_voice_addr:    dc.w    0x0000
 song_fm4_voice_addr:    dc.w    0x0000
 song_fm5_voice_addr:    dc.w    0x0000
 song_fm6_voice_addr:    dc.w    0x0000
+song_psg1_env_addr:     dc.w    0x0000
+song_psg2_env_addr:     dc.w    0x0000
+song_psg3_env_addr:     dc.w    0x0000
 
 
         .align 2
@@ -4606,6 +4679,9 @@ song_fm3_note:      dc.b    0x00
 song_fm4_note:      dc.b    0x00
 song_fm5_note:      dc.b    0x00
 song_fm6_note:      dc.b    0x00
+song_psg1_note:     dc.b    0x00
+song_psg2_note:     dc.b    0x00
+song_psg3_note:     dc.b    0x00
 
 
         .align 2
@@ -4615,6 +4691,9 @@ song_fm3_detune:    dc.b    0x00
 song_fm4_detune:    dc.b    0x00
 song_fm5_detune:    dc.b    0x00
 song_fm6_detune:    dc.b    0x00
+song_psg1_detune:   dc.b    0x00
+song_psg2_detune:   dc.b    0x00
+song_psg3_detune:   dc.b    0x00
 
 
         .align 4
@@ -4624,6 +4703,9 @@ song_fm3_freq:      dc.l    0x00
 song_fm4_freq:      dc.l    0x00
 song_fm5_freq:      dc.l    0x00
 song_fm6_freq:      dc.l    0x00
+song_psg1_freq:     dc.l    0x00
+song_psg2_freq:     dc.l    0x00
+song_psg3_freq:     dc.l    0x00
 
 
         .align 2
@@ -4633,6 +4715,9 @@ song_fm3_mod_index:     dc.b    0x00
 song_fm4_mod_index:     dc.b    0x00
 song_fm5_mod_index:     dc.b    0x00
 song_fm6_mod_index:     dc.b    0x00
+song_psg1_mod_index:    dc.b    0x00
+song_psg2_mod_index:    dc.b    0x00
+song_psg3_mod_index:    dc.b    0x00
 
 
         .align 2
@@ -4642,6 +4727,9 @@ song_fm3_mod_value:     dc.b    0x00
 song_fm4_mod_value:     dc.b    0x00
 song_fm5_mod_value:     dc.b    0x00
 song_fm6_mod_value:     dc.b    0x00
+song_psg1_mod_value:    dc.b    0x00
+song_psg2_mod_value:    dc.b    0x00
+song_psg3_mod_value:    dc.b    0x00
 
 
         .align 2
@@ -4651,6 +4739,9 @@ song_fm3_vol_slide_value:   dc.b    0x00
 song_fm4_vol_slide_value:   dc.b    0x00
 song_fm5_vol_slide_value:   dc.b    0x00
 song_fm6_vol_slide_value:   dc.b    0x00
+song_psg1_vol_slide_value:  dc.b    0x00
+song_psg2_vol_slide_value:  dc.b    0x00
+song_psg3_vol_slide_value:  dc.b    0x00
 
 
         .align 2
@@ -4660,6 +4751,9 @@ song_fm3_pitch_slide_value:     dc.b    0x00
 song_fm4_pitch_slide_value:     dc.b    0x00
 song_fm5_pitch_slide_value:     dc.b    0x00
 song_fm6_pitch_slide_value:     dc.b    0x00
+song_psg1_pitch_slide_value:    dc.b    0x00
+song_psg2_pitch_slide_value:    dc.b    0x00
+song_psg3_pitch_slide_value:    dc.b    0x00
 
 
         .align 2
@@ -4669,6 +4763,9 @@ song_fm3_pitch_slide_index:     dc.b    0x00
 song_fm4_pitch_slide_index:     dc.b    0x00
 song_fm5_pitch_slide_index:     dc.b    0x00
 song_fm6_pitch_slide_index:     dc.b    0x00
+song_psg1_pitch_slide_index:    dc.b    0x00
+song_psg2_pitch_slide_index:    dc.b    0x00
+song_psg3_pitch_slide_index:    dc.b    0x00
 
 
         .align 2
@@ -4903,6 +5000,87 @@ fm_freq_table:
         dc.w     (2048*7)+1722  | F
         dc.w     (2048*7)+1825  | F#
         dc.w     (2048*7)+1933  | G
+
+
+        .align 2
+        dc.b     0
+        dc.b     (1023-1017)        | This index is for frequency decreases
+psg_pitch_modulation_table:
+        dc.b     (1017-960)
+        dc.b     (960-906)
+        dc.b     (906-855)
+        dc.b     (855-807)
+        dc.b     (807-762)
+        dc.b     (762-719)
+        dc.b     (719-679)
+        dc.b     (679-641)
+        dc.b     (641-605)
+        dc.b     (605-571)
+        dc.b     (571-539)
+        dc.b     (539-508)
+        dc.b     (508-480)
+        dc.b     (480-453)
+        dc.b     (453-428)
+        dc.b     (428-404)
+        dc.b     (404-381)
+        dc.b     (381-360)
+        dc.b     (360-339)
+        dc.b     (339-320)
+        dc.b     (320-302)
+        dc.b     (302-285)
+        dc.b     (285-269)
+        dc.b     (269-254)
+        dc.b     (254-240)
+        dc.b     (240-226)
+        dc.b     (226-214)
+        dc.b     (214-202)
+        dc.b     (202-190)
+        dc.b     (190-180)
+        dc.b     (180-170)
+        dc.b     (170-160)
+        dc.b     (160-151)
+        dc.b     (151-143)
+        dc.b     (143-135)
+        dc.b     (135-127)
+        dc.b     (127-120)
+        dc.b     (120-113)
+        dc.b     (113-107)
+        dc.b     (107-101)
+        dc.b     (101-95)
+        dc.b     (95-90)
+        dc.b     (90-85)
+        dc.b     (85-80)
+        dc.b     (80-76)
+        dc.b     (76-71)
+        dc.b     (71-67)
+        dc.b     (67-64)
+        dc.b     (64-60)
+        dc.b     (60-57)
+        dc.b     (57-53)
+        dc.b     (53-50)
+        dc.b     (50-48)
+        dc.b     (48-45)
+        dc.b     (45-42)
+        dc.b     (42-40)
+        dc.b     (40-38)
+        dc.b     (38-36)
+        dc.b     (36-34)
+        dc.b     (34-32)
+        dc.b     (32-30)
+        dc.b     (30-28)
+        dc.b     (28-27)
+        dc.b     (27-25)
+        dc.b     (25-24)
+        dc.b     (24-22)
+        dc.b     (22-21)
+        dc.b     (21-20)
+        dc.b     (20-19)
+        dc.b     (19-18)
+        dc.b     (18-17)
+        dc.b     (17-16)
+        dc.b     (16-15)
+        dc.b     (15-14)
+        dc.b     (14-13)
 
 
         .align 2
