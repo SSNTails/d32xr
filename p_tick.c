@@ -269,7 +269,7 @@ int P_Ticker (void)
 	player_t	*pl;
 
 	if (!IsDemoModeType(DemoMode_Playback)) {
-		players[0].buttons = Mars_ConvGamepadButtons(ticbuttons[consoleplayer]);
+		players[0].buttons = Mars_ConvGamepadButtons(ticbuttons[consoleplayer], 0);
 	}
 
 	if (IsTitleScreen())
@@ -350,7 +350,7 @@ int P_Ticker (void)
 		debugCounter = 0;
 #endif
 		if (IsDemoModeType(DemoMode_Playback)) {
-			players[0].buttons = Mars_ConvGamepadButtons(rec_buttons);
+			players[0].buttons = Mars_ConvGamepadButtons(rec_buttons, 0);
 		}
 
 		if (gameaction == ga_nothing) {
@@ -654,7 +654,7 @@ gameaction_t PlayDemo()
 			// Start demo playback!
 			rec_start_time = leveltime;
 			rec_buttons = *demo_p;
-			ticbuttons[consoleplayer] = players[0].buttons = Mars_ConvGamepadButtons(rec_buttons);
+			ticbuttons[consoleplayer] = players[0].buttons = Mars_ConvGamepadButtons(rec_buttons, 0);
 			demo_p++;
 			rec_button_count = *demo_p;
 		}
@@ -679,14 +679,14 @@ gameaction_t PlayDemo()
 					SetDemoMode(DemoMode_None);
 					exit = ga_completed;
 				}
-				ticbuttons[consoleplayer] = players[0].buttons = Mars_ConvGamepadButtons(rec_buttons);
+				ticbuttons[consoleplayer] = players[0].buttons = Mars_ConvGamepadButtons(rec_buttons, 0);
 				demo_p++;
 				rec_button_count = *demo_p;
 			}
 		}
 		else {
 			// Count is not zero. Reuse the previous button mask.
-			ticbuttons[consoleplayer] = players[0].buttons = Mars_ConvGamepadButtons(rec_buttons);
+			ticbuttons[consoleplayer] = players[0].buttons = Mars_ConvGamepadButtons(rec_buttons, 0);
 		}
 	}
 	

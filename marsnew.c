@@ -83,18 +83,18 @@ static uint32_t mars_rom_bsw_start = 0;
 
 void I_ClearFrameBuffer(void) ATTR_DATA_CACHE_ALIGN;
 
-int Mars_ConvGamepadButtons(int ctrl)
+int Mars_ConvGamepadButtons(int ctrl, int analog_data)
 {
 	unsigned newc = 0;
 
-	if (ctrl & SEGA_CTRL_UP)
-		newc |= BT_UP;
-	if (ctrl & SEGA_CTRL_DOWN)
-		newc |= BT_DOWN;
-	if (ctrl & SEGA_CTRL_LEFT)
-		newc |= BT_LEFT;
-	if (ctrl & SEGA_CTRL_RIGHT)
-		newc |= BT_RIGHT;
+	if (ctrl & SEGA_CTRL_DPAD_UP)
+		newc |= BT_DPAD_UP;
+	if (ctrl & SEGA_CTRL_DPAD_DOWN)
+		newc |= BT_DPAD_DOWN;
+	if (ctrl & SEGA_CTRL_DPAD_LEFT)
+		newc |= BT_DPAD_LEFT;
+	if (ctrl & SEGA_CTRL_DPAD_RIGHT)
+		newc |= BT_DPAD_RIGHT;
 	if (ctrl & SEGA_CTRL_A)
 		newc |= BT_A;
 	if (ctrl & SEGA_CTRL_B)
@@ -114,6 +114,42 @@ int Mars_ConvGamepadButtons(int ctrl)
 	}
 	else
 	{
+		if ((ctrl & 0xF000) == SEGA_CTRL_ANALOG)
+		{
+			int8_t stick_x = analog_data >> 16;
+			int8_t stick_y = (analog_data >> 8) & 0xFF;
+			int8_t throttle = analog_data & 0xFF;
+
+			if (stick_y < -0x1F) {
+				newc |= BT_UP;
+			}
+			else if (stick_y > 0x1F) {
+				newc |= BT_DOWN;
+			}
+
+			if (stick_x < -0x1F) {
+				newc |= BT_LEFT;
+			}
+			else if (stick_x > 0x1F) {
+				newc |= BT_RIGHT;
+			}
+		}
+		else
+		{
+			if (ctrl & SEGA_CTRL_DPAD_UP) {
+				newc |= BT_UP;
+			}
+			if (ctrl & SEGA_CTRL_DPAD_DOWN) {
+				newc |= BT_DOWN;
+			}
+			if (ctrl & SEGA_CTRL_DPAD_LEFT) {
+				newc |= BT_LEFT;
+			}
+			if (ctrl & SEGA_CTRL_DPAD_RIGHT) {
+				newc |= BT_RIGHT;
+			}
+		}
+
 		if (ctrl & button_cheat)
 			newc |= BT_FLIP; //configuration[controltype][0];
 
@@ -392,14 +428,17 @@ static int I_ReadControls_(int port, btnstate_t* startbtn)
 {
 	int ctrl;
 	int val;
+	int val_analog;
 
 	val = Mars_ReadController(port);
 	if (val < 0)
 		return 0;
 
+	val_analog = Mars_ReadControllerAnalog(port);
+
 	ctrl = 0;
 	ctrl |= Mars_HandleStartHeld(&val, SEGA_CTRL_START, startbtn);
-	ctrl |= Mars_ConvGamepadButtons(val);
+	ctrl |= Mars_ConvGamepadButtons(val, val_analog);
 	return ctrl;
 }
 
