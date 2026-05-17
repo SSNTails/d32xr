@@ -622,6 +622,33 @@ void Mars_DetectInputDevices(void)
 			previous_buttons[i] = 0;
 		}
 		else {
+			if ((val & 0xF000) != (previous_buttons[i] & 0xF000)) {
+				if ((val & 0xF000) == SEGA_CTRL_ANALOG) {
+					button_jump = XE_BT_C;
+					button_spin = XE_BT_D;
+					button_accelerate = XE_BT_A;
+					button_decelerate = XE_BT_B;
+					button_pan_left = XE_BT_E1;
+					button_pan_right = XE_BT_E2;
+					button_start = XE_BT_START;
+					button_cheat = XE_BT_SELECT;
+				}
+				else {
+					button_spin = BT_B;
+					button_accelerate = BT_Y;
+					button_decelerate = 0;
+					button_pan_left = BT_X;
+					button_pan_right = BT_Z;
+					button_start = BT_START;
+#ifdef SHOW_DISCLAIMER
+					button_jump = BT_C;
+					button_cheat = BT_A;
+#else
+					button_jump = BT_A | BT_C;
+					button_cheat = 0;
+#endif
+				}
+			}
 			mars_gamepadport[i] = i;
 			next_buttons_pressed[i] |= (val & (~previous_buttons[i]));
 			next_buttons_released[i] |= ((~val) & previous_buttons[i]);

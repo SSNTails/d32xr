@@ -114,22 +114,22 @@ int Mars_ConvGamepadButtons(int ctrl)
 	}
 	else
 	{
-		if (ctrl & SEGA_CTRL_A)
-#ifdef SHOW_DISCLAIMER
-			newc |= BT_SPIN; //configuration[controltype][0];
-#else
+		if (ctrl & button_cheat)
 			newc |= BT_FLIP; //configuration[controltype][0];
-#endif
-		if (ctrl & SEGA_CTRL_B)
+
+		if (ctrl & button_jump)
 			newc |= BT_JUMP; //configuration[controltype][1];
-		if (ctrl & SEGA_CTRL_C)
+		if (ctrl & button_spin)
 			newc |= BT_SPIN; //configuration[controltype][2];
 
-		if (ctrl & SEGA_CTRL_X)
-			newc |= BT_CAMLEFT;
-		if (ctrl & SEGA_CTRL_Y)
+		if (ctrl & button_accelerate)
 			newc |= BT_GASPEDAL;
-		if (ctrl & SEGA_CTRL_Z)
+		if (ctrl & button_decelerate)
+			newc |= BT_BRAKE;
+
+		if (ctrl & button_pan_left)
+			newc |= BT_CAMLEFT;
+		if (ctrl & button_pan_right)
 			newc |= BT_CAMRIGHT;
 	}
 

@@ -1344,6 +1344,8 @@ enum
 
 	XE_BT_SELECT	= DEMPA_CTRL_SELECT,
 	XE_BT_START		= DEMPA_CTRL_SELECT,
+	XE_BT_E2		= DEMPA_CTRL_E2,
+	XE_BT_E1		= DEMPA_CTRL_E1,
 	XE_BT_D			= DEMPA_CTRL_D,
 	XE_BT_C			= DEMPA_CTRL_C,
 	XE_BT_B_PRIME	= DEMPA_CTRL_B_PRIME,
@@ -1351,13 +1353,13 @@ enum
 	XE_BT_B			= DEMPA_CTRL_B,
 	XE_BT_A			= DEMPA_CTRL_A,
 
-	BT_FLIP			= (SEGA_CTRL_A << 16),
-	BT_JUMP		    = (SEGA_CTRL_B << 16),
-	BT_SPIN			= (SEGA_CTRL_C << 16),
-
-	BT_CAMLEFT		= (SEGA_CTRL_X << 16),
-	BT_GASPEDAL		= (SEGA_CTRL_Y << 16),
-	BT_CAMRIGHT		= (SEGA_CTRL_Z << 16),
+	BT_JUMP		    = (1 << 16),
+	BT_SPIN			= (1 << 17),
+	BT_GASPEDAL		= (1 << 18),
+	BT_BRAKE		= (1 << 19),
+	BT_CAMLEFT		= (1 << 20),
+	BT_CAMRIGHT		= (1 << 21),
+	BT_FLIP			= (1 << 22),
 
 	BT_LMBTN		= SEGA_CTRL_LMB,
 	BT_RMBTN		= SEGA_CTRL_RMB,
@@ -1366,6 +1368,15 @@ enum
 };
 
 #endif
+
+extern uint16_t button_jump;
+extern uint16_t button_spin;
+extern uint16_t button_accelerate;
+extern uint16_t button_decelerate;
+extern uint16_t button_pan_left;
+extern uint16_t button_pan_right;
+extern uint16_t button_start;
+extern uint16_t button_cheat;
 
 #define MENU_BTNMASK (BT_RMBTN|BT_LMBTN|BT_MODE|BT_START|BT_A|BT_C|BT_B|BT_RIGHT|BT_LEFT|BT_DOWN|BT_UP)
 

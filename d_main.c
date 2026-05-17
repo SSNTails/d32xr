@@ -343,6 +343,15 @@ int8_t	ticanalogy[MAXPLAYERS];
 int8_t	ticanalogt[MAXPLAYERS];
 int8_t	ticrealanalogx, ticrealanalogy, ticrealanalogt;
 
+uint16_t button_jump;
+uint16_t button_spin;
+uint16_t button_accelerate;
+uint16_t button_decelerate;
+uint16_t button_pan_left;
+uint16_t button_pan_right;
+uint16_t button_start;
+uint16_t button_cheat;
+
 #ifdef KIOSK_MODE
 uint16_t kiosk_timeout_count;
 #endif
