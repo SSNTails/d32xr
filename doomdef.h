@@ -584,6 +584,11 @@ extern	int		ticbuttons[MAXPLAYERS];
 extern	int		oldticbuttons[MAXPLAYERS];
 extern	int		ticrealbuttons, oldticrealbuttons; /* buttons for the console player before reading the demo file */
 
+extern	int8_t	ticanalogx[MAXPLAYERS];
+extern	int8_t	ticanalogy[MAXPLAYERS];
+extern	int8_t	ticanalogt[MAXPLAYERS];
+extern	int8_t	ticrealanalogx, ticrealanalogy, ticrealanalogt;
+
 int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		,  int (*ticker)(void), void (*drawer)(void)
 		,  void (*update)(void) );
@@ -1336,6 +1341,15 @@ enum
 	BT_Y			= SEGA_CTRL_Y,
 	BT_X			= SEGA_CTRL_X,
 	BT_MODE			= SEGA_CTRL_MODE,
+
+	XE_BT_SELECT	= DEMPA_CTRL_SELECT,
+	XE_BT_START		= DEMPA_CTRL_SELECT,
+	XE_BT_D			= DEMPA_CTRL_D,
+	XE_BT_C			= DEMPA_CTRL_C,
+	XE_BT_B_PRIME	= DEMPA_CTRL_B_PRIME,
+	XE_BT_A_PRIME	= DEMPA_CTRL_A_PRIME,
+	XE_BT_B			= DEMPA_CTRL_B,
+	XE_BT_A			= DEMPA_CTRL_A,
 
 	BT_FLIP			= (SEGA_CTRL_A << 16),
 	BT_JUMP		    = (SEGA_CTRL_B << 16),

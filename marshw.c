@@ -33,9 +33,11 @@ static volatile uint16_t mars_activescreen = 0;
 
 static char mars_gamepadport[MARS_MAX_CONTROLLERS];
 
-static volatile uint16_t next_buttons_pressed[2];
-static volatile uint16_t next_buttons_released[2];
-static volatile uint16_t previous_buttons[2];
+static volatile uint16_t next_buttons_pressed[MARS_MAX_CONTROLLERS];
+static volatile uint16_t next_buttons_released[MARS_MAX_CONTROLLERS];
+static volatile uint16_t previous_buttons[MARS_MAX_CONTROLLERS];
+
+static volatile int analog[MARS_MAX_CONTROLLERS];
 
 volatile uint8_t legacy_emulator = 0;
 
@@ -610,7 +612,7 @@ void Mars_DetectInputDevices(void)
 	{
 		/* wait on COMM0 */
 		while (MARS_SYS_COMM0 != ctrl_wait);
-
+		//FF00 //FF06
 		int val = MARS_SYS_COMM2;
 
 		next_buttons_pressed[i] = 0;
@@ -626,7 +628,25 @@ void Mars_DetectInputDevices(void)
 		}
 
 		MARS_SYS_COMM0 = ++ctrl_wait;
-		++ctrl_wait;
+		ctrl_wait++;
+		//FF01 //FF07
+
+		// Read analog values
+		while (MARS_SYS_COMM0 != ctrl_wait);
+		//FF02 //FF08
+		val = MARS_SYS_COMM2;	// XXXX xxxx
+		analog[i] = val << 16;
+		MARS_SYS_COMM0 = ++ctrl_wait;
+		ctrl_wait++;
+		//FF03 //FF09
+
+		while (MARS_SYS_COMM0 != ctrl_wait);
+		//FF04 //FF0A
+		val = MARS_SYS_COMM2;	// YYYY yyyy TTTT tttt
+		analog[i] |= val;
+		MARS_SYS_COMM0 = ++ctrl_wait;
+		ctrl_wait++;
+		//FF05 //FF0B
 	}
 
 	/* swap controller 1 and 2 around if the former isn't present */
@@ -635,6 +655,11 @@ void Mars_DetectInputDevices(void)
 		mars_gamepadport[0] = mars_gamepadport[1];
 		mars_gamepadport[1] = -1;
 	}
+}
+
+int Mars_ReadControllerAnalog(int ctrl)
+{
+	return analog[ctrl];
 }
 
 int Mars_ReadController(int ctrl)

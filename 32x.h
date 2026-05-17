@@ -179,9 +179,21 @@
 #define SEGA_CTRL_X         0x0400
 #define SEGA_CTRL_MODE      0x0800
 
+#define DEMPA_CTRL_SELECT   0x0001
+#define DEMPA_CTRL_START    0x0002
+#define DEMPA_CTRL_E2       0x0004
+#define DEMPA_CTRL_E1       0x0008
+#define DEMPA_CTRL_D        0x0010
+#define DEMPA_CTRL_C        0x0020
+#define DEMPA_CTRL_B_PRIME  0x0040
+#define DEMPA_CTRL_A_PRIME  0x0080
+#define DEMPA_CTRL_B        0x0100
+#define DEMPA_CTRL_A        0x0200
+
 #define SEGA_CTRL_TYPE      0xF000
 #define SEGA_CTRL_THREE     0x0000
 #define SEGA_CTRL_SIX       0x1000
+#define SEGA_CTRL_ANALOG    0x8000
 #define SEGA_CTRL_NONE      0xF000
 
 #define SEGA_CTRL_LMB       0x00010000

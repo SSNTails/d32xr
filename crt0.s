@@ -895,12 +895,18 @@ pri_cmd_irq:
         nop
 
         mov.w   pci_cmd_resp,r0
+        not     r0,r0
         mov.l   pci_cmd_comm0,r1
-        mov.w   r0,@r1
 4:
         mov.w   @r1,r2
         cmp/eq  r2,r0
-        bt      4b                      /* handshake with m68k */
+        bf      4b                      /* handshake with m68k */
+        not     r0,r0
+        mov.w   r0,@r1
+5:
+        mov.w   @r1,r2
+        cmp/eq  r2,r0
+        bt      5b                      /* handshake with m68k */
 
         ! restore registers
         lds.l   @r15+,macl

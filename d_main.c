@@ -338,6 +338,10 @@ int		frameon;
 int		ticbuttons[MAXPLAYERS];
 int		oldticbuttons[MAXPLAYERS];
 int		ticrealbuttons, oldticrealbuttons;
+int8_t	ticanalogx[MAXPLAYERS];
+int8_t	ticanalogy[MAXPLAYERS];
+int8_t	ticanalogt[MAXPLAYERS];
+int8_t	ticrealanalogx, ticrealanalogy, ticrealanalogt;
 
 #ifdef KIOSK_MODE
 uint16_t kiosk_timeout_count;
@@ -367,6 +371,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 	int		i;
 	int		exit;
 	int		buttons;
+	int		analog;
 	boolean firstdraw = true;
 
 /* */
@@ -442,6 +447,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		oldticrealbuttons = ticrealbuttons;
 
 		buttons = I_ReadControls();
+		analog = Mars_ReadControllerAnalog(0);
 
 #ifdef SKYDEBUG
 		if (!gamepaused && oldticrealbuttons == BT_MODE && buttons & BT_MODE) {
@@ -491,6 +497,14 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		
 		ticbuttons[consoleplayer] = buttons;
 		ticrealbuttons = buttons;
+
+		ticanalogx[consoleplayer] = (analog >> 16) & 0xFF;
+		ticanalogy[consoleplayer] = (analog >> 8) & 0xFF;
+		ticanalogt[consoleplayer] = analog & 0xFF;
+
+		ticrealanalogx = ticanalogx[consoleplayer];
+		ticrealanalogy = ticanalogy[consoleplayer];
+		ticrealanalogt = ticanalogt[consoleplayer];
 
 		if (IsTitleIntro()) {
 			if (oldticbuttons[0] == 0) {

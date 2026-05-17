@@ -122,8 +122,8 @@ typedef struct
 	mapvertex_t delta;
 } polyobj_t;
 
-extern VINT numpolyobjects;
-extern polyobj_t *polyobjects;
+//extern VINT numpolyobjects;
+//extern polyobj_t *polyobjects;
 
 typedef struct
 {

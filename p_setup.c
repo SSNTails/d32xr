@@ -850,8 +850,8 @@ void P_SetupLevel (int lumpnum)
 
 	stagefailed = true;
 	leveltime = 0;
-	numpolyobjects = 0;
-	polyobjects = NULL;
+	//numpolyobjects = 0;
+	//polyobjects = NULL;
 	
 D_printf ("P_SetupLevel(%i)\n",lumpnum);
 
