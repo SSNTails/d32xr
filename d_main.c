@@ -31,7 +31,9 @@ uint8_t cheats_enabled = 0;
 uint8_t cheat_metrics_button_index = 0;
 
 #define CHEAT_METRICS_SEQ_LENGTH	5
-const uint8_t cheat_metrics_sequence[CHEAT_METRICS_SEQ_LENGTH] = { BT_UP, BT_DOWN, BT_DOWN, BT_DOWN, BT_UP };
+const uint8_t cheat_metrics_sequence[CHEAT_METRICS_SEQ_LENGTH] = {
+		BT_DPAD_UP, BT_DPAD_DOWN, BT_DPAD_DOWN, BT_DPAD_DOWN, BT_DPAD_UP
+	};
 
 boolean		splitscreen = false;
 VINT		controltype = 0;		/* determine settings for BT_* */
@@ -57,9 +59,9 @@ int 		ticstart;
 unsigned configuration[NUMCONTROLOPTIONS][3] =
 {
 #ifdef SHOW_DISCLAIMER
-	{BT_SPIN, BT_JUMP, BT_SPIN},
+	{BT_ACTION_SPIN, BT_ACTION_JUMP, BT_ACTION_SPIN},
 #else
-	{BT_FLIP, BT_JUMP, BT_SPIN},
+	{BT_ACTION_FLIP, BT_ACTION_JUMP, BT_ACTION_SPIN},
 #endif
 };
 
@@ -350,6 +352,7 @@ uint16_t button_decelerate;
 uint16_t button_pan_left;
 uint16_t button_pan_right;
 uint16_t button_start;
+uint16_t button_mode;
 uint16_t button_cheat;
 
 #ifdef KIOSK_MODE
@@ -499,7 +502,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		}
 #endif
 
-		if (IsDemoModeType(DemoMode_Playback) && buttons & BT_START) {
+		if (IsDemoModeType(DemoMode_Playback) && buttons & BT_ACTION_START) {
 			exit = ga_exitdemo;
 			break;
 		}
@@ -672,7 +675,7 @@ int TIC_LevelSelect (void)
 	screenCount++;
 
 	if (gameaction == ga_nothing && !IsTransitionType(TransitionType_Leaving)) {
-		if ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
+		if ((ticrealbuttons & BT_ACTION_START && !(oldticrealbuttons & BT_ACTION_START))
 			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B)))
 		{
 			fadetime = 0;
@@ -723,7 +726,7 @@ int TIC_LevelSelect (void)
 	else {
 		int prev_selected_map = selected_map;
 
-		if (ticrealbuttons & BT_LEFT && !(oldticrealbuttons & BT_LEFT)) {
+		if (ticrealbuttons & BT_ACTION_LEFT && !(oldticrealbuttons & BT_ACTION_LEFT)) {
 			selected_map -= 1;
 			if (selected_map < 0) {
 				selected_map = SELECTABLE_MAP_COUNT-1;
@@ -735,7 +738,7 @@ int TIC_LevelSelect (void)
 			}
 #endif
 		}
-		else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
+		else if (ticrealbuttons & BT_ACTION_RIGHT && !(oldticrealbuttons & BT_ACTION_RIGHT)) {
 			selected_map += 1;
 #ifdef SHOW_DISCLAIMER
 			if (emeralds != 63 && selected_map == 6) {

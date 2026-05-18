@@ -462,16 +462,17 @@ typedef enum
 #define PF_VERTICALFLIP 32 // May as well prepare...
 #define PF_SPINNING 64
 #define PF_GASPEDAL 128
-#define PF_USEDOWN 256
-#define PF_STARTDASH 512
-#define PF_JUMPDOWN 1024
-#define PF_TOUCHWATER 2048
-#define PF_DROWNED 4096
-#define PF_ELEMENTALBOUNCE 8192
-#define PF_CONTROLDISABLED 16384
-#define PF_MACESPIN 32768
-#define PF_CHANGESECTOR 65536
-#define PF_SPRINGSHELL 131072
+#define PF_BRAKE 256
+#define PF_USEDOWN 512
+#define PF_STARTDASH 1024
+#define PF_JUMPDOWN 2048
+#define PF_TOUCHWATER 4096
+#define PF_DROWNED 8192
+#define PF_ELEMENTALBOUNCE 16384
+#define PF_CONTROLDISABLED 32768
+#define PF_MACESPIN 65536
+#define PF_CHANGESECTOR 131072
+#define PF_SPRINGSHELL 262144
 
 boolean P_IsObjectOnGround(mobj_t *mo);
 int8_t P_MobjFlip(mobj_t *mo);
@@ -1353,17 +1354,19 @@ enum
 	XE_BT_B			= DEMPA_CTRL_B,
 	XE_BT_A			= DEMPA_CTRL_A,
 
-	BT_UP			= (1 << 16),
-	BT_DOWN			= (1 << 17),
-	BT_LEFT			= (1 << 18),
-	BT_RIGHT		= (1 << 19),
-	BT_JUMP		    = (1 << 20),
-	BT_SPIN			= (1 << 21),
-	BT_GASPEDAL		= (1 << 22),
-	BT_BRAKE		= (1 << 23),
-	BT_CAMLEFT		= (1 << 24),
-	BT_CAMRIGHT		= (1 << 25),
-	BT_FLIP			= (1 << 26),
+	BT_ACTION_UP			= (1 << 16),
+	BT_ACTION_DOWN			= (1 << 17),
+	BT_ACTION_LEFT			= (1 << 18),
+	BT_ACTION_RIGHT			= (1 << 19),
+	BT_ACTION_JUMP		    = (1 << 20),
+	BT_ACTION_SPIN			= (1 << 21),
+	BT_ACTION_GASPEDAL		= (1 << 22),
+	BT_ACTION_BRAKE			= (1 << 23),
+	BT_ACTION_CAMLEFT		= (1 << 24),
+	BT_ACTION_CAMRIGHT		= (1 << 25),
+	BT_ACTION_FLIP			= (1 << 26),
+	BT_ACTION_START			= (1 << 27),
+	BT_ACTION_MODE			= (1 << 28),
 
 	BT_LMBTN		= SEGA_CTRL_LMB,
 	BT_RMBTN		= SEGA_CTRL_RMB,
@@ -1380,9 +1383,10 @@ extern uint16_t button_decelerate;
 extern uint16_t button_pan_left;
 extern uint16_t button_pan_right;
 extern uint16_t button_start;
+extern uint16_t button_mode;
 extern uint16_t button_cheat;
 
-#define MENU_BTNMASK (BT_RMBTN|BT_LMBTN|BT_MODE|BT_START|BT_A|BT_C|BT_B|BT_RIGHT|BT_LEFT|BT_DOWN|BT_UP)
+#define MENU_BTNMASK (BT_RMBTN|BT_LMBTN|BT_ACTION_MODE|BT_ACTION_START|BT_A|BT_C|BT_B|BT_ACTION_RIGHT|BT_ACTION_LEFT|BT_ACTION_DOWN|BT_ACTION_UP)
 
 typedef enum
 {

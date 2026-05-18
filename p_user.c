@@ -565,26 +565,66 @@ void P_PlayerMobjThink(mobj_t *mobj)
 void P_BuildMove(player_t *player)
 {
 	const int buttons = ticbuttons[playernum];
+	const int8_t analog_x = ticanalogx[playernum];
+	const int8_t analog_y = ticanalogy[playernum];
+	const int8_t analog_t = ticanalogt[playernum];
 //	const int oldbuttons = oldticbuttons[playernum];
 	mobj_t *mo;
 
 	{
 		player->forwardmove = player->sidemove = 0;
 
-		if (buttons & BT_RIGHT)
-			player->sidemove += FRACUNIT;
-		if (buttons & BT_LEFT)
+		if (buttons & BT_DPAD_LEFT) {
 			player->sidemove -= FRACUNIT;
+		}
+		else if (buttons & BT_DPAD_RIGHT) {
+			player->sidemove += FRACUNIT;
+		}
+		else if (analog_x < -0x1F) {
+			//player->sidemove += ((FRACUNIT >> 7) * analog_x);
+			if (analog_x == -0x80)
+				player->sidemove -= FRACUNIT;
+			else
+				player->sidemove += (683 * analog_x);
+		}
+		else if (analog_x > 0x1F) {
+			//player->sidemove += (((FRACUNIT >> 7) * analog_x) + (FRACUNIT >> 7));
+			if (analog_x == 0x7F)
+				player->sidemove += FRACUNIT;
+			else
+				player->sidemove += (683 + (683 * analog_x));
+		}
 
-		if (buttons & BT_GASPEDAL)
+		if (buttons & BT_ACTION_GASPEDAL)
 			player->pflags |= PF_GASPEDAL;
 		else
 			player->pflags &= ~PF_GASPEDAL;
 
-		if (buttons & BT_UP)
+		if (buttons & BT_ACTION_BRAKE)
+			player->pflags |= PF_BRAKE;
+		else
+			player->pflags &= ~PF_BRAKE;
+
+		if (buttons & BT_DPAD_UP) {
 			player->forwardmove += FRACUNIT;
-		if (buttons & BT_DOWN)
+		}
+		else if (buttons & BT_DPAD_DOWN) {
 			player->forwardmove -= FRACUNIT;
+		}
+		else if (analog_y < -0x1F) {
+			//player->forwardmove -= ((FRACUNIT >> 7) * analog_y);
+			if (analog_y == -0x80)
+				player->forwardmove += FRACUNIT;
+			else
+				player->forwardmove -= (683 * analog_y);
+		}
+		else if (analog_y > 0x1F) {
+			//player->forwardmove -= (((FRACUNIT >> 7) * analog_y) + (FRACUNIT >> 7));
+			if (analog_y == 0x7F)
+				player->forwardmove -= FRACUNIT;
+			else
+				player->forwardmove -= (683 + (683 * analog_y));
+		}
 	}
 
 	/* */
@@ -601,7 +641,7 @@ void P_BuildMove(player_t *player)
 	const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
 	if (leveltime > delaytime)
 	{
-		if (!(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL) || player->buttons & BT_CAMLEFT || player->buttons & BT_CAMRIGHT))
+		if (!(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL) || player->buttons & BT_ACTION_CAMLEFT || player->buttons & BT_ACTION_CAMRIGHT))
 		{
 			if (!(REALMOMX(player) > STOPSPEED || REALMOMX(player) < -STOPSPEED || REALMOMY(player) > STOPSPEED || REALMOMY(player) < -STOPSPEED || player->mo->momz > STOPSPEED || player->mo->momz < -STOPSPEED))
 				player->stillTimer++;
@@ -740,7 +780,7 @@ static void P_DoSpinDash(player_t *player)
 
 	if (!player->exiting && !(player->mo->state == mobjinfo[player->mo->type].painstate && player->powers[pw_flashing]))
 	{
-		if ((buttons & BT_SPIN) && player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
+		if ((buttons & BT_ACTION_SPIN) && player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
 		{
 			P_ResetScore(player);
 			if (!spindashPlayerOriented) {
@@ -757,7 +797,7 @@ static void P_DoSpinDash(player_t *player)
 			if (player->pflags & PF_VERTICALFLIP)
 				player->mo->z = player->mo->ceilingz - P_GetPlayerSpinHeight();
 		}
-		else if ((buttons & BT_SPIN) && (player->pflags & PF_STARTDASH))
+		else if ((buttons & BT_ACTION_SPIN) && (player->pflags & PF_STARTDASH))
 		{
 			if (player->speed > 5*FRACUNIT)
 			{
@@ -782,7 +822,7 @@ static void P_DoSpinDash(player_t *player)
 		// If not moving up or down, and travelling faster than a speed of four while not holding
 		// down the spin button and not spinning.
 		// AKA Just go into a spin on the ground, you idiot. ;)
-		else if ((buttons & BT_SPIN) && !player->mo->momz && onground && player->speed > 5*FRACUNIT && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
+		else if ((buttons & BT_ACTION_SPIN) && !player->mo->momz && onground && player->speed > 5*FRACUNIT && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
 		{
 			P_ResetScore(player);
 			player->pflags |= PF_SPINNING;
@@ -1085,7 +1125,7 @@ static void P_DoJumpStuff(player_t *player)
 {
 	const int buttons = player->buttons;
 
-	if (buttons & BT_JUMP)
+	if (buttons & BT_ACTION_JUMP)
 	{
 		if (!(player->pflags & PF_JUMPDOWN))
 		{
@@ -1555,7 +1595,7 @@ void P_MovePlayer(player_t *player)
 			P_SpawnMobj(player->mo->x, player->mo->y, zh, MT_MEDIUMBUBBLE);
 	}
 
-	if (player->buttons & BT_SPIN)
+	if (player->buttons & BT_ACTION_SPIN)
 	{
 		if (!(player->pflags & PF_USEDOWN))
 		{
@@ -1627,7 +1667,7 @@ void P_MovePlayer(player_t *player)
 		player->pflags &= ~PF_ELEMENTALBOUNCE;
 
 	// Fly cheat
-	if (player->buttons & BT_FLIP)
+	if (player->buttons & BT_ACTION_FLIP)
 	{
 //		player->pflags |= PF_VERTICALFLIP;
 		player->mo->momz = 8 * FRACUNIT;

@@ -631,7 +631,8 @@ void Mars_DetectInputDevices(void)
 					button_pan_left = XE_BT_E1;
 					button_pan_right = XE_BT_E2;
 					button_start = XE_BT_START;
-					button_cheat = XE_BT_SELECT;
+					button_mode = XE_BT_SELECT;
+					button_cheat = XE_BT_A_PRIME;
 				}
 				else {
 					button_spin = BT_B;
@@ -640,6 +641,7 @@ void Mars_DetectInputDevices(void)
 					button_pan_left = BT_X;
 					button_pan_right = BT_Z;
 					button_start = BT_START;
+					button_mode = BT_MODE;
 #ifdef SHOW_DISCLAIMER
 					button_jump = BT_C;
 					button_cheat = BT_A;

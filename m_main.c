@@ -484,7 +484,7 @@ int M_Ticker (void)
 	oldbuttons = oldticrealbuttons & MENU_BTNMASK;
 
 	// Handle navigation to the next menu screen
-	if (((buttons & (BT_B | BT_LMBTN | BT_START)) && !(oldbuttons & (BT_B | BT_LMBTN | BT_START)))
+	if (((buttons & (BT_B | BT_LMBTN | BT_ACTION_START)) && !(oldbuttons & (BT_B | BT_LMBTN | BT_ACTION_START)))
 		|| ((buttons & (BT_B | BT_LMBTN)) && !(oldbuttons & (BT_B | BT_LMBTN))))
 	{
 		if (screenpos == ms_help) {
@@ -586,7 +586,7 @@ int M_Ticker (void)
 	}
 
 	/* exit menu if button press */
-	if ((buttons & (BT_B | BT_LMBTN | BT_START)) && !(oldbuttons & (BT_B | BT_LMBTN | BT_START)))
+	if ((buttons & (BT_B | BT_LMBTN | BT_ACTION_START)) && !(oldbuttons & (BT_B | BT_LMBTN | BT_ACTION_START)))
 	{
 		if (screenpos == ms_new)
 		{
@@ -644,7 +644,7 @@ int M_Ticker (void)
 	cursordelay = MOVEWAIT;
 
 /* check for movement */
-	if (! (buttons & (BT_UP|BT_DOWN|BT_LEFT|BT_RIGHT) ) )
+	if (! (buttons & (BT_ACTION_UP|BT_ACTION_DOWN|BT_ACTION_LEFT|BT_ACTION_RIGHT) ) )
 		movecount = 0;		/* move immediately on next press */
 	else
 	{
@@ -656,14 +656,14 @@ int M_Ticker (void)
 		{
 			int oldcursorpos = cursorpos;
 
-			if (buttons & BT_DOWN)
+			if (buttons & BT_ACTION_DOWN)
 			{
 				//S_StartSound(NULL, sfx_s3k_5b);
 				if (++cursorpos == menuscr->numitems)
 					cursorpos = 0;
 			}
 		
-			if (buttons & BT_UP)
+			if (buttons & BT_ACTION_UP)
 			{
 				//S_StartSound(NULL, sfx_s3k_5b);
 				if (--cursorpos == -1)
@@ -679,12 +679,12 @@ int M_Ticker (void)
 					}
 					else
 					{
-						if (buttons & BT_RIGHT)
+						if (buttons & BT_ACTION_RIGHT)
 						{
 							if (++currentplaymode == NUMMODES)
 								currentplaymode--;
 						}
-						if (buttons & BT_LEFT)
+						if (buttons & BT_ACTION_LEFT)
 						{
 							if (--currentplaymode <= single)
 								currentplaymode++;
@@ -692,7 +692,7 @@ int M_Ticker (void)
 					}
 					break;
 				case mi_level:
-					if (buttons & BT_RIGHT)
+					if (buttons & BT_ACTION_RIGHT)
 					{			
 						if (++playermap == gamemapcount + 1)
 							playermap = 1;
@@ -705,7 +705,7 @@ int M_Ticker (void)
 						}
 #endif
 					}
-					if (buttons & BT_LEFT)
+					if (buttons & BT_ACTION_LEFT)
 					{
 						if(--playermap == 0)
 							playermap = gamemapcount;
@@ -719,13 +719,13 @@ int M_Ticker (void)
 					}
 					break;
 				case mi_savelist:
-					if (buttons & BT_RIGHT)
+					if (buttons & BT_ACTION_RIGHT)
 					{
 						saveslot++;
 						if (saveslot >= savecount + (screenpos == ms_save) || saveslot >= MaxSaveCount())
 							saveslot--;
 					}
-					if (buttons & BT_LEFT)
+					if (buttons & BT_ACTION_LEFT)
 					{
 						saveslot--;
 						if (saveslot == -1 + (screenpos == ms_save))

@@ -121,52 +121,57 @@ int Mars_ConvGamepadButtons(int ctrl, int analog_data)
 			int8_t throttle = analog_data & 0xFF;
 
 			if (stick_y < -0x1F) {
-				newc |= BT_UP;
+				newc |= BT_ACTION_UP;
 			}
 			else if (stick_y > 0x1F) {
-				newc |= BT_DOWN;
+				newc |= BT_ACTION_DOWN;
 			}
 
 			if (stick_x < -0x1F) {
-				newc |= BT_LEFT;
+				newc |= BT_ACTION_LEFT;
 			}
 			else if (stick_x > 0x1F) {
-				newc |= BT_RIGHT;
+				newc |= BT_ACTION_RIGHT;
 			}
 		}
 		else
 		{
 			if (ctrl & SEGA_CTRL_DPAD_UP) {
-				newc |= BT_UP;
+				newc |= BT_ACTION_UP;
 			}
 			if (ctrl & SEGA_CTRL_DPAD_DOWN) {
-				newc |= BT_DOWN;
+				newc |= BT_ACTION_DOWN;
 			}
 			if (ctrl & SEGA_CTRL_DPAD_LEFT) {
-				newc |= BT_LEFT;
+				newc |= BT_ACTION_LEFT;
 			}
 			if (ctrl & SEGA_CTRL_DPAD_RIGHT) {
-				newc |= BT_RIGHT;
+				newc |= BT_ACTION_RIGHT;
 			}
 		}
 
 		if (ctrl & button_cheat)
-			newc |= BT_FLIP; //configuration[controltype][0];
+			newc |= BT_ACTION_FLIP; //configuration[controltype][0];
 
 		if (ctrl & button_jump)
-			newc |= BT_JUMP; //configuration[controltype][1];
+			newc |= BT_ACTION_JUMP; //configuration[controltype][1];
 		if (ctrl & button_spin)
-			newc |= BT_SPIN; //configuration[controltype][2];
+			newc |= BT_ACTION_SPIN; //configuration[controltype][2];
 
 		if (ctrl & button_accelerate)
-			newc |= BT_GASPEDAL;
+			newc |= BT_ACTION_GASPEDAL;
 		if (ctrl & button_decelerate)
-			newc |= BT_BRAKE;
+			newc |= BT_ACTION_BRAKE;
 
 		if (ctrl & button_pan_left)
-			newc |= BT_CAMLEFT;
+			newc |= BT_ACTION_CAMLEFT;
 		if (ctrl & button_pan_right)
-			newc |= BT_CAMRIGHT;
+			newc |= BT_ACTION_CAMRIGHT;
+
+		if (ctrl & button_start)
+			newc |= BT_ACTION_START;
+		if (ctrl & button_mode)
+			newc |= BT_ACTION_MODE;
 	}
 
 	return newc;
@@ -189,7 +194,7 @@ static int Mars_HandleStartHeld(int *ctrl, const int ctrl_start, btnstate_t *sta
 			startbtn->prev_state = false;
 			// quick key press and release
 			if (prev_repeat < held_tics)
-				return BT_START;
+				return BT_ACTION_START;
 
 			// key held for a while and then released
 			return 0;
@@ -211,15 +216,15 @@ static int Mars_HandleStartHeld(int *ctrl, const int ctrl_start, btnstate_t *sta
 
 	if (*ctrl & SEGA_CTRL_A) {
 		*ctrl = *ctrl & ~SEGA_CTRL_A;
-		morebuttons |= BT_CAMLEFT;
+		morebuttons |= BT_ACTION_CAMLEFT;
 	}
 	else if (*ctrl & SEGA_CTRL_B) {
 		*ctrl = *ctrl & ~SEGA_CTRL_B;
-		morebuttons |= BT_GASPEDAL;
+		morebuttons |= BT_ACTION_GASPEDAL;
 	}
 	if (*ctrl & SEGA_CTRL_C) {
 		*ctrl = *ctrl & ~SEGA_CTRL_C;
-		morebuttons |= BT_CAMRIGHT;
+		morebuttons |= BT_ACTION_CAMRIGHT;
 	}
 
 	if (morebuttons)
@@ -715,7 +720,7 @@ void I_Update(void)
 	const int refreshHZ = Mars_RefreshHZ();
 
 	if (optionsMenuOn)
-		if (cheats_enabled & CHEAT_METRICS && (ticrealbuttons & BT_MODE) && !(oldticrealbuttons & BT_MODE))
+		if (cheats_enabled & CHEAT_METRICS && (ticrealbuttons & BT_ACTION_MODE) && !(oldticrealbuttons & BT_ACTION_MODE))
 		{
 			int prevdebugmode;
 
@@ -883,7 +888,7 @@ static void Player0Setup (void)
 
 		/* wait until rec 0xAA byte from other side or player aborts */
 		buttons = I_ReadControls();
-		if (buttons & BT_START)
+		if (buttons & BT_ACTION_START)
 		{
 			starttype = gt_single;
 			return;	/* abort */
@@ -931,7 +936,7 @@ static void Player1Setup (void)
 	do
 	{
 		buttons = I_ReadControls();
-		if (buttons & BT_START)
+		if (buttons & BT_ACTION_START)
 		{
 			starttype = gt_single;
 			return;	/* abort */
