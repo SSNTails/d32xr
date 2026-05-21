@@ -632,7 +632,7 @@ void P_BuildMove(player_t *player)
 	/* */
 	mo = player->mo;
 
-		if (D_abs(REALMOMX(player)) < STOPSPEED && D_abs(REALMOMY(player)) < STOPSPEED && player->forwardmove == 0 && player->sidemove == 0 && !(player->pflags & PF_GASPEDAL) && !(player->pflags & PF_SPINNING))
+		if (D_abs(REALMOMX(player)) < STOPSPEED && D_abs(REALMOMY(player)) < STOPSPEED && player->forwardmove == 0 && player->sidemove == 0 && (!(player->pflags & PF_GASPEDAL) || (player->pflags & PF_BRAKE)) && !(player->pflags & PF_SPINNING))
 		{ /* if in a walking frame, stop moving */
 			if (mo->state >= S_PLAY_RUN1 && mo->state <= S_PLAY_RUN8)
 				P_SetMobjState(mo, S_PLAY_STND);
@@ -777,10 +777,11 @@ static void P_DoSpinDash(player_t *player)
 {
 	const boolean onground = (player->mo->z <= player->mo->floorz);
 	const int buttons = player->buttons;
+	const int8_t analog_t = ticanalogt[playernum];
 
 	if (!player->exiting && !(player->mo->state == mobjinfo[player->mo->type].painstate && player->powers[pw_flashing]))
 	{
-		if ((buttons & BT_ACTION_SPIN) && player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
+		if (((buttons & BT_ACTION_SPIN) || ((player->pflags & PF_BRAKE) && analog_t < -0x1F)) && player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
 		{
 			P_ResetScore(player);
 			if (!spindashPlayerOriented) {
@@ -797,7 +798,7 @@ static void P_DoSpinDash(player_t *player)
 			if (player->pflags & PF_VERTICALFLIP)
 				player->mo->z = player->mo->ceilingz - P_GetPlayerSpinHeight();
 		}
-		else if ((buttons & BT_ACTION_SPIN) && (player->pflags & PF_STARTDASH))
+		else if (((buttons & BT_ACTION_SPIN) || analog_t < -0x1F) && (player->pflags & PF_STARTDASH))
 		{
 			if (player->speed > 5*FRACUNIT)
 			{
@@ -851,10 +852,12 @@ static void P_DoSpinDash(player_t *player)
 		}
 
 		// Catapult the player from a spindash rev!
-		if (onground && !(player->pflags & PF_USEDOWN) && player->dashSpeed && (player->pflags & PF_STARTDASH) && (player->pflags & PF_SPINNING))
+		if (onground && !(player->pflags & PF_USEDOWN) && player->dashSpeed && (player->pflags & PF_STARTDASH) && (player->pflags & PF_SPINNING) && analog_t >= -0x1F)
 		{
 			player->pflags &= ~PF_STARTDASH;
-			P_InstaThrust(player->mo, player->mo->angle, player->dashSpeed << FRACBITS); // catapult forward ho!!
+			if (!(player->pflags & PF_BRAKE)) {
+				P_InstaThrust(player->mo, player->mo->angle, player->dashSpeed << FRACBITS); // catapult forward ho!!
+			}
 			S_StartSound(player->mo, sfx_s3k_b6);
 			player->dashSpeed = 0;
 		}
@@ -1381,6 +1384,9 @@ void P_MovePlayer(player_t *player)
 			if (player->forwardmove || player->sidemove)
 			{
 				fixed_t acc = FRACUNIT >> 3;
+				if (player->pflags & PF_BRAKE) {
+					acc = 0;
+				}
 				if (player->powers[pw_sneakers])
 					acc <<= 1;
 
@@ -1436,11 +1442,18 @@ void P_MovePlayer(player_t *player)
 					player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, player->mo->x + player->mo->momx, player->mo->y + player->mo->momy);*/
 
 			fixed_t acc = 6144 * 4;//FRACUNIT / 2;
+			if (player->pflags & PF_BRAKE) {
+				acc = 0;
+			}
 			if (player->powers[pw_sneakers])
 				acc <<= 1;
 			if (player->powers[pw_underwater])
 				acc >>= 2;
 	//		angle_t speedDir = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+
+			if ((player->pflags & PF_BRAKE) && D_abs(REALMOMX(player)) > STOPSPEED && D_abs(REALMOMY(player)) > STOPSPEED) {
+				controlAngle ^= 0x80000000;
+			}
 
 			if (!(player->pflags & PF_GASPEDAL) && !(player->pflags & PF_JUMPED))
 			{
@@ -1463,26 +1476,29 @@ void P_MovePlayer(player_t *player)
 				fixed_t moveVecY = 0;
 				P_ThrustValues(controlAngle, speed, &moveVecX, &moveVecY);
 
-				if (analog_x < -7) {
-					//player->sidemove += ((FRACUNIT >> 7) * analog_x);
-					//if (analog_x > -0x80)
-						moveVecX += (683 * analog_x) - 21888;
-				}
-				else if (analog_x > 7) {
-					//player->sidemove += (((FRACUNIT >> 7) * analog_x) + (FRACUNIT >> 7));
-					//if (analog_x < 0x7F)
-						moveVecX += (683 + (683 * analog_x)) - 21888;
-				}
+				if (!(player->pflags & PF_BRAKE))
+				{
+					if (analog_x < -7) {
+						//player->sidemove += ((FRACUNIT >> 7) * analog_x);
+						//if (analog_x > -0x80)
+							moveVecX += (683 * analog_x) - 21888;
+					}
+					else if (analog_x > 7) {
+						//player->sidemove += (((FRACUNIT >> 7) * analog_x) + (FRACUNIT >> 7));
+						//if (analog_x < 0x7F)
+							moveVecX += (683 + (683 * analog_x)) - 21888;
+					}
 
-				if (analog_y < -0x1F || (analog_y < -0xF && (analog_x < -0x1F || analog_x > 0x1F))) {
-					//player->forwardmove -= ((FRACUNIT >> 7) * analog_y);
-					//if (analog_y > -0x80)
-						moveVecY -= (683 * analog_y) - 21888;
-				}
-				else if (analog_y > 0x1F || (analog_y > 0xF && (analog_x < -0x1F || analog_x > 0x1F))) {
-					//player->forwardmove -= (((FRACUNIT >> 7) * analog_y) + (FRACUNIT >> 7));
-					//if (analog_y < 0x7F)
-						moveVecY -= (683 + (683 * analog_y)) - 21888;
+					if (analog_y < -0x1F || (analog_y < -0xF && (analog_x < -0x1F || analog_x > 0x1F))) {
+						//player->forwardmove -= ((FRACUNIT >> 7) * analog_y);
+						//if (analog_y > -0x80)
+							moveVecY -= (683 * analog_y) - 21888;
+					}
+					else if (analog_y > 0x1F || (analog_y > 0xF && (analog_x < -0x1F || analog_x > 0x1F))) {
+						//player->forwardmove -= (((FRACUNIT >> 7) * analog_y) + (FRACUNIT >> 7));
+						//if (analog_y < 0x7F)
+							moveVecY -= (683 + (683 * analog_y)) - 21888;
+					}
 				}
 
 				player->mo->momx = REALMOMX(player);
@@ -1519,8 +1535,9 @@ void P_MovePlayer(player_t *player)
 		}
 	}
 
-	if ((player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL)) && (player->mo->state >= S_PLAY_STND && player->mo->state <= S_PLAY_TAP2))
+	if ((player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL)) && !(player->pflags & PF_BRAKE) && (player->mo->state >= S_PLAY_STND && player->mo->state <= S_PLAY_TAP2)) {
 		P_SetMobjState(player->mo, S_PLAY_RUN1);
+	}
 
 	// Make sure you're not teetering when you shouldn't be.
 	if ((player->mo->state == S_PLAY_TEETER1 || player->mo->state == S_PLAY_TEETER2) && (REALMOMX(player) || REALMOMY(player) || player->mo->momz))
@@ -1621,7 +1638,7 @@ void P_MovePlayer(player_t *player)
 			P_SpawnMobj(player->mo->x, player->mo->y, zh, MT_MEDIUMBUBBLE);
 	}
 
-	if (player->buttons & BT_ACTION_SPIN)
+	if ((player->buttons & BT_ACTION_SPIN) || ((player->pflags & PF_BRAKE) && analog_t < -0x1F))
 	{
 		if (!(player->pflags & PF_USEDOWN))
 		{
@@ -1681,7 +1698,7 @@ void P_MovePlayer(player_t *player)
 			}
 		}
 		else if (player->skidTime <= 0 && P_AproxDistance(REALMOMX(player), REALMOMY(player)) >= 25 << (FRACBITS-1)
-			&& ControlDirection(player) == 2)
+			&& (ControlDirection(player) == 2 || player->pflags & PF_BRAKE))
 		{
 			// start a skid
 			player->skidTime = TICRATE/2;

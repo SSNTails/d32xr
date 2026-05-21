@@ -200,7 +200,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	mobj_t *mo;
 	VINT newsubsec;
    const mobjinfo_t *caminfo = &mobjinfo[MT_CAMERA];
-	const int8_t analog_t = ticanalogt[playernum];
+	const int8_t analog_t = (player->pflags & PF_BRAKE || player->pflags & PF_STARTDASH) ? 0 : ticanalogt[playernum];
 
 	mo = player->mo;
    thiscam->distFromPlayer = P_AproxDistance3D(thiscam->x - mo->x, thiscam->y - mo->y, thiscam->z - mo->z);
