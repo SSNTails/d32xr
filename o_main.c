@@ -336,7 +336,7 @@ void O_Control (player_t *player)
 	buttons = ticrealbuttons & MENU_BTNMASK;
 	oldbuttons = oldticrealbuttons & MENU_BTNMASK;
 
-	if (buttons & (BT_B | BT_LMBTN) && !(oldbuttons & (BT_B | BT_LMBTN)))
+	if (buttons & BT_ACTION_MENU_NEXT && !(oldbuttons & BT_ACTION_MENU_NEXT))
 	{
 		int itemno = menuscr->firstitem + cursorpos;
 		if (menuscr->numitems > 0 && menuitem[itemno].screen != ms_none)
@@ -354,7 +354,7 @@ void O_Control (player_t *player)
 		}
 	}
 
-	if (buttons & (BT_A | BT_RMBTN) && !(oldbuttons & (BT_A | BT_RMBTN)))
+	if (buttons & BT_ACTION_MENU_BACK && !(oldbuttons & BT_ACTION_MENU_BACK))
 	{
 		if (screenpos != ms_main)
 		{

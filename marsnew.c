@@ -172,6 +172,10 @@ int Mars_ConvGamepadButtons(int ctrl, int analog_data)
 			newc |= BT_ACTION_START;
 		if (ctrl & button_mode)
 			newc |= BT_ACTION_MODE;
+		if (ctrl & button_menu_next)
+			newc |= BT_ACTION_MENU_NEXT;
+		if (ctrl & button_menu_back)
+			newc |= BT_ACTION_MENU_BACK;
 	}
 
 	return newc;

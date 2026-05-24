@@ -354,6 +354,8 @@ uint16_t button_pan_right;
 uint16_t button_start;
 uint16_t button_mode;
 uint16_t button_cheat;
+uint16_t button_menu_next;
+uint16_t button_menu_back;
 
 #ifdef KIOSK_MODE
 uint16_t kiosk_timeout_count;
@@ -676,7 +678,7 @@ int TIC_LevelSelect (void)
 
 	if (gameaction == ga_nothing && !IsTransitionType(TransitionType_Leaving)) {
 		if ((ticrealbuttons & BT_ACTION_START && !(oldticrealbuttons & BT_ACTION_START))
-			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B)))
+			|| (ticrealbuttons & BT_ACTION_MENU_NEXT && !(oldticrealbuttons & BT_ACTION_MENU_NEXT)))
 		{
 			fadetime = 0;
 			SetTransition(TransitionType_Leaving);

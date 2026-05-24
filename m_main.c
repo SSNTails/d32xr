@@ -484,8 +484,8 @@ int M_Ticker (void)
 	oldbuttons = oldticrealbuttons & MENU_BTNMASK;
 
 	// Handle navigation to the next menu screen
-	if (((buttons & (BT_B | BT_LMBTN | BT_ACTION_START)) && !(oldbuttons & (BT_B | BT_LMBTN | BT_ACTION_START)))
-		|| ((buttons & (BT_B | BT_LMBTN)) && !(oldbuttons & (BT_B | BT_LMBTN))))
+	if (((buttons & (BT_ACTION_MENU_NEXT | BT_ACTION_START)) && !(oldbuttons & (BT_ACTION_MENU_NEXT | BT_ACTION_START)))
+		|| ((buttons & BT_ACTION_MENU_NEXT) && !(oldbuttons & BT_ACTION_MENU_NEXT)))
 	{
 		if (screenpos == ms_help) {
 			// Navigate to the previous menu screen instead.
@@ -533,7 +533,7 @@ int M_Ticker (void)
 	}
 
 	// Handle navigation to the previous menu screen.
-	if (goto_prev_screen || ((buttons & (BT_A | BT_C | BT_RMBTN)) && !(oldbuttons & (BT_A | BT_C | BT_RMBTN))))
+	if (goto_prev_screen || ((buttons & BT_ACTION_MENU_NEXT) && !(oldbuttons & BT_ACTION_MENU_NEXT)))
 	{
 		if (screenpos != ms_main)
 		{
@@ -586,7 +586,7 @@ int M_Ticker (void)
 	}
 
 	/* exit menu if button press */
-	if ((buttons & (BT_B | BT_LMBTN | BT_ACTION_START)) && !(oldbuttons & (BT_B | BT_LMBTN | BT_ACTION_START)))
+	if ((buttons & (BT_ACTION_MENU_NEXT | BT_ACTION_START)) && !(oldbuttons & (BT_ACTION_MENU_NEXT | BT_ACTION_START)))
 	{
 		if (screenpos == ms_new)
 		{

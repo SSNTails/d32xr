@@ -1367,6 +1367,8 @@ enum
 	BT_ACTION_FLIP			= (1 << 26),
 	BT_ACTION_START			= (1 << 27),
 	BT_ACTION_MODE			= (1 << 28),
+	BT_ACTION_MENU_NEXT		= (1 << 29),
+	BT_ACTION_MENU_BACK		= (1 << 30),
 
 	BT_LMBTN		= SEGA_CTRL_LMB,
 	BT_RMBTN		= SEGA_CTRL_RMB,
@@ -1385,8 +1387,10 @@ extern uint16_t button_pan_right;
 extern uint16_t button_start;
 extern uint16_t button_mode;
 extern uint16_t button_cheat;
+extern uint16_t button_menu_next;
+extern uint16_t button_menu_back;
 
-#define MENU_BTNMASK (BT_RMBTN|BT_LMBTN|BT_ACTION_MODE|BT_ACTION_START|BT_A|BT_C|BT_B|BT_ACTION_RIGHT|BT_ACTION_LEFT|BT_ACTION_DOWN|BT_ACTION_UP)
+#define MENU_BTNMASK (BT_RMBTN|BT_LMBTN|BT_ACTION_MENU_BACK|BT_ACTION_MENU_NEXT|BT_ACTION_MODE|BT_ACTION_START|BT_ACTION_RIGHT|BT_ACTION_LEFT|BT_ACTION_DOWN|BT_ACTION_UP|BT_C)
 
 typedef enum
 {
