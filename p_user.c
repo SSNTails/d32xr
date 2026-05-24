@@ -574,45 +574,28 @@ void P_BuildMove(player_t *player)
 	{
 		player->forwardmove = player->sidemove = 0;
 
-		if (buttons & BT_ACTION_GASPEDAL)
-			player->pflags |= PF_GASPEDAL;
-		else
-			player->pflags &= ~PF_GASPEDAL;
-
-		if (buttons & BT_ACTION_BRAKE)
+		if (buttons & BT_ACTION_BRAKE) {
 			player->pflags |= PF_BRAKE;
-		else
+		}
+		else {
 			player->pflags &= ~PF_BRAKE;
 
-		if (analog_x < -0x1F || (analog_x < 0 && (player->forwardmove || player->pflags & PF_GASPEDAL))) {
-			player->sidemove += ((FRACUNIT >> 7) * analog_x);
-			//if (analog_x == -0x80)
-			//	player->sidemove -= FRACUNIT;
-			//else
-			//	player->sidemove += (683 * analog_x);
-		}
-		else if (analog_x > 0x1F || (analog_x >= 0 && (player->forwardmove || player->pflags & PF_GASPEDAL))) {
-			player->sidemove += (((FRACUNIT >> 7) * analog_x) + (FRACUNIT >> 7));
-			//if (analog_x == 0x7F)
-			//	player->sidemove += FRACUNIT;
-			//else
-			//	player->sidemove += (683 + (683 * analog_x));
-		}
-		else if (buttons & BT_ACTION_LEFT) {
-			player->sidemove -= FRACUNIT;
-		}
-		else if (buttons & BT_ACTION_RIGHT) {
-			player->sidemove += FRACUNIT;
+			if (buttons & BT_ACTION_GASPEDAL) {
+				player->pflags |= PF_GASPEDAL;
+			}
+			else {
+				player->pflags &= ~PF_GASPEDAL;
+			}
 		}
 
-		if (analog_y < -0x1F || (analog_y < 0 && (player->sidemove || player->pflags & PF_GASPEDAL))) {
+		if (analog_y < -0x1F || (analog_y < 0 && (analog_x < -0x1F || analog_x > 0x1F))) {
 			player->forwardmove -= ((FRACUNIT >> 7) * analog_y);
 			//if (analog_y == -0x80)
 			//	player->forwardmove += FRACUNIT;
 			//else
 			//	player->forwardmove -= (683 * analog_y);
 		}
-		else if (analog_y > 0x1F) {
+		else if (analog_y > 0x1F || (analog_y > 0 && (analog_x < -0x1F || analog_x > 0x1F))) {
 			player->forwardmove -= (((FRACUNIT >> 7) * analog_y) + (FRACUNIT >> 7));
 			//if (analog_y == 0x7F)
 			//	player->forwardmove -= FRACUNIT;
@@ -624,6 +607,27 @@ void P_BuildMove(player_t *player)
 		}
 		else if (buttons & BT_ACTION_DOWN) {
 			player->forwardmove -= FRACUNIT;
+		}
+
+		if (analog_x < -0x1F || (analog_x < 0 && (analog_y < -0x1F || analog_y > 0x1F))) {
+			player->sidemove += ((FRACUNIT >> 7) * analog_x);
+			//if (analog_x == -0x80)
+			//	player->sidemove -= FRACUNIT;
+			//else
+			//	player->sidemove += (683 * analog_x);
+		}
+		else if (analog_x > 0x1F || (analog_x > 0 && (analog_y < -0x1F || analog_y > 0x1F))) {
+			player->sidemove += (((FRACUNIT >> 7) * analog_x) + (FRACUNIT >> 7));
+			//if (analog_x == 0x7F)
+			//	player->sidemove += FRACUNIT;
+			//else
+			//	player->sidemove += (683 + (683 * analog_x));
+		}
+		else if (buttons & BT_ACTION_LEFT) {
+			player->sidemove -= FRACUNIT;
+		}
+		else if (buttons & BT_ACTION_RIGHT) {
+			player->sidemove += FRACUNIT;
 		}
 	}
 
