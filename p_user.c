@@ -580,14 +580,14 @@ void P_BuildMove(player_t *player)
 		else if (buttons & BT_DPAD_RIGHT) {
 			player->sidemove += FRACUNIT;
 		}
-		else if (analog_x < -0x1F || (analog_x < -0xF && (analog_y < -0x1F || analog_y > 0x1F))) {
+		else if (analog_x < -0x1F || (analog_x < 0 && (player->forwardmove || player->pflags & PF_GASPEDAL))) {
 			player->sidemove += ((FRACUNIT >> 7) * analog_x);
 			//if (analog_x == -0x80)
 			//	player->sidemove -= FRACUNIT;
 			//else
 			//	player->sidemove += (683 * analog_x);
 		}
-		else if (analog_x > 0x1F || (analog_x > 0xF && (analog_y < -0x1F || analog_y > 0x1F))) {
+		else if (analog_x > 0x1F || (analog_x >= 0 && (player->forwardmove || player->pflags & PF_GASPEDAL))) {
 			player->sidemove += (((FRACUNIT >> 7) * analog_x) + (FRACUNIT >> 7));
 			//if (analog_x == 0x7F)
 			//	player->sidemove += FRACUNIT;
@@ -611,14 +611,14 @@ void P_BuildMove(player_t *player)
 		else if (buttons & BT_DPAD_DOWN) {
 			player->forwardmove -= FRACUNIT;
 		}
-		else if (analog_y < -0x1F || (analog_y < -0xF && (analog_x < -0x1F || analog_x > 0x1F))) {
+		else if (analog_y < -0x1F || (analog_y < 0 && (player->sidemove || player->pflags & PF_GASPEDAL))) {
 			player->forwardmove -= ((FRACUNIT >> 7) * analog_y);
 			//if (analog_y == -0x80)
 			//	player->forwardmove += FRACUNIT;
 			//else
 			//	player->forwardmove -= (683 * analog_y);
 		}
-		else if (analog_y > 0x1F || (analog_y > 0xF && (analog_x < -0x1F || analog_x > 0x1F))) {
+		else if (analog_y > 0x1F || (analog_y >= 0 && (player->sidemove || player->pflags & PF_GASPEDAL))) {
 			player->forwardmove -= (((FRACUNIT >> 7) * analog_y) + (FRACUNIT >> 7));
 			//if (analog_y == 0x7F)
 			//	player->forwardmove -= FRACUNIT;
