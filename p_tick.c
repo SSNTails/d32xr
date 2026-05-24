@@ -536,7 +536,7 @@ gameaction_t RecordDemo()
 		*((short *)&demobuffer[6]) = leveltime - rec_start_time;
 		SetDemoMode(DemoMode_None);
 	}
-	else if (leveltime - rec_start_time >= REC_DEMO_TIMEOUT || players[0].buttons & BT_START) {
+	else if (leveltime - rec_start_time >= REC_DEMO_TIMEOUT || players[0].buttons & BT_ACTION_START) {
 		// The demo timeout period has been reached, or START was pressed. End the recording.
 		demo_p += 1;
 		*demo_p++ = 0x80;

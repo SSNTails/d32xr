@@ -1177,7 +1177,7 @@ int TIC_Compatibility(void)
 	screenCount++;
 
 	// Read directly from the controller. Works better in this function. Don't know why!
-	if ((Mars_ReadController(0) & BT_START)) {
+	if ((Mars_ReadController(0) & BT_ACTION_START)) {
 		return ga_closeprompt;
 	}
 
