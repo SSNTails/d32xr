@@ -197,8 +197,9 @@ static int Mars_HandleStartHeld(int *ctrl, const int ctrl_start, btnstate_t *sta
 		if (startbtn->prev_state) {
 			startbtn->prev_state = false;
 			// quick key press and release
-			if (prev_repeat < held_tics)
-				return BT_ACTION_START;
+			if (prev_repeat < held_tics) {
+				return button_start;
+			}
 
 			// key held for a while and then released
 			return 0;

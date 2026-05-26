@@ -623,10 +623,10 @@ void Mars_DetectInputDevices(void)
 		else {
 			if ((val & 0xF000) != (previous_buttons[i] & 0xF000)) {
 				if ((val & 0xF000) == SEGA_CTRL_ANALOG) {
-					button_jump = XE_BT_D;
+					button_jump = XE_BT_A;
 					button_spin = XE_BT_C;
 					button_accelerate = XE_BT_B;
-					button_decelerate = XE_BT_A;
+					button_decelerate = XE_BT_D;
 					button_pan_left = XE_BT_E1;
 					button_pan_right = XE_BT_E2;
 					button_start = XE_BT_START;

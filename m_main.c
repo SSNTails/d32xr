@@ -533,7 +533,7 @@ int M_Ticker (void)
 	}
 
 	// Handle navigation to the previous menu screen.
-	if (goto_prev_screen || ((buttons & BT_ACTION_MENU_NEXT) && !(oldbuttons & BT_ACTION_MENU_NEXT)))
+	if (goto_prev_screen || ((buttons & BT_ACTION_MENU_BACK) && !(oldbuttons & BT_ACTION_MENU_BACK)))
 	{
 		if (screenpos != ms_main)
 		{
