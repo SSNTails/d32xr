@@ -334,7 +334,7 @@ static short P_GetMaceLinkCount(mapthing_t *mthing)
 
 static void P_SetupMace(mapthing_t *mthing)
 {
-	VINT args[10];
+	VINT args[11];
 	int tag = mthing->angle;
 	line_t *line = NULL;
 	for (int i = 0; i < numlines; i++)
@@ -380,6 +380,7 @@ static void P_SetupMace(mapthing_t *mthing)
 	args[3] = D_abs(v1->y - v2->y);
 	args[4] = textureoffset;
 	args[7] = frontsector->lightlevel; // number of links to subtract from the inside.
+	args[10] = frontsector->ceilingheight >> FRACBITS; // phase offset
 
 	if (line->sidenum[1] >= 0)
 	{
@@ -486,6 +487,7 @@ void P_LoadThings (int lump)
 				numringthings += maceLinkCount; // links
 
 			numringthings++; // End of chain (ball)
+			numringthings++; // One more?? Why?
 			numMaces++;
 #endif
 		}

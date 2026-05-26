@@ -1369,11 +1369,11 @@ static void P_AddRaiseThinker(VINT fofSector, line_t *fofLine)
 
 typedef struct
 {
-	VINT x, y, z;
 	ringmobj_t *chain; // First item in the chain list.
 	ringmobj_t *maceball;
-	VINT numchain;
-	VINT interval; // The diameter (in FRACUNITs) to space out the links
+	VINT x, y, z;
+	int8_t numchain;
+	int8_t interval; // The diameter (in FRACUNITs) to space out the links
 } macechain_t;
 
 typedef struct
@@ -1382,16 +1382,17 @@ typedef struct
 	macechain_t macechain;
 
 	// Old style
-	int16_t mlength;
-	int16_t mspeed;
-//	int16_t mphase;
+	int8_t mlength;
+	int8_t mspeed;
+	int8_t mphase;
 //	int16_t mminlength;
 //	int16_t mwidth;
 //	int16_t tag; // for debugging
-	int16_t msublinks; // # of links from the inside to subtract
+	int8_t msublinks; // # of links from the inside to subtract
 	int16_t swingSpeed;
 
-	boolean sound;
+	int8_t sound;
+	int8_t flags;
 
 	// new idea
 	vector3_t nv; // Normalized vector
@@ -1404,7 +1405,7 @@ void P_SSNMaceRotate(swingmace_t *sm)
 {
 	// Always update movedir to prevent desync. But do we really have to?
 	// Can't this be calculated from leveltime? Why yes, yes it can...
-	int16_t curPos = (sm->mspeed * leveltime) & FINEMASK;
+	int16_t curPos = (sm->mspeed * (leveltime + sm->mphase)) & FINEMASK;
 
 	vector4_t axis;
 	vector4_t rotationDir;
@@ -1472,6 +1473,10 @@ void P_SSNMaceRotate(swingmace_t *sm)
 	}
 
 	dist += sm->macechain.interval * (count-1);
+
+	if (sm->flags & TMM_DOUBLESIZE)
+		dist += sm->macechain.interval;
+
 	dist += mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS;
 	P_UnsetThingPosition((mobj_t*)sm->macechain.maceball);
 	sm->macechain.maceball->x = sm->macechain.x + ((rotVec.x * dist) >> FRACBITS);
@@ -1545,8 +1550,7 @@ void P_PreallocateMaces(int numMaces)
 }
 
 // TODO:
-// Support for creating rows of chains (ceilingheight?)
-// Support for the 'mphase' (offset in the rotation)
+// Support for creating rows of chains (ceilingheight?) - ehh, not sure about this yet
 void P_AddMaceChain(mapthing_t *point, vector3_t *axis, vector3_t *rotation, VINT *args)
 {
 	// First, determine the # of items in the chain
@@ -1558,19 +1562,24 @@ void P_AddMaceChain(mapthing_t *point, vector3_t *axis, vector3_t *rotation, VIN
 	sm->thinker.function = T_SwingMace;
 	P_AddThinker (&sm->thinker);
 
-// 1:1 style
-sm->mlength = D_abs(args[0]);
-//sm->mnumspokes = args[1] + 1;
-//sm->mwidth = D_max(0, args[2]);
-sm->mspeed = D_abs(args[3] << 4);
-//sm->mphase = args[4] % 360;
-//sm->mnumnospokes = args[6];
-sm->msublinks = args[7]; // chain links to remove from the inside
-if (sm->msublinks > sm->mlength)
-	sm->msublinks = sm->mlength;
+	// 1:1 style
+	sm->mlength = D_abs(args[0]);
 
-//sm->mminlength = D_max(0, D_min(mlength - 1, args[7]));
-//sm->tag = point->angle;
+	// Remove one link near the mace part when it's double size, it's excessive.
+	if (args[8] & TMM_DOUBLESIZE)
+		sm->mlength--;
+
+	//sm->mnumspokes = args[1] + 1;
+	//sm->mwidth = D_max(0, args[2]);
+	sm->mspeed = D_abs(args[3] << 4);
+	sm->mphase = args[10];
+	//sm->mnumnospokes = args[6];
+	sm->msublinks = args[7]; // chain links to remove from the inside
+	if (sm->msublinks > sm->mlength)
+		sm->msublinks = sm->mlength;
+
+	//sm->mminlength = D_max(0, D_min(mlength - 1, args[7]));
+	//sm->tag = point->angle;
 
 	if (args[8] & TMM_SWING)
 	{
@@ -1653,6 +1662,12 @@ if (sm->msublinks > sm->mlength)
 		}
 		sm->macechain.numchain++;
 		count++;
+	}
+
+	if (args[8] & TMM_DOUBLESIZE)
+	{
+		sm->flags |= TMM_DOUBLESIZE;
+		dist += sm->macechain.interval << FRACBITS;
 	}
 
 	dist += mobjinfo[macetype].radius;
