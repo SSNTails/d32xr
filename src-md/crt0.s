@@ -3526,7 +3526,15 @@ get_sega_input:
 
 get_input:
         moveq   #0,d0
+        moveq   #0,d1
 
+        bsr.s   get_sega_input
+
+        cmpi.w  #0x2F6F,d0
+        beq.w   get_xe1ap_input
+        rts
+
+get_xe1ap_input:
         move.l  a1,-(sp)
         move.l  d2,-(sp)
         move.l  d3,-(sp)
@@ -3534,21 +3542,13 @@ get_input:
         move.l  d5,-(sp)
         move.l  d6,-(sp)
 
-        moveq   #0,d1
+        moveq   #0,d0
         moveq   #0,d2
         moveq   #0,d3
         moveq   #0,d4
         moveq   #0,d5
         moveq   #0,d6
 
-get_xe1ap_input:
-        bsr.s   get_sega_input
-        andi.w  #0x7FFF,d0
-
-        cmpi.w  #0x2F6F,d0
-        bne.w   get_xe1ap_input_done
-1:
-        moveq   #0,d0
         lea     xe1ap_buffer,a1
         moveq   #5,d2
 
@@ -3636,10 +3636,6 @@ organize_xe1ap_buttons:
         ori.w   #0x8000,d0      | Mark this as XE-1AP
 
 get_xe1ap_input_done:
-        |bset    #6,(a0)
-        |lsl.w   #8,d0
-        |move.b  (a0),d0
-
         move.l  (sp)+,d6
         move.l  (sp)+,d5
         move.l  (sp)+,d4
