@@ -237,8 +237,10 @@ void Mars_Init(void)
 	MARS_SYS_COMM15_BYTE = 0;
 
 	/* no controllers or mouse by default */
-	for (i = 0; i < MARS_MAX_CONTROLLERS; i++)
+	for (i = 0; i < MARS_MAX_CONTROLLERS; i++) {
 		mars_gamepadport[i] = -1;
+		previous_buttons[i] = 0xF000;
+	}
 
 	//SH2_WDT_WTCSR_TCNT = 0xA518; /* WDT TCSR = clr OVF, IT mode, timer off, clksel = Fs/2 */
 	
@@ -618,7 +620,7 @@ void Mars_DetectInputDevices(void)
 		next_buttons_released[i] = 0;
 
 		if (val == 0xF000) {
-			previous_buttons[i] = 0;
+			previous_buttons[i] = 0xF000;
 		}
 		else {
 			if ((val & 0xF000) != (previous_buttons[i] & 0xF000)) {

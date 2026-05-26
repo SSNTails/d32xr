@@ -178,6 +178,8 @@ int Mars_ConvGamepadButtons(int ctrl, int analog_data)
 			newc |= BT_ACTION_MENU_BACK;
 	}
 
+	newc |= (ctrl & 0xF000);	// Keep the controller type.
+
 	return newc;
 }
 

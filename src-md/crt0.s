@@ -3514,14 +3514,13 @@ no_pad:
 
 | read single phase from controller
 get_sega_input:
-        move.b  #0x40,(a0)
+        move.b  #0x00,(a0)
         nop
         nop
         move.b  (a0),d0
-        move.b  #0x00,(a0)
+        move.b  #0x40,(a0)
         lsl.w   #8,d0
         move.b  (a0),d0
-        ror.w   #8,d0
         rts
 
 get_input:
@@ -3551,6 +3550,7 @@ get_xe1ap_input:
 
         lea     xe1ap_buffer,a1
         moveq   #5,d2
+        bclr    #6,(a0)
 
 get_xe1ap_input_loop:
         move.w  #0x320,d1

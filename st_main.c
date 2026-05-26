@@ -522,40 +522,57 @@ static void ST_Drawer_ (stbar_t* sb)
 
 #ifndef HIDE_HUD
 #ifdef INPUTDEBUG
-		V_DrawValueLeft(&menuFont, 160+(8*0x0), 32, (ticrealbuttons >> 0xF) & 1);
-		V_DrawValueLeft(&menuFont, 160+(8*0x1), 32, (ticrealbuttons >> 0xE) & 1);
-		V_DrawValueLeft(&menuFont, 160+(8*0x2), 32, (ticrealbuttons >> 0xD) & 1);
-		V_DrawValueLeft(&menuFont, 160+(8*0x3), 32, (ticrealbuttons >> 0xC) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x4), 32, (ticrealbuttons >> 0xB) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x5), 32, (ticrealbuttons >> 0xA) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x6), 32, (ticrealbuttons >> 0x9) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x7), 32, (ticrealbuttons >> 0x8) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0x8), 32, (ticrealbuttons >> 0x7) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0x9), 32, (ticrealbuttons >> 0x6) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0xA), 32, (ticrealbuttons >> 0x5) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0xB), 32, (ticrealbuttons >> 0x4) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xC), 32, (ticrealbuttons >> 0x3) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xD), 32, (ticrealbuttons >> 0x2) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xE), 32, (ticrealbuttons >> 0x1) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xF), 32, (ticrealbuttons >> 0x0) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x0), 32, (ticrealbuttons >> 0x1F) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x1), 32, (ticrealbuttons >> 0x1E) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x2), 32, (ticrealbuttons >> 0x1D) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x3), 32, (ticrealbuttons >> 0x1C) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x4), 32, (ticrealbuttons >> 0x1B) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x5), 32, (ticrealbuttons >> 0x1A) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x6), 32, (ticrealbuttons >> 0x19) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x7), 32, (ticrealbuttons >> 0x18) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0x8), 32, (ticrealbuttons >> 0x17) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0x9), 32, (ticrealbuttons >> 0x16) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0xA), 32, (ticrealbuttons >> 0x15) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0xB), 32, (ticrealbuttons >> 0x14) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xC), 32, (ticrealbuttons >> 0x13) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xD), 32, (ticrealbuttons >> 0x12) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xE), 32, (ticrealbuttons >> 0x11) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xF), 32, (ticrealbuttons >> 0x10) & 1);
 
-		V_DrawStringRightWithColormap(&menuFont, 256, 48, "AX:", YELLOWTEXTCOLORMAP);
-		V_DrawStringRightWithColormap(&menuFont, 256, 60, "AY:", YELLOWTEXTCOLORMAP);
-		V_DrawStringRightWithColormap(&menuFont, 256, 72, "AT:", YELLOWTEXTCOLORMAP);
+		V_DrawValueLeft(&menuFont, 160+(8*0x0), 44, (ticrealbuttons >> 0xF) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x1), 44, (ticrealbuttons >> 0xE) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x2), 44, (ticrealbuttons >> 0xD) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x3), 44, (ticrealbuttons >> 0xC) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x4), 44, (ticrealbuttons >> 0xB) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x5), 44, (ticrealbuttons >> 0xA) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x6), 44, (ticrealbuttons >> 0x9) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x7), 44, (ticrealbuttons >> 0x8) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0x8), 44, (ticrealbuttons >> 0x7) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0x9), 44, (ticrealbuttons >> 0x6) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0xA), 44, (ticrealbuttons >> 0x5) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0xB), 44, (ticrealbuttons >> 0x4) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xC), 44, (ticrealbuttons >> 0x3) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xD), 44, (ticrealbuttons >> 0x2) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xE), 44, (ticrealbuttons >> 0x1) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xF), 44, (ticrealbuttons >> 0x0) & 1);
+
+		V_DrawStringRightWithColormap(&menuFont, 256, 56, "AX:", YELLOWTEXTCOLORMAP);
+		V_DrawStringRightWithColormap(&menuFont, 256, 68, "AY:", YELLOWTEXTCOLORMAP);
+		V_DrawStringRightWithColormap(&menuFont, 256, 80, "AT:", YELLOWTEXTCOLORMAP);
 
 		if (ticrealanalogx < 0) {
-			V_DrawStringRight(&menuFont, 264, 48, "-");
+			V_DrawStringRight(&menuFont, 264, 56, "-");
 		}
 		if (ticrealanalogy < 0) {
-			V_DrawStringRight(&menuFont, 264, 60, "-");
+			V_DrawStringRight(&menuFont, 264, 68, "-");
 		}
 		if (ticrealanalogt < 0) {
-			V_DrawStringRight(&menuFont, 264, 72, "-");
+			V_DrawStringRight(&menuFont, 264, 80, "-");
 		}
 
-		V_DrawValueLeft(&menuFont, 272, 48, D_abs(ticrealanalogx));
-		V_DrawValueLeft(&menuFont, 272, 60, D_abs(ticrealanalogy));
-		V_DrawValueLeft(&menuFont, 272, 72, D_abs(ticrealanalogt));
+		V_DrawValueLeft(&menuFont, 272, 56, D_abs(ticrealanalogx));
+		V_DrawValueLeft(&menuFont, 272, 68, D_abs(ticrealanalogy));
+		V_DrawValueLeft(&menuFont, 272, 80, D_abs(ticrealanalogt));
 #endif //INPUTDEBUG
 
 		const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
