@@ -3480,18 +3480,18 @@ vert_blank:
 | exit:  d1 = pad value (X  X  X  X  X  X  X  X  Y  Y  Y  Y  Y  Y  Y  Y  T  T  T  T  T  T  T  T) -- XE-1AP axis
 get_pad:
         bsr.b   get_input       /* - 0 s a 0 0 d u - 1 c b r l d u */
-        |btst    #15,d0
-        |beq.s   1f
+        cmpi.w  #0,d0
+        bge.s   1f
         move.w  d0,d2           /* XE-1AP */
         rts
 1:
         move.w  d0,d1
         andi.w  #0x0C00,d0
         bne.b   no_pad
-        bsr.b   get_input       /* - 0 s a 0 0 d u - 1 c b r l d u */
-        bsr.b   get_input       /* - 0 s a 0 0 0 0 - 1 c b m x y z */
+        bsr.b   get_sega_input       /* - 0 s a 0 0 d u - 1 c b r l d u */
+        bsr.b   get_sega_input       /* - 0 s a 0 0 0 0 - 1 c b m x y z */
         move.w  d0,d2
-        bsr.b   get_input       /* - 0 s a 1 1 1 1 - 1 c b r l d u */
+        bsr.b   get_sega_input       /* - 0 s a 1 1 1 1 - 1 c b r l d u */
         andi.w  #0x0F00,d0      /* 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 */
         cmpi.w  #0x0F00,d0
         beq.b   common          /* six button pad */
@@ -3505,6 +3505,7 @@ common:
         or.w    d1,d2           /* 0 0 0 0 m x y z s a c b r l d u */
         eori.w  #0x1FFF,d2      /* 0 0 0 1 M X Y Z S A C B R L D U */
 get_pad_done:
+        moveq   #0,d1           /* No analog */
         rts
 
 no_pad:
@@ -3512,6 +3513,17 @@ no_pad:
         rts
 
 | read single phase from controller
+get_sega_input:
+        move.b  #0x40,(a0)
+        nop
+        nop
+        move.b  (a0),d0
+        move.b  #0x00,(a0)
+        lsl.w   #8,d0
+        move.b  (a0),d0
+        ror.w   #8,d0
+        rts
+
 get_input:
         moveq   #0,d0
 
@@ -3530,9 +3542,14 @@ get_input:
         moveq   #0,d6
 
 get_xe1ap_input:
+        bsr.s   get_sega_input
+        andi.w  #0x7FFF,d0
+
+        cmpi.w  #0x2F6F,d0
+        bne.w   get_xe1ap_input_done
+1:
+        moveq   #0,d0
         lea     xe1ap_buffer,a1
-        bset    #6,(a0)
-        bclr    #6,(a0)
         moveq   #5,d2
 
 get_xe1ap_input_loop:

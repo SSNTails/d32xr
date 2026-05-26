@@ -521,6 +521,43 @@ static void ST_Drawer_ (stbar_t* sb)
 //		CONS_Printf("legacy_emulator: %d", legacy_emulator);	//DLG: Remove me!
 
 #ifndef HIDE_HUD
+#ifdef INPUTDEBUG
+		V_DrawValueLeft(&menuFont, 160+(8*0x0), 32, (ticrealbuttons >> 0xF) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x1), 32, (ticrealbuttons >> 0xE) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x2), 32, (ticrealbuttons >> 0xD) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x3), 32, (ticrealbuttons >> 0xC) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x4), 32, (ticrealbuttons >> 0xB) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x5), 32, (ticrealbuttons >> 0xA) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x6), 32, (ticrealbuttons >> 0x9) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x7), 32, (ticrealbuttons >> 0x8) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0x8), 32, (ticrealbuttons >> 0x7) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0x9), 32, (ticrealbuttons >> 0x6) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0xA), 32, (ticrealbuttons >> 0x5) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0xB), 32, (ticrealbuttons >> 0x4) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xC), 32, (ticrealbuttons >> 0x3) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xD), 32, (ticrealbuttons >> 0x2) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xE), 32, (ticrealbuttons >> 0x1) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xF), 32, (ticrealbuttons >> 0x0) & 1);
+
+		V_DrawStringRightWithColormap(&menuFont, 256, 48, "AX:", YELLOWTEXTCOLORMAP);
+		V_DrawStringRightWithColormap(&menuFont, 256, 60, "AY:", YELLOWTEXTCOLORMAP);
+		V_DrawStringRightWithColormap(&menuFont, 256, 72, "AT:", YELLOWTEXTCOLORMAP);
+
+		if (ticrealanalogx < 0) {
+			V_DrawStringRight(&menuFont, 264, 48, "-");
+		}
+		if (ticrealanalogy < 0) {
+			V_DrawStringRight(&menuFont, 264, 60, "-");
+		}
+		if (ticrealanalogt < 0) {
+			V_DrawStringRight(&menuFont, 264, 72, "-");
+		}
+
+		V_DrawValueLeft(&menuFont, 272, 48, D_abs(ticrealanalogx));
+		V_DrawValueLeft(&menuFont, 272, 60, D_abs(ticrealanalogy));
+		V_DrawValueLeft(&menuFont, 272, 72, D_abs(ticrealanalogt));
+#endif //INPUTDEBUG
+
 		const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
 		int worldTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
 		if (worldTime < 0)
