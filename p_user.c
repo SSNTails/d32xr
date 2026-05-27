@@ -1887,7 +1887,9 @@ void P_PlayerThink(player_t *player)
 	P_PlayerMobjThink(player->mo);
 
 	ticphase = 21;
-	P_BuildMove(player);
+	if (IsLevel()) {
+		P_BuildMove(player);
+	}
 
 	if (player->playerstate == PST_DEAD)
 	{
