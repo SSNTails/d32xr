@@ -633,7 +633,11 @@ void Mars_DetectInputDevices(void)
 					button_pan_right = XE_BT_E2;
 					button_start = XE_BT_START;
 					button_mode = XE_BT_SELECT;
+#ifdef SHOW_DISCLAIMER
+					button_cheat = 0;
+#else
 					button_cheat = XE_BT_A_PRIME;
+#endif
 					button_menu_next = XE_BT_B;
 					button_menu_back = XE_BT_A;
 				}
@@ -648,11 +652,11 @@ void Mars_DetectInputDevices(void)
 					button_menu_next = BT_B;
 					button_menu_back = BT_A;
 #ifdef SHOW_DISCLAIMER
-					button_jump = BT_C;
-					button_cheat = BT_A;
-#else
 					button_jump = BT_A | BT_C;
 					button_cheat = 0;
+#else
+					button_jump = BT_C;
+					button_cheat = BT_A;
 #endif
 				}
 			}
