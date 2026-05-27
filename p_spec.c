@@ -1371,7 +1371,7 @@ typedef struct
 {
 	ringmobj_t *chain; // First item in the chain list.
 	ringmobj_t *maceball;
-	VINT x, y, z;
+	int16_t x, y, z;
 	int8_t numchain;
 	int8_t interval; // The diameter (in FRACUNITs) to space out the links
 } macechain_t;
@@ -1381,24 +1381,20 @@ typedef struct
 	thinker_t thinker;
 	macechain_t macechain;
 
+	// new idea
+	vector3b_t nv; // Normalized vector
+	vector3b_t rotation;
+
+	int16_t swingSpeed;
+
 	// Old style
 	int8_t mlength;
 	int8_t mspeed;
-	int8_t mphase;
-//	int16_t mminlength;
-//	int16_t mwidth;
-//	int16_t tag; // for debugging
-	int8_t msublinks; // # of links from the inside to subtract
-	int16_t swingSpeed;
 
+	int8_t mphase;
+	int8_t msublinks; // # of links from the inside to subtract
 	int8_t sound;
 	int8_t flags;
-
-	// new idea
-	vector3_t nv; // Normalized vector
-	vector3_t rotation;
-
-//	VINT args[10];
 } swingmace_t;
 
 void P_SSNMaceRotate(swingmace_t *sm)
@@ -1421,12 +1417,12 @@ void P_SSNMaceRotate(swingmace_t *sm)
 //		CONS_Printf("a: %d, %d, %d; r: %d, %d, %d", sm->nv.x, sm->nv.y, sm->nv.z, sm->rotation.x, sm->rotation.y, sm->rotation.z);
 
 	// int8_t to fixed_t
-	axis.x = sm->nv.x << 9;
-	axis.y = sm->nv.y << 9;
-	axis.z = sm->nv.z << 9;
-	rotationDir.x = sm->rotation.x << 9;
-	rotationDir.y = sm->rotation.y << 9;
-	rotationDir.z = sm->rotation.z << 9;
+	axis.x = (fixed_t)sm->nv.x << 9;
+	axis.y = (fixed_t)sm->nv.y << 9;
+	axis.z = (fixed_t)sm->nv.z << 9;
+	rotationDir.x = (fixed_t)sm->rotation.x << 9;
+	rotationDir.y = (fixed_t)sm->rotation.y << 9;
+	rotationDir.z = (fixed_t)sm->rotation.z << 9;
 
 	const fixed_t ux = FixedMul(axis.x, rotationDir.x);
 	const fixed_t uy = FixedMul(axis.x, rotationDir.y);
@@ -1551,7 +1547,7 @@ void P_PreallocateMaces(int numMaces)
 
 // TODO:
 // Support for creating rows of chains (ceilingheight?) - ehh, not sure about this yet
-void P_AddMaceChain(mapthing_t *point, vector3_t *axis, vector3_t *rotation, VINT *args)
+void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, VINT *args)
 {
 	// First, determine the # of items in the chain
 	VINT mlength = D_abs(args[0]);

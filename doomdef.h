@@ -809,6 +809,11 @@ typedef struct
 
 typedef struct
 {
+	int8_t x, y, z;
+} vector3b_t;
+
+typedef struct
+{
 	fixed_t x, y, z, a;
 } vector4_t;
 

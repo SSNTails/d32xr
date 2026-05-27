@@ -357,7 +357,7 @@ static void P_SetupMace(mapthing_t *mthing)
 
 	D_memset(args, 0, sizeof(args));
 
-	vector3_t axis, rotation;
+	vector3b_t axis, rotation;
 
 	sector_t *frontsector = I_TO_SEC(sides[line->sidenum[0]].sector);
 	const mapvertex_t *v1 = &vertexes[line->v1];
@@ -371,9 +371,9 @@ static void P_SetupMace(mapthing_t *mthing)
     VINT rowoffset = (sides[line->sidenum[0]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[0]].rowoffset << 4);
     rowoffset >>= 4; // sign extend
 
-	axis.x = textureoffset;
-	axis.y = rowoffset;
-	axis.z = frontsector->floorheight >> FRACBITS;
+	axis.x = (int8_t)textureoffset;
+	axis.y = (int8_t)rowoffset;
+	axis.z = (int8_t)(frontsector->floorheight >> FRACBITS);
 
 	args[0] = D_abs(v1->x - v2->x); // # of links
 	args[1] = mthing->type >> 12;
@@ -397,9 +397,9 @@ static void P_SetupMace(mapthing_t *mthing)
 		args[6] = backtextureoffset;
 		args[9] = backsector->lightlevel << 1; // Swing speed
 
-		rotation.x = backtextureoffset;
-		rotation.y = backrowoffset;
-		rotation.z = backsector->floorheight >> FRACBITS;
+		rotation.x = (int8_t)backtextureoffset;
+		rotation.y = (int8_t)backrowoffset;
+		rotation.z = (int8_t)(backsector->floorheight >> FRACBITS);
 	}
 
 	if (mthing->options & MTF_AMBUSH)
