@@ -615,7 +615,7 @@ main_loop_handle_req:
         cmpi.w  #0xF000,d0
         bne.w   main_loop           /* pad in port 2, exit */
 1:
-        |bsr     chk_ports
+        bsr     chk_ports
         bra.w   main_loop
 
 | process request from Master SH2

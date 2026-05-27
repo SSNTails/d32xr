@@ -661,8 +661,8 @@ void Mars_DetectInputDevices(void)
 				}
 			}
 			mars_gamepadport[i] = i;
-			next_buttons_pressed[i] |= (val & (~previous_buttons[i]));
-			next_buttons_released[i] |= ((~val) & previous_buttons[i]);
+			next_buttons_pressed[i] |= (val & 0xF000) | ((val & 0x0FFF) & (~previous_buttons[i]));
+			next_buttons_released[i] |= (val & 0xF000) | (((~val) & 0x0FFF) & previous_buttons[i]);
 		}
 
 		MARS_SYS_COMM0 = ++ctrl_wait;
@@ -699,6 +699,7 @@ int Mars_ReadController(int ctrl)
 {
 	int val;
 	int port;
+	int ctrl_type;
 
 	if (ctrl < 0 || ctrl >= MARS_MAX_CONTROLLERS)
 		return -1;
@@ -707,8 +708,10 @@ int Mars_ReadController(int ctrl)
 	if (port < 0)
 		return -1;
 
-	val = (next_buttons_pressed[port] & (~previous_buttons[port]))
-		| ((~next_buttons_released[port]) & previous_buttons[port]);
+	val = ((next_buttons_pressed[port] & (~previous_buttons[port]))
+		| ((~next_buttons_released[port]) & previous_buttons[port]))
+		& 0x0FFF
+		| (next_buttons_pressed[port] & 0xF000);
 
 	next_buttons_pressed[port] = 0;
 	next_buttons_released[port] = 0;
