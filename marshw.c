@@ -33,9 +33,11 @@ static volatile uint16_t mars_activescreen = 0;
 
 static char mars_gamepadport[MARS_MAX_CONTROLLERS];
 
-static volatile uint16_t next_buttons_pressed[2];
-static volatile uint16_t next_buttons_released[2];
-static volatile uint16_t previous_buttons[2];
+static volatile uint16_t next_buttons_pressed[MARS_MAX_CONTROLLERS];
+static volatile uint16_t next_buttons_released[MARS_MAX_CONTROLLERS];
+static volatile uint16_t previous_buttons[MARS_MAX_CONTROLLERS];
+
+static volatile int analog[MARS_MAX_CONTROLLERS];
 
 volatile uint8_t legacy_emulator = 0;
 
@@ -235,8 +237,10 @@ void Mars_Init(void)
 	MARS_SYS_COMM15_BYTE = 0;
 
 	/* no controllers or mouse by default */
-	for (i = 0; i < MARS_MAX_CONTROLLERS; i++)
+	for (i = 0; i < MARS_MAX_CONTROLLERS; i++) {
 		mars_gamepadport[i] = -1;
+		previous_buttons[i] = 0xF000;
+	}
 
 	//SH2_WDT_WTCSR_TCNT = 0xA518; /* WDT TCSR = clr OVF, IT mode, timer off, clksel = Fs/2 */
 	
@@ -610,23 +614,75 @@ void Mars_DetectInputDevices(void)
 	{
 		/* wait on COMM0 */
 		while (MARS_SYS_COMM0 != ctrl_wait);
-
 		int val = MARS_SYS_COMM2;
 
 		next_buttons_pressed[i] = 0;
 		next_buttons_released[i] = 0;
 
 		if (val == 0xF000) {
-			previous_buttons[i] = 0;
+			// No controller found.
+			previous_buttons[i] = 0xF000;
 		}
 		else {
+			if ((val & 0xF000) != (previous_buttons[i] & 0xF000)) {
+				if ((val & 0xF000) == SEGA_CTRL_ANALOG) {
+					// XE-1AP controller found.
+					button_jump = XE_BT_A;
+					button_spin = XE_BT_C;
+					button_accelerate = XE_BT_B;
+					button_decelerate = XE_BT_D;
+					button_pan_left = XE_BT_B_PRIME;
+					button_pan_right = XE_BT_A_PRIME;
+					button_start = XE_BT_START;
+					button_mode = XE_BT_SELECT;
+#ifdef SHOW_DISCLAIMER
+					button_cheat = 0;
+#else
+					button_cheat = XE_BT_E1;
+#endif
+					button_menu_next = XE_BT_B;
+					button_menu_back = XE_BT_A;
+				}
+				else {
+					// Standard 3/6 button controller found.
+					button_spin = BT_B;
+					button_accelerate = BT_Y;
+					button_decelerate = 0;
+					button_pan_left = BT_X;
+					button_pan_right = BT_Z;
+					button_start = BT_START;
+					button_mode = BT_MODE;
+					button_menu_next = BT_B;
+					button_menu_back = BT_A;
+#ifdef SHOW_DISCLAIMER
+					button_jump = BT_A | BT_C;
+					button_cheat = 0;
+#else
+					button_jump = BT_C;
+					button_cheat = BT_A;
+#endif
+				}
+			}
 			mars_gamepadport[i] = i;
-			next_buttons_pressed[i] |= (val & (~previous_buttons[i]));
-			next_buttons_released[i] |= ((~val) & previous_buttons[i]);
+			next_buttons_pressed[i] |= (val & 0xF000) | ((val & 0x0FFF) & (~previous_buttons[i]));
+			next_buttons_released[i] |= (val & 0xF000) | (((~val) & 0x0FFF) & previous_buttons[i]);
 		}
 
 		MARS_SYS_COMM0 = ++ctrl_wait;
-		++ctrl_wait;
+		ctrl_wait++;
+
+		// Read analog values
+		while (MARS_SYS_COMM0 != ctrl_wait);
+		val = MARS_SYS_COMM2;	// XXXX xxxx
+		analog[i] = val << 16;
+		MARS_SYS_COMM0 = ++ctrl_wait;
+		ctrl_wait++;
+
+		while (MARS_SYS_COMM0 != ctrl_wait);
+		val = MARS_SYS_COMM2;	// YYYY yyyy TTTT tttt
+		analog[i] |= val;
+		MARS_SYS_COMM0 = ++ctrl_wait;
+		ctrl_wait++;
 	}
 
 	/* swap controller 1 and 2 around if the former isn't present */
@@ -635,6 +691,11 @@ void Mars_DetectInputDevices(void)
 		mars_gamepadport[0] = mars_gamepadport[1];
 		mars_gamepadport[1] = -1;
 	}
+}
+
+int Mars_ReadControllerAnalog(int ctrl)
+{
+	return analog[ctrl];
 }
 
 int Mars_ReadController(int ctrl)
@@ -649,8 +710,10 @@ int Mars_ReadController(int ctrl)
 	if (port < 0)
 		return -1;
 
-	val = (next_buttons_pressed[port] & (~previous_buttons[port]))
-		| ((~next_buttons_released[port]) & previous_buttons[port]);
+	val = ((next_buttons_pressed[port] & (~previous_buttons[port]))
+		| ((~next_buttons_released[port]) & previous_buttons[port]))
+		& 0x0FFF
+		| (next_buttons_pressed[port] & 0xF000);
 
 	next_buttons_pressed[port] = 0;
 	next_buttons_released[port] = 0;

@@ -266,7 +266,7 @@ void O_Control (player_t *player)
 	buttons = ticbuttons[playernum] & MENU_BTNMASK;
 	oldbuttons = oldticbuttons[playernum] & MENU_BTNMASK;
 	
-	if ((buttons & BT_START) && !(oldbuttons & BT_START) && !(buttons & BT_MODE))
+	if ((buttons & BT_ACTION_START) && !(oldbuttons & BT_ACTION_START) && !(buttons & BT_ACTION_MODE))
 	{
 		optionsMenuOn = !optionsMenuOn;
 
@@ -296,7 +296,7 @@ void O_Control (player_t *player)
 		return;
 
 /* clear buttons so player isn't moving aroung */
-	ticbuttons[playernum] &= BT_START;	/* leave option status alone */
+	ticbuttons[playernum] &= BT_ACTION_START;	/* leave option status alone */
 
 	if (playernum != curplayer)
 		return;
@@ -336,7 +336,7 @@ void O_Control (player_t *player)
 	buttons = ticrealbuttons & MENU_BTNMASK;
 	oldbuttons = oldticrealbuttons & MENU_BTNMASK;
 
-	if (buttons & (BT_B | BT_LMBTN) && !(oldbuttons & (BT_B | BT_LMBTN)))
+	if (buttons & BT_ACTION_MENU_NEXT && !(oldbuttons & BT_ACTION_MENU_NEXT))
 	{
 		int itemno = menuscr->firstitem + cursorpos;
 		if (menuscr->numitems > 0 && menuitem[itemno].screen != ms_none)
@@ -354,7 +354,7 @@ void O_Control (player_t *player)
 		}
 	}
 
-	if (buttons & (BT_A | BT_RMBTN) && !(oldbuttons & (BT_A | BT_RMBTN)))
+	if (buttons & BT_ACTION_MENU_BACK && !(oldbuttons & BT_ACTION_MENU_BACK))
 	{
 		if (screenpos != ms_main)
 		{
@@ -390,7 +390,7 @@ void O_Control (player_t *player)
 	cursordelay = MOVEWAIT;
 
 /* check for movement */
-	if (! (buttons & (BT_UP| BT_DOWN| BT_LEFT| BT_RIGHT) ) )
+	if (! (buttons & (BT_ACTION_UP| BT_ACTION_DOWN| BT_ACTION_LEFT| BT_ACTION_RIGHT) ) )
 		movecount = 0;		/* move immediately on next press */
 	else
 	{
@@ -399,18 +399,18 @@ void O_Control (player_t *player)
 		slider_t*slider = menuitem[itemno].slider ? &sliders[menuitem[itemno].slider-1] : NULL;
 		int oldcursorpos = cursorpos;
 
-		if (slider && (buttons & (BT_RIGHT|BT_LEFT)))
+		if (slider && (buttons & (BT_ACTION_RIGHT|BT_ACTION_LEFT)))
 		{
 			boolean sliderchange = false;
 
-			if (buttons & BT_RIGHT)
+			if (buttons & BT_ACTION_RIGHT)
 			{
 				if (++slider->curval > slider->maxval)
 					slider->curval = slider->maxval;
 				else
 					sliderchange = true;
 			}
-			if (buttons & BT_LEFT)
+			if (buttons & BT_ACTION_LEFT)
 			{
 				if (--slider->curval < 0)
 					slider->curval = 0;
@@ -457,7 +457,7 @@ void O_Control (player_t *player)
 		{
 			if (menuscr->numitems > 0)
 			{
-				if (buttons & BT_DOWN)
+				if (buttons & BT_ACTION_DOWN)
 				{
 					if (++cursorpos == menuscr->numitems)
 					{
@@ -466,7 +466,7 @@ void O_Control (player_t *player)
 					}
 				}
 
-				if (buttons & BT_UP)
+				if (buttons & BT_ACTION_UP)
 				{
 					if (--cursorpos == -1)
 					{
@@ -481,7 +481,7 @@ void O_Control (player_t *player)
 				int oldmusictype = o_musictype;
 				int oldsfxdriver = o_sfxdriver;
 
-				if (buttons & BT_RIGHT)
+				if (buttons & BT_ACTION_RIGHT)
 				{
 					switch (itemno) {
 					case mi_music:
@@ -497,7 +497,7 @@ void O_Control (player_t *player)
 					}
 				}
 
-				if (buttons & BT_LEFT)
+				if (buttons & BT_ACTION_LEFT)
 				{
 					switch (itemno) {
 					case mi_music:
@@ -524,7 +524,7 @@ void O_Control (player_t *player)
 			}
 			else if (screenpos == ms_main)
 			{
-				if (buttons & BT_RIGHT)
+				if (buttons & BT_ACTION_RIGHT)
 				{
 					switch (itemno) {
 						case mi_camerapan:
@@ -536,7 +536,7 @@ void O_Control (player_t *player)
 					}
 				}
 
-				if (buttons & BT_LEFT)
+				if (buttons & BT_ACTION_LEFT)
 				{
 					switch (itemno) {
 						case mi_camerapan:
@@ -552,7 +552,7 @@ void O_Control (player_t *player)
 			{
 				int oldanamorphicview = anamorphicview;
 
-				if (buttons & BT_RIGHT)
+				if (buttons & BT_ACTION_RIGHT)
 				{
 					switch (itemno) {
 					case mi_anamorphic:
@@ -564,7 +564,7 @@ void O_Control (player_t *player)
 					}
 				}
 
-				if (buttons & BT_LEFT)
+				if (buttons & BT_ACTION_LEFT)
 				{
 					switch (itemno) {
 					case mi_anamorphic:

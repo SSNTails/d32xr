@@ -519,7 +519,7 @@ main_loop_start:
 
 main_loop:
         tst.b   need_ctrl_int
-        beq.b   main_loop_bump_fm
+        beq.w   main_loop_bump_fm
         move.b  #0,need_ctrl_int
         /* send controller values to primary sh2 */
         nop                         /* prevent soft lock in Gens (why does this work?) */
@@ -535,17 +535,49 @@ main_loop:
         move.w  0xA15120,d0         /* wait on handshake in COMM0 */
         cmpi.w  #0xFF01,d0
         bne.b   11b
-        move.w  ctrl2_val,0xA15122  /* controller 2 value in COMM2 */
+12:
+        move.w  ctrl1_val_analog_high,0xA15122  /* controller 1 value in COMM2 */
         move.w  #0xFF02,0xA15120
-20:
+13:
         move.w  0xA15120,d0         /* wait on handshake in COMM0 */
-        cmpi.w  #0xA55A,d0
-        bne.b   20b
+        cmpi.w  #0xFF03,d0
+        bne.b   13b
+14:
+        move.w  ctrl1_val_analog_low,0xA15122  /* controller 1 value in COMM2 */
+        move.w  #0xFF04,0xA15120
+15:
+        move.w  0xA15120,d0         /* wait on handshake in COMM0 */
+        cmpi.w  #0xFF05,d0
+        bne.b   15b
+20:
+        move.w  ctrl2_val,0xA15122  /* controller 2 value in COMM2 */
+        move.w  #0xFF06,0xA15120
+21:
+        move.w  0xA15120,d0         /* wait on handshake in COMM0 */
+        cmpi.w  #0xFF07,d0
+        bne.b   21b
+22:
+        move.w  ctrl2_val_analog_high,0xA15122  /* controller 1 value in COMM2 */
+        move.w  #0xFF08,0xA15120
+23:
+        move.w  0xA15120,d0         /* wait on handshake in COMM0 */
+        cmpi.w  #0xFF09,d0
+        bne.b   23b
+24:
+        move.w  ctrl2_val_analog_low,0xA15122  /* controller 1 value in COMM2 */
+        move.w  #0xFF0A,0xA15120
+25:
+        move.w  0xA15120,d0         /* wait on handshake in COMM0 */
+        cmpi.w  #0xFF0B,d0
+        bne.b   25b
+29:
         /* done */
         move.w  #0x5AA5,0xA15120
 30:
         cmpi.w  #0x5AA5,0xA15120
         beq.b   30b
+
+        move.w  #0,0xA15120
 
 main_loop_bump_fm:
         tst.b   need_bump_fm
@@ -583,7 +615,7 @@ main_loop_handle_req:
         cmpi.w  #0xF000,d0
         bne.w   main_loop           /* pad in port 2, exit */
 1:
-        |bsr     chk_ports
+        bsr     chk_ports
         bra.w   main_loop
 
 | process request from Master SH2
@@ -591,6 +623,8 @@ handle_req:
         moveq   #0,d1
         move.w  d0,-(sp)
         move.b  (sp)+,d1
+        cmpi.b  #0x3F,d1
+        bhi.w   main_loop_handle_req
         add.w   d1,d1
         move.w  prireqtbl(pc,d1.w),d1
         jmp     prireqtbl(pc,d1.w)
@@ -3390,6 +3424,7 @@ vert_blank:
         lea     0xA10003,a0
         bsr     get_pad
         move.w  d2,ctrl1_val      /* controller 1 current value */
+        move.l  d1,ctrl1_val_analog
 0:
         tst.b   net_type
         bne.b   1f               /* networking enabled, ignore port 2 */
@@ -3398,8 +3433,9 @@ vert_blank:
         cmpi.w  #0xF000,d0
         beq.b   1f               /* no pad in port 2 (or mouse) */
         lea     0xA10005,a0
-        bsr     get_pad
+        |bsr     get_pad
         move.w  d2,ctrl2_val     /* controller 2 current value */
+        move.l  d1,ctrl2_val_analog
 1:
         /* if SCD present, generate IRQ 2 */
         tst.w   gen_lvl2
@@ -3438,16 +3474,24 @@ vert_blank:
 
 | get current pad value
 | entry: a0 = pad control port
-| exit:  d2 = pad value (0 0 0 1 M X Y Z S A C B R L D U) or (0 0 0 0 0 0 0 0 S A C B R L D U)
+| exit:  d2 = pad value (0  0  0  1  M  X  Y  Z  S  A  C  B  R  L  D  U)   -- Six button
+|                    or (0  0  0  0  0  0  0  0  S  A  C  B  R  L  D  U)   -- Three button
+|                    or (1  0  0  0  0  0  A  B  A' B' C  D  E1 E2 St Se)  -- XE-1AP buttons
+| exit:  d1 = pad value (X  X  X  X  X  X  X  X  Y  Y  Y  Y  Y  Y  Y  Y  T  T  T  T  T  T  T  T) -- XE-1AP axis
 get_pad:
         bsr.b   get_input       /* - 0 s a 0 0 d u - 1 c b r l d u */
+        cmpi.w  #0,d0
+        bge.s   1f
+        move.w  d0,d2           /* XE-1AP */
+        rts
+1:
         move.w  d0,d1
         andi.w  #0x0C00,d0
         bne.b   no_pad
-        bsr.b   get_input       /* - 0 s a 0 0 d u - 1 c b r l d u */
-        bsr.b   get_input       /* - 0 s a 0 0 0 0 - 1 c b m x y z */
+        bsr.b   get_sega_input       /* - 0 s a 0 0 d u - 1 c b r l d u */
+        bsr.b   get_sega_input       /* - 0 s a 0 0 0 0 - 1 c b m x y z */
         move.w  d0,d2
-        bsr.b   get_input       /* - 0 s a 1 1 1 1 - 1 c b r l d u */
+        bsr.b   get_sega_input       /* - 0 s a 1 1 1 1 - 1 c b r l d u */
         andi.w  #0x0F00,d0      /* 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 */
         cmpi.w  #0x0F00,d0
         beq.b   common          /* six button pad */
@@ -3460,6 +3504,8 @@ common:
         lsr.w   #6,d1           /* 0 0 0 0 0 0 0 0 s a 0 0 0 0 0 0 */
         or.w    d1,d2           /* 0 0 0 0 m x y z s a c b r l d u */
         eori.w  #0x1FFF,d2      /* 0 0 0 1 M X Y Z S A C B R L D U */
+get_pad_done:
+        moveq   #0,d1           /* No analog */
         rts
 
 no_pad:
@@ -3467,7 +3513,7 @@ no_pad:
         rts
 
 | read single phase from controller
-get_input:
+get_sega_input:
         move.b  #0x00,(a0)
         nop
         nop
@@ -3475,6 +3521,127 @@ get_input:
         move.b  #0x40,(a0)
         lsl.w   #8,d0
         move.b  (a0),d0
+        rts
+
+get_input:
+        moveq   #0,d0
+        moveq   #0,d1
+
+        bsr.s   get_sega_input
+
+        cmpi.w  #0x2F6F,d0
+        beq.w   get_xe1ap_input
+        rts
+
+get_xe1ap_input:
+        move.l  a1,-(sp)
+        move.l  d2,-(sp)
+        move.l  d3,-(sp)
+        move.l  d4,-(sp)
+        move.l  d5,-(sp)
+        move.l  d6,-(sp)
+
+        moveq   #0,d0
+        moveq   #0,d2
+        moveq   #0,d3
+        moveq   #0,d4
+        moveq   #0,d5
+        moveq   #0,d6
+
+        lea     xe1ap_buffer,a1
+        moveq   #5,d2
+        bclr    #6,(a0)
+
+get_xe1ap_input_loop:
+        move.w  #0x320,d1
+check_xe1ap_1:
+        btst    #4,(a0)
+        dbeq    d1,check_xe1ap_1
+        bne.w   get_xe1ap_input_done
+check_xe1ap_2:
+        btst    #5,(a0)
+        dbeq    d1,check_xe1ap_2
+        bne.w   get_xe1ap_input_done
+
+        | After Burner Complete -- 0x1F4CC
+0:
+        move.b  (a0),d0         | First read
+        andi.b  #0xF,d0
+        move.b  d0,(a1)+
+1:
+        btst    #4,(a0)
+        dbne    d1,1b
+        beq.w   get_xe1ap_input_done
+2:
+        btst    #5,(a0)
+        dbeq    d1,2b
+        bne.w   get_xe1ap_input_done
+3:
+        move.b  (a0),d0         | Second read
+        andi.b  #0xF,d0
+        move.b  d0,(a1)+
+
+        bset.b  #6,(a0)
+        dbf     d2,get_xe1ap_input_loop
+
+organize_xe1ap_buttons:
+        lea     xe1ap_buffer,a1
+        moveq   #0,d0
+        moveq   #0,d1
+        moveq   #0,d3
+
+        move.b  (a1)+,d0        | E1, E2, St, Se
+        andi.w  #0xFF0F,d0
+        eori.w  #0x000F,d0
+        ror.w   #4,d0
+        move.b  (a1)+,d0        | A*, B*, C,  D
+        andi.w  #0xFF0F,d0
+        eori.w  #0x000F,d0
+        ror.w   #2,d0
+
+        move.b  (a1)+,d1        | X   X   X   X
+        andi.l  #0xFFFFFF0F,d1
+        eori.l  #0x8,d1         | Make X signed
+        lsl.l   #8,d1
+        move.b  (a1)+,d1        | Y   Y   Y   Y
+        andi.l  #0xFFFFFF0F,d1
+        eori.l  #0x8,d1         | Make Y signed
+        lsl.l   #8,d1
+        move.b  (a1)+,d1        | 0   0   0   0
+        move.b  (a1)+,d1        | T   T   T   T
+        andi.l  #0xFFFFFF0F,d1
+        eori.l  #0x8,d1         | Make T signed
+        lsl.l   #4,d1
+
+        move.b  (a1)+,d3        | x   x   x   x
+        andi.l  #0xFFFFFF0F,d3
+        lsl.l   #8,d3
+        move.b  (a1)+,d3        | y   y   y   y
+        andi.l  #0xFFFFFF0F,d3
+        lsl.l   #8,d3
+        move.b  (a1)+,d3        | 0   0   0   0
+        move.b  (a1)+,d3        | t   t   t   t
+        andi.l  #0xFFFFFF0F,d3
+
+        or.l    d3,d1           | XXXXxxxx YYYYyyyy TTTTtttt
+
+        move.b  (a1)+,d0        | 1   1   1   1
+        move.b  (a1)+,d0        | A,  B,  A', B'
+        andi.w  #0xFF0F,d0
+        eori.w  #0x000F,d0
+        rol.w   #6,d0           | A  B  A' B' C  D  St Se
+
+        |andi.l  #0x3FF,d0
+        |eori.l  #0x3FF,d0       | Invert bits
+        ori.w   #0x8000,d0      | Mark this as XE-1AP
+
+get_xe1ap_input_done:
+        move.l  (sp)+,d6
+        move.l  (sp)+,d5
+        move.l  (sp)+,d4
+        move.l  (sp)+,d3
+        move.l  (sp)+,d2
+        move.l  (sp)+,a1
         rts
 
 | get_port: returns ID bits of controller pointed to by a0 in d0
@@ -3575,6 +3742,31 @@ ctrl1_val:
         dc.w    0
 ctrl2_val:
         dc.w    0
+
+ctrl1_val_analog:       | X, Y, T bytes for XE-1AP
+ctrl1_val_analog_high:
+        dc.b    0
+ctrl1_val_analog_x:
+        dc.b    0
+ctrl1_val_analog_low:
+ctrl1_val_analog_y:
+        dc.b    0
+ctrl1_val_analog_t:
+        dc.b    0
+
+ctrl2_val_analog:       | X, Y, T bytes for XE-1AP
+ctrl2_val_analog_high:
+        dc.b    0
+ctrl2_val_analog_x:
+        dc.b    0
+ctrl2_val_analog_low:
+ctrl2_val_analog_y:
+        dc.b    0
+ctrl2_val_analog_t:
+        dc.b    0
+
+xe1ap_buffer:
+        .space  12
 
 net_rbix:
         dc.w    0

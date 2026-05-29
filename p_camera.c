@@ -200,6 +200,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	mobj_t *mo;
 	VINT newsubsec;
    const mobjinfo_t *caminfo = &mobjinfo[MT_CAMERA];
+	const int8_t analog_t = (player->pflags & PF_BRAKE || player->pflags & PF_STARTDASH) ? 0 : ticanalogt[playernum];
 
 	mo = player->mo;
    thiscam->distFromPlayer = P_AproxDistance3D(thiscam->x - mo->x, thiscam->y - mo->y, thiscam->z - mo->z);
@@ -220,7 +221,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
    }
    else
    {
-      if (!player->exiting && player->stillTimer > TICRATE/2 && !(player->buttons & (BT_CAMLEFT | BT_CAMRIGHT)))
+      if (!player->exiting && player->stillTimer > TICRATE/2 && !(player->buttons & (BT_ACTION_CAMLEFT | BT_ACTION_CAMRIGHT)))
          angle = focusangle = mo->angle;
 	  else if (player->pflags & PF_STARTDASH)
 	  	 angle = focusangle = mo->angle;
@@ -233,6 +234,11 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	camspeed = FRACUNIT >> 2;
 	camdist = cameraTargetDistance;
 	camheight = 20 << FRACBITS;
+
+	// Reduce the camera distance when looking up/down.
+	if (analog_t > 0x1F || analog_t < -0x1F) {
+		camdist -= D_abs(analog_t << 15);
+	}
 
    if (!player->exiting && player->stillTimer > TICRATE/2)
       camspeed >>= 2;
@@ -280,6 +286,14 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 			z = newsec->ceilingheight - caminfo->height-(11<<FRACBITS);
 	}
 
+	// Adjust camera height based on look up/down angle.
+	if (analog_t > 0x1F) {
+		z -= ((analog_t << 15) + (analog_t << 14));
+	}
+	else if (analog_t < -0x1F) {
+		z -= ((analog_t << 16));
+	}
+
 	if (thiscam->z < thiscam->floorz)
 		thiscam->z = thiscam->floorz;
 
@@ -299,9 +313,9 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	thiscam->momy = FixedMul(y - thiscam->y, camspeed);
 	thiscam->momz = FixedMul(z - thiscam->z, camspeed);
 
-   if ((player->buttons & BT_CAMLEFT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_LEFT))
+   if ((player->buttons & BT_ACTION_CAMLEFT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_ACTION_LEFT))
       P_ThrustValues(thiscam->angle - ANG90, -16*FRACUNIT * (invertCamera ? 1 : -1), &thiscam->momx, &thiscam->momy);
-   if ((player->buttons & BT_CAMRIGHT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_RIGHT))
+   if ((player->buttons & BT_ACTION_CAMRIGHT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_ACTION_RIGHT))
       P_ThrustValues(thiscam->angle - ANG90, 16*FRACUNIT * (invertCamera ? 1 : -1), &thiscam->momx, &thiscam->momy);
 
    if (player->pflags & PF_MACESPIN)
@@ -317,6 +331,11 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 			- (((mo->theight << FRACBITS) != mobjinfo[mo->type].height) ? (mobjinfo[mo->type].height - (mo->theight << FRACBITS)) >> 1 : 0));
 	else
 		angle = R_PointToAngle2(0, thiscam->z, dist, mo->z + (mobjinfo[mo->type].height >> 2));
+
+	// Set the look up/down angle based on the throttle position.
+	if (analog_t > 0x1F || analog_t < -0x1F) {
+		angle += (analog_t << 22);
+	}
 
    G_ClipAimingPitch((int*)&angle);
 

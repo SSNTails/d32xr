@@ -462,16 +462,17 @@ typedef enum
 #define PF_VERTICALFLIP 32 // May as well prepare...
 #define PF_SPINNING 64
 #define PF_GASPEDAL 128
-#define PF_USEDOWN 256
-#define PF_STARTDASH 512
-#define PF_JUMPDOWN 1024
-#define PF_TOUCHWATER 2048
-#define PF_DROWNED 4096
-#define PF_ELEMENTALBOUNCE 8192
-#define PF_CONTROLDISABLED 16384
-#define PF_MACESPIN 32768
-#define PF_CHANGESECTOR 65536
-#define PF_SPRINGSHELL 131072
+#define PF_BRAKE 256
+#define PF_USEDOWN 512
+#define PF_STARTDASH 1024
+#define PF_JUMPDOWN 2048
+#define PF_TOUCHWATER 4096
+#define PF_DROWNED 8192
+#define PF_ELEMENTALBOUNCE 16384
+#define PF_CONTROLDISABLED 32768
+#define PF_MACESPIN 65536
+#define PF_CHANGESECTOR 131072
+#define PF_SPRINGSHELL 262144
 
 boolean P_IsObjectOnGround(mobj_t *mo);
 int8_t P_MobjFlip(mobj_t *mo);
@@ -583,6 +584,11 @@ extern	int		frameon;
 extern	int		ticbuttons[MAXPLAYERS];
 extern	int		oldticbuttons[MAXPLAYERS];
 extern	int		ticrealbuttons, oldticrealbuttons; /* buttons for the console player before reading the demo file */
+
+extern	int8_t	ticanalogx[MAXPLAYERS];
+extern	int8_t	ticanalogy[MAXPLAYERS];
+extern	int8_t	ticanalogt[MAXPLAYERS];
+extern	int8_t	ticrealanalogx, ticrealanalogy, ticrealanalogt;
 
 int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		,  int (*ticker)(void), void (*drawer)(void)
@@ -1329,10 +1335,10 @@ enum
 	// hardware-agnostic game button actions
 	// transmitted over network
 	// should fit into a single word
-	BT_UP			= SEGA_CTRL_UP,
-	BT_DOWN			= SEGA_CTRL_DOWN,
-	BT_LEFT			= SEGA_CTRL_LEFT,
-	BT_RIGHT		= SEGA_CTRL_RIGHT,
+	BT_DPAD_UP		= SEGA_CTRL_DPAD_UP,
+	BT_DPAD_DOWN	= SEGA_CTRL_DPAD_DOWN,
+	BT_DPAD_LEFT	= SEGA_CTRL_DPAD_LEFT,
+	BT_DPAD_RIGHT	= SEGA_CTRL_DPAD_RIGHT,
 	BT_C			= SEGA_CTRL_C,
 	BT_B			= SEGA_CTRL_B,
 	BT_A			= SEGA_CTRL_A,
@@ -1342,13 +1348,32 @@ enum
 	BT_X			= SEGA_CTRL_X,
 	BT_MODE			= SEGA_CTRL_MODE,
 
-	BT_FLIP			= (SEGA_CTRL_A << 16),
-	BT_JUMP		    = (SEGA_CTRL_B << 16),
-	BT_SPIN			= (SEGA_CTRL_C << 16),
+	XE_BT_SELECT	= DEMPA_CTRL_SELECT,
+	XE_BT_START		= DEMPA_CTRL_START,
+	XE_BT_E2		= DEMPA_CTRL_E2,
+	XE_BT_E1		= DEMPA_CTRL_E1,
+	XE_BT_D			= DEMPA_CTRL_D,
+	XE_BT_C			= DEMPA_CTRL_C,
+	XE_BT_B_PRIME	= DEMPA_CTRL_B_PRIME,
+	XE_BT_A_PRIME	= DEMPA_CTRL_A_PRIME,
+	XE_BT_B			= DEMPA_CTRL_B,
+	XE_BT_A			= DEMPA_CTRL_A,
 
-	BT_CAMLEFT		= (SEGA_CTRL_X << 16),
-	BT_GASPEDAL		= (SEGA_CTRL_Y << 16),
-	BT_CAMRIGHT		= (SEGA_CTRL_Z << 16),
+	BT_ACTION_UP			= (1 << 16),
+	BT_ACTION_DOWN			= (1 << 17),
+	BT_ACTION_LEFT			= (1 << 18),
+	BT_ACTION_RIGHT			= (1 << 19),
+	BT_ACTION_JUMP		    = (1 << 20),
+	BT_ACTION_SPIN			= (1 << 21),
+	BT_ACTION_GASPEDAL		= (1 << 22),
+	BT_ACTION_BRAKE			= (1 << 23),
+	BT_ACTION_CAMLEFT		= (1 << 24),
+	BT_ACTION_CAMRIGHT		= (1 << 25),
+	BT_ACTION_FLIP			= (1 << 26),
+	BT_ACTION_START			= (1 << 27),
+	BT_ACTION_MODE			= (1 << 28),
+	BT_ACTION_MENU_NEXT		= (1 << 29),
+	BT_ACTION_MENU_BACK		= (1 << 30),
 
 	BT_LMBTN		= SEGA_CTRL_LMB,
 	BT_RMBTN		= SEGA_CTRL_RMB,
@@ -1358,7 +1383,19 @@ enum
 
 #endif
 
-#define MENU_BTNMASK (BT_RMBTN|BT_LMBTN|BT_MODE|BT_START|BT_A|BT_C|BT_B|BT_RIGHT|BT_LEFT|BT_DOWN|BT_UP)
+extern uint16_t button_jump;
+extern uint16_t button_spin;
+extern uint16_t button_accelerate;
+extern uint16_t button_decelerate;
+extern uint16_t button_pan_left;
+extern uint16_t button_pan_right;
+extern uint16_t button_start;
+extern uint16_t button_mode;
+extern uint16_t button_cheat;
+extern uint16_t button_menu_next;
+extern uint16_t button_menu_back;
+
+#define MENU_BTNMASK (BT_RMBTN|BT_LMBTN|BT_ACTION_MENU_BACK|BT_ACTION_MENU_NEXT|BT_ACTION_MODE|BT_ACTION_START|BT_ACTION_RIGHT|BT_ACTION_LEFT|BT_ACTION_DOWN|BT_ACTION_UP|BT_C)
 
 typedef enum
 {

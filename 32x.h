@@ -166,28 +166,40 @@
 #define SH2_DIVU_DVDNTH     (*(volatile long *)0xFFFFFF10)
 #define SH2_DIVU_DVDNTL     (*(volatile long *)0xFFFFFF14)
 
-#define SEGA_CTRL_UP        0x0001
-#define SEGA_CTRL_DOWN      0x0002
-#define SEGA_CTRL_LEFT      0x0004
-#define SEGA_CTRL_RIGHT     0x0008
-#define SEGA_CTRL_B         0x0010
-#define SEGA_CTRL_C         0x0020
-#define SEGA_CTRL_A         0x0040
-#define SEGA_CTRL_START     0x0080
-#define SEGA_CTRL_Z         0x0100
-#define SEGA_CTRL_Y         0x0200
-#define SEGA_CTRL_X         0x0400
-#define SEGA_CTRL_MODE      0x0800
+#define SEGA_CTRL_DPAD_UP       0x0001
+#define SEGA_CTRL_DPAD_DOWN     0x0002
+#define SEGA_CTRL_DPAD_LEFT     0x0004
+#define SEGA_CTRL_DPAD_RIGHT    0x0008
+#define SEGA_CTRL_B             0x0010
+#define SEGA_CTRL_C             0x0020
+#define SEGA_CTRL_A             0x0040
+#define SEGA_CTRL_START         0x0080
+#define SEGA_CTRL_Z             0x0100
+#define SEGA_CTRL_Y             0x0200
+#define SEGA_CTRL_X             0x0400
+#define SEGA_CTRL_MODE          0x0800
 
-#define SEGA_CTRL_TYPE      0xF000
-#define SEGA_CTRL_THREE     0x0000
-#define SEGA_CTRL_SIX       0x1000
-#define SEGA_CTRL_NONE      0xF000
+#define DEMPA_CTRL_SELECT       0x0001
+#define DEMPA_CTRL_START        0x0002
+#define DEMPA_CTRL_E2           0x0004
+#define DEMPA_CTRL_E1           0x0008
+#define DEMPA_CTRL_D            0x0010
+#define DEMPA_CTRL_C            0x0020
+#define DEMPA_CTRL_B_PRIME      0x0040
+#define DEMPA_CTRL_A_PRIME      0x0080
+#define DEMPA_CTRL_B            0x0100
+#define DEMPA_CTRL_A            0x0200
 
-#define SEGA_CTRL_LMB       0x00010000
-#define SEGA_CTRL_RMB       0x00020000
-#define SEGA_CTRL_MMB       0x00040000
-#define SEGA_CTRL_STARTMB   0x00080000
+#define SEGA_CTRL_TYPE          0xF000
+#define SEGA_CTRL_THREE         0x0000
+#define SEGA_CTRL_SIX           0x1000
+#define SEGA_CTRL_ANALOG        0x8000
+#define SEGA_CTRL_NONE          0xF000
+
+#define SEGA_CTRL_LMB           0x00010000
+#define SEGA_CTRL_RMB           0x00020000
+#define SEGA_CTRL_MMB           0x00040000
+#define SEGA_CTRL_STARTMB       0x00080000
 
 #ifdef __cplusplus
 extern "C" {

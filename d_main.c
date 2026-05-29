@@ -31,7 +31,9 @@ uint8_t cheats_enabled = 0;
 uint8_t cheat_metrics_button_index = 0;
 
 #define CHEAT_METRICS_SEQ_LENGTH	5
-const uint8_t cheat_metrics_sequence[CHEAT_METRICS_SEQ_LENGTH] = { BT_UP, BT_DOWN, BT_DOWN, BT_DOWN, BT_UP };
+const uint8_t cheat_metrics_sequence[CHEAT_METRICS_SEQ_LENGTH] = {
+		BT_DPAD_UP, BT_DPAD_DOWN, BT_DPAD_DOWN, BT_DPAD_DOWN, BT_DPAD_UP
+	};
 
 boolean		splitscreen = false;
 VINT		controltype = 0;		/* determine settings for BT_* */
@@ -57,9 +59,9 @@ int 		ticstart;
 unsigned configuration[NUMCONTROLOPTIONS][3] =
 {
 #ifdef SHOW_DISCLAIMER
-	{BT_SPIN, BT_JUMP, BT_SPIN},
+	{BT_ACTION_SPIN, BT_ACTION_JUMP, BT_ACTION_SPIN},
 #else
-	{BT_FLIP, BT_JUMP, BT_SPIN},
+	{BT_ACTION_FLIP, BT_ACTION_JUMP, BT_ACTION_SPIN},
 #endif
 };
 
@@ -338,6 +340,22 @@ int		frameon;
 int		ticbuttons[MAXPLAYERS];
 int		oldticbuttons[MAXPLAYERS];
 int		ticrealbuttons, oldticrealbuttons;
+int8_t	ticanalogx[MAXPLAYERS];
+int8_t	ticanalogy[MAXPLAYERS];
+int8_t	ticanalogt[MAXPLAYERS];
+int8_t	ticrealanalogx, ticrealanalogy, ticrealanalogt;
+
+uint16_t button_jump;
+uint16_t button_spin;
+uint16_t button_accelerate;
+uint16_t button_decelerate;
+uint16_t button_pan_left;
+uint16_t button_pan_right;
+uint16_t button_start;
+uint16_t button_mode;
+uint16_t button_cheat;
+uint16_t button_menu_next;
+uint16_t button_menu_back;
 
 #ifdef KIOSK_MODE
 uint16_t kiosk_timeout_count;
@@ -367,6 +385,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 	int		i;
 	int		exit;
 	int		buttons;
+	int		analog;
 	boolean firstdraw = true;
 
 /* */
@@ -442,6 +461,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		oldticrealbuttons = ticrealbuttons;
 
 		buttons = I_ReadControls();
+		analog = Mars_ReadControllerAnalog(0);
 
 #ifdef SKYDEBUG
 		if (!gamepaused && oldticrealbuttons == BT_MODE && buttons & BT_MODE) {
@@ -484,13 +504,21 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		}
 #endif
 
-		if (IsDemoModeType(DemoMode_Playback) && buttons & BT_START) {
+		if (IsDemoModeType(DemoMode_Playback) && buttons & BT_ACTION_START) {
 			exit = ga_exitdemo;
 			break;
 		}
 		
 		ticbuttons[consoleplayer] = buttons;
 		ticrealbuttons = buttons;
+
+		ticanalogx[consoleplayer] = (analog >> 16) & 0xFF;
+		ticanalogy[consoleplayer] = (analog >> 8) & 0xFF;
+		ticanalogt[consoleplayer] = analog & 0xFF;
+
+		ticrealanalogx = ticanalogx[consoleplayer];
+		ticrealanalogy = ticanalogy[consoleplayer];
+		ticrealanalogt = ticanalogt[consoleplayer];
 
 		if (IsTitleIntro()) {
 			if (oldticbuttons[0] == 0) {
@@ -649,8 +677,8 @@ int TIC_LevelSelect (void)
 	screenCount++;
 
 	if (gameaction == ga_nothing && !IsTransitionType(TransitionType_Leaving)) {
-		if ((ticrealbuttons & BT_START && !(oldticrealbuttons & BT_START))
-			|| (ticrealbuttons & BT_B && !(oldticrealbuttons & BT_B)))
+		if ((ticrealbuttons & BT_ACTION_START && !(oldticrealbuttons & BT_ACTION_START))
+			|| (ticrealbuttons & BT_ACTION_MENU_NEXT && !(oldticrealbuttons & BT_ACTION_MENU_NEXT)))
 		{
 			fadetime = 0;
 			SetTransition(TransitionType_Leaving);
@@ -700,7 +728,7 @@ int TIC_LevelSelect (void)
 	else {
 		int prev_selected_map = selected_map;
 
-		if (ticrealbuttons & BT_LEFT && !(oldticrealbuttons & BT_LEFT)) {
+		if (ticrealbuttons & BT_ACTION_LEFT && !(oldticrealbuttons & BT_ACTION_LEFT)) {
 			selected_map -= 1;
 			if (selected_map < 0) {
 				selected_map = SELECTABLE_MAP_COUNT-1;
@@ -712,7 +740,7 @@ int TIC_LevelSelect (void)
 			}
 #endif
 		}
-		else if (ticrealbuttons & BT_RIGHT && !(oldticrealbuttons & BT_RIGHT)) {
+		else if (ticrealbuttons & BT_ACTION_RIGHT && !(oldticrealbuttons & BT_ACTION_RIGHT)) {
 			selected_map += 1;
 #ifdef SHOW_DISCLAIMER
 			if (emeralds != 63 && selected_map == 6) {
@@ -1151,7 +1179,7 @@ int TIC_Compatibility(void)
 	screenCount++;
 
 	// Read directly from the controller. Works better in this function. Don't know why!
-	if ((Mars_ReadController(0) & BT_START)) {
+	if ((Mars_ReadController(0) & BT_ACTION_START)) {
 		return ga_closeprompt;
 	}
 

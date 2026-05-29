@@ -565,26 +565,57 @@ void P_PlayerMobjThink(mobj_t *mobj)
 void P_BuildMove(player_t *player)
 {
 	const int buttons = ticbuttons[playernum];
-//	const int oldbuttons = oldticbuttons[playernum];
+	const int8_t analog_x = ticanalogx[playernum];	// XE-1AP left analog stick, horizontal position.
+	const int8_t analog_y = ticanalogy[playernum];	// XE-1AP left analog stick, vertical position.
+	const int8_t analog_t = ticanalogt[playernum];	// XE-1AP throttle position.
 	mobj_t *mo;
 
 	{
 		player->forwardmove = player->sidemove = 0;
 
-		if (buttons & BT_RIGHT)
-			player->sidemove += FRACUNIT;
-		if (buttons & BT_LEFT)
-			player->sidemove -= FRACUNIT;
+		if (buttons & BT_ACTION_BRAKE) {
+			player->pflags |= PF_BRAKE;
+		}
+		else {
+			player->pflags &= ~PF_BRAKE;
 
-		if (buttons & BT_GASPEDAL)
-			player->pflags |= PF_GASPEDAL;
-		else
-			player->pflags &= ~PF_GASPEDAL;
+			if (buttons & BT_ACTION_GASPEDAL) {
+				player->pflags |= PF_GASPEDAL;
+			}
+			else {
+				player->pflags &= ~PF_GASPEDAL;
+			}
+		}
 
-		if (buttons & BT_UP)
+		if (analog_y < -0x1F || (analog_y < 0 && (analog_x < -0x1F || analog_x > 0x1F))) {
+			// Analog Y position above deadzone, or Y is above center while X is outside deadzone.
+			player->forwardmove -= ((FRACUNIT >> 7) * analog_y);
+		}
+		else if (analog_y > 0x1F || (analog_y > 0 && (analog_x < -0x1F || analog_x > 0x1F))) {
+			// Analog Y position below deadzone, or Y is above center while X is outside deadzone.
+			player->forwardmove -= (((FRACUNIT >> 7) * analog_y) + (FRACUNIT >> 7));
+		}
+		else if (buttons & BT_ACTION_UP) {
 			player->forwardmove += FRACUNIT;
-		if (buttons & BT_DOWN)
+		}
+		else if (buttons & BT_ACTION_DOWN) {
 			player->forwardmove -= FRACUNIT;
+		}
+
+		if (analog_x < -0x1F || (analog_x < 0 && (analog_y < -0x1F || analog_y > 0x1F))) {
+			// Analog X position left of deadzone, or X is above center while Y is outside deadzone.
+			player->sidemove += ((FRACUNIT >> 7) * analog_x);
+		}
+		else if (analog_x > 0x1F || (analog_x > 0 && (analog_y < -0x1F || analog_y > 0x1F))) {
+			// Analog X position right of deadzone, or X is above center while Y is outside deadzone.
+			player->sidemove += (((FRACUNIT >> 7) * analog_x) + (FRACUNIT >> 7));
+		}
+		else if (buttons & BT_ACTION_LEFT) {
+			player->sidemove -= FRACUNIT;
+		}
+		else if (buttons & BT_ACTION_RIGHT) {
+			player->sidemove += FRACUNIT;
+		}
 	}
 
 	/* */
@@ -592,7 +623,7 @@ void P_BuildMove(player_t *player)
 	/* */
 	mo = player->mo;
 
-		if (D_abs(REALMOMX(player)) < STOPSPEED && D_abs(REALMOMY(player)) < STOPSPEED && player->forwardmove == 0 && player->sidemove == 0 && !(player->pflags & PF_GASPEDAL) && !(player->pflags & PF_SPINNING))
+		if (D_abs(REALMOMX(player)) < STOPSPEED && D_abs(REALMOMY(player)) < STOPSPEED && player->forwardmove == 0 && player->sidemove == 0 && (!(player->pflags & PF_GASPEDAL) || (player->pflags & PF_BRAKE)) && !(player->pflags & PF_SPINNING))
 		{ /* if in a walking frame, stop moving */
 			if (mo->state >= S_PLAY_RUN1 && mo->state <= S_PLAY_RUN8)
 				P_SetMobjState(mo, S_PLAY_STND);
@@ -601,7 +632,7 @@ void P_BuildMove(player_t *player)
 	const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
 	if (leveltime > delaytime)
 	{
-		if (!(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL) || player->buttons & BT_CAMLEFT || player->buttons & BT_CAMRIGHT))
+		if (!(player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL) || player->buttons & BT_ACTION_CAMLEFT || player->buttons & BT_ACTION_CAMRIGHT))
 		{
 			if (!(REALMOMX(player) > STOPSPEED || REALMOMX(player) < -STOPSPEED || REALMOMY(player) > STOPSPEED || REALMOMY(player) < -STOPSPEED || player->mo->momz > STOPSPEED || player->mo->momz < -STOPSPEED))
 				player->stillTimer++;
@@ -737,10 +768,11 @@ static void P_DoSpinDash(player_t *player)
 {
 	const boolean onground = (player->mo->z <= player->mo->floorz);
 	const int buttons = player->buttons;
+	const int8_t analog_t = ticanalogt[playernum];	// XE-1AP throttle position.
 
 	if (!player->exiting && !(player->mo->state == mobjinfo[player->mo->type].painstate && player->powers[pw_flashing]))
 	{
-		if ((buttons & BT_SPIN) && player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
+		if (((buttons & BT_ACTION_SPIN) || ((player->pflags & PF_BRAKE) && analog_t < -0x1F)) && player->speed < 5*FRACUNIT && !player->mo->momz && onground && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
 		{
 			P_ResetScore(player);
 			if (!spindashPlayerOriented) {
@@ -757,7 +789,7 @@ static void P_DoSpinDash(player_t *player)
 			if (player->pflags & PF_VERTICALFLIP)
 				player->mo->z = player->mo->ceilingz - P_GetPlayerSpinHeight();
 		}
-		else if ((buttons & BT_SPIN) && (player->pflags & PF_STARTDASH))
+		else if (((buttons & BT_ACTION_SPIN) || analog_t < -0x1F) && (player->pflags & PF_STARTDASH))
 		{
 			if (player->speed > 5*FRACUNIT)
 			{
@@ -782,7 +814,7 @@ static void P_DoSpinDash(player_t *player)
 		// If not moving up or down, and travelling faster than a speed of four while not holding
 		// down the spin button and not spinning.
 		// AKA Just go into a spin on the ground, you idiot. ;)
-		else if ((buttons & BT_SPIN) && !player->mo->momz && onground && player->speed > 5*FRACUNIT && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
+		else if ((buttons & BT_ACTION_SPIN) && !player->mo->momz && onground && player->speed > 5*FRACUNIT && !(player->pflags & PF_USEDOWN) && !(player->pflags & PF_SPINNING))
 		{
 			P_ResetScore(player);
 			player->pflags |= PF_SPINNING;
@@ -811,10 +843,12 @@ static void P_DoSpinDash(player_t *player)
 		}
 
 		// Catapult the player from a spindash rev!
-		if (onground && !(player->pflags & PF_USEDOWN) && player->dashSpeed && (player->pflags & PF_STARTDASH) && (player->pflags & PF_SPINNING))
+		if (onground && !(player->pflags & PF_USEDOWN) && player->dashSpeed && (player->pflags & PF_STARTDASH) && (player->pflags & PF_SPINNING) && analog_t >= -0x1F)
 		{
 			player->pflags &= ~PF_STARTDASH;
-			P_InstaThrust(player->mo, player->mo->angle, player->dashSpeed << FRACBITS); // catapult forward ho!!
+			if (!(player->pflags & PF_BRAKE)) {
+				P_InstaThrust(player->mo, player->mo->angle, player->dashSpeed << FRACBITS); // catapult forward ho!!
+			}
 			S_StartSound(player->mo, sfx_s3k_b6);
 			player->dashSpeed = 0;
 		}
@@ -1085,7 +1119,7 @@ static void P_DoJumpStuff(player_t *player)
 {
 	const int buttons = player->buttons;
 
-	if (buttons & BT_JUMP)
+	if (buttons & BT_ACTION_JUMP)
 	{
 		if (!(player->pflags & PF_JUMPDOWN))
 		{
@@ -1296,6 +1330,10 @@ void P_SpawnSkidDust(player_t *player)
 
 void P_MovePlayer(player_t *player)
 {
+	const int8_t analog_x = ticanalogx[playernum];	// XE-1AP left analog stick, horizontal position.
+	const int8_t analog_y = ticanalogy[playernum];	// XE-1AP left analog stick, vertical position.
+	const int8_t analog_t = ticanalogt[playernum];	// XE-1AP throttle position.
+
 	if (player->onconveyor == 4 && !P_IsObjectOnGround(player->mo)) // Actual conveyor belt
 		player->cmomx = player->cmomy = 0;
 
@@ -1337,6 +1375,9 @@ void P_MovePlayer(player_t *player)
 			if (player->forwardmove || player->sidemove)
 			{
 				fixed_t acc = FRACUNIT >> 3;
+				if (player->pflags & PF_BRAKE) {
+					acc = 0;
+				}
 				if (player->powers[pw_sneakers])
 					acc <<= 1;
 
@@ -1392,11 +1433,18 @@ void P_MovePlayer(player_t *player)
 					player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, player->mo->x + player->mo->momx, player->mo->y + player->mo->momy);*/
 
 			fixed_t acc = 6144 * 4;//FRACUNIT / 2;
+			if (player->pflags & PF_BRAKE) {
+				acc = 0;
+			}
 			if (player->powers[pw_sneakers])
 				acc <<= 1;
 			if (player->powers[pw_underwater])
 				acc >>= 2;
 	//		angle_t speedDir = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+
+			if ((player->pflags & PF_BRAKE) && D_abs(REALMOMX(player)) > STOPSPEED && D_abs(REALMOMY(player)) > STOPSPEED) {
+				controlAngle ^= 0x80000000;
+			}
 
 			if (!(player->pflags & PF_GASPEDAL) && !(player->pflags & PF_JUMPED))
 			{
@@ -1418,6 +1466,23 @@ void P_MovePlayer(player_t *player)
 				fixed_t moveVecX = 0;
 				fixed_t moveVecY = 0;
 				P_ThrustValues(controlAngle, speed, &moveVecX, &moveVecY);
+
+				if (!(player->pflags & PF_BRAKE))
+				{
+					if (analog_x < -7) {
+						moveVecX += (683 * analog_x) - 21888;
+					}
+					else if (analog_x > 7) {
+						moveVecX += (683 + (683 * analog_x)) - 21888;
+					}
+
+					if (analog_y < -0x1F || (analog_y < -0xF && (analog_x < -0x1F || analog_x > 0x1F))) {
+						moveVecY -= (683 * analog_y) - 21888;
+					}
+					else if (analog_y > 0x1F || (analog_y > 0xF && (analog_x < -0x1F || analog_x > 0x1F))) {
+						moveVecY -= (683 + (683 * analog_y)) - 21888;
+					}
+				}
 
 				player->mo->momx = REALMOMX(player);
 				player->mo->momy = REALMOMY(player);
@@ -1453,8 +1518,9 @@ void P_MovePlayer(player_t *player)
 		}
 	}
 
-	if ((player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL)) && (player->mo->state >= S_PLAY_STND && player->mo->state <= S_PLAY_TAP2))
+	if ((player->forwardmove || player->sidemove || (player->pflags & PF_GASPEDAL)) && !(player->pflags & PF_BRAKE) && (player->mo->state >= S_PLAY_STND && player->mo->state <= S_PLAY_TAP2)) {
 		P_SetMobjState(player->mo, S_PLAY_RUN1);
+	}
 
 	// Make sure you're not teetering when you shouldn't be.
 	if ((player->mo->state == S_PLAY_TEETER1 || player->mo->state == S_PLAY_TEETER2) && (REALMOMX(player) || REALMOMY(player) || player->mo->momz))
@@ -1555,7 +1621,7 @@ void P_MovePlayer(player_t *player)
 			P_SpawnMobj(player->mo->x, player->mo->y, zh, MT_MEDIUMBUBBLE);
 	}
 
-	if (player->buttons & BT_SPIN)
+	if ((player->buttons & BT_ACTION_SPIN) || ((player->pflags & PF_BRAKE) && analog_t < -0x1F))
 	{
 		if (!(player->pflags & PF_USEDOWN))
 		{
@@ -1615,7 +1681,7 @@ void P_MovePlayer(player_t *player)
 			}
 		}
 		else if (player->skidTime <= 0 && P_AproxDistance(REALMOMX(player), REALMOMY(player)) >= 25 << (FRACBITS-1)
-			&& ControlDirection(player) == 2)
+			&& (ControlDirection(player) == 2 || player->pflags & PF_BRAKE))
 		{
 			// start a skid
 			player->skidTime = TICRATE/2;
@@ -1627,7 +1693,7 @@ void P_MovePlayer(player_t *player)
 		player->pflags &= ~PF_ELEMENTALBOUNCE;
 
 	// Fly cheat
-	if (player->buttons & BT_FLIP)
+	if (player->buttons & BT_ACTION_FLIP)
 	{
 //		player->pflags |= PF_VERTICALFLIP;
 		player->mo->momz = 8 * FRACUNIT;
@@ -1800,7 +1866,9 @@ void P_PlayerThink(player_t *player)
 	P_PlayerMobjThink(player->mo);
 
 	ticphase = 21;
-	P_BuildMove(player);
+	if (IsLevel()) {
+		P_BuildMove(player);
+	}
 
 	if (player->playerstate == PST_DEAD)
 	{
