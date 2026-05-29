@@ -565,10 +565,9 @@ void P_PlayerMobjThink(mobj_t *mobj)
 void P_BuildMove(player_t *player)
 {
 	const int buttons = ticbuttons[playernum];
-	const int8_t analog_x = ticanalogx[playernum];
-	const int8_t analog_y = ticanalogy[playernum];
-	const int8_t analog_t = ticanalogt[playernum];
-//	const int oldbuttons = oldticbuttons[playernum];
+	const int8_t analog_x = ticanalogx[playernum];	// XE-1AP left analog stick, horizontal position.
+	const int8_t analog_y = ticanalogy[playernum];	// XE-1AP left analog stick, vertical position.
+	const int8_t analog_t = ticanalogt[playernum];	// XE-1AP throttle position.
 	mobj_t *mo;
 
 	{
@@ -589,18 +588,12 @@ void P_BuildMove(player_t *player)
 		}
 
 		if (analog_y < -0x1F || (analog_y < 0 && (analog_x < -0x1F || analog_x > 0x1F))) {
+			// Analog Y position above deadzone, or Y is above center while X is outside deadzone.
 			player->forwardmove -= ((FRACUNIT >> 7) * analog_y);
-			//if (analog_y == -0x80)
-			//	player->forwardmove += FRACUNIT;
-			//else
-			//	player->forwardmove -= (683 * analog_y);
 		}
 		else if (analog_y > 0x1F || (analog_y > 0 && (analog_x < -0x1F || analog_x > 0x1F))) {
+			// Analog Y position below deadzone, or Y is above center while X is outside deadzone.
 			player->forwardmove -= (((FRACUNIT >> 7) * analog_y) + (FRACUNIT >> 7));
-			//if (analog_y == 0x7F)
-			//	player->forwardmove -= FRACUNIT;
-			//else
-			//	player->forwardmove -= (683 + (683 * analog_y));
 		}
 		else if (buttons & BT_ACTION_UP) {
 			player->forwardmove += FRACUNIT;
@@ -610,18 +603,12 @@ void P_BuildMove(player_t *player)
 		}
 
 		if (analog_x < -0x1F || (analog_x < 0 && (analog_y < -0x1F || analog_y > 0x1F))) {
+			// Analog X position left of deadzone, or X is above center while Y is outside deadzone.
 			player->sidemove += ((FRACUNIT >> 7) * analog_x);
-			//if (analog_x == -0x80)
-			//	player->sidemove -= FRACUNIT;
-			//else
-			//	player->sidemove += (683 * analog_x);
 		}
 		else if (analog_x > 0x1F || (analog_x > 0 && (analog_y < -0x1F || analog_y > 0x1F))) {
+			// Analog X position right of deadzone, or X is above center while Y is outside deadzone.
 			player->sidemove += (((FRACUNIT >> 7) * analog_x) + (FRACUNIT >> 7));
-			//if (analog_x == 0x7F)
-			//	player->sidemove += FRACUNIT;
-			//else
-			//	player->sidemove += (683 + (683 * analog_x));
 		}
 		else if (buttons & BT_ACTION_LEFT) {
 			player->sidemove -= FRACUNIT;
@@ -781,7 +768,7 @@ static void P_DoSpinDash(player_t *player)
 {
 	const boolean onground = (player->mo->z <= player->mo->floorz);
 	const int buttons = player->buttons;
-	const int8_t analog_t = ticanalogt[playernum];
+	const int8_t analog_t = ticanalogt[playernum];	// XE-1AP throttle position.
 
 	if (!player->exiting && !(player->mo->state == mobjinfo[player->mo->type].painstate && player->powers[pw_flashing]))
 	{
@@ -1343,9 +1330,9 @@ void P_SpawnSkidDust(player_t *player)
 
 void P_MovePlayer(player_t *player)
 {
-	const int8_t analog_x = ticanalogx[playernum];
-	const int8_t analog_y = ticanalogy[playernum];
-	const int8_t analog_t = ticanalogt[playernum];
+	const int8_t analog_x = ticanalogx[playernum];	// XE-1AP left analog stick, horizontal position.
+	const int8_t analog_y = ticanalogy[playernum];	// XE-1AP left analog stick, vertical position.
+	const int8_t analog_t = ticanalogt[playernum];	// XE-1AP throttle position.
 
 	if (player->onconveyor == 4 && !P_IsObjectOnGround(player->mo)) // Actual conveyor belt
 		player->cmomx = player->cmomy = 0;
@@ -1483,25 +1470,17 @@ void P_MovePlayer(player_t *player)
 				if (!(player->pflags & PF_BRAKE))
 				{
 					if (analog_x < -7) {
-						//player->sidemove += ((FRACUNIT >> 7) * analog_x);
-						//if (analog_x > -0x80)
-							moveVecX += (683 * analog_x) - 21888;
+						moveVecX += (683 * analog_x) - 21888;
 					}
 					else if (analog_x > 7) {
-						//player->sidemove += (((FRACUNIT >> 7) * analog_x) + (FRACUNIT >> 7));
-						//if (analog_x < 0x7F)
-							moveVecX += (683 + (683 * analog_x)) - 21888;
+						moveVecX += (683 + (683 * analog_x)) - 21888;
 					}
 
 					if (analog_y < -0x1F || (analog_y < -0xF && (analog_x < -0x1F || analog_x > 0x1F))) {
-						//player->forwardmove -= ((FRACUNIT >> 7) * analog_y);
-						//if (analog_y > -0x80)
-							moveVecY -= (683 * analog_y) - 21888;
+						moveVecY -= (683 * analog_y) - 21888;
 					}
 					else if (analog_y > 0x1F || (analog_y > 0xF && (analog_x < -0x1F || analog_x > 0x1F))) {
-						//player->forwardmove -= (((FRACUNIT >> 7) * analog_y) + (FRACUNIT >> 7));
-						//if (analog_y < 0x7F)
-							moveVecY -= (683 + (683 * analog_y)) - 21888;
+						moveVecY -= (683 + (683 * analog_y)) - 21888;
 					}
 				}
 

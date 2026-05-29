@@ -620,28 +620,31 @@ void Mars_DetectInputDevices(void)
 		next_buttons_released[i] = 0;
 
 		if (val == 0xF000) {
+			// No controller found.
 			previous_buttons[i] = 0xF000;
 		}
 		else {
 			if ((val & 0xF000) != (previous_buttons[i] & 0xF000)) {
 				if ((val & 0xF000) == SEGA_CTRL_ANALOG) {
+					// XE-1AP controller found.
 					button_jump = XE_BT_A;
 					button_spin = XE_BT_C;
 					button_accelerate = XE_BT_B;
 					button_decelerate = XE_BT_D;
-					button_pan_left = XE_BT_E1;
-					button_pan_right = XE_BT_E2;
+					button_pan_left = XE_BT_B_PRIME;
+					button_pan_right = XE_BT_A_PRIME;
 					button_start = XE_BT_START;
 					button_mode = XE_BT_SELECT;
 #ifdef SHOW_DISCLAIMER
 					button_cheat = 0;
 #else
-					button_cheat = XE_BT_A_PRIME;
+					button_cheat = XE_BT_E1;
 #endif
 					button_menu_next = XE_BT_B;
 					button_menu_back = XE_BT_A;
 				}
 				else {
+					// Standard 3/6 button controller found.
 					button_spin = BT_B;
 					button_accelerate = BT_Y;
 					button_decelerate = 0;
@@ -699,7 +702,6 @@ int Mars_ReadController(int ctrl)
 {
 	int val;
 	int port;
-	int ctrl_type;
 
 	if (ctrl < 0 || ctrl >= MARS_MAX_CONTROLLERS)
 		return -1;
