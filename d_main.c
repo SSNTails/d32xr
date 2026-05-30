@@ -943,7 +943,7 @@ void DRAW_LevelSelect (void)
 {
 	while (frame_sync == mars_vblank_count);
 	frame_sync = mars_vblank_count;
-	
+
 	if (clearscreen > 0) {
 		I_ResetLineTable();
 
@@ -1136,6 +1136,303 @@ void DRAW_LevelSelect (void)
 			DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
 		}
 	}
+
+#ifdef KIOSK_MODE
+	// Clear countdown digits
+	background = I_FrameBuffer() + (((320*177) + 272) >> 1);
+
+	for (int y=0; y < 31; y++) {
+		for (int x=0; x < (24>>3); x++) {
+			// Write 8 thru pixels
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+			*background++ = COLOR_THRU_2;
+		}
+
+		background += (296>>1);
+	}
+
+	int countdown = (KIOSK_LEVELSELECT_TIMEOUT/60) - (screenCount/60);
+	if (countdown > 5) {
+		V_DrawValueLeft(&hudNumberFont, 280, 184, (KIOSK_LEVELSELECT_TIMEOUT/60) - (screenCount/60));
+	}
+	else if (countdown > 0) {
+		int size_index = (((screenCount<<4) / 15) & 63);
+		fixed_t size_scale = FRACUNIT + (2048 * (63 - size_index));
+		DrawScaledJagobj(
+				hudNumberFont.charCache[countdown],
+				280-8+(size_index>>2)-(size_index>>3),
+				184-7+(size_index>>3),
+				size_scale,
+				size_scale,
+				I_OverwriteBuffer());
+	}
+#endif
+}
+
+
+
+static jagobj_t *tf = NULL;
+
+void START_15bppTest (void)
+{
+	DoubleBufferSetup();	// Clear frame buffers to black.
+
+	screenCount = 0;
+
+	fadetime = 0;
+
+	startmap = 1;
+
+	I_SetPalette(dc_playpals);
+
+	R_InitColormap();
+
+	R_SetupBackground("MENU", 1, 1);
+	R_SetupCopperTable("MENU", 1, 1);
+
+	// Set to totally black
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+	Mars_FadeMDPaletteFromBlack(0);
+	copper_table_brightness = -31;
+	effects_flags |= EFFECTS_COPPER_REFRESH;
+
+	SetTransition(TransitionType_Entering);
+
+	tf = W_CacheLumpName("TF", PU_STATIC);
+	
+#ifdef KIOSK_MODE
+	hudNumberFont.charCacheLength = 6;
+	hudNumberFont.charCache = Z_Calloc(sizeof(void*) * 6, PU_STATIC);
+	hudNumberFont.charCache[1] = W_CacheLumpName("STTNUM1", PU_STATIC);
+	hudNumberFont.charCache[2] = W_CacheLumpName("STTNUM2", PU_STATIC);
+	hudNumberFont.charCache[3] = W_CacheLumpName("STTNUM3", PU_STATIC);
+	hudNumberFont.charCache[4] = W_CacheLumpName("STTNUM4", PU_STATIC);
+	hudNumberFont.charCache[5] = W_CacheLumpName("STTNUM5", PU_STATIC);
+#endif
+
+	if (gamemapinfo.data)
+		Z_Free(gamemapinfo.data);
+	gamemapinfo.data = NULL;
+	D_memset(&gamemapinfo, 0, sizeof(gamemapinfo));
+	
+	char buf[512];
+	G_FindMapinfo(G_LumpNumForMapNum(1), &selected_map_info, buf);
+
+	clearscreen = 2;
+
+	for (int i = 0; i < 2; i++)
+	{
+		I_FillFrameBuffer(COLOR_THRU);
+		UpdateBuffer();
+	}
+}
+
+void DRAW_15bppTest (void)
+{
+	while (frame_sync == mars_vblank_count);
+	frame_sync = mars_vblank_count;
+
+	if (clearscreen > 0) {
+		Mars_SetVideoMode(MARS_VDP_MODE_32K);
+		clearscreen--;
+	}
+	
+	/*if (clearscreen > 0) {
+		I_ResetLineTable();
+
+		uint16_t *lines = Mars_FrameBufferLines();
+		uint16_t pixel_offset = (512>>1);
+		for (int i=0; i <= 17; i++) {
+			lines[i] = pixel_offset;
+			lines[223-i] = pixel_offset;
+			pixel_offset += (352>>1);
+		}
+
+		clearscreen--;
+	}*/
+
+	if (screenCount < 4) {
+		for (int i=0; i < 0x160; i += 0x20) {
+			//DrawJagobj2(chevblk_pic, i, 0, 352);
+		}
+
+		// Draw text
+		V_DrawStringCenterWithColormap(&menuFont, 160, 32, "SELECT A STAGE", YELLOWTEXTCOLORMAP);
+
+		// Draw black lines
+		DrawLine(86, 58, 152, 0x1F, false);
+		DrawLine(86, 193, 152, 0x1F, false);
+		DrawLine(86, 59, 134, 0x1F, true);
+		DrawLine(237, 59, 134, 0x1F, true);
+
+		// Draw red lines
+		DrawLine(84, 56, 152, 0x23, false);
+		DrawLine(84, 191, 152, 0x23, false);
+		DrawLine(84, 57, 134, 0x23, true);
+		DrawLine(235, 57, 134, 0x23, true);
+
+		// Draw level picture
+		//DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
+	}
+
+	Mars_SetScrollPositions(0, screenCount >> 1, 0, 0);
+
+	// Scroll chevrons
+	uint16_t *lines = Mars_FrameBufferLines();
+	uint16_t pixel_offset = (512>>1);
+	for (int i=0; i < 16; i++) {
+		lines[i] = pixel_offset + (15 - ((screenCount>>1) & 15));
+		lines[223-i] = pixel_offset + ((screenCount>>1) & 15);
+		pixel_offset += (352>>1);
+	}
+
+	// Move arrows
+	int arrow_offset = ((screenCount>>2) & 7) * (((screenCount>>2) & 0x8) == 0);
+	if (arrow_offset > 3) {
+		arrow_offset = 7 - arrow_offset;
+	}
+
+	pixel_t* background;
+
+	if ((((screenCount & 0x20) == 0) && ((screenCount & 0x2) == 0)) ||
+		(((screenCount & 0x20) != 0) && ((screenCount & 0x1E) == 0)))
+	{
+		// Clear left arrow
+		background = I_FrameBuffer() + (((320*112) + ((320-16)>>1)-96-4) >> 1);
+
+		for (int y=0; y < 29; y++) {
+			for (int x=0; x < (24>>3); x++) {
+				// Write 8 thru pixels
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+			}
+
+			background += (296>>1);
+		}
+
+		// Clear right arrow
+		background = I_FrameBuffer() + (((320*112) + ((320-16)>>1)+96-4) >> 1);
+
+		for (int y=0; y < 29; y++) {
+			for (int x=0; x < (24>>3); x++) {
+				// Write 8 thru pixels
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+			}
+
+			background += (296>>1);
+		}
+
+		// Draw arrows
+		//DrawJagobj(arrowl_pic, ((320-16)>>1)-96 - arrow_offset, 112);
+		//DrawJagobj(arrowr_pic, ((320-16)>>1)+96 + arrow_offset, 112);
+	}
+
+	if (screenCount < 4 || ((copper_table_selection & 0xF) && (copper_table_selection & 0xF) < 3)) {
+		// Clear level name text
+		background = I_FrameBuffer() + (((320*160) + ((320>>1)-64)) >> 1);
+
+		for (int y=0; y < 20; y++) {
+			for (int x=0; x < (128>>3); x++) {
+				// Write 8 thru pixels
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+				*background++ = COLOR_THRU_2;
+			}
+
+			background += (192>>1);
+		}
+
+		// Draw text
+		V_DrawStringCenterWithColormap(&menuFont, 160, 160, selected_map_info.name, YELLOWTEXTCOLORMAP);
+
+		if (selected_map_info.act > 0) {
+			char act_string[6] = { 'A','C','T',' ','0','\0' };
+			act_string[4] += selected_map_info.act;
+			V_DrawStringCenterWithColormap(&menuFont, 160, 172, act_string, YELLOWTEXTCOLORMAP);
+		}
+	}
+
+	// Draw level picture
+	if (lvlsel_lump < 0) {
+		if ((copper_table_selection & 0xF) && (copper_table_selection & 0xF) < 3) {
+			background = I_FrameBuffer() + (((320*(72-2)) + ((320-96)>>1)-3) >> 1);
+
+			for (int y=0; y < 76; y++) {
+				for (int x=0; x < (104>>3); x++) {
+					// Write 8 thru pixels
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+				}
+
+				background += (216>>1);
+			}
+		}
+
+		//DrawJagobj(lvlsel_static[((screenCount >> 2) % 3)], (320-96)>>1, 72);
+	}
+	else if ((copper_table_selection & 0xF) && (copper_table_selection & 0xF) < 8) {
+		uint16_t size_table[5] = { 2048, 3547, 4096, 3547, 2048 };
+		uint8_t x_offset_table[5] = { 2, 2, 3, 2, 2 };
+		uint8_t y_offset_table[5] = { 1, 2, 2, 2, 1 };
+
+		int size_index = (copper_table_selection & 0xF) - 1;
+		
+		if (size_index < 5) {
+			int x = ((320-96)>>1) - x_offset_table[size_index];
+			int y = 72 - y_offset_table[size_index];
+			fixed_t size_scale = FRACUNIT + size_table[size_index];
+
+			// 98 x 74
+			// 100 x 75
+			// 102 x 76
+			if (size_index >= 3) {
+				background = I_FrameBuffer() + (((320*(72-2)) + ((320-96)>>1)-3) >> 1);
+
+				for (int y=0; y < 76; y++) {
+					for (int x=0; x < (104>>3); x++) {
+						// Write 8 thru pixels
+						*background++ = COLOR_THRU_2;
+						*background++ = COLOR_THRU_2;
+						*background++ = COLOR_THRU_2;
+						*background++ = COLOR_THRU_2;
+					}
+
+					background += (216>>1);
+				}
+			}
+
+			//DrawScaledJagobj(lvlsel_pic, x, y, size_scale, size_scale, I_OverwriteBuffer());
+		}
+		else {
+			background = I_FrameBuffer() + (((320*(72-2)) + ((320-96)>>1)-3) >> 1);
+
+			for (int y=0; y < 76; y++) {
+				for (int x=0; x < (104>>3); x++) {
+					// Write 8 thru pixels
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+					*background++ = COLOR_THRU_2;
+				}
+
+				background += (216>>1);
+			}
+
+			//DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
+		}
+	}
+
+	DrawScaledJagobj15bpp(tf, 0, 0, 65536, 65536, I_OverwriteBuffer());
 
 #ifdef KIOSK_MODE
 	// Clear countdown digits
@@ -1797,6 +2094,9 @@ D_printf ("DM_Main\n");
 
 	char demo_name[6] = { 'D', 'E', 'M', 'O', '0', '\0' };
 	int exit = ga_titleexpired;
+
+	SetLevelSelect();
+	exit = MiniLoop (START_15bppTest, STOP_LevelSelect, TIC_LevelSelect, DRAW_15bppTest, UpdateBuffer);
 
 	if (!gameinfo.noAttractDemo) {
 		do {

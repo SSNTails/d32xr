@@ -54,6 +54,8 @@ static const uint8_t* mars_newpalette = NULL;
 
 uint16_t mars_thru_rgb_reference = 0;
 
+uint8_t mars_display_mode = MARS_VDP_MODE_256;
+
 int16_t mars_requested_lines = 224;
 uint16_t mars_framebuffer_height = 224;
 
@@ -114,21 +116,39 @@ void Mars_InitLineTable(void)
 		offset = (240 - 224) / 2;
 	}
 
-	for (j = 0; j < mars_framebuffer_height; j++)
-		lines[offset+j] = (j * 320 / 2 + 0x100) + ((~h40_sky) & h32_adjust);
+	switch (mars_display_mode) {
+		case MARS_VDP_MODE_256:
+			for (j=0; j < mars_requested_lines; j++) {
+				lines[offset+j] = (j * 320 / 2 + 0x100) + ((~h40_sky) & h32_adjust);
+			}
 
-	blank = j * 320 / 2;
+			blank = j * 320 / 2;
 
-	// set the rest of the line table to a blank line
-	for (; j < 256; j++)
-		lines[offset+j] = blank + 0x100;
+			// set the rest of the line table to a blank line
+			for (; j < 256; j++)
+				lines[offset+j] = blank + 0x100;
 
-	for (j = 0; j < offset; j++)
-		lines[j] = blank + 0x100;
+			for (j = 0; j < offset; j++)
+				lines[j] = blank + 0x100;
 
-	// make sure blank line is clear
-	for (j = blank; j < (blank + 160); j++)
-		lines[j] = 0;
+			// make sure blank line is clear
+			for (j = blank; j < (blank + 160); j++)
+				lines[j] = 0;
+
+			break;
+
+		case MARS_VDP_MODE_32K:
+			for (j=0; j < 204; j++) {
+				lines[offset+j] = (j * 320 + 0x100) + (((~h40_sky) & h32_adjust)<<1);
+			}
+			for (j=204; j < mars_requested_lines; j++) {
+				lines[offset+j] = (204 * 320 + 0x100);
+			}
+			break;
+
+		default:
+			// Do nothing!
+	}
 	
 	MARS_VDP_SCRSHFT = ((~h40_sky) & h32_adjust);
 }
@@ -258,6 +278,16 @@ void Mars_Init(void)
 		/* if the CD is present, give it seconds to init */
 		Mars_WaitTicks(180);
 	}
+}
+
+void Mars_SetVideoMode(int mode)
+{
+	MARS_VDP_DISPMODE &= 0xFFFC;
+	MARS_VDP_DISPMODE |= mode;
+
+	mars_display_mode = mode;
+
+	Mars_InitLineTable();
 }
 
 uint16_t* Mars_FrameBufferLines(void)

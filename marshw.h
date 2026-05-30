@@ -50,6 +50,7 @@ char Mars_FramebuffersFlipped(void);
 void Mars_Init(void);
 void Mars_InitVideo(int lines);
 void Mars_InitLineTable(void);
+void Mars_SetVideoMode(int mode);
 void Mars_SetBrightness(int16_t brightness);
 int Mars_BackBuffer(void);
 void Mars_SetPalette(const uint8_t *palette);
