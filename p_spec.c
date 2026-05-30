@@ -1440,12 +1440,12 @@ void P_SSNMaceRotate(swingmace_t *sm)
 	rotVec.x = FixedMul(axis.x,(ux+vy+wz))
 				+ FixedMul((FixedMul(rotationDir.x,(FixedMul(axis.y,axis.y)+FixedMul(axis.z,axis.z)))-FixedMul(axis.x,(vy+wz))), ca)
 				+ FixedMul((-wy+vz),sa);
-	rotVec.y = FixedMul(axis.z,(ux+vy+wz))
-				+ FixedMul((FixedMul(rotationDir.z,(FixedMul(axis.x,axis.x)+FixedMul(axis.y,axis.y)))-FixedMul(axis.z,(ux+vy))), ca)
-				+ FixedMul((-vx+uy),sa);
-	rotVec.z = FixedMul(axis.y,(ux+vy+wz))
+	rotVec.y = FixedMul(axis.y,(ux+vy+wz))
 				+ FixedMul((FixedMul(rotationDir.y,(FixedMul(axis.x,axis.x)+FixedMul(axis.z,axis.z)))-FixedMul(axis.y,(ux+wz))), ca)
 				+ FixedMul((wx-uz),sa);
+	rotVec.z = FixedMul(axis.z,(ux+vy+wz))
+				+ FixedMul((FixedMul(rotationDir.z,(FixedMul(axis.x,axis.x)+FixedMul(axis.y,axis.y)))-FixedMul(axis.z,(ux+vy))), ca)
+				+ FixedMul((-vx+uy),sa);
 
 //	CONS_Printf("%d, %d, %d", rotVec.x, rotVec.y, rotVec.z);
 
@@ -1454,35 +1454,57 @@ void P_SSNMaceRotate(swingmace_t *sm)
 	fixed_t dist = sm->macechain.interval * msublinks;
 
 	ringmobj_t *link = sm->macechain.chain;
-	int count = 0;
-	while (count < mnumchain)
+	fixed_t distAccum = dist;
+	if (sm->flags & TMM_MACELINKS)
 	{
-		fixed_t distAccum = dist + sm->macechain.interval * count;
-		//		P_UnsetThingPosition((mobj_t*)link);
-		link->x = sm->macechain.x + ((rotVec.x * distAccum) >> FRACBITS);
-		link->y = sm->macechain.y + ((rotVec.z * distAccum) >> FRACBITS);
-		link->z = sm->macechain.z + ((rotVec.y * distAccum) >> FRACBITS);
-		link->z -= (mobjinfo[link->type].height >> FRACBITS) >> 2;
-//		P_SetThingPosition((mobj_t*)link);
-		link++;
-		count++;
+		while (mnumchain > 0)
+		{
+			P_UnsetThingPosition((mobj_t*)link);
+			link->x = sm->macechain.x + ((rotVec.x * distAccum) >> FRACBITS);
+			link->y = sm->macechain.y + ((rotVec.y * distAccum) >> FRACBITS);
+			link->z = sm->macechain.z + ((rotVec.z * distAccum) >> FRACBITS);
+			link->z -= (mobjinfo[link->type].height >> FRACBITS) >> 1;
+			P_SetThingPosition2((mobj_t*)link, R_PointInSubsector2(link->x << FRACBITS, link->y << FRACBITS));
+			link++;
+			mnumchain--;
+			distAccum += sm->macechain.interval;
+		}
+	}
+	else
+	{
+		while (mnumchain > 0)
+		{
+			//		P_UnsetThingPosition((mobj_t*)link);
+			link->x = sm->macechain.x + ((rotVec.x * distAccum) >> FRACBITS);
+			link->y = sm->macechain.y + ((rotVec.y * distAccum) >> FRACBITS);
+			link->z = sm->macechain.z + ((rotVec.z * distAccum) >> FRACBITS);
+			link->z -= (mobjinfo[link->type].height >> FRACBITS) >> 2;
+	//		P_SetThingPosition((mobj_t*)link);
+			link++;
+			mnumchain--;
+			distAccum += sm->macechain.interval;
+		}
 	}
 
-	dist += sm->macechain.interval * (count-1);
+	dist = distAccum - sm->macechain.interval;
 
 	if (sm->flags & TMM_DOUBLESIZE)
 		dist += sm->macechain.interval;
 
-	dist += mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS;
+	if (sm->flags & TMM_MACELINKS)
+		dist += (mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS) * 3;
+	else
+		dist += mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS;
+
 	P_UnsetThingPosition((mobj_t*)sm->macechain.maceball);
 	sm->macechain.maceball->x = sm->macechain.x + ((rotVec.x * dist) >> FRACBITS);
-	sm->macechain.maceball->y = sm->macechain.y + ((rotVec.z * dist) >> FRACBITS);
-	sm->macechain.maceball->z = sm->macechain.z + ((rotVec.y * dist) >> FRACBITS);
+	sm->macechain.maceball->y = sm->macechain.y + ((rotVec.y * dist) >> FRACBITS);
+	sm->macechain.maceball->z = sm->macechain.z + ((rotVec.z * dist) >> FRACBITS);
 	sm->macechain.maceball->z -= (mobjinfo[sm->macechain.maceball->type].height >> FRACBITS) >> 1;
 	P_SetThingPosition2((mobj_t*)sm->macechain.maceball, R_PointInSubsector2(sm->macechain.maceball->x << FRACBITS, sm->macechain.maceball->y << FRACBITS));
 
 	// Is a player attached?
-	for (count = 0; count < MAXPLAYERS; count++)
+	for (int count = 0; count < MAXPLAYERS; count++)
 	{
 		if (!playeringame[count])
 			continue;
@@ -1494,8 +1516,8 @@ void P_SSNMaceRotate(swingmace_t *sm)
 		{
 			vector3_t newPos;
 			newPos.x = (sm->macechain.x << FRACBITS) + (rotVec.x * dist);
-			newPos.y = (sm->macechain.y << FRACBITS) + (rotVec.z * dist);
-			newPos.z = (sm->macechain.z << FRACBITS) + (rotVec.y * dist) - (P_GetPlayerSpinHeight() >> 1) - (P_GetPlayerSpinHeight() >> 2);
+			newPos.y = (sm->macechain.y << FRACBITS) + (rotVec.y * dist);
+			newPos.z = (sm->macechain.z << FRACBITS) + (rotVec.z * dist) - (P_GetPlayerSpinHeight() >> 1) - (P_GetPlayerSpinHeight() >> 2);
 			player->mo->momx = (newPos.x - player->mo->x) ;
 			player->mo->momy = (newPos.y - player->mo->y) << 1;
 			player->mo->momz = (newPos.z - player->mo->z) << 1;
@@ -1634,6 +1656,13 @@ void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 
 	fixed_t dist = mobjinfo[chainlink].radius;
 	sm->macechain.interval = (dist >> FRACBITS) << 1;
+
+	if (args[8] & TMM_MACELINKS)
+	{
+		sm->flags |= TMM_MACELINKS;
+		chainlink = macetype;
+		sm->macechain.interval <<= 1;
+	}
 
 	dist = (sm->macechain.interval * sm->msublinks) << FRACBITS;
 	mlength -= sm->msublinks;
