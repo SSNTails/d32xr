@@ -1489,9 +1489,11 @@ void P_SSNMaceRotate(swingmace_t *sm)
 	dist = distAccum - sm->macechain.interval;
 
 	if (sm->flags & TMM_DOUBLESIZE)
+	{
 		dist += sm->macechain.interval;
-
-	if (sm->flags & TMM_MACELINKS)
+		dist += mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS;
+	}
+	else if (sm->flags & TMM_MACELINKS)
 		dist += (mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS) * 3;
 	else
 		dist += mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS;
