@@ -107,49 +107,57 @@ int Mars_ConvGamepadButtons(int ctrl, int analog_data)
 		newc |= BT_Y;
 	if (ctrl & SEGA_CTRL_Z)
 		newc |= BT_Z;
-
 	if (ctrl & SEGA_CTRL_MODE)
-	{
 		newc |= BT_MODE;
+
+	if ((ctrl & 0xF000) == SEGA_CTRL_ANALOG)
+	{
+		int8_t stick_x = analog_data >> 16;
+		int8_t stick_y = (analog_data >> 8) & 0xFF;
+
+		if (stick_y < -0x1F) {
+			newc |= BT_ACTION_UP;
+		}
+		else if (stick_y > 0x1F) {
+			newc |= BT_ACTION_DOWN;
+		}
+
+		if (stick_x < -0x1F) {
+			newc |= BT_ACTION_LEFT;
+		}
+		else if (stick_x > 0x1F) {
+			newc |= BT_ACTION_RIGHT;
+		}
 	}
 	else
 	{
-		if ((ctrl & 0xF000) == SEGA_CTRL_ANALOG)
-		{
-			int8_t stick_x = analog_data >> 16;
-			int8_t stick_y = (analog_data >> 8) & 0xFF;
-			int8_t throttle = analog_data & 0xFF;
-
-			if (stick_y < -0x1F) {
-				newc |= BT_ACTION_UP;
-			}
-			else if (stick_y > 0x1F) {
-				newc |= BT_ACTION_DOWN;
-			}
-
-			if (stick_x < -0x1F) {
-				newc |= BT_ACTION_LEFT;
-			}
-			else if (stick_x > 0x1F) {
-				newc |= BT_ACTION_RIGHT;
-			}
+		if (ctrl & SEGA_CTRL_DPAD_UP) {
+			newc |= BT_ACTION_UP;
 		}
-		else
-		{
-			if (ctrl & SEGA_CTRL_DPAD_UP) {
-				newc |= BT_ACTION_UP;
-			}
-			if (ctrl & SEGA_CTRL_DPAD_DOWN) {
-				newc |= BT_ACTION_DOWN;
-			}
-			if (ctrl & SEGA_CTRL_DPAD_LEFT) {
-				newc |= BT_ACTION_LEFT;
-			}
-			if (ctrl & SEGA_CTRL_DPAD_RIGHT) {
-				newc |= BT_ACTION_RIGHT;
-			}
+		if (ctrl & SEGA_CTRL_DPAD_DOWN) {
+			newc |= BT_ACTION_DOWN;
 		}
+		if (ctrl & SEGA_CTRL_DPAD_LEFT) {
+			newc |= BT_ACTION_LEFT;
+		}
+		if (ctrl & SEGA_CTRL_DPAD_RIGHT) {
+			newc |= BT_ACTION_RIGHT;
+		}
+	}
 
+	if (ctrl & button_start)
+		newc |= BT_ACTION_START;
+	if (ctrl & button_menu_next)
+		newc |= BT_ACTION_MENU_NEXT;
+	if (ctrl & button_menu_back)
+		newc |= BT_ACTION_MENU_BACK;
+
+	if (ctrl & button_mode)
+	{
+		newc |= BT_ACTION_MODE;
+	}
+	else
+	{
 		if (ctrl & button_cheat)
 			newc |= BT_ACTION_FLIP; //configuration[controltype][0];
 
@@ -167,15 +175,6 @@ int Mars_ConvGamepadButtons(int ctrl, int analog_data)
 			newc |= BT_ACTION_CAMLEFT;
 		if (ctrl & button_pan_right)
 			newc |= BT_ACTION_CAMRIGHT;
-
-		if (ctrl & button_start)
-			newc |= BT_ACTION_START;
-		if (ctrl & button_mode)
-			newc |= BT_ACTION_MODE;
-		if (ctrl & button_menu_next)
-			newc |= BT_ACTION_MENU_NEXT;
-		if (ctrl & button_menu_back)
-			newc |= BT_ACTION_MENU_BACK;
 	}
 
 	newc |= (ctrl & 0xF000);	// Keep the controller type.

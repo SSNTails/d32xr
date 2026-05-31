@@ -532,6 +532,14 @@ int M_Ticker (void)
 		}
 	}
 
+	// Handle hidden credits cheat.
+	if (IsTitleScreen() && screenpos != ms_main && (cheats_enabled & CHEAT_GAMEMODE_SELECT)
+			&& (buttons & BT_ACTION_MODE) && (buttons & BT_C))
+	{
+		overlay_graphics = og_none;
+		return ga_showcredits;
+	}
+
 	// Handle navigation to the previous menu screen.
 	if (goto_prev_screen || ((buttons & BT_ACTION_MENU_BACK) && !(oldbuttons & BT_ACTION_MENU_BACK)))
 	{
@@ -543,10 +551,6 @@ int M_Ticker (void)
 			cursorpos = 0;
 			screenpos = ms_main;
 			if (IsTitleScreen()) {
-				if (cheats_enabled & CHEAT_GAMEMODE_SELECT && buttons & BT_MODE && buttons & BT_C) {
-					overlay_graphics = og_none;
-					return ga_showcredits;
-				}
 				titleTicker = 0;	// Redraw the title emblem.
 				overlay_graphics = og_title;
 				clear_h32_borders = 2;

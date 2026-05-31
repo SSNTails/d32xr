@@ -508,7 +508,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 			exit = ga_exitdemo;
 			break;
 		}
-		
+
 		ticbuttons[consoleplayer] = buttons;
 		ticrealbuttons = buttons;
 
@@ -521,8 +521,8 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		ticrealanalogt = ticanalogt[consoleplayer];
 
 		if (IsTitleIntro()) {
-			if (oldticbuttons[0] == 0) {
-				if (buttons == cheat_metrics_sequence[cheat_metrics_button_index]) {
+			if ((oldticbuttons[0] & 0x0FFF) == 0) {
+				if ((buttons & 0x0FFF) == cheat_metrics_sequence[cheat_metrics_button_index]) {
 					cheat_metrics_button_index += 1;
 					if (cheat_metrics_button_index == CHEAT_METRICS_SEQ_LENGTH) {
 						S_StartSoundId(sfx_s3k_33);
@@ -530,7 +530,7 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 						cheat_metrics_button_index = 0;
 					}
 				}
-				else if (buttons != 0) {
+				else if ((buttons & 0xFFF) != 0) {
 					cheat_metrics_button_index = 0;
 				}
 			}
