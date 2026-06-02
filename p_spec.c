@@ -1389,7 +1389,7 @@ typedef struct
 
 	// Old style
 	int8_t mlength;
-	int8_t mspeed;
+	uint8_t mspeed;
 
 	int8_t mphase;
 	int8_t msublinks; // # of links from the inside to subtract
@@ -1490,7 +1490,8 @@ void P_SSNMaceRotate(swingmace_t *sm)
 
 	if (sm->flags & TMM_DOUBLESIZE)
 	{
-		dist += sm->macechain.interval;
+		if (sm->macechain.maceball->type == MT_BIGMACE)
+			dist += sm->macechain.interval;
 		dist += mobjinfo[sm->macechain.maceball->type].radius >> FRACBITS;
 	}
 	else if (sm->flags & TMM_MACELINKS)
