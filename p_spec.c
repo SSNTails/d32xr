@@ -1521,7 +1521,7 @@ void P_SSNMaceRotate(swingmace_t *sm)
 			newPos.x = (sm->macechain.x << FRACBITS) + (rotVec.x * dist);
 			newPos.y = (sm->macechain.y << FRACBITS) + (rotVec.y * dist);
 			newPos.z = (sm->macechain.z << FRACBITS) + (rotVec.z * dist) - (P_GetPlayerSpinHeight() >> 1) - (P_GetPlayerSpinHeight() >> 2);
-			player->mo->momx = (newPos.x - player->mo->x) ;
+			player->mo->momx = (newPos.x - player->mo->x) << 1;
 			player->mo->momy = (newPos.y - player->mo->y) << 1;
 			player->mo->momz = (newPos.z - player->mo->z) << 1;
 			P_UnsetThingPosition(player->mo);
