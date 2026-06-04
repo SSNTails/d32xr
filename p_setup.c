@@ -53,16 +53,6 @@ uint16_t		numthings;
 
 int16_t worldbbox[4];
 
-#define LOADFLAGS_VERTEXES 1
-#define LOADFLAGS_BLOCKMAP 2
-#define LOADFLAGS_REJECT 4
-#define LOADFLAGS_NODES 8
-#define LOADFLAGS_SEGS 16
-#define LOADFLAGS_LINEDEFS 32
-#define LOADFLAGS_SUBSECTORS 64
-#define LOADFLAGS_SECTORS 128
-#define LOADFLAGS_SIDEDEFS_ROM 256
-
 /*
 =================
 =
@@ -662,7 +652,8 @@ void P_LoadLineDefs (int lump)
 
 	if (numlineinfos)
 	{
-		lineinfos = Z_Malloc(sizeof(*lineinfos)*numlineinfos, PU_LEVEL);
+		lineinfos = Z_Malloc(sizeof(*lineinfos)*numlineinfos + 16, PU_LEVEL);
+		lineinfos = (void*)(((uintptr_t)ldflags + 15) & ~15); // aline on cacheline boundary
 		lineinfo_t *lineinfoPtr = lineinfos;
 		mapldFlags = (mapldflags_t*)ldData;
 		for (i = 0; i < numlines; i++, mapldFlags++)
