@@ -34,7 +34,6 @@ SPTR        *sector_thinglist;
 subsector_t	*subsectors;
 node_t		*nodes;
 line_t		*lines;
-uint16_t    *ldflags;
 side_t		*sides;
 sidetex_t   *sidetexes;
 
@@ -396,17 +395,17 @@ static void P_SetupMace(mapthing_t *mthing)
 		args[8] |= TMM_DOUBLESIZE;
 	if (mthing->options & MTF_OBJECTSPECIAL)
 		args[8] |= TMM_SILENT;
-	if (ldflags[line-lines] & ML_NOCLIMB)
+	if (line->flags & ML_NOCLIMB)
 		args[8] |= TMM_ALLOWYAWCONTROL;
-	if (ldflags[line-lines] & ML_CULLING)
+	if (line->flags & ML_CULLING)
 		args[8] |= TMM_SWING;
-	if (ldflags[line-lines] & ML_UNDERWATERONLY)
+	if (line->flags & ML_UNDERWATERONLY)
 		args[8] |= TMM_MACELINKS;
-	if (ldflags[line-lines] & ML_CULL_MIDTEXTURE)
+	if (line->flags & ML_CULL_MIDTEXTURE)
 		args[8] |= TMM_CENTERLINK;
-	if (ldflags[line-lines] & ML_MIDTEXTUREBLOCK)
+	if (line->flags & ML_MIDTEXTUREBLOCK)
 		args[8] |= TMM_CLIP;
-	if (ldflags[line-lines] & ML_UNUSED2_WRAPMIDTEX)
+	if (line->flags & ML_UNUSED2_WRAPMIDTEX)
 		args[8] |= TMM_ALWAYSTHINK;
 
 //	if (tag == 120)
@@ -574,7 +573,6 @@ void P_LoadLineDefs (int lump)
 {
 	int				i;
 	line_t			*ld;
-	mapvertex_t		*v1, *v2;
 	
 	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
 
@@ -587,56 +585,20 @@ void P_LoadLineDefs (int lump)
 	else
 		lines = (line_t *)W_POINTLUMPNUM(lump);
 
-	// LDFlags always live in RAM. Lump comes directly after LINEDEFS
-	ldflags = Z_Malloc(numlines*sizeof(uint16_t)+16, PU_LEVEL);
-	ldflags = (void*)(((uintptr_t)ldflags + 15) & ~15); // aline on cacheline boundary
-	D_memset (ldflags, 0, numlines*sizeof(uint16_t));
-	byte *ldData = I_TempBuffer ();
-	W_ReadLump (lump + 1, ldData);
-
+	numlineinfos = 0;
+	
 	int numlinetags = 0;
 	int numlinespecials = 0;
-	numlineinfos = 0;
+	// Lump comes directly after LINEDEFS
+	byte *data = I_TempBuffer();
+	W_ReadLump(lump + 1, data);
 
-	uint16_t *ldFlagsPtr = ldflags;
-	mapldflags_t *mapldFlags = (mapldflags_t*)ldData;
+	mapldflags_t *mapldFlags = (mapldflags_t*)data;
 	ld = lines;
-	for (i=0 ; i<numlines ; i++, ld++, mapldFlags++, ldFlagsPtr++)
+	for (i=0 ; i<numlines ; i++, ld++, mapldFlags++)
 	{
 		uint8_t tag = mapldFlags->tag;
 		uint8_t special = mapldFlags->special;
-		uint16_t flags = mapldFlags->flags;
-
-		fixed_t dx,dy;
-		v1 = &vertexes[ld->v1];
-		v2 = &vertexes[ld->v2];
-		dx = (v2->x - v1->x) << FRACBITS;
-		dy = (v2->y - v1->y) << FRACBITS;
-		if (!dx)
-			flags |= ML_ST_VERTICAL;
-		else if (!dy)
-			flags |= ML_ST_HORIZONTAL;
-		else
-		{
-			if (FixedDiv (dy , dx) > 0)
-				flags |= ML_ST_POSITIVE;
-			else
-				flags |= ML_ST_NEGATIVE;
-		}
-
-#define ML_TWOSIDED 4
-/*
-		// if the two-sided flag isn't set, set the back side to -1
-		if (ld->sidenum[1] >= 0) {
-			if (!(flags & ML_TWOSIDED)) {
-				ld->sidenum[1] = -1;
-			}
-		}*/
-		flags &= ~ML_TWOSIDED;
-#undef ML_TWOSIDED
-
-		if (tag > 0 || special > 0)
-			flags |= ML_HAS_SPECIAL_OR_TAG;
 
 		if (tag)
 			numlinetags++;
@@ -646,20 +608,22 @@ void P_LoadLineDefs (int lump)
 
 		if (tag || special)
 			numlineinfos++;
-
-		*ldFlagsPtr = flags;
 	}
+
+	P_InitSpecialOrTag(numlines);
 
 	if (numlineinfos)
 	{
 		lineinfos = Z_Malloc(sizeof(*lineinfos)*numlineinfos + 16, PU_LEVEL);
-		lineinfos = (void*)(((uintptr_t)ldflags + 15) & ~15); // aline on cacheline boundary
+		lineinfos = (void*)(((uintptr_t)lineinfos + 15) & ~15); // aline on cacheline boundary
 		lineinfo_t *lineinfoPtr = lineinfos;
-		mapldFlags = (mapldflags_t*)ldData;
+		mapldFlags = (mapldflags_t*)data;
 		for (i = 0; i < numlines; i++, mapldFlags++)
 		{
 			if (mapldFlags->special || mapldFlags->tag)
 			{
+				P_SetHasSpecialOrTag(i, true);
+
 				lineinfoPtr->line = i;
 				lineinfoPtr->special = mapldFlags->special;
 				lineinfoPtr->tag = mapldFlags->tag;

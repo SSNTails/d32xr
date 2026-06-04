@@ -191,7 +191,7 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
    }
 
    // see if it can possibly block movement
-   if(ld->sidenum[1] == -1 || (ldflags[ld-lines] & ML_BLOCKING))
+   if(ld->sidenum[1] == -1 || (ld->flags & ML_BLOCKING))
       goto findfrac;
 
    VINT ifront = LD_IFRONTSECTOR(ld);
@@ -199,13 +199,13 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
    front = I_TO_SEC(ifront);
    back  = iback < 0 ? NULL : I_TO_SEC(iback);
 
-   if ((ldflags[ld-lines] & ML_HAS_SPECIAL_OR_TAG) && P_GetLineSpecial(ld) == 254 && P_GetLineTag(ld) > 0 && sw->slidething->player
+   if (P_GetLineSpecial(ld) == 254 && P_GetLineTag(ld) > 0 && sw->slidething->player
       && (players[sw->slidething->player-1].pflags & PF_SPINNING)) // Bustable block
    {
       boolean busting = true;
-      ldflags[ld-lines] &= ~ML_HAS_SPECIAL_OR_TAG;
+      P_SetHasSpecialOrTag(ld-lines, false);
 
-      if (ldflags[ld-lines] & ML_NOCLIMB)
+      if (ld->flags & ML_NOCLIMB)
       {
          fixed_t nextHighest = I_TO_SEC(P_FindNextHighestCeiling(iback, back->ceilingheight))->ceilingheight;
 
@@ -230,9 +230,9 @@ static boolean SL_CheckLine(line_t *ld, pslidework_t *sw)
          P_SpawnBustables(back, sw->slidething);
       }
    }
-   else if ((ldflags[ld-lines] & ML_HAS_SPECIAL_OR_TAG) && P_GetLineSpecial(ld) == 200 && sw->slidething->player)
+   else if (P_GetLineSpecial(ld) == 200 && sw->slidething->player)
    {
-      ldflags[ld-lines] &= ~ML_HAS_SPECIAL_OR_TAG;
+      P_SetHasSpecialOrTag(ld-lines, false);
 
       if (gamemapinfo.mapNumber == 1)
          MBrownSequenceStart();

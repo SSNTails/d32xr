@@ -41,18 +41,18 @@ typedef struct
 {
 	short		v1, v2;
 	short		sidenum[2];			/* sidenum[1] will be -1 if one sided */
+	short       flags;
 } maplinedef_t;
 
 typedef struct
 {
-	uint16_t	flags;
 	uint8_t		special;
 	uint8_t     tag;
 } mapldflags_t;
 
 #define	ML_BLOCKING			1
 #define	ML_BLOCKMONSTERS	2
-#define ML_HAS_SPECIAL_OR_TAG 4 // Have to reference hash tables to find special/tag
+#define ML_TWOSIDED 4
 
 /* if a texture is pegged, the texture will have the end exposed to air held */
 /* constant at the top or bottom of the texture (stairs or pulled down things) */

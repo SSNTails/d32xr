@@ -227,6 +227,10 @@ void    P_SetThingPositionConditionally(mobj_t *thing, fixed_t x, fixed_t y, VIN
 uint8_t P_GetLineTag(line_t *line);
 uint8_t P_GetLineSpecial(line_t *line);
 
+void P_InitSpecialOrTag(size_t count);
+void P_SetHasSpecialOrTag(int index, boolean value);
+boolean P_HasSpecialOrTag(int index);
+
 #define P_GetSubsectorNumlines(ss) (((ss)+1)->firstline - (ss)->firstline)
 
 /*

@@ -689,7 +689,7 @@ boolean P_BlockThingsIterator (int x, int y, blockthingsiter_t func, void *userp
 
 uint8_t P_GetLineTag(line_t *line)
 {
-	if (!(ldflags[line-lines] & ML_HAS_SPECIAL_OR_TAG))
+	if (!P_HasSpecialOrTag(line-lines))
 		return 0;
 
 	for (int i = 0; i < numlineinfos; i++)
@@ -703,7 +703,7 @@ uint8_t P_GetLineTag(line_t *line)
 
 uint8_t P_GetLineSpecial(line_t *line)
 {
-	if (!(ldflags[line-lines] & ML_HAS_SPECIAL_OR_TAG))
+	if (!P_HasSpecialOrTag(line-lines))
 		return 0;
 
 	for (int i = 0; i < numlineinfos; i++)
@@ -713,4 +713,34 @@ uint8_t P_GetLineSpecial(line_t *line)
 	}
 
 	return 0;
+}
+
+uint32_t *sohBits = NULL;
+
+void P_InitSpecialOrTag(size_t count)
+{
+	size_t num_words = ((count + 31) / 32);
+	sohBits = Z_Calloc(num_words * sizeof(uint32_t) + 16, PU_LEVEL);
+	sohBits = (void*)(((uintptr_t)sohBits + 15) & ~15); // aline on cacheline boundary
+}
+
+// Set bit
+void P_SetHasSpecialOrTag(int index, boolean value)
+{
+    size_t word = index >> 5; // / 32
+    uint32_t mask = (UINT32_C(1) << (index & 31)); // % 32
+
+    if (value)
+        sohBits[word] |= mask;
+    else
+        sohBits[word] &= ~mask;
+}
+
+// Get bit
+boolean P_HasSpecialOrTag(int index)
+{
+    size_t word     = index >> 5;           // / 32
+    uint32_t mask   = (UINT32_C(1) << (index & 31));  // % 32
+
+    return (sohBits[word] & mask) != 0;
 }

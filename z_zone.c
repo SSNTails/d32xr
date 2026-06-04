@@ -322,7 +322,7 @@ void Z_CheckHeap (memzone_t *memzone)
 }
 
 #ifdef MEMDEBUG
-/*void Z_DumpHeap(memzone_t *memzone, int skipCount)
+void Z_DumpHeap(memzone_t *memzone, int skipCount)
 {
 	char memmap[2048];
 	memmap[0] = '\0';
@@ -359,7 +359,7 @@ void Z_CheckHeap (memzone_t *memzone)
 
 	*mapPtr++ = '\0';
 	I_Error("%d blocks:\n%s", numblocks, memmap);
-}*/
+}
 #endif
 
 /*

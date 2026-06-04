@@ -100,7 +100,7 @@ int EV_DoCeiling (line_t *line, ceiling_e  type)
 			mapvertex_t *v1 = &vertexes[line->v1];
 			mapvertex_t *v2 = &vertexes[line->v2];
 			fixed_t arg2, arg3;
-			if (ldflags[line-lines] & ML_MIDTEXTUREBLOCK)
+			if (line->flags & ML_MIDTEXTUREBLOCK)
 			{
 				arg2 = D_abs(v2->x - v1->x);
 				arg3 = arg2;

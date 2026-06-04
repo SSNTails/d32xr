@@ -1226,8 +1226,8 @@ void P_DoPlayerExit(player_t *player)
 					continue;
 
 				// Get the other side
-				ldflags[j] &= ~ML_DONTPEGTOP;
-				ldflags[j] |= ML_DONTPEGBOTTOM;
+				lines[j].flags &= ~ML_DONTPEGTOP;
+				lines[j].flags |= ML_DONTPEGBOTTOM;
 				sides[lines[j].sidenum[1]].rowoffset = 96;
 			}
 		}

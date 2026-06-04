@@ -199,7 +199,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    short      skyhack;
    short      actionbits;
    int16_t    rowoffset, textureoffset;
-   const short liflags = ldflags[li-lines];
+   const short liflags = li->flags;
    static sector_t ftempsec;
    static sector_t btempsec;
    #ifdef FLOOR_OVER_FLOOR
@@ -804,10 +804,10 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
    const side_t *sidedef;
    boolean solid;
 
-   if (!vd.underwater && (ldflags[line->linedef] & ML_UNDERWATERONLY))
+   if (!vd.underwater && (lines[line->linedef].flags & ML_UNDERWATERONLY))
       return;
 
-   if ((ldflags[line->linedef] & ML_CULLING) && (D_abs(vd.viewx_t - v1->x) > 2048 || D_abs(vd.viewy_t - v1->y) > 2048))
+   if ((lines[line->linedef].flags & ML_CULLING) && (D_abs(vd.viewx_t - v1->x) > 2048 || D_abs(vd.viewy_t - v1->y) > 2048))
       return;
 
    if (line->v1 == rbsp->lastv2)

@@ -146,6 +146,7 @@ typedef struct line_s
 {
 	VINT 		v1, v2;
 	VINT		sidenum[2];			/* sidenum[1] will be -1 if one sided */
+	VINT 		flags;
 } line_t;
 
 typedef struct lineinfo_s
@@ -303,7 +304,6 @@ extern  SPTR        *sector_thinglist;
 extern	subsector_t	*subsectors;
 extern	node_t		*nodes;
 extern	line_t		*lines;
-extern  uint16_t    *ldflags;
 extern	side_t		*sides;
 extern  sidetex_t   *sidetexes;
 

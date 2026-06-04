@@ -162,7 +162,7 @@ boolean PM_BoxCrossLine(line_t *ld, pmovework_t *mw)
       return false; // bounding boxes don't intersect
    }
 
-   if(ldflags[ld-lines] & ML_ST_POSITIVE)
+   if(ld->flags & ML_ST_POSITIVE)
    {
       x1 = mw->tmbbox[BOXLEFT ];
       x2 = mw->tmbbox[BOXRIGHT];
@@ -203,7 +203,7 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
    if(ld->sidenum[1] == -1)
       return false; // one-sided line
 
-   const uint16_t lineflags = ldflags[ld-lines];
+   const uint16_t lineflags = ld->flags;
 
    if(lineflags & ML_BLOCKING)
       return false; // explicitly blocking everything

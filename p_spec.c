@@ -506,7 +506,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
       		rowoffset >>= 4; // sign extend
 
-			if (ldflags[line-lines] & ML_NOCLIMB)
+			if (line->flags & ML_NOCLIMB)
 			{
 				// Instant
 				int secnum = -1;
@@ -584,7 +584,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
       		rowoffset >>= 4; // sign extend
 
-			if (ldflags[line-lines] & ML_NOCLIMB)
+			if (line->flags & ML_NOCLIMB)
 			{
 				// Instant
 				int secnum = -1;
@@ -638,9 +638,6 @@ void P_LinedefExecute(uint8_t tag, player_t *player, sector_t *caller)
 	while ((li = P_FindNextLineWithTag(tag, &liStart)) != -1)
 	{
 		line_t *line = &lines[li];
-		if (!(ldflags[li] & ML_HAS_SPECIAL_OR_TAG))
-			continue;
-
 		uint8_t special = P_GetLineSpecial(line);
 
 		// Ten options for linedef execution. (Conversion: v2.2 special - 70)
@@ -665,7 +662,7 @@ void P_LinedefExecute(uint8_t tag, player_t *player, sector_t *caller)
 		}
 
 		if (special == 232) // Only execute once
-			ldflags[li] &= ~ML_HAS_SPECIAL_OR_TAG;
+			P_SetHasSpecialOrTag(li, false);
 	}
 }
 
@@ -1778,7 +1775,7 @@ void P_SpawnSpecials (void)
 			EV_DoFloor(&lines[i], continuousMoverCeiling);
 			break;
 		case 60: // Moving platform
-			if (ldflags[i] & ML_DONTPEGBOTTOM)
+			if (lines[i].flags & ML_DONTPEGBOTTOM)
 				EV_DoFloor(&lines[i], floorContinuous);
 			else
 				EV_DoFloor(&lines[i], bothContinuous);
@@ -1809,7 +1806,7 @@ void P_SpawnSpecials (void)
 			// heights depending on the camera height.
 			// Should that be the halfheight of the control sector?
 			// Or maybe even configurable somehow, by using the control sector's texture offset value...
-				if (ldflags[i] & ML_BLOCKMONSTERS)
+				if (lines[i].flags & ML_BLOCKMONSTERS)
 					I_TO_SEC(s)->flags |= SF_FOF_SWAPHEIGHTS;
 			}
 			break;

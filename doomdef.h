@@ -887,10 +887,10 @@ typedef struct memblock_s
 	int		size;           /* including the header and possibly tiny fragments */
 	short   tag;            /* purgelevel */
 	short   id;             /* should be ZONEID */
-//#ifdef MEMDEBUG
-//	char file[16];
-//	int line;
-//#endif
+#ifdef MEMDEBUG
+	char file[16];
+	int line;
+#endif
 #ifndef MARS
 	int		lockframe;		/* don't purge on the same frame */
 #endif

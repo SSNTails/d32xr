@@ -473,8 +473,8 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 				textureoffset <<= 4; // sign extend
 				textureoffset >>= 4; // sign extend
 
-				VINT args3 = (ldflags[line-lines] & ML_BLOCKMONSTERS) ? textureoffset : 0; // tag of linedef executor to run on completion
-				VINT args4 = ldflags[line-lines] & ML_NOCLIMB; // change flat?
+				VINT args3 = (line->flags & ML_BLOCKMONSTERS) ? textureoffset : 0; // tag of linedef executor to run on completion
+				VINT args4 = line->flags & ML_NOCLIMB; // change flat?
 
 				floor->speed = P_AproxDistance((v1->x - v2->x) << FRACBITS, (v1->y - v2->y) << FRACBITS) >> 3;
 
@@ -514,13 +514,13 @@ int EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag)
 				floor->origSpeed = P_AproxDistance((vertexes[line->v1].x - vertexes[line->v2].x) << FRACBITS,
 												(vertexes[line->v1].y - vertexes[line->v2].y) << FRACBITS) >> 2;
 				floor->speed = floor->origSpeed;
-				if (ldflags[line-lines] & ML_BLOCKMONSTERS)
+				if (line->flags & ML_BLOCKMONSTERS)
 					floor->dontChangeSector = true;
 
 				floor->lowestSector = P_FindNextLowestFloor(sides[line->sidenum[0]].sector, sec->floorheight);
 				floor->highestSector = P_FindNextHighestFloor(sides[line->sidenum[0]].sector, sec->floorheight);
 
-				if (ldflags[line-lines] & ML_NOCLIMB)
+				if (line->flags & ML_NOCLIMB)
 				{
 					floor->direction = 1;
 					floor->floordestheight = I_TO_SEC(floor->highestSector)->floorheight >> FRACBITS;
