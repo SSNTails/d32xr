@@ -664,7 +664,7 @@ void I_DebugScreen(void)
 			D_snprintf(buf[10], sizeof(buf[0]), "mt:%d", thingmem);
 			D_snprintf(buf[11], sizeof(buf[0]), "thinglist:%d", numsectors*sizeof(SPTR) + 16);
 			D_snprintf(buf[12], sizeof(buf[0]), "dsecs:%d", (numsectors*sizeof(sector_t*) + 16) + numdynamicsectors ? (numdynamicsectors*sizeof(sector_t) + 16) : 0);
-			D_snprintf(buf[13], sizeof(buf[0]), "ldf:%d", numlines*sizeof(uint16_t)+16);
+			D_snprintf(buf[13], sizeof(buf[0]), "ldf:%d", (numlines*sizeof(uint16_t)>>5)+16);
 			D_snprintf(buf[14], sizeof(buf[0]), "linfo:%d", sizeof(*lineinfos)*numlineinfos + 16);
 			D_snprintf(buf[15], sizeof(buf[0]), "stex:%d", numsidetexes*sizeof(sidetex_t)+16);
 			D_snprintf(buf[16], sizeof(buf[0]), "blinks:%d", sizeof(*blocklinks)* bmapwidth*bmapheight);
