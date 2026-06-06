@@ -1120,11 +1120,11 @@ void DrawScaledJagobj15bpp(jagobj_t* jo, int x, int y,
 	fixed_t	total_scaled_w, total_scaled_h;
 	int		rowsize;
 	fixed_t	inc_x, inc_y;
-	uint8_t	*dest, *source;
+	uint16_t	*dest, *source;
 
-	rowsize = BIGSHORT(jo->width);
-	width = BIGSHORT(jo->width);
-	height = BIGSHORT(jo->height);
+	rowsize = BIGSHORT(jo->width);	// 320
+	width = BIGSHORT(jo->width);	// 320
+	height = BIGSHORT(jo->height);	// 224
 //	flags = BIGSHORT(jo->flags);
 //	index = BIGSHORT(jo->index);
 
@@ -1159,18 +1159,28 @@ void DrawScaledJagobj15bpp(jagobj_t* jo, int x, int y,
 	}
 	//srcy += src_y;
 
-	if (x + width > 320)
-		width = 320 - x;
-	if (y + height > mars_framebuffer_height)
-		height = mars_framebuffer_height - y;
+	//if (x + width > 320)
+	//	width = 320 - x;
+	//if (y + height > mars_framebuffer_height)
+	//	height = mars_framebuffer_height - y;
 
 	if (width < 1 || height < 1)
 		return;
 
-	height <<= 1;
+	////height <<= 1;
 
-	total_scaled_w = FixedMul((width << 16), ratio_w) >> 17;
+	///width <<= 1;
+	///ratio_w <<= 1;
+
+	total_scaled_w = FixedMul((width << 16), ratio_w) >> 16;
 	total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
+
+	if (x + total_scaled_w > 320) {
+		total_scaled_w = 320 - x;
+	}
+	if (y + total_scaled_h > 204) {
+		total_scaled_h = 204 - y;
+	}
 
 	ratio_w = FixedDiv(FRACUNIT, ratio_w);
 	ratio_h = FixedDiv(FRACUNIT, ratio_h);
@@ -1178,38 +1188,31 @@ void DrawScaledJagobj15bpp(jagobj_t* jo, int x, int y,
 	inc_x = 0;
 	inc_y = 0;
 
-	dest = (byte*)fb + y * 320 + x;
+	dest = (byte*)fb + (y * (320<<1)) + (x<<1);
 	source = jo->data + srcx + srcy * rowsize;
 
 	//if ((x & 1) == 0 && (width & 1) == 0 && (rowsize & 1) == 0)
 	{
 		pixel_t* dest2 = (pixel_t*)dest;
 
-		uint8_t* source2 = source;
-		uint8_t* source3 = source;
+		uint16_t* source2 = source;
+		uint16_t* source3 = source;
 
 		for (; total_scaled_h; total_scaled_h--)
 		{
 			for (int n = total_scaled_w; n > 0; n--)
 			{
-				pixel_t word = (*source2) << 8;
-
-				inc_x += ratio_w;
-				source2 += (inc_x >> 16);
-				inc_x &= 0xFFFF;
-
-				word |= (*source2);
-				*dest2++ = word;
+				*dest2++ = *source2;
 
 				inc_x += ratio_w;
 				source2 += (inc_x >> 16);
 				inc_x &= 0xFFFF;
 			}
 
-			dest2 += (160 - total_scaled_w);
+			dest2 += (320 - total_scaled_w);
 
 			inc_y += ratio_h;
-			source3 += (width * (inc_y >> 16));
+			source3 += ((width) * (inc_y >> 16));
 			source2 = source3;
 			inc_y &= 0xFFFF;
 
