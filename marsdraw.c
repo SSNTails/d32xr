@@ -1112,7 +1112,7 @@ void DrawScaledJagobj(jagobj_t* jo, int x, int y,
 	}
 }
 
-void DrawScaledJagobj15bpp(jagobj_t* jo, int x, int y, 
+void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y, 
 	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb)
 {
 	int		srcx, srcy;
@@ -1486,6 +1486,113 @@ void DrawJagobj(jagobj_t* jo, int x, int y)
 void DrawJagobj2(jagobj_t* jo, int x, int y, int canvas_width)
 {
 	DrawJagobj3(jo, x, y, 0, 0, 0, 0, canvas_width, I_OverwriteBuffer());
+}
+
+void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y, 
+	int src_x, int src_y, int src_w, int src_h,
+	const int canvas_width, pixel_t *fb)
+{
+	int		srcx, srcy;
+	int		width, height, depth, flags, index, hw;
+	int		rowsize, inc;
+	uint16_t	*dest, *source;
+
+	rowsize = BIGSHORT(jo->width);
+	width = BIGSHORT(jo->width);
+	height = BIGSHORT(jo->height);
+	depth = BIGSHORT(jo->depth);
+	flags = BIGSHORT(jo->flags);
+	index = BIGSHORT(jo->index);
+
+	if (src_w > 0)
+		width = src_w;
+	else if (src_w < 0)
+		width += src_w;
+
+	if (src_h > 0)
+		height = src_h;
+	else if (src_h < 0)
+		height += src_h;
+
+	srcx = 0;
+	srcy = 0;
+
+	if (x < 0)
+	{
+		width += x;
+		srcx = -x;
+		x = 0;
+	}
+	srcx += src_x;
+
+	if (y < 0)
+	{
+		srcy = -y;
+		height += y;
+		y = 0;
+	}
+	srcy += src_y;
+
+	if (x + width > canvas_width)
+		width = canvas_width - x;
+	if (y + height > mars_framebuffer_height)
+		height = mars_framebuffer_height - y;
+	inc = rowsize - width;
+
+	if (width < 1 || height < 1)
+		return;
+
+	hw = width >> 1;
+
+	if (depth == 2)
+	{
+		inc >>= 1;
+		srcx >>= 1;
+		rowsize >>= 1;
+		index = (index << 1) + (flags & 2 ? 1 : 0);
+	}
+
+	dest = (byte*)fb + y * canvas_width + x;
+	source = jo->data + srcx + srcy * rowsize;
+
+	if ((x & 1) == 0 && (width & 1) == 0 && (rowsize & 1) == 0)
+	{
+		pixel_t* dest2 = (pixel_t*)dest, * source2 = (pixel_t*)source;
+		int canvas_inc = ((canvas_width >> 1) - hw) << 1;
+
+		inc >>= 1;
+		for (; height; height--)
+		{
+			int n = ((hw + 3) >> 2) << 1;
+			switch (hw & 3)
+			{
+			case 0: do { *dest2++ = *source2++;
+			case 3:      *dest2++ = *source2++;
+			case 2:      *dest2++ = *source2++;
+			case 1:      *dest2++ = *source2++;
+			} while (--n > 0);
+			}
+			source2 += inc;
+			dest2 += canvas_inc;
+		}
+
+		return;
+	}
+
+	for (; height; height--)
+	{
+		int n = ((width + 3) >> 2) << 1;
+		switch (width & 3)
+		{
+		case 0: do { *dest++ = *source++;
+		case 3:      *dest++ = *source++;
+		case 2:      *dest++ = *source++;
+		case 1:      *dest++ = *source++;
+		} while (--n > 0);
+		}
+		source += rowsize - width;
+		dest += canvas_width - width;
+	}
 }
 
 void DrawFillRect(int x, int y, int w, int h, int c)
