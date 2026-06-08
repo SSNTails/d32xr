@@ -1174,6 +1174,10 @@ void DRAW_LevelSelect (void)
 
 
 static jagobj_t *tf = NULL;
+fixed_t test_x_zoom = 0;
+fixed_t test_y_zoom = 0;
+fixed_t test_x_pos = 0;
+fixed_t test_y_pos = 0;
 
 void START_Story (void)
 {
@@ -1189,7 +1193,7 @@ void START_Story (void)
 
 	R_InitColormap();
 
-	tf = W_CacheLumpName("TF", PU_STATIC);
+	tf = W_CacheLumpName("TF128", PU_STATIC);
 
 	clearscreen = 2;
 
@@ -1200,18 +1204,82 @@ void START_Story (void)
 	}
 }
 
+int TIC_Story (void)
+{
+	int exit = ga_nothing;
+
+	uint8_t effects_flags_queue = 0;
+
+	screenCount++;
+
+	if (D_abs(ticrealanalogx) > 0x1F || (D_abs(ticrealanalogy) > 0x1F && D_abs(ticrealanalogx) > 0x0F)) {
+		test_x_pos += (ticrealanalogx << 10);
+	}
+
+	if (D_abs(ticrealanalogy) > 0x1F || (D_abs(ticrealanalogx) > 0x1F && D_abs(ticrealanalogy) > 0x0F)) {
+		test_y_pos += (ticrealanalogy << 10);
+	}
+
+	if (ticrealanalogt > 0x1F) {
+		test_x_zoom += ((ticrealanalogt-0x1F) << 6);
+		test_y_zoom += ((ticrealanalogt-0x1F) << 6);
+
+		if (test_x_zoom > 0xFFFFFF) {
+			test_x_zoom = 0xFFFFFF;
+		}
+		if (test_y_zoom > 0xFFFFFF) {
+			test_y_zoom = 0xFFFFFF;
+		}
+	}
+	else if (ticrealanalogt < -0x1F) {
+		test_x_zoom += ((ticrealanalogt+0x1F) << 6);
+		test_y_zoom += ((ticrealanalogt+0x1F) << 6);
+
+		if (test_x_zoom < -0xFE00) {
+			test_x_zoom = -0xFE00;
+		}
+		if (test_y_zoom < -0xFE00) {
+			test_y_zoom = -0xFE00;
+		}
+	}
+
+	return exit;
+}
+
 void DRAW_Story (void)
 {
 	while (frame_sync == mars_vblank_count);
 	frame_sync = mars_vblank_count;
 
 	if (clearscreen > 0) {
+		h32_adjust = false;
 		Mars_SetVideoMode(MARS_VDP_MODE_32K);
 		clearscreen--;
 	}
 
-	//if (screenCount >= (60 * 10)) {
-		DrawScaledJagobj_15bpp(tf, 0, 0, 65536 + (screenCount << 8), 65536 + (screenCount << 8), I_FrameBuffer());
+	if (test_x_zoom == 0x10000 && test_y_zoom == 0x10000) {
+		DrawJagobj3_15bpp(
+			tf,
+			((320-128)/2) + (test_x_pos >> 16),
+			((204-128)/2) + (test_y_pos >> 16),
+			0,
+			0,
+			tf->width,
+			tf->height,
+			320,
+			I_FrameBuffer()
+		);
+	}
+	else {
+		DrawScaledJagobj_15bpp(
+			tf,
+			((320-128)/2) + (test_x_pos >> 16),
+			((204-128)/2) + (test_y_pos >> 16),
+			65536 + test_x_zoom,
+			65536 + test_y_zoom,
+			I_FrameBuffer()
+		);
+	}
 	//}
 	//else {
 	//	DrawJagobj3_15bpp(tf, 0, 0, 0, 0, tf->width, tf->height, 320, I_FrameBuffer());
@@ -1846,7 +1914,7 @@ D_printf ("DM_Main\n");
 	int exit = ga_titleexpired;
 
 	SetLevelSelect();
-	exit = MiniLoop (START_Story, STOP_LevelSelect, TIC_LevelSelect, DRAW_Story, UpdateBuffer);
+	exit = MiniLoop (START_Story, STOP_LevelSelect, TIC_Story, DRAW_Story, UpdateBuffer);
 
 	if (!gameinfo.noAttractDemo) {
 		do {
