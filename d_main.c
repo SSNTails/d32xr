@@ -1212,6 +1212,13 @@ int TIC_Story (void)
 
 	screenCount++;
 
+	if (ticrealbuttons & BT_ACTION_START) {
+		test_x_pos = 0;
+		test_y_pos = 0;
+		test_x_zoom = 0;
+		test_y_zoom = 0;
+	}
+
 	if (D_abs(ticrealanalogx) > 0x1F || (D_abs(ticrealanalogy) > 0x1F && D_abs(ticrealanalogx) > 0x0F)) {
 		test_x_pos += (ticrealanalogx << 10);
 	}
@@ -1257,7 +1264,8 @@ void DRAW_Story (void)
 		clearscreen--;
 	}
 
-	if (test_x_zoom == 0x10000 && test_y_zoom == 0x10000) {
+	if (test_x_zoom == 0 && test_y_zoom == 0) {
+		// Use the faster function for drawing 15bpp when using 1:1 scaling.
 		DrawJagobj3_15bpp(
 			tf,
 			((320-128)/2) + (test_x_pos >> 16),

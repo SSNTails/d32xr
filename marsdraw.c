@@ -1116,7 +1116,7 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb)
 {
 	int		srcx, srcy;
-	int		width, height;//, flags, index;
+	int		width, height;
 	fixed_t	total_scaled_w, total_scaled_h;
 	int		rowsize;
 	fixed_t	inc_x, inc_y;
@@ -1124,8 +1124,6 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 
 	width = BIGSHORT(jo->width);
 	height = BIGSHORT(jo->height);
-//	flags = BIGSHORT(jo->flags);
-//	index = BIGSHORT(jo->index);
 
 	srcx = 0;
 	srcy = 0;
@@ -1204,8 +1202,6 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 
 		inc_x = 0;
 	}
-
-	return;
 }
 
 void DrawMaskedGraphicLump(int lumpnum, int x, int y)
@@ -1479,6 +1475,7 @@ void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y,
 {
 	int		srcx, srcy;
 	int		width, height, depth, flags, index, hw;
+	int		total_w, total_h;
 	int		rowsize, inc;
 	uint16_t	*dest, *source;
 
@@ -1502,9 +1499,12 @@ void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y,
 	srcx = 0;
 	srcy = 0;
 
+	total_w = width;
+	total_h = height;
+
 	if (x < 0)
 	{
-		width += x;
+		total_w += x;
 		srcx = -x;
 		x = 0;
 	}
@@ -1513,19 +1513,20 @@ void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y,
 	if (y < 0)
 	{
 		srcy = -y;
-		height += y;
+		total_h += y;
 		y = 0;
 	}
 	srcy += src_y;
 
-	if (x + width > canvas_width)
-		width = canvas_width - x;
-	if (y + height > mars_framebuffer_height)
-		height = mars_framebuffer_height - y;
-	inc = rowsize - width;
+	if (x + total_w > canvas_width)
+		total_w = canvas_width - x;
+	if (y + total_h > 204)
+		total_h = 204 - y;
+	inc = rowsize - total_w;
 
-	if (width < 1 || height < 1)
+	if (total_w <= 0 || total_h <= 0) {
 		return;
+	}
 
 	hw = width >> 1;
 
@@ -1537,19 +1538,18 @@ void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y,
 		index = (index << 1) + (flags & 2 ? 1 : 0);
 	}
 
-	dest = (byte*)fb + y * canvas_width + x;
-	source = jo->data + srcx + srcy * rowsize;
+	dest = (byte*)fb + ((y * canvas_width + x) << 1);
+	source = jo->data + ((srcx + srcy * rowsize) << 1);
 
-	if ((x & 1) == 0 && (width & 1) == 0 && (rowsize & 1) == 0)
+	//if ((x & 1) == 0 && (width & 1) == 0 && (rowsize & 1) == 0)
 	{
 		pixel_t* dest2 = (pixel_t*)dest, * source2 = (pixel_t*)source;
-		int canvas_inc = ((canvas_width >> 1) - hw) << 1;
+		int canvas_inc = (canvas_width - total_w); //((canvas_width >> 1) - hw) << 1;
 
-		inc >>= 1;
-		for (; height; height--)
+		for (; total_h; total_h--)
 		{
-			int n = ((hw + 3) >> 2) << 1;
-			switch (hw & 3)
+			int n = ((total_w + 3) >> 2);
+			switch (total_w & 3)
 			{
 			case 0: do { *dest2++ = *source2++;
 			case 3:      *dest2++ = *source2++;
@@ -1560,23 +1560,6 @@ void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y,
 			source2 += inc;
 			dest2 += canvas_inc;
 		}
-
-		return;
-	}
-
-	for (; height; height--)
-	{
-		int n = ((width + 3) >> 2) << 1;
-		switch (width & 3)
-		{
-		case 0: do { *dest++ = *source++;
-		case 3:      *dest++ = *source++;
-		case 2:      *dest++ = *source++;
-		case 1:      *dest++ = *source++;
-		} while (--n > 0);
-		}
-		source += rowsize - width;
-		dest += canvas_width - width;
 	}
 }
 
