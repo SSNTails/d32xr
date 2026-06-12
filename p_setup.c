@@ -20,7 +20,7 @@ uint16_t			numlines;
 uint16_t			numsides;
 uint16_t            numsidetexes;
 VINT            numpolyobjects;
-//polyobj_t *polyobjects;
+polyobj_t *polyobjects;
 
 uint16_t 		numlineinfos;
 lineinfo_t 		*lineinfos;
@@ -426,7 +426,7 @@ static void P_SetupMace(mapthing_t *mthing)
 	P_AddMaceChain(mthing, &axis, &rotation, args);
 }
 
-#define BAREBONESMAP
+//#define BAREBONESMAP
 //#define BAREBONESMAP_NOENEMIES
 
 void P_LoadThings (int lump)
