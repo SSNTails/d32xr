@@ -1132,8 +1132,8 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 		return;
 
 	if (x < 0) {
-		total_scaled_w = FixedMul(((width + (x>>1)) << 16), ratio_w) >> 16;
-		srcx = -x;
+		total_scaled_w = FixedMul(((width + x) << 16), ratio_w) >> 16;
+		srcx = (-x)<<1;
 		x = 0;
 	}
 	else
@@ -1150,9 +1150,6 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 
 	if (y < 0) {
 		total_scaled_h = FixedMul(((height + y) << 16), ratio_h) >> 16;
-		if (total_scaled_h <= 0) {
-			return;
-		}
 		srcy = -y;
 		y = 0;
 	}

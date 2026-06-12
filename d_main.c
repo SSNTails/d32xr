@@ -1174,6 +1174,7 @@ void DRAW_LevelSelect (void)
 
 
 static jagobj_t *tf = NULL;
+boolean test_always_zoom = false;
 fixed_t test_x_zoom = 0;
 fixed_t test_y_zoom = 0;
 fixed_t test_x_pos = 0;
@@ -1212,42 +1213,74 @@ int TIC_Story (void)
 
 	screenCount++;
 
+	if ((ticrealbuttons & BT_ACTION_MODE) && !(oldticrealbuttons & BT_ACTION_MODE)) {
+		test_always_zoom ^= true;
+	}
+
 	if (ticrealbuttons & BT_ACTION_START) {
+		test_always_zoom = false;
 		test_x_pos = 0;
 		test_y_pos = 0;
 		test_x_zoom = 0;
 		test_y_zoom = 0;
 	}
 
-	if (D_abs(ticrealanalogx) > 0x1F || (D_abs(ticrealanalogy) > 0x1F && D_abs(ticrealanalogx) > 0x0F)) {
-		test_x_pos += (ticrealanalogx << 10);
+	if (ticrealanalogx == 0 && ticrealanalogy == 0) {
+		if (ticrealbuttons & BT_ACTION_UP) {
+			test_y_pos -= 0x40000;
+		}
+		else if (ticrealbuttons & BT_ACTION_DOWN) {
+			test_y_pos += 0x40000;
+		}
+
+		if (ticrealbuttons & BT_ACTION_LEFT) {
+			test_x_pos -= 0x40000;
+		}
+		else if (ticrealbuttons & BT_ACTION_RIGHT) {
+			test_x_pos += 0x40000;
+		}
+	}
+	else {
+		if (D_abs(ticrealanalogx) > 0x1F || (D_abs(ticrealanalogy) > 0x1F && D_abs(ticrealanalogx) > 0x0F)) {
+			test_x_pos += (ticrealanalogx << 10);
+		}
+
+		if (D_abs(ticrealanalogy) > 0x1F || (D_abs(ticrealanalogx) > 0x1F && D_abs(ticrealanalogy) > 0x0F)) {
+			test_y_pos += (ticrealanalogy << 10);
+		}
 	}
 
-	if (D_abs(ticrealanalogy) > 0x1F || (D_abs(ticrealanalogx) > 0x1F && D_abs(ticrealanalogy) > 0x0F)) {
-		test_y_pos += (ticrealanalogy << 10);
+	if (ticrealanalogt == 0) {
+		if (ticrealbuttons & BT_ACTION_CAMLEFT) {
+			test_x_zoom -= 0x1800;
+			test_y_zoom -= 0x1800;
+		}
+		else if (ticrealbuttons & BT_ACTION_CAMRIGHT) {
+			test_x_zoom += 0x1800;
+			test_y_zoom += 0x1800;
+		}
 	}
-
-	if (ticrealanalogt > 0x1F) {
+	else if (ticrealanalogt > 0x1F) {
 		test_x_zoom += ((ticrealanalogt-0x1F) << 6);
 		test_y_zoom += ((ticrealanalogt-0x1F) << 6);
-
-		if (test_x_zoom > 0xFFFFFF) {
-			test_x_zoom = 0xFFFFFF;
-		}
-		if (test_y_zoom > 0xFFFFFF) {
-			test_y_zoom = 0xFFFFFF;
-		}
 	}
 	else if (ticrealanalogt < -0x1F) {
 		test_x_zoom += ((ticrealanalogt+0x1F) << 6);
 		test_y_zoom += ((ticrealanalogt+0x1F) << 6);
+	}
 
-		if (test_x_zoom < -0xFE00) {
-			test_x_zoom = -0xFE00;
-		}
-		if (test_y_zoom < -0xFE00) {
-			test_y_zoom = -0xFE00;
-		}
+	if (test_x_zoom < -0xFE00) {
+		test_x_zoom = -0xFE00;
+	}
+	else if (test_x_zoom > 0xFFFFFF) {
+		test_x_zoom = 0xFFFFFF;
+	}
+
+	if (test_y_zoom < -0xFE00) {
+		test_y_zoom = -0xFE00;
+	}
+	else if (test_y_zoom > 0xFFFFFF) {
+		test_y_zoom = 0xFFFFFF;
 	}
 
 	return exit;
@@ -1255,16 +1288,19 @@ int TIC_Story (void)
 
 void DRAW_Story (void)
 {
+	// Sync frames.
 	while (frame_sync == mars_vblank_count);
 	frame_sync = mars_vblank_count;
 
+	// Initialize framebuffers if necessary.
 	if (clearscreen > 0) {
 		h32_adjust = false;
 		Mars_SetVideoMode(MARS_VDP_MODE_32K);
 		clearscreen--;
 	}
 
-	if (test_x_zoom == 0 && test_y_zoom == 0) {
+	// Implement drawing code here.
+	if (!test_always_zoom && (test_x_zoom == 0 && test_y_zoom == 0)) {
 		// Use the faster function for drawing 15bpp when using 1:1 scaling.
 		DrawJagobj3_15bpp(
 			tf,
@@ -1288,10 +1324,13 @@ void DRAW_Story (void)
 			I_FrameBuffer()
 		);
 	}
-	//}
-	//else {
-	//	DrawJagobj3_15bpp(tf, 0, 0, 0, 0, tf->width, tf->height, 320, I_FrameBuffer());
-	//}
+}
+
+void STOP_Story (void)
+{
+	DoubleBufferSetup();	// Clear frame buffers to black.
+
+	Z_Free(tf);
 }
 
 /*============================================================================= */
@@ -1921,8 +1960,8 @@ D_printf ("DM_Main\n");
 	char demo_name[6] = { 'D', 'E', 'M', 'O', '0', '\0' };
 	int exit = ga_titleexpired;
 
-	SetLevelSelect();
-	exit = MiniLoop (START_Story, STOP_LevelSelect, TIC_Story, DRAW_Story, UpdateBuffer);
+	//SetStory();
+	//exit = MiniLoop (START_Story, STOP_Story, TIC_Story, DRAW_Story, UpdateBuffer);
 
 	if (!gameinfo.noAttractDemo) {
 		do {
