@@ -1319,8 +1319,8 @@ void DRAW_Story (void)
 			tf,
 			((320-128)/2) + (test_x_pos >> 16),
 			((204-128)/2) + (test_y_pos >> 16),
-			65536 + test_x_zoom,
-			65536 + test_y_zoom,
+			FRACUNIT + test_x_zoom,
+			FRACUNIT + test_y_zoom,
 			I_FrameBuffer()
 		);
 	}
