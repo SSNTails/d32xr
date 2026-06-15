@@ -190,7 +190,7 @@ static void R_UpdateCache(void)
         int lump = tex->lumpnum;
 
         data = (void **)tex->data;
-        if (lump >= firstsprite && lump < firstsprite + numsprites)
+        if (IsSpriteLump(lump))
         {
           masked = true;
           pixels = W_LumpLength(lump+1);

@@ -551,7 +551,8 @@ VINT CalcFlatSize(int lumplength);
 
 extern	VINT		firstflat, numflats;
 
-extern	VINT		firstsprite, numsprites;
+//extern	VINT		firstsprite, endsprite;
+boolean IsSpriteLump(int lump);
 
 extern int8_t* dc_colormaps;
 extern int8_t* dc_colormaps2;

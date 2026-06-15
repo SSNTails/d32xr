@@ -394,6 +394,8 @@ int G_FindMapinfo(VINT maplump, dmapinfo_t *mi, char *outmem)
 	D_snprintf(name, sizeof(name), "map \"%s\"", lumpname);
 
 	D_memset(mi, 0, sizeof(*mi));
+	mi->spriteBank = 6;
+	mi->mapBank = 7;
 	mi->data = G_MapinfoSectionCStr(buf, name, outmem);
 	if (!mi->data)
 		return 0;

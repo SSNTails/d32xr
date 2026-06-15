@@ -813,6 +813,10 @@ void P_SetupLevel (int lumpnum)
 	
 D_printf ("P_SetupLevel(%i)\n",lumpnum);
 
+//	I_Error("Sprite:%d, Map:%d", gamemapinfo.spriteBank, gamemapinfo.mapBank);
+	I_SetBankPageExplicit(6, gamemapinfo.spriteBank, false);
+	I_SetBankPageExplicit(7, gamemapinfo.mapBank, true);
+
 	P_InitThinkers ();
 
 	R_ResetTextures();

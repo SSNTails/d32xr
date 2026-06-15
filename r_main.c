@@ -798,7 +798,7 @@ void R_SetTextureData(texture_t *tex, uint8_t *start, int size, boolean skiphead
 #if MIPLEVELS > 1
 	uint8_t *end = start + size;
 
-	boolean masked = tex->lumpnum >= firstsprite && tex->lumpnum < firstsprite + numsprites;
+	boolean masked = IsSpriteLump(tex->lumpnum);
 
     if (!masked && texmips)
 		mipcount = MIPLEVELS;
@@ -935,7 +935,7 @@ void R_ResetTextures(void)
 		uint8_t *data;
 		int lump = textures[i].lumpnum;
 
-		if (lump >= firstsprite && lump < firstsprite + numsprites) {
+		if (IsSpriteLump(lump)) {
 			data = W_POINTLUMPNUM(lump+1);
 			length = W_LumpLength(lump+1);
 			skipheader = false;

@@ -9,7 +9,7 @@
 
 VINT		firstflat, numflats;
 
-VINT		firstsprite, numsprites;
+VINT		firstsprite, endsprite; // S1_START -> SX_END
 
 VINT		numtextures = 0;
 texture_t	*textures = NULL;
@@ -138,7 +138,7 @@ void R_InitTextures (void)
 		}
 
 		if (masked)
-			texture->lumpnum = W_CheckRangeForName(texture->name, firstsprite, firstsprite + numsprites);
+			texture->lumpnum = W_CheckRangeForName(texture->name, firstsprite, endsprite);
 		else if (start >= 0 && end > 0)
 			texture->lumpnum = W_CheckRangeForName(texture->name, start, end);
 		else
@@ -355,8 +355,8 @@ void R_InitData (void)
 	dc_playpals = (uint8_t*)W_POINTLUMPNUM(W_GetNumForName("PLAYPALS"));
 	dc_cshift_playpals = Z_Malloc(256*3, PU_STATIC);
 
-	firstsprite = W_GetNumForName ("S_START") + 1;
-	numsprites = W_GetNumForName ("S_END") - firstsprite;
+	firstsprite = W_GetNumForName ("S1_START") + 1;
+	endsprite = W_GetNumForName("S3_END");
 
 	R_InitTextures ();
 	R_InitFlats ();
@@ -620,6 +620,14 @@ R_InstallSpriteLump(const char* spritename, char letter, tempspriteframe_t* fram
 
 #define MAXSPRITEFRAMES 35
 
+boolean IsSpriteLump(int lump)
+{
+	if (lump < firstsprite || lump > endsprite)
+		return false;
+
+	return true;
+}
+
 //
 // R_InitSpriteDefs
 // Pass a null terminated list of sprite names
@@ -650,7 +658,7 @@ void R_InitSpriteDefs(const char** namelist)
 	int 	totallumps;
 	VINT 	*lumps;
 
-	if (firstsprite < 0)
+	if (firstsprite < 0) // What is this? If S_START wasn't found?
 	{
 		start = 0;
 		end = W_GetNumForName("T_START");
@@ -661,7 +669,7 @@ void R_InitSpriteDefs(const char** namelist)
 	else
 	{
 		start = firstsprite;
-		end = firstsprite + numsprites + 1;
+		end = endsprite;
 	}
 
 	// scan all the lump names for each of the names,
