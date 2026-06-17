@@ -671,6 +671,7 @@ no_cmd:
         dc.w    update_sfx - prireqtbl            /* 0x21 */
         dc.w    stop_sfx - prireqtbl              /* 0x22 */
         dc.w    flush_sfx - prireqtbl             /* 0x23 */
+        dc.w    set_palette_index_color - prireqtbl     /* 0x24 */
 
 | process request from Secondary SH2
 handle_sec_req:
@@ -1679,6 +1680,42 @@ set_music_volume:
 set_gamemode:
         move.b  0xA15122,gamemode
         move.w  #0,0xA15120         /* done */
+        bra     main_loop
+
+
+
+set_palette_index_color:
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a2,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+
+        move.w  0xA15120,d0         /* wait on handshake in COMM0 */
+        move.w  0xA15122,d1
+        move.w  #0,0xA15120         /* done with lower word */
+
+        lea     bank1_palette_1,a2
+        andi.w  #0xFF,d0
+        lsl.b   #1,d0
+        move.w  d1,(a2,d0)              /* Set color in DRAM */
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.w  #0x8F02,(a0)
+        move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
+
+        move.w  d1,(a1)                 /* Set color in CRAM */
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a2
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        |move.w  #0,0xA15120         /* done */
+
         bra     main_loop
 
 

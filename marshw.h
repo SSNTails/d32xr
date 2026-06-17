@@ -122,6 +122,7 @@ void Mars_CleanupNet(void);
 void Mars_SetNetLinkTimeout(int timeout);
 
 // MD video debug functions
+void Mars_SetPaletteIndexColor(int index, int rgb);
 void Mars_SetMDCrsr(int x, int y);
 void Mars_GetMDCrsr(int *x, int *y);
 void Mars_SetMDColor(int fc, int bc);

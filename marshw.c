@@ -572,6 +572,13 @@ void Mars_GetMDCrsr(int *x, int *y)
 	*x = t >> 6;
 }
 
+void Mars_SetPaletteIndexColor(int index, int rgb)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = rgb;
+	MARS_SYS_COMM0 = 0x2400 | index;
+}
+
 void Mars_SetMDColor(int fc, int bc)
 {
 	while (MARS_SYS_COMM0);

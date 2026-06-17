@@ -1179,9 +1179,21 @@ fixed_t test_x_zoom = 0;
 fixed_t test_y_zoom = 0;
 fixed_t test_x_pos = 0;
 fixed_t test_y_pos = 0;
+int test_r = 0;
+int test_g = 0;
+int test_b = 0;
 
 void START_Story (void)
 {
+	test_always_zoom = false;
+	test_x_zoom = 0;
+	test_y_zoom = 0;
+	test_x_pos = 0;
+	test_y_pos = 0;
+	test_r = 0;
+	test_g = 0;
+	test_b = 0;
+
 	DoubleBufferSetup();	// Clear frame buffers to black.
 
 	screenCount = 0;
@@ -1213,6 +1225,7 @@ int TIC_Story (void)
 
 	screenCount++;
 
+	/*
 	if ((ticrealbuttons & BT_ACTION_MODE) && !(oldticrealbuttons & BT_ACTION_MODE)) {
 		test_always_zoom ^= true;
 	}
@@ -1283,6 +1296,22 @@ int TIC_Story (void)
 		test_y_zoom = 0xFFFFFF;
 	}
 
+	if ((ticrealbuttons & XE_BT_A) && !(oldticrealbuttons & XE_BT_A)) {
+		test_r += 2;
+		test_r &= 0xE;
+	}
+
+	if ((ticrealbuttons & XE_BT_B) && !(oldticrealbuttons & XE_BT_B)) {
+		test_g += 2;
+		test_g &= 0xE;
+	}
+
+	if ((ticrealbuttons & XE_BT_C) && !(oldticrealbuttons & XE_BT_C)) {
+		test_b += 2;
+		test_b &= 0xE;
+	}
+	*/
+
 	return exit;
 }
 
@@ -1292,38 +1321,61 @@ void DRAW_Story (void)
 	while (frame_sync == mars_vblank_count);
 	frame_sync = mars_vblank_count;
 
+	int bgr_value = (test_b << 8) | (test_g << 4) | test_r;
+
+	Mars_SetPaletteIndexColor(0, bgr_value);
+
 	// Initialize framebuffers if necessary.
 	if (clearscreen > 0) {
 		h32_adjust = false;
+		h40_sky = false;
 		Mars_SetVideoMode(MARS_VDP_MODE_32K);
 		clearscreen--;
 	}
 
-	// Implement drawing code here.
-	if (!test_always_zoom && (test_x_zoom == 0 && test_y_zoom == 0)) {
-		// Use the faster function for drawing 15bpp when using 1:1 scaling.
-		DrawJagobj3_15bpp(
-			tf,
-			((320-128)/2) + (test_x_pos >> 16),
-			((204-128)/2) + (test_y_pos >> 16),
-			0,
-			0,
-			tf->width,
-			tf->height,
-			320,
-			I_FrameBuffer()
-		);
+	// Automatically advance the BG color every 175 frames.
+	if ((screenCount % 175) == 174) {
+		test_r += 2;
+		if (test_r == 0x10) {
+			test_r = 0;
+			test_g += 2;
+			if (test_g == 0x10) {
+				test_g = 0;
+				test_b += 2;
+				if (test_b == 0x10) {
+					test_b = 0;
+				}
+			}
+		}
 	}
-	else {
-		DrawScaledJagobj_15bpp(
-			tf,
-			((320-128)/2) + (test_x_pos >> 16),
-			((204-128)/2) + (test_y_pos >> 16),
-			65536 + test_x_zoom,
-			65536 + test_y_zoom,
-			I_FrameBuffer()
-		);
-	}
+
+	//if (screenCount < 4) {
+		// Implement drawing code here.
+		if (!test_always_zoom && (test_x_zoom == 0 && test_y_zoom == 0)) {
+			// Use the faster function for drawing 15bpp when using 1:1 scaling.
+			DrawJagobj3_15bpp(
+				tf,
+				((320-tf->width)/2) + (test_x_pos >> 16),
+				((204-tf->height)/2) + (test_y_pos >> 16),
+				0,
+				0,
+				tf->width,
+				tf->height,
+				320,
+				I_FrameBuffer()
+			);
+		}
+		else {
+			DrawScaledJagobj_15bpp(
+				tf,
+				((320-tf->width)/2) + (test_x_pos >> 16),
+				((204-tf->height)/2) + (test_y_pos >> 16),
+				65536 + test_x_zoom,
+				65536 + test_y_zoom,
+				I_FrameBuffer()
+			);
+		}
+	//}
 }
 
 void STOP_Story (void)
@@ -1773,7 +1825,8 @@ void START_Title(void)
 
 	I_InitMenuFire(titlepic, titlepic_a, titlepic_b);
 
-	S_StartSong(gameinfo.titleMus, 0, cdtrack_title);
+	//S_StartSong(gameinfo.titleMus, 0, cdtrack_title);
+	S_StartSong(W_GetNumForName("VGM_SS"), 1, cdtrack_title);
 }
 
 void STOP_Title (void)
@@ -1960,9 +2013,6 @@ D_printf ("DM_Main\n");
 	char demo_name[6] = { 'D', 'E', 'M', 'O', '0', '\0' };
 	int exit = ga_titleexpired;
 
-	//SetStory();
-	//exit = MiniLoop (START_Story, STOP_Story, TIC_Story, DRAW_Story, UpdateBuffer);
-
 	if (!gameinfo.noAttractDemo) {
 		do {
 			// Title intro
@@ -1982,6 +2032,10 @@ D_printf ("DM_Main\n");
 			switch (exit) {
 				case ga_startnew:
 					// Level selection screen
+
+					SetStory();
+					exit = MiniLoop (START_Story, STOP_Story, TIC_Story, DRAW_Story, UpdateBuffer);
+/*
 					SetLevelSelect();
 					exit = MiniLoop (START_LevelSelect, STOP_LevelSelect, TIC_LevelSelect, DRAW_LevelSelect, UpdateBuffer);
 
@@ -2013,7 +2067,7 @@ D_printf ("DM_Main\n");
 				case ga_showcredits:
 					// Show the credits sequence
 					SetCredits();
-					MiniLoop(F_Start, F_Stop, F_Ticker, F_Drawer, I_Update);
+					MiniLoop(F_Start, F_Stop, F_Ticker, F_Drawer, I_Update);*/
 			}
 		} while (1);
 	}
