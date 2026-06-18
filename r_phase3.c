@@ -7,14 +7,14 @@
 #include "doomdef.h"
 #include "p_local.h"
 
-static void R_PrepMobj(mobj_t* thing, const VINT isector) ATTR_DATA_CACHE_ALIGN;
+static void R_PrepMobj(mobj_t* thing) ATTR_DATA_CACHE_ALIGN;
 static void R_PrepRing(ringmobj_t* thing, const VINT isector, const int scenery) ATTR_DATA_CACHE_ALIGN;
 void R_SpritePrep(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 
 //
 // Project vissprite for potentially visible actor
 //
-static void R_PrepMobj(mobj_t *thing, const VINT isector)
+static void R_PrepMobj(mobj_t *thing)
 {
    fixed_t tr_x, tr_y;
    fixed_t tx, tz, x1, x2;
@@ -30,8 +30,8 @@ static void R_PrepMobj(mobj_t *thing, const VINT isector)
    const VINT doubleWide = (thing->flags2 & MF2_NARROWGFX) ? 2 : 1; // Sprites have half the horizontal resolution (like scenery)
    const sector_t *sec = SS_SECTOR(thing->isubsector);
 
-   // TODO: This is not technically correct, but is a quick way to remove some draw-through
-   if (sec == vd.viewsector && sec->fofsec >= 0)
+   // Quick way to remove some draw-through
+   if (thing->isubsector == vd.viewisubsector && sec->fofsec >= 0)
    {
       const sector_t *fofsec = I_TO_SEC(sec->fofsec);
 
@@ -330,22 +330,17 @@ static void R_PrepRing(ringmobj_t *thing, const VINT isector, const int scenery)
    const VINT heightsec = sec->heightsec;
    const fixed_t thingz = scenery ? (thing->type < MT_STALAGMITE0 || thing->type > MT_STALAGMITE7 ? (sec->floorheight + (zoff << (FRACBITS+5))) : sec->ceilingheight - mobjinfo[thing->type].height) : zoff << FRACBITS;
 
+   const fixed_t localgzt = thingz + ((fixed_t)BIGSHORT(patch->topoffset) << FRACBITS);
    if (heightsec >= 0 && vd.heightsec)   // only clip things which are in special sectors
    {
-      const fixed_t localgzt = thingz + ((fixed_t)BIGSHORT(patch->topoffset) << FRACBITS);
       const fixed_t thingHeight = I_TO_SEC(heightsec)->ceilingheight;
 
       if ((vd.underwater) != (localgzt < thingHeight))
          return;
    }
-   // TODO: This is not technically correct, but is a quick way to remove some draw-through
-   if (sec == vd.viewsector && sec->fofsec >= 0)
-   {
-      const sector_t *fofsec = I_TO_SEC(sec->fofsec);
-      if ((vd.viewz > fofsec->floorheight && thingz < fofsec->floorheight)
-         || (vd.viewz < fofsec->ceilingheight && thingz >= fofsec->ceilingheight))
-         return;
-   }
+
+   if (thingz > sec->ceilingheight || localgzt < sec->floorheight)
+      return;
 
    // get a new vissprite
    if(vd.vissprite_p >= vd.vissprites + MAXVISSPRITES)
@@ -414,7 +409,7 @@ void R_SpritePrep(void)
          if (thing->flags & MF_RINGMOBJ)
             R_PrepRing((ringmobj_t*)thing, secnum, !!(thing->flags & MF_NOBLOCKMAP)); // Devolve the MF_BLOCKMAP flag into a 1 or 0
          else if (!(thing->flags2 & MF2_DONTDRAW))
-            R_PrepMobj(thing, secnum);
+            R_PrepMobj(thing);
 
          tlist = thing->snext;
       }

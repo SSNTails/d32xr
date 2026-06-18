@@ -33,7 +33,7 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
 
    texture   = &textures[seg->fof_texturenum];
 
-//   if (texture->lumpnum < firstsprite || texture->lumpnum >= firstsprite + numsprites)
+//   if (!IsSpriteLump(texture->lumpnum))
 //      return;
 
    const VINT segStart = seg->start;
@@ -176,7 +176,7 @@ void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
 
    I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
 
-   if (texture->lumpnum < firstsprite || texture->lumpnum >= firstsprite + numsprites)
+   if (!IsSpriteLump(texture->lumpnum))
    {
       uint8_t *patch = texture->data[0];
 

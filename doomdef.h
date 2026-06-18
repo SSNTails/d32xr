@@ -1033,6 +1033,9 @@ void I_Init (void);
 byte *I_WadBase (void);
 byte *I_ZoneBase (int *size);
 void* I_RemapLumpPtr (void* ptr) ATTR_DATA_CACHE_ALIGN;
+int I_SetBankPage(int page) ATTR_DATA_CACHE_ALIGN;
+int I_GetBankPage(void) ATTR_DATA_CACHE_ALIGN;
+void I_SetBankPageExplicit(unsigned bank, uint16_t page, boolean map);
 
 /* return a pointer to a 64k or so temp work buffer for level setup uses */
 /*(non-displayed frame buffer) */

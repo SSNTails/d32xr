@@ -377,7 +377,9 @@ byte *I_WadBase (void)
 	return wadBase; 
 }
 
-
+// The pages currently switched in
+uint16_t spritePage = 6;
+uint16_t mapPage = 7;
 /*
 ====================
 =
@@ -391,31 +393,37 @@ void* I_RemapLumpPtr(void *ptr)
 	if (newptr >= mars_rom_bsw_start && newptr < 0x04000000)
 	{
 		unsigned page = (newptr - 0x02000000) >> 19;
-		volatile unsigned bank, bankpage;
-		void (*setbankpage)(int bank, int page);
+		unsigned bank = 0;
 
-		I_GetThreadLocalVar(DOOMTLS_BANKPAGE, bank);
-		I_GetThreadLocalVar(DOOMTLS_SETBANKPAGEPTR, setbankpage);
-
-		bankpage = bank & 0xffff;
-		bank = bank >> 16;
+		if (page == mapPage)
+			bank = 7;
+		else if (page == spritePage)
+			bank = 6;
+		else if (page > 5)
+			I_Error("I_RemapLumpPtr: Points to page %d (%x)", page, newptr - 0x02000000);
 
 		newptr = ((newptr & 0x0007FFFF) + 512*1024*bank + 0x02000000);
-		if (page >= 6)
-			newptr |= 0x20000000; // bypass cache
-
-		if (bankpage != page)
-		{
-			setbankpage(bank, page);
-
-			bank = (bank << 16) | page;
-			I_SetThreadLocalVar(DOOMTLS_BANKPAGE, bank);
-		}
-
 		return (void *)newptr;
 	}
 
 	return ptr;
+}
+
+// called twice on map load
+void I_SetBankPageExplicit(unsigned destBank, uint16_t page, boolean map)
+{
+//	volatile unsigned bank;
+	void (*setbankpage)(int bank, int page);
+	I_GetThreadLocalVar(DOOMTLS_SETBANKPAGEPTR, setbankpage);
+
+	setbankpage(destBank, page);
+
+	if (map)
+		mapPage = page;
+	else
+		spritePage = page;
+
+	Mars_ClearCache();
 }
 
 

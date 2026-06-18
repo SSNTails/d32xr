@@ -26,6 +26,7 @@ typedef struct
    cliprange_t *newend;
    cliprange_t *solidsegs;
    const seg_t       *curline;
+   const subsector_t *frontsubsec;
    const sector_t *curfsector;
    const sector_t *curbsector;
    const side_t      *curside;
@@ -206,7 +207,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    segl->fofSector = *fofInfo = -1; // fofSector is back sector FOF, fofInfo is front sector FOF
    #endif
 
-   front_sector = R_FakeFlat(front_sector, &ftempsec, false);
+   front_sector = R_FakeFlat(front_sector, &ftempsec, false, (front_sector->flags & SF_FOF_SWAPHEIGHTS) || vd.viewsubsector == rbsp->frontsubsec);
 
    {
       textureoffset = si->textureoffset & 0xfff;
@@ -245,7 +246,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       if (!back_sector)
          back_sector = &emptysector;
       else
-         back_sector = R_FakeFlat(back_sector, &btempsec, true);
+         back_sector = R_FakeFlat(back_sector, &btempsec, true, back_sector->flags & SF_FOF_SWAPHEIGHTS);
 
       b_floorpic      = back_sector->floorpic;
       b_ceilingpic    = back_sector->ceilingpic;
@@ -703,9 +704,9 @@ crunch:
 // killough 4/11/98, 4/13/98: fix bugs, add 'back' parameter
 //
 const sector_t *R_FakeFlat(const sector_t *sec, sector_t *tempsec,
-                     boolean back)
+                     boolean back, boolean doSwap)
 {
-   if (sec->fofsec >= 0 && (sec->flags & SF_FOF_SWAPHEIGHTS))
+   if (sec->fofsec >= 0 && doSwap)
    {
       // Replace sector being drawn, with a copy to be hacked
       *tempsec = *sec;
@@ -908,6 +909,7 @@ static void R_Subsector(rbspWork_t *rbsp, int num)
       }
    }
 
+   rbsp->frontsubsec = sub;
    rbsp->curfsector = I_TO_SEC(secnum); // frontsector
    line     = &segs[sub->firstline];
    count    = P_GetSubsectorNumlines(sub);
