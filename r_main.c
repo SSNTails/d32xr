@@ -1290,6 +1290,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.viewangle = thiscam->angle;
 		vd.viewsector = I_TO_SEC(thiscam->subsector->isector);
 		vd.viewsubsector = thiscam->subsector;
+		vd.viewisubsector = thiscam->subsector - subsectors;
 		vd.lightlevel = vd.viewsector->lightlevel;
 		vd.aimingangle = thiscam->aiming;
 		vd.heightsec = NULL;
@@ -1328,6 +1329,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.aimingangle = 0;
 		vd.viewsector = SS_SECTOR(player->mo->isubsector);
 		vd.viewsubsector = I_TO_SS(player->mo->isubsector);
+		vd.viewisubsector = player->mo->isubsector;
 		vd.heightsec = NULL;
 		vd.fofsec = NULL;
 

@@ -837,6 +837,7 @@ __attribute__((aligned(16)))
 	VINT		lightlevel;
 	VINT		displayplayer;
 	VINT		fixedcolormap;
+	VINT 		viewisubsector;
 	angle_t		clipangle, doubleclipangle;
 	VINT 		*viewangletox;
 
