@@ -376,7 +376,7 @@ void	R_SetupLevel(int gamezonemargin, char *background);
 void	R_SetShadowHighlight(boolean enabled);
 void	R_SetupTextureCaches(int gamezonemargin);
 // killough 4/13/98: fake floors/ceilings for deep water / fake ceilings:
-const sector_t *R_FakeFlat(const sector_t *, sector_t *, boolean) ATTR_DATA_CACHE_ALIGN;
+const sector_t *R_FakeFlat(const sector_t *, sector_t *, boolean, boolean) ATTR_DATA_CACHE_ALIGN;
 
 typedef void (*drawcol_t)(int, int, int, int, fixed_t, fixed_t, inpixel_t*, int);
 typedef void (*drawskycol_t)(int, int, int);
@@ -826,6 +826,7 @@ __attribute__((aligned(16)))
 	fixed_t		viewx, viewy, viewz;
 	angle_t		viewangle,aimingangle;
 	sector_t 	*viewsector;
+	subsector_t *viewsubsector;
 	sector_t    *heightsec;
 	sector_t    *fofsec;
 	fixed_t		viewcos, viewsin;
