@@ -786,8 +786,6 @@ void M_Drawer (void)
 /* Draw main menu */
 	if (m_titlea)
 	{
-		const VINT logoPos = 160 - (240/2);
-
 		if (scrpos == ms_help) {
 			int active_framebuffer = Mars_BackBuffer();
 

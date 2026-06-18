@@ -1209,8 +1209,6 @@ int TIC_Story (void)
 {
 	int exit = ga_nothing;
 
-	uint8_t effects_flags_queue = 0;
-
 	screenCount++;
 
 	if ((ticrealbuttons & BT_ACTION_MODE) && !(oldticrealbuttons & BT_ACTION_MODE)) {

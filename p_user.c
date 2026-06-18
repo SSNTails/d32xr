@@ -567,7 +567,7 @@ void P_BuildMove(player_t *player)
 	const int buttons = ticbuttons[playernum];
 	const int8_t analog_x = ticanalogx[playernum];	// XE-1AP left analog stick, horizontal position.
 	const int8_t analog_y = ticanalogy[playernum];	// XE-1AP left analog stick, vertical position.
-	const int8_t analog_t = ticanalogt[playernum];	// XE-1AP throttle position.
+	//const int8_t analog_t = ticanalogt[playernum];	// XE-1AP throttle position.
 	mobj_t *mo;
 
 	{

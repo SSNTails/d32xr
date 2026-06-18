@@ -740,9 +740,9 @@ int Mars_ReadController(int ctrl)
 	if (port < 0)
 		return -1;
 
-	val = ((next_buttons_pressed[port] & (~previous_buttons[port]))
+	val = (((next_buttons_pressed[port] & (~previous_buttons[port]))
 		| ((~next_buttons_released[port]) & previous_buttons[port]))
-		& 0x0FFF
+		& 0x0FFF)
 		| (next_buttons_pressed[port] & 0xF000);
 
 	next_buttons_pressed[port] = 0;
