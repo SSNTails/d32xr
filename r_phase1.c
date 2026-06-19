@@ -207,7 +207,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    segl->fofSector = *fofInfo = -1; // fofSector is back sector FOF, fofInfo is front sector FOF
    #endif
 
-   front_sector = R_FakeFlat(front_sector, &ftempsec, false, (front_sector->flags & SF_FOF_SWAPHEIGHTS) || vd.viewsubsector == rbsp->frontsubsec);
+   front_sector = R_FakeFlat(front_sector, &ftempsec, (front_sector->flags & SF_FOF_SWAPHEIGHTS) || vd.viewsubsector == rbsp->frontsubsec);
 
    {
       textureoffset = si->textureoffset & 0xfff;
@@ -246,7 +246,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       if (!back_sector)
          back_sector = &emptysector;
       else
-         back_sector = R_FakeFlat(back_sector, &btempsec, true, back_sector->flags & SF_FOF_SWAPHEIGHTS);
+         back_sector = R_FakeFlat(back_sector, &btempsec, back_sector->flags & SF_FOF_SWAPHEIGHTS);
 
       b_floorpic      = back_sector->floorpic;
       b_ceilingpic    = back_sector->ceilingpic;
@@ -704,7 +704,7 @@ crunch:
 // killough 4/11/98, 4/13/98: fix bugs, add 'back' parameter
 //
 const sector_t *R_FakeFlat(const sector_t *sec, sector_t *tempsec,
-                     boolean back, boolean doSwap)
+                     boolean doSwap)
 {
    if (sec->fofsec >= 0 && doSwap)
    {
