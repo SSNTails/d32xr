@@ -871,7 +871,7 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
       if (*(int8_t *)&backsector->ceilingpic == -1 || *(int8_t *)&frontsector->ceilingpic == -1)
       {
          // When both ceilings are skies, consider them always "open" to prevent HOM
-         solid = false;
+//         solid = false;
       }
       else if (backsector->ceilingheight <= frontsector->floorheight ||
          backsector->floorheight >= frontsector->ceilingheight)
@@ -889,7 +889,6 @@ static void R_AddLine(rbspWork_t *rbsp, seg_t *line)
             SIDETEX(sidedef)->midtexture == 0)
             return;
       }*/
-      rbsp->curbsector = backsector;
    }
 
    rbsp->curline = line;
