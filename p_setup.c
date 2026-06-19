@@ -371,25 +371,25 @@ static void P_SetupMace(mapthing_t *mthing)
 	args[7] = frontsector->lightlevel; // number of links to subtract from the inside.
 	args[10] = frontsector->ceilingheight >> FRACBITS; // phase offset
 
-	if (line->sidenum[1] >= 0)
-	{
-		sector_t *backsector = I_TO_SEC(sides[line->sidenum[1]].sector);
-		VINT backtextureoffset = sides[line->sidenum[1]].textureoffset & 0xfff;
-		backtextureoffset <<= 4; // sign extend
-		backtextureoffset >>= 4; // sign extend
-		VINT backrowoffset = (sides[line->sidenum[1]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[1]].rowoffset << 4);
-		backrowoffset >>= 4; // sign extend
+	if (line->sidenum[1] < 0)
+		return;
+
+	sector_t *backsector = I_TO_SEC(sides[line->sidenum[1]].sector);
+	VINT backtextureoffset = sides[line->sidenum[1]].textureoffset & 0xfff;
+	backtextureoffset <<= 4; // sign extend
+	backtextureoffset >>= 4; // sign extend
+	VINT backrowoffset = (sides[line->sidenum[1]].textureoffset & 0xf000) | ((unsigned)sides[line->sidenum[1]].rowoffset << 4);
+	backrowoffset >>= 4; // sign extend
 
 //		roll = backsector->ceilingheight >> FRACBITS;
-		args[2] = backrowoffset;
-		args[5] = backsector->floorheight >> FRACBITS;
-		args[6] = backtextureoffset;
-		args[9] = backsector->lightlevel << 1; // Swing speed
+	args[2] = backrowoffset;
+	args[5] = backsector->floorheight >> FRACBITS;
+	args[6] = backtextureoffset;
+	args[9] = backsector->lightlevel << 1; // Swing speed
 
-		rotation.x = (int8_t)backtextureoffset;
-		rotation.y = (int8_t)backrowoffset;
-		rotation.z = (int8_t)(backsector->floorheight >> FRACBITS);
-	}
+	rotation.x = (int8_t)backtextureoffset;
+	rotation.y = (int8_t)backrowoffset;
+	rotation.z = (int8_t)(backsector->floorheight >> FRACBITS);
 
 	if (mthing->options & MTF_AMBUSH)
 		args[8] |= TMM_DOUBLESIZE;
