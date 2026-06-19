@@ -730,15 +730,30 @@ const sector_t *R_FakeFlat(const sector_t *sec, sector_t *tempsec,
       }
       else // This one flips depending on water status
       {
+         const sector_t *watersec = I_TO_SEC(sec->heightsec);
+
          if (vd.underwater)
          {
-            tempsec->ceilingheight = fofsec->floorheight;
-            tempsec->ceilingpic = fofsec->floorpic;      
+            if (fofsec->floorheight <= watersec->ceilingheight)
+            {
+               tempsec->ceilingheight = fofsec->floorheight;
+               tempsec->ceilingpic = fofsec->floorpic;
+            }
+            else
+            {
+               tempsec->ceilingheight = watersec->ceilingheight;
+               tempsec->ceilingpic = watersec->ceilingpic;
+            }
          }
-         else
+         else if (fofsec->ceilingheight >= watersec->ceilingheight)
          {
             tempsec->floorheight = fofsec->ceilingheight;
             tempsec->floorpic = fofsec->ceilingpic;
+         }
+         else
+         {
+            tempsec->floorheight = watersec->ceilingheight;
+            tempsec->floorpic = watersec->ceilingpic;
          }
       }
 
@@ -761,7 +776,7 @@ const sector_t *R_FakeFlat(const sector_t *sec, sector_t *tempsec,
       if (vd.underwater)
       { // head-below-floor hack
          tempsec->floorheight = sec->floorheight;
-         tempsec->ceilingheight = watersec->ceilingheight - 1;
+         tempsec->ceilingheight = watersec->ceilingheight;
          tempsec->floorpic    = sec->floorpic;
 //       tempsec->floor_xoffs = s->floor_xoffs;
 //       tempsec->floor_yoffs = s->floor_yoffs;
@@ -770,7 +785,7 @@ const sector_t *R_FakeFlat(const sector_t *sec, sector_t *tempsec,
       }
       else
       {
-         tempsec->floorheight = watersec->ceilingheight-1;
+         tempsec->floorheight = watersec->ceilingheight;
          tempsec->floorpic = watersec->ceilingpic;
       }
 
