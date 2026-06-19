@@ -384,15 +384,23 @@ calculate_checksum:
         lea     0x80000,a1          /* start at the second page with remapped memory */
 
 | Handle the next seven pages (3.5MB) of ROM with RV=1
+        lea     0xA130F3,a0         /* initialize banks */
+        moveq   #1,d4
+        moveq   #6,d1               /* 7 banks */
 1:
-        add.w   (a1)+,d0
-        add.w   (a1)+,d0
-        add.w   (a1)+,d0
-        add.w   (a1)+,d0
+        move.b  d4,(a0)
+        addq    #2,a0
+        addq    #1,d4
         dbra    d1,1b
+2:
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        dbra    d1,2b
 
         move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
-        dbra    d2,1b
+        dbra    d2,2b
 
         cmpi.b  #8,d3               /* are there fewer than 8 banks total? */
         blo.b   checksum_validation
@@ -402,20 +410,20 @@ calculate_checksum:
         sub.b   #8,d2               /* skip the first 8 banks */
 
         lea     0xA130FD,a0         /* switch banks on offset 0x300000 */
-2:
+3:
         lea     0x300000,a1         /* go back to the start of the bank */
         move.b  d3,d4
         sub.b   d2,d4
         move.b  d4,(a0)             /* point to the next bank */
-3:
+4:
         add.w   (a1)+,d0
         add.w   (a1)+,d0
         add.w   (a1)+,d0
         add.w   (a1)+,d0
-        dbra    d1,3b
+        dbra    d1,4b
 
         move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
-        dbra    d2,2b
+        dbra    d2,3b
 
         move.b  #6,(a0)             /* reset bank */
 
