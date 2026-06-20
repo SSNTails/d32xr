@@ -392,7 +392,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
             else if (backFOF->floorheight > vd.viewz)
                segl->fof_picnum = backFOF->floorpic;
 
-            if (front_sector->fofsec < 0)
+            if (front_sector->fofsec != back_sector->fofsec)
             {
                const line_t *fofline = &lines[backFOF->specline];
                const side_t *fofside = &sides[fofline->sidenum[0]];
@@ -402,24 +402,31 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 #ifdef WALLDRAW2X
                fof_texturemid >>= 1;
 #endif
-               if (backFOF->ceilingheight <= front_sector->floorheight || backFOF->floorheight >= front_sector->ceilingheight)
+
+               if (front_sector->fofsec >= 0)
                {
-                  fof_texturemid = 0;
-                  segl->fof_texturenum = (uint8_t)-1;
+                  const sector_t *frontFOF = I_TO_SEC(front_sector->fofsec);
+
+                  if (frontFOF->ceilingheight >= backFOF->ceilingheight
+                     && frontFOF->floorheight <= backFOF->floorheight)
+                     segl->fof_texturenum = (uint8_t)-1;
+                  
+                  *fofInfo = front_sector->fofsec;
+                  if (frontFOF->ceilingheight < vd.viewz)
+                  {
+                     // Rendering the ceiling
+                     actionbits |= AC_FOFTOP;
+                  }
+                  else if (frontFOF->floorheight > vd.viewz)
+                  {
+                     actionbits |= AC_FOFBOTTOM;
+                  }
                }
-            }
-            else if (!(front_sector->flags & SF_FOF_SWAPHEIGHTS))
-            {
-               const sector_t *frontFOF = I_TO_SEC(front_sector->fofsec);
-               *fofInfo = front_sector->fofsec;
-               if (frontFOF->ceilingheight < vd.viewz)
+               else // Regular sector in front
                {
-                  // Rendering the ceiling
-                  actionbits |= AC_FOFTOP;
-               }
-               else if (frontFOF->floorheight > vd.viewz)
-               {
-                  actionbits |= AC_FOFBOTTOM;
+                  if ((f_floorheight < 0 && backFOF->ceilingheight <= front_sector->floorheight)
+                     || (f_floorheight > 0 && backFOF->floorheight >= front_sector->ceilingheight))
+                     segl->fof_texturenum = (uint8_t)-1;
                }
             }
          }
