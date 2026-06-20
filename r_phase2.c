@@ -355,7 +355,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
                 }
                 else if (backFOF->ceilingheight < vd.viewz) // Top of FOF is visible
                 {
-                    const VINT fofandlight = ((255 & 0xff) << 8) | flattranslation[backFOF->ceilingpic];
+                    const VINT fofandlight = ((segl->seglightlevel & 0xff) << 8) | flattranslation[backFOF->ceilingpic];
                     const fixed_t fofplaneHeight = backFOF->ceilingheight - vd.viewz;
 
                     top = ceilingclipx;
@@ -417,7 +417,7 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
             }
             else if (actionbits & AC_FOFTOP) // Top of FOF is visible
             {
-                const VINT fofandlight = ((255 & 0xff) << 8) | flattranslation[frontFOF->ceilingpic];
+                const VINT fofandlight = ((segl->seglightlevel & 0xff) << 8) | flattranslation[frontFOF->ceilingpic];
                 const fixed_t fofplaneHeight = frontFOF->ceilingheight - vd.viewz;
 
                 // "flooropen"
