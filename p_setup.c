@@ -411,6 +411,9 @@ static void P_SetupMace(mapthing_t *mthing)
 //	if (tag == 120)
 //		args[8] |= TMM_ALWAYSTHINK;
 
+//	I_Error("%d, %d, %d, %d, %d\n%d, %d, %d, %d, %d\n%d, %d, %d\n%d, %d, %d", args[0], args[1], args[2], args[3], args[4],
+//	args[5], args[6], args[7], args[8], args[9], rotation.x, rotation.y, rotation.z, axis.x, axis.y, axis.z);
+
 	// Whew! We gathered all of the info. Let's do something with it, now.
 	P_AddMaceChain(mthing, &axis, &rotation, args);
 }
