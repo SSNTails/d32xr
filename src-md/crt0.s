@@ -1727,8 +1727,8 @@ decompress_lump:
         tst.l   lump_size
         beq.s   decompress_lump_done
         move.l  lump_ptr,d0
-        andi.l  #0x7FFFF,d0
-        addi.l  #0x880000,d0
+        andi.l  #0xFFFFF,d0
+        addi.l  #0x900000,d0
         movea.l d0,a0
         moveq   #0,d0
         move.w  (a0)+,d0
@@ -1781,8 +1781,8 @@ load_md_palettes:
         move.w  #0x8F02,(a0)
         move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
         move.l  lump_ptr,d0
-        andi.l  #0x7FFFF,d0
-        addi.l  #0x880000,d0
+        andi.l  #0xFFFFF,d0
+        addi.l  #0x900000,d0
         move.l  d0,a2
         move.l  lump_size,d1
         lsr.l   #1,d1
@@ -1843,8 +1843,8 @@ load_md_sky:
         bsr     get_lump_source_and_size
         lea     0xC00004,a0
         move.l  lump_ptr,d0
-        andi.l  #0x7FFFF,d0
-        addi.l  #0x880002,d0    /* Plus 2 to skip the 32X thru color and dummy bytes */
+        andi.l  #0xFFFFF,d0
+        addi.l  #0x900002,d0    /* Plus 2 to skip the 32X thru color and dummy bytes */
         move.l  d0,a2
 
         move.w  #0x8C00,d0
@@ -1931,8 +1931,8 @@ load_md_sky:
         move.w  #0x8F02,(a0)
         move.l  #0xC0000000,(a0)        /* Write CRAM address 0 */
         move.l  lump_ptr,d0
-        andi.l  #0x7FFFF,d0
-        addi.l  #0x880000,d0
+        andi.l  #0xFFFFF,d0
+        addi.l  #0x900000,d0
         move.l  d0,a2
         lea     bank1_palette_1,a3
         move.w  #47,d1
