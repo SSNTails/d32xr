@@ -50,8 +50,8 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
 
    I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
 
-   const sector_t *fofSector = I_TO_SEC(seg->fofSector);
-   VINT thickness = ((fofSector->ceilingheight- fofSector->floorheight) >> FRACBITS) >> 1;
+//   const sector_t *fofSector = I_TO_SEC(seg->fofSector);
+   VINT thickness = seg->fof_sideThickness >> 1;//((fofSector->ceilingheight- fofSector->floorheight) >> FRACBITS) >> 1;
 
    for(; x <= stopx; x++)
    {

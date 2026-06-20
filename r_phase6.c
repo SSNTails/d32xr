@@ -265,7 +265,7 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
     fixed_t distance = segl->distance;
 #endif
 
-    const int floorheight = segl->floorheight;
+    const int floorheight = segl->floorheight_t << FRACBITS;
     const int ceilingheight = segl->ceilingheight;
 
 #ifdef SIMPLELIGHT

@@ -285,7 +285,8 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
          else
             actionbits |= (AC_ADDFLOOR|AC_NEWFLOOR);
       }
-      segl->floorheight = *floorheight = *floornewheight = f_floorheight;
+      *floorheight = *floornewheight = f_floorheight;
+      segl->floorheight_t = f_floorheight >> FRACBITS;
 
       segl->t_bottomheight = f_floorheight; // bottom of texturemap
 
@@ -398,6 +399,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                const side_t *fofside = &sides[fofline->sidenum[0]];
                fof_texturemid = backFOF->ceilingheight - vd.viewz;
                segl->fof_texturenum = texturetranslation[SIDETEX(fofside)->midtexture];
+               segl->fof_sideThickness = (backFOF->ceilingheight - backFOF->floorheight) >> FRACBITS;
 //               fof_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
 #ifdef WALLDRAW2X
                fof_texturemid >>= 1;
@@ -410,6 +412,14 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                   if (frontFOF->ceilingheight >= backFOF->ceilingheight
                      && frontFOF->floorheight <= backFOF->floorheight)
                      segl->fof_texturenum = (uint8_t)-1;
+                  else if (backFOF->ceilingheight > frontFOF->ceilingheight && backFOF->floorheight < frontFOF->ceilingheight)
+                     segl->fof_sideThickness -= (frontFOF->ceilingheight - backFOF->floorheight) >> FRACBITS;
+                  else if (backFOF->floorheight < frontFOF->floorheight && backFOF->ceilingheight > frontFOF->floorheight)
+                  {
+                     VINT amount = (backFOF->ceilingheight - frontFOF->floorheight) >> FRACBITS;
+                     segl->fof_sideThickness -= amount;
+                     segl->fof_texturemid -= amount;
+                  }
                   
                   *fofInfo = front_sector->fofsec;
                   if (frontFOF->ceilingheight < vd.viewz)
@@ -427,6 +437,8 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                   if ((f_floorheight < 0 && backFOF->ceilingheight <= front_sector->floorheight)
                      || (f_floorheight > 0 && backFOF->floorheight >= front_sector->ceilingheight))
                      segl->fof_texturenum = (uint8_t)-1;
+                  else if (backFOF->floorheight < front_sector->floorheight)
+                     segl->fof_sideThickness -= (front_sector->floorheight - backFOF->floorheight) >> FRACBITS;
                }
             }
          }

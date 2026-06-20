@@ -705,7 +705,8 @@ typedef struct
 	VINT			start;
 	VINT			stop;					/* inclusive x coordinates */
 
-	fixed_t			floorheight;
+	int16_t			floorheight_t;
+	int16_t         fof_sideThickness;
 
 	union
 	{
