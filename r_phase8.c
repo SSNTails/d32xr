@@ -12,8 +12,9 @@
 static boolean R_SegBehindPoint(viswall_t *viswall, int dx, int dy) ATTR_DATA_CACHE_ALIGN;
 #ifdef FLOOR_OVER_FLOOR
 void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx) ATTR_DATA_CACHE_ALIGN;
+void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx) ATTR_DATA_CACHE_ALIGN;
 #endif
-void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx) ATTR_DATA_CACHE_ALIGN;
+void R_DrawMaskedSegRange(viswall_t *seg, int x, int stopx) ATTR_DATA_CACHE_ALIGN;
 void R_DrawVisSprite(vissprite_t* vis, unsigned short* spropening, int sprscreenhalf) ATTR_DATA_CACHE_ALIGN;
 void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreenhalf, int16_t *walls) ATTR_DATA_CACHE_ALIGN;
 static void R_DrawSortedSprites(int* sortedsprites, int sprscreenhalf) ATTR_DATA_CACHE_ALIGN;
@@ -67,7 +68,7 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
 
       if (light == OPENMARK)
          continue;
-//      maskedcol[x] = OPENMARK;
+      maskedcol[x] = OPENMARK;
 
 #ifdef MARS
         volatile int32_t t;
@@ -154,14 +155,192 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
       }
    }
 }
+
+// Seg with both AC_FOFSIDE and AC_MIDTEXTURE
+void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx)
+{
+   patch_t *midPatch;
+   uint8_t *fofPatch;
+   inpixel_t *pixels;
+   VINT fofThickness = seg->fof_sideThickness >> 1;
+
+   if (x > stopx)
+      return;
+
+   uint16_t *spropening = seg->clipbounds;
+   uint16_t *maskedcol = seg->clipbounds + (seg->stop - seg->start + 1);
+
+   const texture_t *midTexture = &textures[seg->m_texturenum];
+   const texture_t *fofTexture = &textures[seg->fof_texturenum];
+   const int midWidthMask = midTexture->width - 1;
+   const int fofWidthMask = fofTexture->width - 1;
+   const fixed_t fracstep = seg->scalestep;
+   fixed_t scalefrac = seg->scalefrac + (x - seg->start) * fracstep;
+
+   I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
+
+   midPatch = W_POINTLUMPNUM(midTexture->lumpnum);
+   fofPatch = fofTexture->data[0];
+   pixels = midTexture->data[0];
+
+   do
+   {
+      int light = maskedcol[x];
+      uint16_t fofColnum = maskedcol[x] & fofWidthMask;
+      uint16_t midColnum = maskedcol[x] & midWidthMask;
+
+#ifdef WALLDRAW2X
+      const fixed_t spryscale = scalefrac << 1;
+#else
+      const fixed_t spryscale = scalefrac;
+#endif
+      scalefrac += fracstep;  
+
+      if (light == OPENMARK)
+         continue;
+
+      light &= OPENMARK;
+      maskedcol[x] = OPENMARK;
+
+#ifdef MARS
+      volatile int32_t t;
+      __asm volatile (
+         "mov #-128, r0\n\t"
+         "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+         "mov #0, %0\n\t"
+         "mov.l %0, @(16, r0) /* set high bits of the 64-bit dividend */ \n\t"
+         "mov.l %1, @(0, r0) /* set 32-bit divisor */ \n\t"
+         "mov #-1, %0\n\t"
+         "mov.l %0, @(20, r0) /* set low  bits of the 64-bit dividend, start divide */\n\t"
+         : "=&r" (t) : "r" (scalefrac) : "r0");
+#else
+      fixed_t scale = scalefrac;
 #endif
 
-void R_DrawMaskedSegRange(viswall_t *seg, int texturenum, int x, int stopx)
+      const int topclip     = (spropening[x] >> 8);
+      const  int bottomclip  = (spropening[x] & 0xff) - 1;
+      fixed_t sprtop, iscale;
+
+      sprtop = FixedMul(seg->fof_texturemid, spryscale);
+      sprtop = centerYViewportFrac - sprtop;
+
+#ifdef MARS
+#ifdef WALLDRAW2X
+      __asm volatile (
+         "mov #-128, r0\n\t"
+         "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+         "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
+         "shar %0\n\t"
+         : "=r" (iscale) : : "r0");
+#else
+      __asm volatile (
+         "mov #-128, r0\n\t"
+         "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+         "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
+         : "=r" (iscale) : : "r0");
+#endif
+#else
+      iscale = 0xffffffffu / scalefrac;
+#endif
+
+      // Draw the FOF side
+      // column loop
+      if (seg->fof_texturenum != 0xff)
+      {
+         int top    = sprtop;
+         int bottom = fofThickness * spryscale + top;
+         int dataofs = fofColnum * fofTexture->height;
+         int count;
+         fixed_t frac;
+         int temp = FRACUNIT-1;
+
+#ifdef MARS
+         __asm volatile (
+            "mov #-1, %0\n\t"
+            "extu.w %0, %0\n\t"
+            : "=&r" (temp));
+#endif
+         top += temp;
+         top >>= FRACBITS;
+
+         bottom -= 1;
+         bottom >>= FRACBITS;
+
+         // clip to bottom
+         if(bottom > bottomclip)
+            bottom = bottomclip;
+
+         frac = 0;
+
+         // clip to top
+         if(topclip > top)
+         {
+            frac += (topclip - top) * iscale;
+            top = topclip;
+         }
+
+         // calc count
+         count = bottom - top + 1;
+         if(count > 0)
+            drawcol(x, top, bottom, light, frac, iscale, fofPatch + dataofs, fofTexture->height);
+      }
+
+      // Draw the midtexture
+      byte *columnptr = ((byte *)midPatch + BIGSHORT(midPatch->columnofs[midColnum]));
+      sprtop = FixedMul(seg->m_texturemid, spryscale);
+      sprtop = centerYViewportFrac - sprtop;
+
+      // column loop
+      // a post record has four bytes: topdelta length pixelofs*2
+      for(; *columnptr != 0xff; columnptr += sizeof(column_t))
+      {
+         column_t *column = (column_t *)columnptr;
+         int top    = column->topdelta * spryscale + sprtop;
+         int bottom = column->length   * spryscale + top;
+         byte *dataofsofs = columnptr + offsetof(column_t, dataofs);
+         int dataofs = (dataofsofs[0] << 8) | dataofsofs[1];
+         fixed_t frac;
+         int temp = FRACUNIT-1;
+
+#ifdef MARS
+         __asm volatile (
+            "mov #-1, %0\n\t"
+            "extu.w %0, %0\n\t"
+            : "=&r" (temp));
+#endif
+         top += temp;
+         top >>= FRACBITS;
+
+         bottom -= 1;
+         bottom >>= FRACBITS;
+
+         // clip to bottom
+         if(bottom > bottomclip)
+            bottom = bottomclip;
+
+         frac = 0;
+
+         // clip to top
+         if(topclip > top)
+         {
+            frac += (topclip - top) * iscale;
+            top = topclip;
+         }
+
+         drawcol(x, top, bottom, light, frac, iscale, pixels + BIGSHORT(dataofs), 128);
+      }
+      /* code */
+   } while (++x <= stopx);
+}
+#endif
+
+void R_DrawMaskedSegRange(viswall_t *seg, int x, int stopx)
 {
    fixed_t  spryscale, scalefrac, fracstep;
    uint16_t *spropening, *maskedcol;
    texture_t  *texture;
    int widthmask;
+   const short texturenum = seg->m_texturenum;
 
    if (x > stopx)
       return;
@@ -681,12 +860,16 @@ void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
 
       if((ds->scalefrac < scalefrac && ds->scale2 < scalefrac) ||
          ((ds->scalefrac <= scalefrac || ds->scale2 <= scalefrac) && R_SegBehindPoint(ds, vis->gx, vis->gy))) {
-#ifdef FLOOR_OVER_FLOOR
-         if ((ds->actionbits & AC_FOFSIDE) && ds->fof_texturenum != 0xff)
+//#ifdef FLOOR_OVER_FLOOR
+//         if ((ds->actionbits & AC_FOFSIDE) && ds->fof_texturenum != 0xff)
+//            R_DrawFOFSegRange(ds, r1, r2);
+//#endif
+         if ((ds->actionbits & (AC_MIDTEXTURE|AC_FOFSIDE)) == (AC_MIDTEXTURE|AC_FOFSIDE) &&  ds->fof_texturenum != 0xff)
+            R_DrawBothMaskedSegRange(ds, r1, r2);
+         else if (ds->actionbits & AC_MIDTEXTURE)
+            R_DrawMaskedSegRange(ds, r1, r2);
+         else if ((ds->actionbits & AC_FOFSIDE) && ds->fof_texturenum != 0xff)
             R_DrawFOFSegRange(ds, r1, r2);
-#endif
-         if (ds->actionbits & AC_MIDTEXTURE)
-            R_DrawMaskedSegRange(ds, ds->m_texturenum, r1, r2);
 
          continue;
       }
@@ -872,12 +1055,13 @@ static void R_DrawSortedSprites(int* sortedsprites, int sprscreenhalf)
       ds = vd.viswalls + *pwalls++;
       r1 = ds->start < x1 ? x1 : ds->start;
       r2 = ds->stop  > x2 ? x2 : ds->stop;
-#ifdef FLOOR_OVER_FLOOR
-      if ((ds->actionbits & AC_FOFSIDE) && ds->fof_texturenum != 0xff)
+
+      if ((ds->actionbits & (AC_MIDTEXTURE|AC_FOFSIDE)) == (AC_MIDTEXTURE|AC_FOFSIDE) &&  ds->fof_texturenum != 0xff)
+         R_DrawBothMaskedSegRange(ds, r1, r2);
+      else if (ds->actionbits & AC_MIDTEXTURE)
+         R_DrawMaskedSegRange(ds, r1, r2);
+      else if ((ds->actionbits & AC_FOFSIDE) && ds->fof_texturenum != 0xff)
          R_DrawFOFSegRange(ds, r1, r2);
-#endif
-      if (ds->actionbits & AC_MIDTEXTURE)
-         R_DrawMaskedSegRange(ds, ds->m_texturenum, r1, r2);
 
    } while (*pwalls != -1);
 }
