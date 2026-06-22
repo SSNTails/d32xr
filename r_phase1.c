@@ -207,7 +207,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    segl->fofSector = *fofInfo = -1; // fofSector is back sector FOF, fofInfo is front sector FOF
    #endif
 
-   front_sector = R_FakeFlat(front_sector, &ftempsec, (front_sector->flags & SF_FOF_SWAPHEIGHTS) || vd.viewsubsector == rbsp->frontsubsec);
+   front_sector = R_FakeFlat(front_sector, &ftempsec, vd.viewsubsector == rbsp->frontsubsec);
 
    {
       textureoffset = si->textureoffset & 0xfff;
@@ -246,7 +246,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       if (!back_sector)
          back_sector = &emptysector;
       else
-         back_sector = R_FakeFlat(back_sector, &btempsec, back_sector->flags & SF_FOF_SWAPHEIGHTS);
+         back_sector = R_FakeFlat(back_sector, &btempsec, false);
 
       b_floorpic      = back_sector->floorpic;
       b_ceilingpic    = back_sector->ceilingpic;
@@ -416,6 +416,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                      segl->fof_sideThickness -= (frontFOF->ceilingheight - backFOF->floorheight) >> FRACBITS;
                   else if (backFOF->floorheight < frontFOF->floorheight && backFOF->ceilingheight > frontFOF->floorheight)
                   {
+                     // NOTE: This may need the >>= 1 on 'amount'
                      VINT amount = (backFOF->ceilingheight - frontFOF->floorheight) >> FRACBITS;
                      segl->fof_sideThickness -= amount;
                      segl->fof_texturemid -= amount;
@@ -723,9 +724,9 @@ crunch:
 // killough 4/11/98, 4/13/98: fix bugs, add 'back' parameter
 //
 const sector_t *R_FakeFlat(const sector_t *sec, sector_t *tempsec,
-                     boolean doSwap)
+                     boolean isViewSubsector)
 {
-   if (sec->fofsec >= 0 && doSwap)
+   if (sec->fofsec >= 0 && ((sec->flags & SF_FOF_SWAPHEIGHTS) || isViewSubsector))
    {
       // Replace sector being drawn, with a copy to be hacked
       *tempsec = *sec;
@@ -766,8 +767,16 @@ const sector_t *R_FakeFlat(const sector_t *sec, sector_t *tempsec,
          }
          else if (fofsec->ceilingheight >= watersec->ceilingheight)
          {
-            tempsec->floorheight = fofsec->ceilingheight;
-            tempsec->floorpic = fofsec->ceilingpic;
+            if (vd.viewz > fofsec->ceilingheight)
+            {
+               tempsec->floorheight = fofsec->ceilingheight;
+               tempsec->floorpic = fofsec->ceilingpic;
+            }
+            else
+            {
+               tempsec->floorheight = watersec->ceilingheight;
+               tempsec->floorpic = watersec->ceilingpic;
+            }
          }
          else
          {
