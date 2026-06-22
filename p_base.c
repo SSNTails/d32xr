@@ -798,13 +798,20 @@ static void P_Boss4Thinker(mobj_t *mobj)
    if (mobj->health <= mobjInfo->damage && !(mobj->flags2 & MF2_SPAWNEDJETS))
    {
       // Spawn the MT_JETFLAME
+      mobj_t *flame = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_JETFLAME);
+      flame->target = mobj;
       // Start the pinch phase
    }
 
    if (mobj->health <= mobjInfo->damage)
    {
       if (mobj->z < 1536*FRACUNIT)
+      {
          mobj->z += 2*FRACUNIT;
+         P_UnsetThingPosition(mobj);
+         mobj->x += 2*FRACUNIT;
+         P_SetThingPosition(mobj);
+      }
       else
       {
          // Head out to the axis radius.
@@ -1075,6 +1082,15 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
             break;
          case MT_EGGMOBILE4:
             P_Boss4Thinker(mobj);
+            break;
+         case MT_JETFLAME:
+            {
+               P_UnsetThingPosition(mobj);
+               mobj->x = mobj->target->x;
+               mobj->y = mobj->target->y;
+               mobj->z = mobj->target->z;
+               P_SetThingPosition(mobj);
+            }
             break;
          case MT_JETFUME1:
             if (!P_JetFume1Think(mobj))
