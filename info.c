@@ -32,10 +32,12 @@ const char * const sprnames[NUMSPRITES] = {
 "DETN",
 "DRWN",
 "DUST",
+"EFIR",
 "EGG1",
 "EGGM",
 "EGG2",
 "EGGN",
+"EGGP",
 "EGLZ",
 "ELEM",
 "ESHI",
@@ -669,6 +671,8 @@ STATE(SPR_BOM3,FF_FULLBRIGHT|4,3,NULL,S_SONIC3KBOSSEXPLOSION6), // S_SONIC3KBOSS
 STATE(SPR_BOM3,FF_FULLBRIGHT|5,4,NULL,S_NULL), // S_SONIC3KBOSSEXPLOSION6
 
 STATE(SPR_JETF,FF_FULLBRIGHT,-1,NULL,S_NULL), // S_JETFUME1
+STATE(SPR_EFIR,FF_FULLBRIGHT,2,NULL,S_NULL), // S_JETFLAME1
+STATE(SPR_EFIR,1|FF_FULLBRIGHT,2,NULL,S_NULL), // S_JETFLAME2
 STATE(SPR_FRET,0,2,NULL,S_NULL), // S_FRET
 
 // Boss 1
@@ -769,6 +773,16 @@ STATE(SPR_TANK,1,35,NULL,S_NULL), // S_BOSSSPIGOT
 STATE(SPR_GOOP,0,2,NULL,S_GOOP2), // S_GOOP1
 STATE(SPR_GOOP,1,2,NULL,S_GOOP1), // S_GOOP2
 STATE(SPR_GOOP,2,-1,NULL,S_NULL), // S_GOOP3
+
+STATE(SPR_EGGP,0,-1,NULL,S_NULL), // S_EGGMOBILE4_STND
+STATE2(SPR_EGGP,13,24,A_Boss2TakeDamage,24+TICRATE,0,S_EGGMOBILE4_STND), // S_EGGMOBILE4_PAIN
+STATE2(SPR_EGGP,13,24,A_Boss2TakeDamage,24+TICRATE,0,S_EGGMOBILE4_STND), // S_EGGMOBILE4_PAIN2
+STATE(SPR_EGGP,14,2,A_Fall,S_EGGMOBILE4_DIE2), // S_EGGMOBILE4_DIE1
+STATE(SPR_EGGP,14,2,A_BossScream,S_EGGMOBILE4_DIE3), // S_EGGMOBILE4_DIE2
+STATE2(SPR_EGGP,14,0,A_Repeat,17,S_EGGMOBILE4_DIE2,S_EGGMOBILE4_DIE4), // S_EGGMOBILE4_DIE3
+STATE(SPR_EGGP,14,-1,A_BossDeath,S_NULL), // S_EGGMOBILE4_DIE4
+STATE2(SPR_EGGP,15,2,A_BossScream,90,MT_EXPLODE,S_EGGMOBILE4_FLEE2), // S_EGGMOBILE4_FLEE1
+STATE(SPR_EGGP,16,2,A_BossScream,S_EGGMOBILE4_FLEE1), // S_EGGMOBILE4_FLEE2
 
 STATE(SPR_DUST,0,4,NULL,S_DUST2), // S_DUST1
 STATE(SPR_DUST,1,5,NULL,S_DUST3), // S_DUST2
@@ -1412,6 +1426,31 @@ MF2_SHOOTABLE, // flags2
 		0,                 // mass
 		3,                 // damage
 		sfx_pogo,          // activesound
+		MF_SPECIAL|MF_NOGRAVITY, // flags
+		MF2_SHOOTABLE|MF2_FLOAT|MF2_ENEMY // flags2
+	},
+	{           // MT_EGGMOBILE4
+		203,               // doomednum
+		S_EGGMOBILE4_STND, // spawnstate
+		8,                 // spawnhealth
+		S_NULL,            // seestate
+		0,                 // seesound
+		8,              // reactiontime
+		0,        // attacksound
+		S_EGGMOBILE4_PAIN, // painstate
+		0,           // painchance
+		sfx_s3k_6e,        // painsound
+		S_EGGMOBILE4_PAIN2, // meleestate
+		0, // missilestate
+		S_EGGMOBILE4_DIE1, // deathstate
+		S_EGGMOBILE4_FLEE1,// xdeathstate
+		sfx_s3k_b4,         // deathsound
+		2,        // speed
+		36*FRACUNIT,       // radius
+		84*FRACUNIT,       // height
+		0,                 // mass
+		4,                 // damage
+		0,          // activesound
 		MF_SPECIAL|MF_NOGRAVITY, // flags
 		MF2_SHOOTABLE|MF2_FLOAT|MF2_ENEMY // flags2
 	},
@@ -4302,6 +4341,32 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		sfx_None,       // activesound
 		MF_NOGRAVITY|MF_NOBLOCKMAP|MF_NOSECTOR|MF_NOCLIP, // flags
 		0          // flags2
+	},
+
+	{           // MT_JETFLAME
+		-1,             // doomednum
+		S_JETFLAME1,     // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,       // seesound
+		8,              // reactiontime
+		sfx_None,       // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		sfx_None,       // deathsound
+		1,              // speed
+		8*FRACUNIT,     // radius
+		16*FRACUNIT,    // height
+		4,              // mass
+		0,              // damage
+		sfx_None,       // activesound
+		MF_NOBLOCKMAP|MF_NOGRAVITY|MF_NOCLIP, // flags
+		MF2_NARROWGFX, // flags2
 	},
 
 	{           // MT_LASER

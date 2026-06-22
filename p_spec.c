@@ -1364,36 +1364,6 @@ static void P_AddRaiseThinker(VINT fofSector, line_t *fofLine)
 		raise->sectors[raise->numsectors++] = s;
 }
 
-typedef struct
-{
-	ringmobj_t *chain; // First item in the chain list.
-	ringmobj_t *maceball;
-	int16_t x, y, z;
-	int8_t numchain;
-	int8_t interval; // The diameter (in FRACUNITs) to space out the links
-} macechain_t;
-
-typedef struct
-{
-	thinker_t thinker;
-	macechain_t macechain;
-
-	// new idea
-	vector3b_t nv; // Normalized vector
-	vector3b_t rotation;
-
-	int16_t swingSpeed;
-
-	// Old style
-	int8_t mlength;
-	uint8_t mspeed;
-
-	int8_t mphase;
-	int8_t msublinks; // # of links from the inside to subtract
-	int8_t sound;
-	int8_t flags;
-} swingmace_t;
-
 void P_SSNMaceRotate(swingmace_t *sm)
 {
 	// Always update movedir to prevent desync. But do we really have to?
@@ -1421,28 +1391,7 @@ void P_SSNMaceRotate(swingmace_t *sm)
 	rotationDir.y = (fixed_t)sm->rotation.y << 9;
 	rotationDir.z = (fixed_t)sm->rotation.z << 9;
 
-	const fixed_t ux = FixedMul(axis.x, rotationDir.x);
-	const fixed_t uy = FixedMul(axis.x, rotationDir.y);
-	const fixed_t uz = FixedMul(axis.x, rotationDir.z);
-	const fixed_t vx = FixedMul(axis.y, rotationDir.x);
-	const fixed_t vy = FixedMul(axis.y, rotationDir.y);
-	const fixed_t vz = FixedMul(axis.y, rotationDir.z);
-	const fixed_t wx = FixedMul(axis.z, rotationDir.x);
-	const fixed_t wy = FixedMul(axis.z, rotationDir.y);
-	const fixed_t wz = FixedMul(axis.z, rotationDir.z);
-	fixed_t sa = finesine(curPos);
-	fixed_t ca = finecosine(curPos);
-
-	vector4_t rotVec;
-	rotVec.x = FixedMul(axis.x,(ux+vy+wz))
-				+ FixedMul((FixedMul(rotationDir.x,(FixedMul(axis.y,axis.y)+FixedMul(axis.z,axis.z)))-FixedMul(axis.x,(vy+wz))), ca)
-				+ FixedMul((-wy+vz),sa);
-	rotVec.y = FixedMul(axis.y,(ux+vy+wz))
-				+ FixedMul((FixedMul(rotationDir.y,(FixedMul(axis.x,axis.x)+FixedMul(axis.z,axis.z)))-FixedMul(axis.y,(ux+wz))), ca)
-				+ FixedMul((wx-uz),sa);
-	rotVec.z = FixedMul(axis.z,(ux+vy+wz))
-				+ FixedMul((FixedMul(rotationDir.z,(FixedMul(axis.x,axis.x)+FixedMul(axis.y,axis.y)))-FixedMul(axis.z,(ux+vy))), ca)
-				+ FixedMul((-vx+uy),sa);
+	vector4_t rotVec = FV3_RotateVector(&rotationDir, &axis, curPos);
 
 //	CONS_Printf("%d, %d, %d", rotVec.x, rotVec.y, rotVec.z);
 

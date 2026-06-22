@@ -752,6 +752,121 @@ static void P_Boss2Thinker(mobj_t *mobj)
    }
 }
 
+static void P_Boss4Thinker(mobj_t *mobj)
+{
+   const mobjinfo_t *mobjInfo = &mobjinfo[MT_EGGMOBILE4]; // Always MT_EGGMOBILE4
+   const state_t *stateInfo = &states[mobj->state];
+
+   if (mobj->flags2 & MF2_BOSSFLEE)
+   {
+      if (mobj->extradata)
+      {
+         mobj->extradata--;
+         if (!mobj->extradata)
+         {
+            if (mobj->target)
+            {
+               mobj->momz = FixedMul(FixedDiv(mobj->target->z - mobj->z, P_AproxDistance(mobj->x - mobj->target->x, mobj->y - mobj->target->y)), FRACUNIT >> 8);
+               mobj->angle = R_PointToAngle2(mobj->x, mobj->y, mobj->target->x, mobj->target->y);
+            }
+            else
+               mobj->momz = 8*FRACUNIT;
+         }
+      }
+      else if (mobj->target)
+      {
+         P_InstaThrust(mobj, mobj->angle, 12*FRACUNIT);
+         if (P_AproxDistance(mobj->x - mobj->target->x, mobj->y - mobj->target->y) < 32*FRACUNIT)
+         {
+            mobj->flags2 &= ~MF2_BOSSFLEE;
+            mobj->tics = -1;
+            mobj->momx = mobj->momy = mobj->momz = 0;
+         }
+      }
+      return;
+   }
+
+   if (mobj->health <= 0 && !(mobj->flags2 & MF2_BOSSFLEE))
+      return; // Just sleeping, out of bounds...
+
+   if ((mobj->flags2 & MF2_FRET) && stateInfo->nextstate == mobjInfo->spawnstate && mobj->tics == 1)
+   {
+		mobj->flags2 &= ~(MF2_FRET|MF2_SKULLFLY);
+		mobj->momx = mobj->momy = mobj->momz = 0;
+	}
+
+   if (mobj->health <= mobjInfo->damage && !(mobj->flags2 & MF2_SPAWNEDJETS))
+   {
+      // Spawn the MT_JETFLAME
+      // Start the pinch phase
+   }
+
+   if (mobj->health <= mobjInfo->damage)
+   {
+      if (mobj->z < 1536*FRACUNIT)
+         mobj->z += 2*FRACUNIT;
+      else
+      {
+         // Head out to the axis radius.
+         // Once reached, set a flag
+         // If flag is set, rotate around axis.
+      }
+
+      thinker_t *node = thinkercap.next;
+      while (node != &thinkercap)
+      {
+         if (node->function == T_SwingMace)
+         {
+            swingmace_t *sm = (swingmace_t*)node;
+            vector3_t axis;
+            axis.x = (fixed_t)sm->nv.x << 9;
+            axis.y = (fixed_t)sm->nv.y << 9;
+            axis.z = (fixed_t)sm->nv.z << 9;
+            vector3_t rotVec;
+            rotVec.x = (fixed_t)sm->rotation.x << 9;
+            rotVec.y = (fixed_t)sm->rotation.y << 9;
+            rotVec.z = (fixed_t)sm->rotation.z << 9;
+
+            sm->macechain.x = mobj->x >> FRACBITS;
+            sm->macechain.y = mobj->y >> FRACBITS;
+            sm->macechain.z = mobj->z >> FRACBITS;
+
+            fixed_t zDiff = (mobj->z - 1024*FRACUNIT) >> FRACBITS;
+
+            if (sm->rotation.x < 0) // Chain 1
+            {
+               rotVec.x = -FRACUNIT;
+               rotVec.y = 0;
+               rotVec.z = 0;
+
+               vector4_t result = FV3_RotateVector(&rotVec, &axis, zDiff);
+
+               sm->rotation.x = result.x >> 9;
+               sm->rotation.z = result.y >> 9;
+               sm->rotation.y = result.z >> 9;
+            }
+            else if (sm->rotation.x > 0) // Chain 2
+            {
+               rotVec.x = FRACUNIT;
+               rotVec.y = 0;
+               rotVec.z = 0;
+
+               vector4_t result = FV3_RotateVector(&rotVec, &axis, -zDiff);
+
+               sm->rotation.x = result.x >> 9;
+               sm->rotation.z = result.y >> 9;
+               sm->rotation.y = result.z >> 9;
+            }
+         }
+
+         node = node->next;
+      }
+   }
+
+//   if (mobj->state == mobjInfo->spawnstate && mobj->health <= mobjInfo->damage)
+//	   A_Boss4Chase(mobj, 0, 0);
+}
+
 static boolean P_JetFume1Think(mobj_t *mobj)
 {
 	fixed_t jetx, jety;
@@ -957,6 +1072,9 @@ boolean P_MobjSpecificActions(mobj_t *mobj)
             break;
          case MT_EGGMOBILE2:
             P_Boss2Thinker(mobj);
+            break;
+         case MT_EGGMOBILE4:
+            P_Boss4Thinker(mobj);
             break;
          case MT_JETFUME1:
             if (!P_JetFume1Think(mobj))

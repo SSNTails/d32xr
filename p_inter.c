@@ -576,7 +576,7 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 			scoreState += 3;
 		}
 
-		if (target->type == MT_EGGMOBILE || target->type == MT_EGGMOBILE2)
+		if (target->type == MT_EGGMOBILE || target->type == MT_EGGMOBILE2 || target->type == MT_EGGMOBILE4)
 		{
 			score = 1000;
 			scoreState = mobjinfo[MT_SCORE].spawnstate + 3;
@@ -596,7 +596,7 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 
 		target->momx = target->momy = target->momz = 0;
 
-		if (!(target->type == MT_EGGMOBILE || target->type == MT_EGGMOBILE2))
+		if (!(target->type == MT_EGGMOBILE || target->type == MT_EGGMOBILE2 || target->type == MT_EGGMOBILE4))
 		{
 			// Spawn a flicky
 			const mobjtype_t flickies[4] = { MT_FLICKY_01, MT_FLICKY_02, MT_FLICKY_03, MT_FLICKY_12 };
@@ -766,6 +766,29 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 	{
 		target->health--;
 		damage--;
+
+		if (target->type == MT_EGGMOBILE4)
+		{
+			thinker_t *node = thinkercap.next;
+			while (node != &thinkercap)
+			{
+				if (node->function == T_SwingMace)
+				{
+					swingmace_t *sm = (swingmace_t*)node;
+
+					int16_t curPos = (sm->mspeed * (leveltime + sm->mphase)) & FINEMASK;
+					uint8_t oldSpeed = sm->mspeed;
+
+					sm->mspeed = (9 - target->health) << 4;
+
+					// Compensate mphase so maces don't teleport
+					sm->mphase = (oldSpeed * (leveltime + sm->mphase) / sm->mspeed) - leveltime;
+				}
+
+				node = node->next;
+			}
+		}
+
 		if (target->health == 0)
 		{
 			P_KillMobj (source, target);

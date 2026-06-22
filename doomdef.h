@@ -838,6 +838,7 @@ vector3_t *FV3_Cross(const vector3_t *a_1, const vector3_t *a_2, vector3_t *a_o)
 fixed_t FV3_Magnitude(const vector3_t *a_normal);
 fixed_t FV3_Normalize(const vector3_t *a_normal, vector3_t *a_o);
 fixed_t FV3_Dot(const vector3_t *a_1, const vector3_t *a_2);
+vector4_t FV3_RotateVector(const vector3_t *rotationDir, const vector3_t *axis, int16_t fineangles);
 fixed_t FixedSqrt(fixed_t x);
 
 #define	ACC_FIXEDMUL	4
@@ -1591,5 +1592,37 @@ void I_SetThreadLocalVar(uintptr_t offs, uint32_t val);
 void I_GetThreadLocalVar(uintptr_t offs, uint32_t val);
 
 #endif
+
+typedef struct
+{
+	ringmobj_t *chain; // First item in the chain list.
+	ringmobj_t *maceball;
+	int16_t x, y, z;
+	int8_t numchain;
+	int8_t interval; // The diameter (in FRACUNITs) to space out the links
+} macechain_t;
+
+typedef struct
+{
+	thinker_t thinker;
+	macechain_t macechain;
+
+	// new idea
+	vector3b_t nv; // Normalized vector
+	vector3b_t rotation;
+
+	int16_t swingSpeed;
+
+	// Old style
+	int8_t mlength;
+	uint8_t mspeed;
+
+	int8_t mphase;
+	int8_t msublinks; // # of links from the inside to subtract
+	int8_t sound;
+	int8_t flags;
+} swingmace_t;
+
+void T_SwingMace(swingmace_t *sm);
 
 #endif
