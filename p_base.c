@@ -783,6 +783,26 @@ static void P_Boss4Thinker(mobj_t *mobj)
             mobj->momx = mobj->momy = mobj->momz = 0;
          }
       }
+
+      if (mobj->movedir < 128)
+      {
+         mobj->movedir++;
+         mobj->movecount++;
+
+         thinker_t *node = thinkercap.next;
+         while (node != &thinkercap)
+         {
+            if (node->function == T_SwingMace)
+            {
+               swingmace_t *sm = (swingmace_t*)node;
+               sm->macechain.x -= mobj->movecount;
+               sm->macechain.y -= mobj->movecount;
+               sm->macechain.z -= mobj->movecount;
+            }
+
+            node = node->next;
+         }
+      }
       return;
    }
 
@@ -807,66 +827,90 @@ static void P_Boss4Thinker(mobj_t *mobj)
    {
       if (mobj->z < 1536*FRACUNIT)
       {
-         mobj->z += 2*FRACUNIT;
+         mobj->z += 6*FRACUNIT;
          P_UnsetThingPosition(mobj);
-         mobj->x += 2*FRACUNIT;
+         mobj->x += 6*FRACUNIT;
          P_SetThingPosition(mobj);
+
+         thinker_t *node = thinkercap.next;
+         while (node != &thinkercap)
+         {
+            if (node->function == T_SwingMace)
+            {
+               swingmace_t *sm = (swingmace_t*)node;
+               vector3_t axis;
+               axis.x = (fixed_t)sm->nv.x << 9;
+               axis.y = (fixed_t)sm->nv.y << 9;
+               axis.z = (fixed_t)sm->nv.z << 9;
+               vector3_t rotVec;
+               rotVec.x = (fixed_t)sm->rotation.x << 9;
+               rotVec.y = (fixed_t)sm->rotation.y << 9;
+               rotVec.z = (fixed_t)sm->rotation.z << 9;
+
+               sm->macechain.x = mobj->x >> FRACBITS;
+               sm->macechain.y = mobj->y >> FRACBITS;
+               sm->macechain.z = mobj->z >> FRACBITS;
+
+               fixed_t zDiff = (mobj->z - 1024*FRACUNIT) >> FRACBITS;
+
+               if (sm->rotation.x < 0) // Chain 1
+               {
+                  rotVec.x = -FRACUNIT;
+                  rotVec.y = 0;
+                  rotVec.z = 0;
+
+                  vector4_t result = FV3_RotateVector(&rotVec, &axis, zDiff);
+
+                  sm->rotation.x = result.x >> 9;
+                  sm->rotation.z = result.y >> 9;
+                  sm->rotation.y = result.z >> 9;
+               }
+               else if (sm->rotation.x > 0) // Chain 2
+               {
+                  rotVec.x = FRACUNIT;
+                  rotVec.y = 0;
+                  rotVec.z = 0;
+
+                  vector4_t result = FV3_RotateVector(&rotVec, &axis, -zDiff);
+
+                  sm->rotation.x = result.x >> 9;
+                  sm->rotation.z = result.y >> 9;
+                  sm->rotation.y = result.z >> 9;
+               }
+            }
+
+            node = node->next;
+         }
       }
       else
       {
-         // Head out to the axis radius.
-         // Once reached, set a flag
-         // If flag is set, rotate around axis.
-      }
+         mobj->target = P_FindFirstMobjOfType(MT_AXIS);
 
-      thinker_t *node = thinkercap.next;
-      while (node != &thinkercap)
-      {
-         if (node->function == T_SwingMace)
+         uint16_t *movedir = ((uint16_t*)&mobj->movedir);
+         *movedir += (5 - mobj->health) << 3;
+         *movedir &= FINEMASK;
+
+         const fixed_t radius = mobj->target->angle;
+
+         fixed_t fx = mobj->target->x;
+         fixed_t fy = mobj->target->y;
+         P_ThrustValues((*movedir) << ANGLETOFINESHIFT, radius, &fx, &fy);
+         mobj->angle = R_PointToAngle2(mobj->x, mobj->y, fx, fy);
+         P_SetThingPositionConditionally(mobj, fx, fy, R_PointInSubsector2(mobj->x, mobj->y));
+
+         thinker_t *node = thinkercap.next;
+         while (node != &thinkercap)
          {
-            swingmace_t *sm = (swingmace_t*)node;
-            vector3_t axis;
-            axis.x = (fixed_t)sm->nv.x << 9;
-            axis.y = (fixed_t)sm->nv.y << 9;
-            axis.z = (fixed_t)sm->nv.z << 9;
-            vector3_t rotVec;
-            rotVec.x = (fixed_t)sm->rotation.x << 9;
-            rotVec.y = (fixed_t)sm->rotation.y << 9;
-            rotVec.z = (fixed_t)sm->rotation.z << 9;
-
-            sm->macechain.x = mobj->x >> FRACBITS;
-            sm->macechain.y = mobj->y >> FRACBITS;
-            sm->macechain.z = mobj->z >> FRACBITS;
-
-            fixed_t zDiff = (mobj->z - 1024*FRACUNIT) >> FRACBITS;
-
-            if (sm->rotation.x < 0) // Chain 1
+            if (node->function == T_SwingMace)
             {
-               rotVec.x = -FRACUNIT;
-               rotVec.y = 0;
-               rotVec.z = 0;
-
-               vector4_t result = FV3_RotateVector(&rotVec, &axis, zDiff);
-
-               sm->rotation.x = result.x >> 9;
-               sm->rotation.z = result.y >> 9;
-               sm->rotation.y = result.z >> 9;
+               swingmace_t *sm = (swingmace_t*)node;
+               sm->macechain.x = mobj->x >> FRACBITS;
+               sm->macechain.y = mobj->y >> FRACBITS;
+               sm->macechain.z = mobj->z >> FRACBITS;
             }
-            else if (sm->rotation.x > 0) // Chain 2
-            {
-               rotVec.x = FRACUNIT;
-               rotVec.y = 0;
-               rotVec.z = 0;
 
-               vector4_t result = FV3_RotateVector(&rotVec, &axis, -zDiff);
-
-               sm->rotation.x = result.x >> 9;
-               sm->rotation.z = result.y >> 9;
-               sm->rotation.y = result.z >> 9;
-            }
+            node = node->next;
          }
-
-         node = node->next;
       }
    }
 

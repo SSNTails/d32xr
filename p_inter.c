@@ -68,6 +68,9 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 	fixed_t vertispeed = springinfo->mass << FRACBITS;
 	fixed_t horizspeed = springinfo->damage << FRACBITS;
 
+	if (gamemapinfo.mapNumber == 12)
+		vertispeed = 26 << FRACBITS;
+
 	if (player->pflags & PF_VERTICALFLIP)
 		vertispeed *= -1;
 
@@ -174,6 +177,10 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 			P_SetMobjState(player->mo, S_PLAY_SPRING);
 		else
 			P_SetMobjState(player->mo, S_PLAY_FALL1);
+
+		// Egg Colosseum
+		if (gamemapinfo.mapNumber == 12)
+			player->pflags |= PF_SPRINGSHELL;
 	}
 
 	S_StartSound(player->mo, springinfo->painsound);
@@ -591,6 +598,24 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 			}
 		}
 
+		if (target->type == MT_EGGMOBILE4)
+		{
+			target->movedir = 0; // Remove the maces
+			target->movecount = 0;
+
+			thinker_t *node = thinkercap.next;
+			while (node != &thinkercap)
+			{
+				if (node->function == T_SwingMace)
+				{
+					swingmace_t *sm = (swingmace_t*)node;
+					sm->mspeed = 1;
+				}
+
+				node = node->next;
+			}
+		}
+
 		P_SetMobjState(scoremobj, scoreState);
 		P_AddPlayerScore(player, score);
 
@@ -776,10 +801,11 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 				{
 					swingmace_t *sm = (swingmace_t*)node;
 
-					int16_t curPos = (sm->mspeed * (leveltime + sm->mphase)) & FINEMASK;
+//					int16_t curPos = (sm->mspeed * (leveltime + sm->mphase)) & FINEMASK;
 					uint8_t oldSpeed = sm->mspeed;
 
-					sm->mspeed = (9 - target->health) << 4;
+					uint8_t calcHealth = target->health > 4 ? target->health : target->health + 4;
+					sm->mspeed = (9 - calcHealth) << 4;
 
 					// Compensate mphase so maces don't teleport
 					sm->mphase = (oldSpeed * (leveltime + sm->mphase) / sm->mspeed) - leveltime;

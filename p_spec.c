@@ -1370,8 +1370,8 @@ void P_SSNMaceRotate(swingmace_t *sm)
 	// Can't this be calculated from leveltime? Why yes, yes it can...
 	int16_t curPos = (sm->mspeed * (leveltime + sm->mphase)) & FINEMASK;
 
-	vector4_t axis;
-	vector4_t rotationDir;
+	vector3_t axis;
+	vector3_t rotationDir;
 
 	if (sm->swingSpeed)
 	{

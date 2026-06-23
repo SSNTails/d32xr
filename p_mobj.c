@@ -768,9 +768,10 @@ return;	/*DEBUG */
 		mobj->health = (mthing->angle / 360) + 1;
 		mobj->angle = (mthing->angle % 360) * ANGLE_1;
 	}
-	else {
+	else if (mobj->type == MT_AXIS)
+		mobj->angle = mthing->angle << FRACBITS;
+	else
 		mobj->angle = mthing->angle * ANGLE_1;
-	}
 
 	if (mobj->tics > 0)
 		mobj->tics = 1 + (P_Random () % mobj->tics);
