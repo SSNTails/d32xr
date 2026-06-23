@@ -1,6 +1,7 @@
 /* D_main.c  */
  
 #include "doomdef.h"
+#include "f_story.h"
 #include "v_font.h"
 #include "r_local.h"
 
@@ -648,8 +649,8 @@ int TIC_Abortable (void)
 
 /*============================================================================= */
 
-unsigned short screenCount = 0;
-unsigned int frame_sync = 0;
+uint16_t screenCount = 0;
+uint32_t frame_sync = 0;
 int8_t selected_map = 0;
 dmapinfo_t selected_map_info;
 

@@ -27,8 +27,8 @@ typedef struct
 
     int16_t postTextDelay; // Number of tics to wait after printing all text before transitioning to the next scene
 
-    void (*tic)(storyscene_t *self);
-    void (*draw)(storyscene_t *self);
+    //void (*tic)(storyscene_t *self);
+    //void (*draw)(storyscene_t *self);
 
 } storyscene_t;
 

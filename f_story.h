@@ -1,3 +1,6 @@
+#ifndef __STORY_H__
+#define __STORY_H__
+
 #include <stdint.h>
 
 // Not the best place for these two
@@ -8,3 +11,5 @@ void START_Story (void);
 int TIC_Story (void);
 void DRAW_Story (void);
 void STOP_Story (void);
+
+#endif
