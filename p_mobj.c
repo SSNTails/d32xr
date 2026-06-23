@@ -635,6 +635,10 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 		case MT_BLUESPHERE:
 			dz += 24*FRACUNIT;
 			break;
+		case MT_REDSPRING:
+			if (gamemapinfo.mapNumber == 12)
+				dz = -64*FRACUNIT;
+			break;
 		default:
 			break;
 		}	

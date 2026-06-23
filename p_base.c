@@ -820,6 +820,7 @@ static void P_Boss4Thinker(mobj_t *mobj)
       // Spawn the MT_JETFLAME
       mobj_t *flame = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_JETFLAME);
       flame->target = mobj;
+      mobj->flags2 |= MF2_SPAWNEDJETS;
       // Start the pinch phase
    }
 
@@ -827,9 +828,10 @@ static void P_Boss4Thinker(mobj_t *mobj)
    {
       if (mobj->z < 1536*FRACUNIT)
       {
-         mobj->z += 6*FRACUNIT;
+         mobj->ceilingz += 8*FRACUNIT;
+         mobj->z += 8*FRACUNIT;
          P_UnsetThingPosition(mobj);
-         mobj->x += 6*FRACUNIT;
+         mobj->x += 8*FRACUNIT;
          P_SetThingPosition(mobj);
 
          thinker_t *node = thinkercap.next;

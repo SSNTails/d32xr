@@ -813,6 +813,52 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 
 				node = node->next;
 			}
+
+			if (target->health == targinfo->damage)
+			{
+				ceiling_t *ceiling = Z_Calloc (sizeof(*ceiling), PU_LEVSPEC);
+				P_AddThinker (&ceiling->thinker);
+				ceiling->thinker.function = T_MoveCeiling;
+				ceiling->sector = I_TO_SEC(P_FindSectorWithTag(104, -1));
+				ceiling->crush = false;
+				ceiling->direction = 1; // Up
+				ceiling->type = raiseCeiling;
+				ceiling->upspeed = 8*FRACUNIT;
+				ceiling->topheight = 2560;
+				ceiling->sector->ceilingheight += 8*FRACUNIT;
+
+				ceiling = Z_Calloc (sizeof(*ceiling), PU_LEVSPEC);
+				P_AddThinker (&ceiling->thinker);
+				ceiling->thinker.function = T_MoveCeiling;
+				ceiling->sector = I_TO_SEC(P_FindSectorWithTag(255, -1));
+				ceiling->crush = false;
+				ceiling->direction = 1; // Up
+				ceiling->type = raiseCeiling;
+				ceiling->upspeed = 8*FRACUNIT;
+				ceiling->topheight = 2560;
+				ceiling->sector->ceilingheight += 8*FRACUNIT;
+
+				ceiling = Z_Calloc (sizeof(*ceiling), PU_LEVSPEC);
+				P_AddThinker (&ceiling->thinker);
+				ceiling->thinker.function = T_MoveCeiling;
+				ceiling->sector = I_TO_SEC(P_FindSectorWithTag(254, -1));
+				ceiling->crush = false;
+				ceiling->direction = 1; // Up
+				ceiling->type = raiseCeiling;
+				ceiling->upspeed = 8*FRACUNIT;
+				ceiling->topheight = 2560;
+				ceiling->sector->ceilingheight += 8*FRACUNIT;
+
+				// Buttons
+				sector_t *button = I_TO_SEC(P_FindSectorWithTag(105, -1));
+				button->floorheight = 936*FRACUNIT;
+
+				button = I_TO_SEC(P_FindSectorWithTag(106, -1));
+				button->floorheight = 936*FRACUNIT;
+
+				button = I_TO_SEC(P_FindSectorWithTag(107, -1));
+				button->floorheight = 936*FRACUNIT;
+			}
 		}
 
 		if (target->health == 0)
