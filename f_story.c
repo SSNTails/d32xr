@@ -156,7 +156,7 @@ void DRAW_Story (void)
 	}
 
 	// Implement drawing code here.
-	if (!test_always_zoom && (test_x_zoom == 0 && test_y_zoom == 0)) {
+	/*if (!test_always_zoom && (test_x_zoom == 0 && test_y_zoom == 0)) {
 		// Use the faster function for drawing 15bpp when using 1:1 scaling.
 		DrawJagobj3_15bpp(
 			tf,
@@ -179,12 +179,25 @@ void DRAW_Story (void)
 			FRACUNIT + test_y_zoom,
 			I_FrameBuffer()
 		);
-	}
+	}*/
+
+	DrawRotatedJagobj_15bpp(
+		tf,
+		((320-128)/2) + (test_x_pos >> 16),
+		((204-128)/2) + (test_y_pos >> 16),
+		finesine(2048-1024),
+		finesine(2048-1024),
+		//FRACUNIT + test_x_zoom,
+		//FRACUNIT + test_y_zoom,
+		I_FrameBuffer()
+	);
 }
 
 void STOP_Story (void)
 {
 	DoubleBufferSetup();	// Clear frame buffers to black.
+
+	Mars_SetVideoMode(MARS_VDP_MODE_256);
 
 	Z_Free(tf);
 }

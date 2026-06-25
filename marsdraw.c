@@ -1201,6 +1201,111 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 	}
 }
 
+// Max width and/or height:
+// sqrt((A^2)+(B^2))
+
+// finesine_[2048]
+
+void DrawRotatedJagobj_15bpp(jagobj_t* jo, int x, int y, 
+	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb)
+{
+	int		srcx, srcy;
+	int		width, height;
+	fixed_t	total_scaled_w, total_scaled_h;
+	int		rowsize;
+	fixed_t	inc_x, inc_y;
+	uint16_t	*dest, *source;
+
+	width = BIGSHORT(jo->width);
+	height = BIGSHORT(jo->height);
+
+	srcx = 0;
+	srcy = 0;
+
+	if (width < 1 || height < 1)
+		return;
+
+	if (x < 0) {
+		total_scaled_w = FixedMul(((width + x) << 16), ratio_w) >> 16;
+		srcx = (-x)<<1;
+		x = 0;
+	}
+	else
+	{
+		total_scaled_w = FixedMul((width << 16), ratio_w) >> 16;
+	}
+
+	if (x + total_scaled_w > 320) {
+		total_scaled_w = 320 - x;
+	}
+	if (total_scaled_w <= 0) {
+		return;
+	}
+
+	if (y < 0) {
+		total_scaled_h = FixedMul(((height + y) << 16), ratio_h) >> 16;
+		srcy = -y;
+		y = 0;
+	}
+	else
+	{
+		total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
+	}
+
+	if (y + total_scaled_h > 204) {
+		total_scaled_h = 204 - y;
+	}
+	if (total_scaled_h <= 0) {
+		return;
+	}
+
+	fixed_t angle_w = ratio_w;
+	fixed_t angle_h = ratio_h;
+
+	ratio_w = FixedDiv(FRACUNIT, ratio_w);
+	ratio_h = FixedDiv(FRACUNIT, ratio_h);
+
+	inc_x = 0;
+	inc_y = 0;
+
+	dest = (byte*)fb + (y * (320<<1)) + (x<<1);
+	source = jo->data + srcx + ((srcy * width) << 1);
+
+	pixel_t* dest2 = (pixel_t*)dest;
+
+	uint16_t* source2 = source;
+	uint16_t* source3 = source;
+	fixed_t inc_y_width_accum = 0;
+
+	for (; total_scaled_h; total_scaled_h--)
+	{
+		for (int n = total_scaled_w; n > 0; n--)
+		{
+			*dest2++ = *source2;
+
+			inc_x += ratio_w;
+			source2 += (inc_x >> 16);
+			inc_x &= 0xFFFF;
+
+			inc_y_width_accum += (FRACUNIT - angle_w);
+			if (inc_y_width_accum >= FRACUNIT) {
+				source2 += width;
+				inc_y_width_accum &= 0xFFFF;
+			}
+		}
+
+		inc_y_width_accum = 0;
+		dest2 += (320 - total_scaled_w);
+
+		inc_y += ratio_h;
+		source3 += ((width) * (inc_y >> 16));
+		source2 = source3;
+		inc_y &= 0xFFFF;
+
+		inc_x = 0;
+	}
+}
+
 void DrawMaskedGraphicLump(int lumpnum, int x, int y)
 {
 	LZSTATE gfx_lz;
