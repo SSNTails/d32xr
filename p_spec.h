@@ -301,6 +301,7 @@ typedef enum
 	moveFloorByFrontSector,
 	moveCeilingByFrontSector,
 	thz2DropBlock,
+	boss4DropFloor,
 } floor_e;
 
 typedef struct

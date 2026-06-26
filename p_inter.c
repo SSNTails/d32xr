@@ -614,6 +614,17 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 
 				node = node->next;
 			}
+
+			// Switch any brambles back to grass
+			for (int s = 0; s < numsectors; s++)
+			{
+				sector_t *sec = I_TO_SEC(s);
+				if (sec->floorpic == 33) // Brambles
+				{
+					sec->special = 0;
+					sec->floorpic = 52; // Grassy dirt
+				}
+			}
 		}
 
 		P_SetMobjState(scoremobj, scoreState);
@@ -814,6 +825,30 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 				node = node->next;
 			}
 
+			if (target->health >= targinfo->damage)
+			{
+				uint8_t tag = 99 + (targinfo->spawnhealth - target->health);
+
+				// Collapse a floor
+				quake.time = TICRATE;
+				quake.intensity = 12;
+
+				for (int s = -1; (s = P_FindSectorWithTag(tag, s)) >= 0;)
+				{
+					floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
+					P_AddThinker (&floor->thinker);
+					floor->thinker.function = T_MoveFloor;
+					floor->type = boss4DropFloor;
+					floor->crush = true;
+					floor->direction = -1;
+					floor->delayTimer = floor->delay = TICRATE;
+					floor->sector = I_TO_SEC(s);
+					floor->speed = 8*FRACUNIT;
+					floor->texture = 33;
+					floor->floordestheight = (floor->sector->floorheight >> FRACBITS) - 32;
+				}
+			}
+
 			if (target->health == targinfo->damage)
 			{
 				ceiling_t *ceiling = Z_Calloc (sizeof(*ceiling), PU_LEVSPEC);
@@ -824,7 +859,7 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 				ceiling->direction = 1; // Up
 				ceiling->type = raiseCeiling;
 				ceiling->upspeed = 8*FRACUNIT;
-				ceiling->topheight = 2560;
+				ceiling->topheight = 3072;
 				ceiling->sector->ceilingheight += 8*FRACUNIT;
 
 				ceiling = Z_Calloc (sizeof(*ceiling), PU_LEVSPEC);

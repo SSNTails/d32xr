@@ -371,6 +371,54 @@ void T_MoveFloor(floormove_t *floor)
 				case eggCapsuleInner:
 						floor->sector->special = 2;
 						break;
+				case boss4DropFloor:
+					if (floor->sector->tag < 103)
+					{
+						for (int s = -1; (s = P_FindSectorWithTag(floor->sector->tag+1, s)) >= 0;)
+						{
+							sector_t *nextsector = I_TO_SEC(s);
+							nextsector->floorpic = floor->sector->floorpic;
+						}
+					}
+
+					floor->sector->floorpic = floor->texture;
+					floor->sector->special = 5; // Spiky
+					S_StartSound(NULL, sfx_s3k_3d);
+
+					{
+						int z;
+						for (z = 0; z < numlines; z++)
+						{
+							line_t *line = &lines[z];
+							side_t *side1 = &sides[line->sidenum[0]];
+							side_t *side2 = line->sidenum[1] >= 0 ? &sides[line->sidenum[1]] : NULL;
+							sector_t *side1Sec = I_TO_SEC(side1->sector);
+							sector_t *side2Sec = side2 ? I_TO_SEC(side2->sector) : NULL;
+
+							if (floor->sector == side1Sec || floor->sector == side2Sec)
+							{
+								mapvertex_t *v1 = &vertexes[line->v1];
+								mapvertex_t *v2 = &vertexes[line->v2];
+
+								vertex_t v1Diff;
+								v1Diff.x = (v2->x + v1->x) >> 2;
+								v1Diff.y = (v2->y + v1->y) >> 2;
+								P_SpawnMobj(v1Diff.x<<FRACBITS, v1Diff.y<<FRACBITS, floor->sector->floorheight + 32 * FRACUNIT, MT_EXPLODE);
+								v1Diff.x = (v2->x + v1->x) >> 1;
+								v1Diff.y = (v2->y + v1->y) >> 1;
+								P_SpawnMobj(v1Diff.x<<FRACBITS, v1Diff.y<<FRACBITS, floor->sector->floorheight + 32 * FRACUNIT, MT_EXPLODE);
+/*								v1Diff.x = (v2->x + v1->x) >> 2;
+								v1Diff.y = (v2->y + v1->y) >> 2;
+								P_SpawnMobj(v1Diff.x, v1Diff.y, floor->sector->floorheight + 32 * FRACUNIT, MT_EXPLODE);
+								v1Diff.x = (v2->x + v1->x) >> 2;
+								v1Diff.y = (v2->y + v1->y) >> 2;
+								P_SpawnMobj(v1Diff.x, v1Diff.y, floor->sector->floorheight + 32 * FRACUNIT, MT_EXPLODE);
+*/
+
+							}
+						}
+					}
+					break;
 			}
 
 			P_RemoveThinker(&floor->thinker);
