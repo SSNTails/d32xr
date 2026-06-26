@@ -752,6 +752,8 @@ static void P_Boss2Thinker(mobj_t *mobj)
    }
 }
 
+quake_t quake = { .time = 0 };
+
 static void P_Boss4Thinker(mobj_t *mobj)
 {
    const mobjinfo_t *mobjInfo = &mobjinfo[MT_EGGMOBILE4]; // Always MT_EGGMOBILE4

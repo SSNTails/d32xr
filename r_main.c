@@ -1342,6 +1342,19 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		vd.lightlevel = vd.viewsector->lightlevel;
 	}
 
+	if (quake.time)
+	{
+		int16_t ir = quake.intensity >> 1;
+
+		fixed_t x = M_RandomRange16(-ir, ir) << FRACBITS;
+		fixed_t y = M_RandomRange16(-ir, ir) << FRACBITS;
+		fixed_t z = M_RandomRange16(-ir, ir) << FRACBITS;
+
+		vd.viewx += x;
+		vd.viewy += y;
+		vd.viewz += z;
+	}
+
 	vd.viewplayer = player;
 
 	vd.viewsin = finesine(vd.viewangle>>ANGLETOFINESHIFT);

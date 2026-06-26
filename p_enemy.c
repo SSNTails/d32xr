@@ -621,6 +621,9 @@ void A_MineExplode(mobj_t *actor, int16_t var1, int16_t var2)
 {
 	S_StartSound(actor, mobjinfo[actor->type].deathsound);
 
+	quake.intensity = 8;
+	quake.time = TICRATE/3;
+
 	P_RadiusAttack(actor, actor, mobjinfo[actor->type].damage);
 	actor->flags |= MF_NOGRAVITY|MF_NOCLIP;
 	P_SpawnMobj(actor->x, actor->y, actor->z, mobjinfo[actor->type].mass);

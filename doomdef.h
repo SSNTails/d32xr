@@ -1259,6 +1259,7 @@ VINT R_PointInSubsector2(fixed_t x, fixed_t y) ATTR_DATA_CACHE_ALIGN;
 /*MISC */
 /*---- */
 int M_Random (void) ATTR_DATA_CACHE_ALIGN;
+int16_t M_RandomRange16(int16_t lower, int16_t upper);
 int P_Random (void) ATTR_DATA_CACHE_ALIGN;
 fixed_t P_RandomFixed (void);
 int P_RandomKey (int max);
@@ -1624,5 +1625,13 @@ typedef struct
 } swingmace_t;
 
 void T_SwingMace(swingmace_t *sm);
+
+typedef struct
+{
+	uint16_t time; // duration
+	int16_t intensity;
+} quake_t;
+
+extern quake_t quake;
 
 #endif

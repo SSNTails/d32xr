@@ -263,6 +263,20 @@ int M_Random (void)
 	return rndtable[rndindex];
 }
 
+int16_t M_RandomRange16(int16_t lowerBound, int16_t upperBound)
+{
+    int32_t range = (int32_t)upperBound - (int32_t)lowerBound;
+    uint8_t rnd = M_Random();
+    
+    // divide by 256
+    int32_t result = (int32_t)lowerBound + ((rnd * range) >> 8);
+    
+    if (result > 32767) return 32767;
+    if (result < -32768) return -32768;
+    
+    return (int16_t)result;
+}
+
 void M_ClearRandom (void)
 {
 	rndindex = prndindex = 0;

@@ -340,6 +340,9 @@ int P_Ticker (void)
 		P_UpdateSpecials((int8_t)accum_time);
 	}
 
+	if (quake.time)
+		quake.time--;
+
 	P_Weather();
 
 	Mars_P_EndAnimationUpdate();
