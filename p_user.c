@@ -13,6 +13,8 @@
 
 boolean spindashPlayerOriented = false;
 
+boolean disable_player_sprites = false;
+
 void P_KillMobj(mobj_t *source, mobj_t *target);
 
 /*
@@ -1911,6 +1913,10 @@ void P_PlayerThink(player_t *player)
 #ifdef HIDE_PLAYER
 	player->mo->flags2 |= MF2_DONTDRAW;
 #endif
+
+	if (disable_player_sprites) {
+		player->mo->flags2 |= MF2_DONTDRAW;
+	}
 
 	if (player->powers[pw_extralife] > 0)
 	{

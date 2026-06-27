@@ -42,6 +42,8 @@ VINT		controltype = 0;		/* determine settings for BT_* */
 boolean		sky_md_layer = false;
 boolean		sky_32x_layer = false;
 
+boolean		disable_sky = false;
+
 boolean		h40_sky = false;
 
 boolean		h32_adjust = true;
@@ -477,6 +479,13 @@ int MiniLoop ( void (*start)(void),  void (*stop)(void)
 
 		buttons = I_ReadControls();
 		analog = Mars_ReadControllerAnalog(0);
+
+		if (gamepaused && (buttons & BT_ACTION_CAMLEFT) && !(oldticrealbuttons & BT_ACTION_CAMLEFT)) {
+			disable_sky = !disable_sky;
+		}
+		if (gamepaused && (buttons & BT_ACTION_CAMRIGHT) && !(oldticrealbuttons & BT_ACTION_CAMRIGHT)) {
+			disable_player_sprites = !disable_player_sprites;
+		}
 
 #ifdef SKYDEBUG
 		if (!gamepaused && oldticrealbuttons == BT_MODE && buttons & BT_MODE) {

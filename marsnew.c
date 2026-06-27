@@ -629,10 +629,10 @@ void I_DebugScreen(void)
 	{
 		D_snprintf(buf[0], sizeof(buf[0]), "fps:%2d", fpscount);
 
-		if (IsTitleScreen()) {
+		//if (IsTitleScreen()) {
 			line = 21;
 			x = 216;
-		}
+		//}
 		I_Print8(x, line, buf[0]);
 	}
 	else if (debugmode > DEBUGMODE_FPSCOUNT)

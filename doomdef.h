@@ -771,6 +771,8 @@ extern	dgameinfo_t	gameinfo;
 extern  boolean		sky_md_layer;
 extern	boolean		sky_32x_layer;
 extern	boolean		h40_sky;
+extern  boolean		disable_sky;
+extern  boolean		disable_player_sprites;
 
 extern	boolean		h32_adjust;
 
