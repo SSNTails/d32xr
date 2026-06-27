@@ -18,6 +18,12 @@ void T_MoveCeiling (ceiling_t *ceiling)
 {
 	result_e	res;
 
+	if (ceiling->delayTimer)
+	{
+		ceiling->delayTimer--;
+		return;
+	}
+
 	switch(ceiling->direction)
 	{
 		case 0:		/* IN STASIS */
@@ -27,6 +33,13 @@ void T_MoveCeiling (ceiling_t *ceiling)
 					ceiling->topheight << FRACBITS,false,1,ceiling->direction);
 
 			if (res == pastdest)
+			{
+				if (ceiling->sfxOnFinish)
+					S_StartSound(NULL, ceiling->sfxOnFinish);
+
+				if (ceiling->sector->specialdata && SPTR_TO_LPTR_NN(ceiling->sector->specialdata) == ceiling)
+					ceiling->sector->specialdata = 0;
+					
 				switch(ceiling->type)
 				{
 					case crushAndRaise:
@@ -40,12 +53,20 @@ void T_MoveCeiling (ceiling_t *ceiling)
 					default:
 						break;
 				}
+			}
 			break;
 		case -1:	/* DOWN */
 			res = T_MovePlane(ceiling->sector,ceiling->downspeed,
 				ceiling->bottomheight << FRACBITS,ceiling->crush,1,ceiling->direction);
 
 			if (res == pastdest)
+			{
+				if (ceiling->sfxOnFinish)
+					S_StartSound(NULL, ceiling->sfxOnFinish);
+
+				if (ceiling->sector->specialdata && SPTR_TO_LPTR_NN(ceiling->sector->specialdata) == ceiling)
+					ceiling->sector->specialdata = 0;
+
 				switch(ceiling->type)
 				{
 					case crushAndRaise:
@@ -59,6 +80,7 @@ void T_MoveCeiling (ceiling_t *ceiling)
 					default:
 						break;
 				}
+			}
 			break;
 	}
 }

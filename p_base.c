@@ -918,6 +918,34 @@ static void P_Boss4Thinker(mobj_t *mobj)
       }
    }
 
+   if (leveltime == TICRATE)
+   {
+      sector_t *redButton = I_TO_SEC(P_FindSectorWithTag(105, -1));
+//      sector_t *blueButton = I_TO_SEC(P_FindSectorWithTag(106, -1));
+      sector_t *yellowButton = I_TO_SEC(P_FindSectorWithTag(107, -1));
+
+      redButton->floorheight -= 32*FRACUNIT;
+      redButton->special = 0;
+      yellowButton->floorheight -= 32*FRACUNIT;
+      yellowButton->special = 0;
+
+      for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+      {
+         if (node->type != MT_LOCKONINF)
+            continue;
+
+         if (node->angle == 6) // blue
+            P_SetMobjState(node, S_LOCKONINF3);
+         else if (node->angle == 7) // yellow
+            P_SetMobjState(node, S_LOCKONINF4);
+
+         if (node->angle == 6)
+            node->flags2 &= ~MF2_DONTDRAW;
+         else
+            node->flags2 |= MF2_DONTDRAW;
+      }
+   }
+
 //   if (mobj->state == mobjInfo->spawnstate && mobj->health <= mobjInfo->damage)
 //	   A_Boss4Chase(mobj, 0, 0);
 }

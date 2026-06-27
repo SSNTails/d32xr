@@ -469,6 +469,9 @@ void P_LoadThings (int lump)
 			continue; // Don't count
 #endif
 
+		if (mt->type == 1121) // Flame holder
+			numringthings++;
+
 		if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
 		{
 #ifndef BAREBONESMAP

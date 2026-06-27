@@ -1612,13 +1612,13 @@ typedef struct
 	vector3b_t nv; // Normalized vector
 	vector3b_t rotation;
 
-	int16_t swingSpeed;
+	int16_t mphase;
 
 	// Old style
 	int8_t mlength;
 	uint8_t mspeed;
 
-	int8_t mphase;
+	uint8_t swingSpeed;
 	int8_t msublinks; // # of links from the inside to subtract
 	int8_t sound;
 	int8_t flags;

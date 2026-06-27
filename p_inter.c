@@ -619,10 +619,10 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 			for (int s = 0; s < numsectors; s++)
 			{
 				sector_t *sec = I_TO_SEC(s);
-				if (sec->floorpic == 33) // Brambles
+				if (sec->floorpic == R_FlatNumForName("CEBRAMBL")) // Brambles
 				{
 					sec->special = 0;
-					sec->floorpic = 52; // Grassy dirt
+					sec->floorpic = R_FlatNumForName("CEZGRS1"); // Grassy dirt
 				}
 			}
 		}
@@ -783,6 +783,9 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 				P_RingDamage(player, inflictor, source, damage);
 			else
 				P_KillMobj(source, player->mo);
+
+			if (damage == 5)
+				S_StartSound(player->mo, sfx_s3k_37);
 		}
 		else
 			return;
@@ -812,14 +815,15 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 				{
 					swingmace_t *sm = (swingmace_t*)node;
 
-//					int16_t curPos = (sm->mspeed * (leveltime + sm->mphase)) & FINEMASK;
 					uint8_t oldSpeed = sm->mspeed;
 
-					uint8_t calcHealth = target->health > 4 ? target->health : target->health + 4;
-					sm->mspeed = (9 - calcHealth) << 4;
+					if (target->health == targinfo->damage)
+						sm->mspeed = 16;
+					else
+						sm->mspeed += 12;
 
 					// Compensate mphase so maces don't teleport
-					sm->mphase = (oldSpeed * (leveltime + sm->mphase) / sm->mspeed) - leveltime;
+					sm->mphase = ((oldSpeed * (leveltime + sm->mphase) / sm->mspeed) - leveltime) & FINEMASK;
 				}
 
 				node = node->next;
@@ -830,7 +834,7 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 				uint8_t tag = 99 + (targinfo->spawnhealth - target->health);
 
 				// Collapse a floor
-				quake.time = TICRATE;
+				quake.time = 2*TICRATE;
 				quake.intensity = 12;
 
 				for (int s = -1; (s = P_FindSectorWithTag(tag, s)) >= 0;)
@@ -841,7 +845,7 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 					floor->type = boss4DropFloor;
 					floor->crush = true;
 					floor->direction = -1;
-					floor->delayTimer = floor->delay = TICRATE;
+					floor->delayTimer = floor->delay = 2*TICRATE;
 					floor->sector = I_TO_SEC(s);
 					floor->speed = 8*FRACUNIT;
 					floor->texture = 33;
@@ -862,6 +866,9 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 				ceiling->topheight = 3072;
 				ceiling->sector->ceilingheight += 8*FRACUNIT;
 
+				if (ceiling->sector->specialdata)
+					P_RemoveThinker(SPTR_TO_LPTR_NN(ceiling->sector->specialdata));
+
 				ceiling = Z_Calloc (sizeof(*ceiling), PU_LEVSPEC);
 				P_AddThinker (&ceiling->thinker);
 				ceiling->thinker.function = T_MoveCeiling;
@@ -870,7 +877,7 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 				ceiling->direction = 1; // Up
 				ceiling->type = raiseCeiling;
 				ceiling->upspeed = 8*FRACUNIT;
-				ceiling->topheight = 2560;
+				ceiling->topheight = 3072;
 				ceiling->sector->ceilingheight += 8*FRACUNIT;
 
 				ceiling = Z_Calloc (sizeof(*ceiling), PU_LEVSPEC);
@@ -881,18 +888,29 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 				ceiling->direction = 1; // Up
 				ceiling->type = raiseCeiling;
 				ceiling->upspeed = 8*FRACUNIT;
-				ceiling->topheight = 2560;
+				ceiling->topheight = 3072;
 				ceiling->sector->ceilingheight += 8*FRACUNIT;
 
 				// Buttons
 				sector_t *button = I_TO_SEC(P_FindSectorWithTag(105, -1));
 				button->floorheight = 936*FRACUNIT;
+				button->special = 0;
 
 				button = I_TO_SEC(P_FindSectorWithTag(106, -1));
 				button->floorheight = 936*FRACUNIT;
+				button->special = 0;
 
 				button = I_TO_SEC(P_FindSectorWithTag(107, -1));
 				button->floorheight = 936*FRACUNIT;
+				button->special = 0;
+
+				for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+				{
+					if (node->type != MT_LOCKONINF)
+						continue;
+
+					node->flags2 |= MF2_DONTDRAW;
+				}
 			}
 		}
 

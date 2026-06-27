@@ -79,6 +79,132 @@ static void P_CheckFloatbobPlatforms(player_t *player)
 	P_InnerCheckFloatbobPlatforms(player, SS_SECTOR(player->mo->isubsector));
 }
 
+static void P_InnerCheckTouchingSectorSpecials(player_t *player, sector_t *sector)
+{
+	if (sector->special == 9 && player->mo->z == sector->floorheight)
+	{
+		sector_t *redButton = I_TO_SEC(P_FindSectorWithTag(105, -1));
+		sector_t *blueButton = I_TO_SEC(P_FindSectorWithTag(106, -1));
+		sector_t *yellowButton = I_TO_SEC(P_FindSectorWithTag(107, -1));
+		const fixed_t depressedHeight = 968*FRACUNIT;
+		const fixed_t unpressedHeight = 1000*FRACUNIT;
+
+		// First, reset all of them
+		redButton->special = 0;
+		blueButton->special = 0;
+		yellowButton->special = 0;
+
+		angle_t showIndicator = 0;
+
+		if (sector->tag == 106) // blue button
+		{
+			showIndicator = 5;
+
+			floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
+			P_AddThinker (&floor->thinker);
+			floor->thinker.function = T_MoveFloor;
+			floor->type = raiseFloor;
+			floor->crush = true;
+			floor->direction = 1;
+			floor->sector = redButton;
+			floor->speed = 4*FRACUNIT;
+			floor->floordestheight = unpressedHeight >> FRACBITS;
+
+			redButton->special = 9;
+		}
+		else if (sector->tag == 105) // red button
+		{
+			showIndicator = 7;
+
+			floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
+			P_AddThinker (&floor->thinker);
+			floor->thinker.function = T_MoveFloor;
+			floor->type = raiseFloor;
+			floor->crush = true;
+			floor->direction = 1;
+			floor->sector = yellowButton;
+			floor->speed = 4*FRACUNIT;
+			floor->floordestheight = unpressedHeight >> FRACBITS;
+
+			yellowButton->special = 9;
+		}
+		else if (sector->tag == 107) // yellow button
+		{
+			showIndicator = 6;
+
+			floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
+			P_AddThinker (&floor->thinker);
+			floor->thinker.function = T_MoveFloor;
+			floor->type = raiseFloor;
+			floor->crush = true;
+			floor->direction = 1;
+			floor->sector = blueButton;
+			floor->speed = 2*FRACUNIT;
+			floor->floordestheight = unpressedHeight >> FRACBITS;
+
+			blueButton->special = 9;
+		}
+
+		// Depress the button
+		floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
+		P_AddThinker (&floor->thinker);
+		floor->thinker.function = T_MoveFloor;
+		floor->type = lowerFloor;
+		floor->crush = true;
+		floor->direction = -1;
+		floor->sector = sector;
+		floor->speed = 4*FRACUNIT;
+		floor->floordestheight = depressedHeight >> FRACBITS;
+
+		for (mobj_t *node = mobjhead.next; node != (void*)&mobjhead; node = node->next)
+		{
+			if (node->type != MT_LOCKONINF)
+				continue;
+
+			if (node->angle == showIndicator)
+				node->flags2 &= ~MF2_DONTDRAW;
+			else
+				node->flags2 |= MF2_DONTDRAW;
+		}
+
+		// Raise the ceiling
+		ceiling_t *ceiling = Z_Calloc (sizeof(*ceiling), PU_LEVSPEC);
+		P_AddThinker (&ceiling->thinker);
+		ceiling->thinker.function = T_MoveCeiling;
+		ceiling->sector = I_TO_SEC(P_FindSectorWithTag(104, -1));
+		ceiling->crush = false;
+		ceiling->direction = 1; // Up
+		ceiling->type = raiseCeiling;
+		ceiling->upspeed = 3*FRACUNIT;
+		ceiling->topheight = 1084 + 128;
+		S_StartSound(NULL, sfx_doord1);
+
+		ceiling = Z_Calloc (sizeof(*ceiling), PU_LEVSPEC);
+		P_AddThinker (&ceiling->thinker);
+		ceiling->thinker.function = T_MoveCeiling;
+		ceiling->sector = I_TO_SEC(P_FindSectorWithTag(104, -1));
+		ceiling->crush = false;
+		ceiling->direction = -1; // Down
+		ceiling->type = raiseCeiling;
+		ceiling->downspeed = 12*FRACUNIT;
+		ceiling->bottomheight = 1084;
+		ceiling->delayTimer = 4*TICRATE;
+		ceiling->sfxOnFinish = sfx_doorc2;
+		ceiling->sector->specialdata = LPTR_TO_SPTR_NN(ceiling);
+	}
+}
+
+static void P_CheckTouchingSectorSpecials(player_t *player)
+{
+	for (int i = 0; i < player->num_touching_sectors; i++)
+	{
+		sector_t *sector = I_TO_SEC(player->touching_sectorlist[i]);
+		P_InnerCheckTouchingSectorSpecials(player, sector);
+	}
+
+	P_InnerCheckTouchingSectorSpecials(player, SS_SECTOR(player->mo->isubsector));
+}
+
 static void P_InnerCheckConveyor(player_t *player, const sector_t *sector)
 {
 	boolean convey = false;
@@ -483,6 +609,8 @@ void P_PlayerMobjThink(mobj_t *mobj)
  		P_PlayerCheckForStillPickups(mobj);
 
 	P_CheckFloatbobPlatforms(player);
+
+	P_CheckTouchingSectorSpecials(player);
 
 	if ((mobj->z != mobj->floorz) || mobj->momz)
 		P_PlayerZMovement(mobj);

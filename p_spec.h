@@ -203,6 +203,8 @@ typedef struct
 	VINT		bottomheight, topheight;
 	fixed_t     downspeed;
 	fixed_t     upspeed;
+	VINT        delayTimer;
+	VINT        sfxOnFinish;
 	uint8_t		type;
 	uint8_t		crush;
 	int8_t		direction;		/* 1 = up, 0 = waiting, -1 = down */

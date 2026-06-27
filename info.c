@@ -66,6 +66,7 @@ const char * const sprnames[NUMSPRITES] = {
 "KELP",
 "LASF",
 "LASR",
+"LCKN",
 "MAGN",
 "MBWN",
 "MINE",
@@ -654,6 +655,16 @@ STATE(SPR_SPLH,5,2,NULL,S_SPLISH7), // S_SPLISH6
 STATE(SPR_SPLH,6,2,NULL,S_SPLISH8), // S_SPLISH7
 STATE(SPR_SPLH,7,2,NULL,S_SPLISH9), // S_SPLISH8
 STATE(SPR_SPLH,8,2,NULL,S_NULL),    // S_SPLISH9
+
+STATE(SPR_LCKN, FF_FULLBRIGHT, 2, NULL, S_NULL), // S_LOCKON1
+STATE(SPR_LCKN, 1|FF_FULLBRIGHT, 2, NULL, S_NULL), // S_LOCKON2
+STATE(SPR_LCKN, 2|FF_FULLBRIGHT, 2, NULL, S_NULL), // S_LOCKON3
+STATE(SPR_LCKN, 3|FF_FULLBRIGHT, 2, NULL, S_NULL), // S_LOCKON4
+
+STATE(SPR_LCKN,   FF_FULLBRIGHT, -1, NULL, S_NULL), // S_LOCKONINF1
+STATE(SPR_LCKN, 1|FF_FULLBRIGHT, -1, NULL, S_NULL), // S_LOCKONINF2
+STATE(SPR_LCKN, 2|FF_FULLBRIGHT, -1, NULL, S_NULL), // S_LOCKONINF3
+STATE(SPR_LCKN, 3|FF_FULLBRIGHT, -1, NULL, S_NULL), // S_LOCKONINF4
 
 STATE(SPR_BOM2,FF_FULLBRIGHT,1,NULL,S_BOSSEXPLODE2), // S_BOSSEXPLODE1
 STATE(SPR_BOM2,FF_FULLBRIGHT|1,1,NULL,S_BOSSEXPLODE3), // S_BOSSEXPLODE2
@@ -4081,6 +4092,58 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		sfx_None,       // activesound
 		MF_NOBLOCKMAP|MF_NOCLIP|MF_NOGRAVITY|MF_STATIC, // flags
 		0, // flags2
+	},
+
+	{           // MT_LOCKON
+		-1,             // doomednum
+		S_LOCKON1,       // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,       // seesound
+		8,              // reactiontime
+		sfx_None,       // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		sfx_None,       // deathsound
+		8,              // speed
+		16*FRACUNIT,    // radius
+		32*FRACUNIT,    // height
+		16,             // mass
+		0,              // damage
+		sfx_None,       // activesound
+		MF_NOBLOCKMAP|MF_NOCLIP|MF_NOGRAVITY, // flags
+		0          // flags2
+	},
+
+	{           // MT_LOCKONINF
+		1126,           // doomednum
+		S_LOCKONINF1,   // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,       // seesound
+		8,              // reactiontime
+		sfx_None,       // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		sfx_None,       // deathsound
+		8,              // speed
+		16*FRACUNIT,    // radius
+		32*FRACUNIT,    // height
+		16,             // mass
+		0,              // damage
+		sfx_None,       // activesound
+		MF_NOBLOCKMAP|MF_NOCLIP|MF_NOGRAVITY, // flags
+		MF2_NARROWGFX          // flags2
 	},
 
 	{           // MT_BOSSEXPLODE

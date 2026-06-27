@@ -340,9 +340,6 @@ int P_Ticker (void)
 		P_UpdateSpecials((int8_t)accum_time);
 	}
 
-	if (quake.time)
-		quake.time--;
-
 	P_Weather();
 
 	Mars_P_EndAnimationUpdate();
@@ -352,6 +349,10 @@ int P_Ticker (void)
 #ifndef SHOW_DISCLAIMER
 		debugCounter = 0;
 #endif
+
+		if (quake.time)
+			quake.time--;
+
 		if (IsDemoModeType(DemoMode_Playback)) {
 			players[0].buttons = Mars_ConvGamepadButtons(rec_buttons, 0);
 		}

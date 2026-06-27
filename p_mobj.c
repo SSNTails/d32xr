@@ -723,6 +723,10 @@ return;	/*DEBUG */
 		mobj_t *eggmech = P_SpawnMobj(x, y, z, MT_EGGMOBILE2_MECH);
 		eggmech->target = mobj;
 	}
+	else if (mobj->type == MT_LOCKONINF)
+	{
+		mobj->flags2 |= MF2_DONTDRAW; // Wait to be turned on
+	}
 	else if (mobj->type == MT_ROBOHOOD)
 	{
 		if (mthing->options & MTF_AMBUSH)
@@ -753,6 +757,10 @@ return;	/*DEBUG */
 		jet->flags2 |= MF2_DONTDRAW;
 		jet->movecount = 4; // This tells it which one it is
 	}
+	else if (mobj->type == MT_FLAMEHOLDER)
+	{
+		P_SpawnMobj(x, y, z + mobjinfo[mobj->type].height, MT_TORCH);
+	}
 
 	if (mobj->type == MT_TOKEN) {
 		((ringmobj_t *)mobj)->pad = (1 << totaltokens);
@@ -774,6 +782,8 @@ return;	/*DEBUG */
 	}
 	else if (mobj->type == MT_AXIS)
 		mobj->angle = mthing->angle << FRACBITS;
+	else if (mobj->type == MT_LOCKONINF)
+		mobj->angle = mthing->angle; // Serves as a tag
 	else
 		mobj->angle = mthing->angle * ANGLE_1;
 

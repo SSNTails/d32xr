@@ -700,6 +700,10 @@ static void P_PlayerOnSpecial3DFloor(player_t *player, sector_t *originalSector)
 			if (player->mo->z == fofsec->ceilingheight)
 				P_DamageMobj(player->mo, NULL, NULL, 1);
 			break;
+		case 5: // Brambles
+			if (player->mo->z == fofsec->ceilingheight)
+				P_DamageMobj(player->mo, NULL, NULL, 5);
+			break;
 		case 6:
 			if (player->mo->z == fofsec->ceilingheight)
 				P_DamageMobj(player->mo, NULL, NULL, 10000);
@@ -738,6 +742,10 @@ void P_PlayerInSpecialSector (player_t *player)
 		case 4: // Damage (electrical)
 			if (player->mo->z <= sector->floorheight)
 				P_DamageMobj(player->mo, NULL, NULL, 1);
+			break;
+		case 5: // Brambles
+			if (player->mo->z <= sector->floorheight)
+				P_DamageMobj(player->mo, NULL, NULL, 5);
 			break;
 		case 6:
 			if (player->mo->z <= sector->floorheight)
@@ -1375,7 +1383,7 @@ void P_SSNMaceRotate(swingmace_t *sm)
 
 	if (sm->swingSpeed)
 	{
-		angle_t swingmag = FixedMul(finecosine(curPos), sm->swingSpeed << FRACBITS);
+		angle_t swingmag = FixedMul(finecosine(curPos), sm->swingSpeed << 8 << FRACBITS);
 		angle_t fa = swingmag >> ANGLETOFINESHIFT;
 //		CONS_Printf("fa: %d", fa);
 		curPos = fa;
@@ -1550,7 +1558,7 @@ void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 
 	if (args[8] & TMM_SWING)
 	{
-		sm->swingSpeed = args[9] << 8;
+		sm->swingSpeed = args[9];
 	}
 
 	fixed_t x = point->x << FRACBITS;
