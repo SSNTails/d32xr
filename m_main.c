@@ -754,6 +754,7 @@ int M_Ticker (void)
 }
 
 void O_DrawHelp (VINT yPos);
+void RefreshTitle(boolean full, int colormap);
 /*
 =================
 =

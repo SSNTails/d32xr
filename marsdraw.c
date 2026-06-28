@@ -1118,7 +1118,6 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 	int		srcx, srcy;
 	int		width, height;
 	fixed_t	total_scaled_w, total_scaled_h;
-	int		rowsize;
 	fixed_t	inc_x, inc_y;
 	uint16_t	*dest, *source;
 
@@ -1171,8 +1170,8 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 	inc_x = 0;
 	inc_y = 0;
 
-	dest = (byte*)fb + (y * (320<<1)) + (x<<1);
-	source = jo->data + srcx + ((srcy * width) << 1);
+	dest = (uint16_t*)((byte*)fb + (y * (320<<1)) + (x<<1));
+	source = (uint16_t*)(jo->data + srcx + ((srcy * width) << 1));
 
 	pixel_t* dest2 = (pixel_t*)dest;
 
@@ -1471,7 +1470,7 @@ void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y,
 	const int canvas_width, pixel_t *fb)
 {
 	int		srcx, srcy;
-	int		width, height, depth, flags, index, hw;
+	int		width, height, depth, flags, index;
 	int		total_w, total_h;
 	int		rowsize, inc;
 	uint16_t	*dest, *source;
@@ -1525,7 +1524,7 @@ void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y,
 		return;
 	}
 
-	hw = width >> 1;
+//	hw = width >> 1;
 
 	if (depth == 2)
 	{
@@ -1535,8 +1534,8 @@ void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y,
 		index = (index << 1) + (flags & 2 ? 1 : 0);
 	}
 
-	dest = (byte*)fb + ((y * canvas_width + x) << 1);
-	source = jo->data + ((srcx + srcy * rowsize) << 1);
+	dest = (uint16_t*)((byte*)fb + ((y * canvas_width + x) << 1));
+	source = (uint16_t*)(jo->data + ((srcx + srcy * rowsize) << 1));
 
 	//if ((x & 1) == 0 && (width & 1) == 0 && (rowsize & 1) == 0)
 	{
