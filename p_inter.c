@@ -178,6 +178,8 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 		else
 			P_SetMobjState(player->mo, S_PLAY_FALL1);
 
+		player->pflags &= ~PF_JUMPED;
+
 		// Egg Colosseum
 		if (gamemapinfo.mapNumber == 12)
 			player->pflags |= PF_SPRINGSHELL;
