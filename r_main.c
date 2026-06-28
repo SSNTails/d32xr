@@ -1309,7 +1309,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 				// Future: Have a way to specify the water color
 				if (gamemapinfo.mapNumber == 4 || gamemapinfo.mapNumber == 5)
 					waterpal = 13;
-				else if (gamemapinfo.mapNumber == 10 || gamemapinfo.mapNumber == 11)
+				else if (gamemapinfo.mapNumber == 10)
 					waterpal = 14;
 				else if (gamemapinfo.mapNumber == 7)
 					waterpal = 15;
