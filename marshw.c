@@ -142,12 +142,13 @@ void Mars_InitLineTable(void)
 				lines[offset+j] = (j * 320 + 0x100) + (((~h40_sky) & h32_adjust)<<1);
 			}
 			for (j=204; j < mars_requested_lines; j++) {
-				lines[offset+j] = (204 * 320 + 0x100);
+				lines[offset+j] = (uint16_t)(204 * 320 + 0x100);
 			}
 			break;
 
 		default:
 			// Do nothing!
+			break;
 	}
 	
 	MARS_VDP_SCRSHFT = ((~h40_sky) & h32_adjust);
