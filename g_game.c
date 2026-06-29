@@ -548,6 +548,7 @@ void G_InitNew (int map, gametype_t gametype, boolean splitscr)
 /* force players to be initialized upon first level load          */
 	for (i=0 ; i<MAXPLAYERS ; i++) 
 	{
+		players[i].score = 0;
 		players[i].lives = 3;
 		players[i].starpostnum = 0;
 		players[i].playTime = 0;
