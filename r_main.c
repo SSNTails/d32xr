@@ -1714,14 +1714,15 @@ visplane_t* R_FindPlane(fixed_t height,
 	visplane_t *check, *tail, *next;
 	int hash = R_PlaneHash(height, flatandlight);
 
+	const uint32_t flatandlightandoffs = (flatandlight << 16) + offs;
+
 	tail = vd.visplanes_hash[hash];
 	for (check = tail; check; check = next)
 	{
 		next = check->next;
 
 		if (height == check->height // same plane as before?
-			&& flatandlight == check->flatandlight
-			&& check->offs == offs)
+			&& flatandlightandoffs == *(uint32_t*)&check->flatandlight)
 		{
 			if (MARKEDOPEN(check->open[start]))
 			{
@@ -1762,6 +1763,7 @@ visplane_t* R_FindPlaneFOF(fixed_t height,
 {
 	visplane_t *check, *tail, *next;
 	int hash = R_PlaneHash(height, flatandlight);
+	const uint32_t flatandlightandoffs = (flatandlight << 16) + offs;
 
 	tail = vd.visplanes_hash[hash];
 	for (check = tail; check; check = next)
@@ -1770,8 +1772,7 @@ visplane_t* R_FindPlaneFOF(fixed_t height,
 
 		if ((check->flags & VPFLAGS_ISFOF)
 			&& height == check->height // same plane as before?
-			&& flatandlight == check->flatandlight
-			&& check->offs == offs)
+			&& flatandlightandoffs == *(uint32_t*)&check->flatandlight)
 		{
 			// NOTE: Not checking MARKEDOPEN here probably causes some problems.
 			// We just don't know what yet.
