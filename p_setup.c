@@ -108,7 +108,7 @@ void P_LoadSegs (int lump)
 
 void P_LoadSubsectors (int lump)
 {
-	numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
+	numsubsectors = W_LumpLength (lump) / sizeof(subsector_t);
 
 	if (gamemapinfo.loadFlags & LOADFLAGS_SUBSECTORS)
 	{
@@ -792,6 +792,14 @@ void P_GroupLines (void)
 	}*/
 }
 
+void P_InitPolyobjects()
+{
+	numpolyobjects = 1;
+	polyobjects = Z_Malloc(numpolyobjects * sizeof(polyobj_t), PU_LEVEL);
+
+	polyobjects[0].tag = 64;
+}
+
 /*============================================================================= */
 
 /*
@@ -848,6 +856,8 @@ D_printf ("P_SetupLevel(%i)\n",lumpnum);
 	validcount[0] = 1; // cpu 0
 
 	P_GroupLines();
+
+	P_InitPolyobjects();
 
 /* set up world state */
 #ifndef BAREBONESMAP
