@@ -257,7 +257,7 @@ void Y_Ticker(void)
 void Y_StartIntermission(void)
 {
 	const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
-	int worldTime = leveltime - delaytime + TICRATE - players[consoleplayer].exiting;
+	int worldTime = players[0].playTime - delaytime + TICRATE - players[consoleplayer].exiting;
 
 	interstart = gametic;
 	endtic = -1;

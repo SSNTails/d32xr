@@ -291,6 +291,7 @@ void G_PlayerReborn (int player)
 	VINT            starposty;
 	VINT            starpostz;
 	VINT            starpostangle;
+	int				starposttime;
 	VINT            lives;
 	int             score;
 
@@ -302,6 +303,7 @@ void G_PlayerReborn (int player)
 	starposty = p->starposty;
 	starpostz = p->starpostz;
 	starpostangle = p->starpostangle;
+	starposttime = p->starposttime;
 	lives = p->lives;
 	score = p->score;
 
@@ -314,8 +316,12 @@ void G_PlayerReborn (int player)
 	p->starposty = starposty;
 	p->starpostz = starpostz;
 	p->starpostangle = starpostangle;
+	p->starposttime = starposttime;
 	p->lives = lives;
 	p->score = score;
+
+	if (p->starpostnum)
+		p->playTime = starposttime;
 
 	p->playerstate = PST_LIVE;
 
@@ -544,6 +550,7 @@ void G_InitNew (int map, gametype_t gametype, boolean splitscr)
 	{
 		players[i].lives = 3;
 		players[i].starpostnum = 0;
+		players[i].playTime = 0;
 		players[i].playerstate = PST_REBORN;
 	}
 
@@ -642,6 +649,12 @@ startnew:
 		if (gameaction == ga_warped)
 		{
 			tokenbits = 0;
+			for (i = 0; i < MAXPLAYERS; i++)
+			{
+				players[i].playTime = 0;
+				players[i].starposttime = 0;
+			}
+
 			if (starttype != netgame || startmap != gamemapinfo.mapNumber)
 			{
 				gameaction = ga_startnew;

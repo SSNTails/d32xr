@@ -38,6 +38,7 @@ void P_TouchStarPost(mobj_t *starpost, player_t *player)
 	player->starposty = player->mo->y >> FRACBITS;
 	player->starpostz = starpost->z;
 	player->starpostangle = starpost->angle >> ANGLETOFINESHIFT;
+	player->starposttime = leveltime;
 
 	P_SetStarPosts(starpost->health);
 

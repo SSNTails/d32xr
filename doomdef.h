@@ -514,6 +514,7 @@ typedef struct player_s
 	fixed_t     cmomx, cmomy;
 
 	int			score;
+	int         playTime; // For TIME display
 	VINT        onconveyor;
 	VINT		health;					/* only used between levels, mo->health */
 										/* is used during levels	 */
@@ -533,6 +534,7 @@ typedef struct player_s
 	VINT        starpostnum;
 	VINT        starpostx, starposty, starpostz;
 	VINT        starpostangle;
+	int			starposttime;
 
 	VINT        lossCount;
 	VINT        stillTimer;

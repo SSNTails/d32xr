@@ -467,7 +467,7 @@ static void ST_Drawer_ (stbar_t* sb)
 		V_DrawStringCenter(&menuFont, 160, 12+16, "TIME LEFT");
 #endif
 		const int delaytime = 3*TICRATE;
-		int playTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
+		int playTime = players[0].playTime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
 		int timeLeft = (gamemapinfo.timeLimit - playTime)/TICRATE;
 		if (timeLeft < 0)
 			timeLeft = 0;
@@ -576,7 +576,7 @@ static void ST_Drawer_ (stbar_t* sb)
 #endif //INPUTDEBUG
 
 		const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
-		int worldTime = leveltime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
+		int worldTime = players[0].playTime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
 		if (worldTime < 0)
 			worldTime = 0;
 

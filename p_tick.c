@@ -410,6 +410,8 @@ int P_Ticker (void)
 
 		if (overlay_graphics != og_about) {
 			leveltime++;
+			players[0].playTime++;
+			players[1].playTime++;
 		}
 
 		if (skipCount == 0)
