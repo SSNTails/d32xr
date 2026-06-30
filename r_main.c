@@ -1629,14 +1629,17 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 
 	vd.gsortedvisplanes = NULL;
 
+#ifdef USE_DECALS
 	vd.columncache[0] = (uint8_t*)(((intptr_t)tempbuf + 3) & ~3);
 	tempbuf += sizeof(uint8_t) * COLUMN_CACHE_SIZE * 2 / sizeof(*tempbuf);
 	vd.columncache[1] = (uint8_t*)(((intptr_t)tempbuf + 3) & ~3);
 	tempbuf += sizeof(uint8_t) * COLUMN_CACHE_SIZE * 2 / sizeof(*tempbuf);
+#endif
 
 	//I_Error("%d", ((uint16_t *)I_FrameBuffer() + 64*1024-0x100 - tempbuf) * 2);
-
+#ifdef USE_DECALS
 	I_SetThreadLocalVar(DOOMTLS_COLUMNCACHE, vd.columncache[0]);
+#endif
 
 	/* */
 	/* clear sprites */
@@ -1669,7 +1672,9 @@ void Mars_Sec_R_Setup(void)
 	for (i = 0; i < NUM_VISPLANES_BUCKETS; i++)
 		vd.visplanes_hash[i] = NULL;
 
+#ifdef USE_DECALS
 	I_SetThreadLocalVar(DOOMTLS_COLUMNCACHE, vd.columncache[1]);
+#endif
 }
 
 #endif

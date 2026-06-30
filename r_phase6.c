@@ -39,7 +39,9 @@ typedef struct drawtex_s
    fixed_t   texturemid;
    fixed_t   topheight;
    fixed_t   bottomheight;
+#ifdef USE_DECALS
    uint8_t   *columncache;
+#endif
 } drawtex_t;
 
 typedef struct
@@ -516,9 +518,10 @@ void R_SegCommands(void)
     D_memset(bottomtex, 0, sizeof(*bottomtex));
 
     I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
-
+#ifdef USE_DECALS
     I_GetThreadLocalVar(DOOMTLS_COLUMNCACHE, toptex->columncache);
     bottomtex->columncache = toptex->columncache + COLUMN_CACHE_SIZE;
+#endif
 
     segcount = vd.lastwallcmd - vd.viswalls;
     for (i = 0; i < segcount; i++)
