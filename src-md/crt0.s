@@ -1936,6 +1936,7 @@ load_md_sky:
         move.l  d0,a2
         lea     bank1_palette_1,a3
         move.w  #47,d1
+.ifdef H32_SAFE_PALETTE
         cmpi.b  #1,legacy_emulator      /* Check for legacy emulator (not Ares) */
         bgt.s   1f
 
@@ -1944,6 +1945,7 @@ load_md_sky:
         addq    #2,a2
         subq    #1,d1
         bra.s   2f
+.endif
 1:
         move.w  (a2),d0                 /* Use background color from palette lump (best for legacy emulators) */
 2:

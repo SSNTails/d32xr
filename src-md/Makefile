@@ -13,6 +13,7 @@ HWCCFLAGS = -m68000 -Wall -O1 -c -fomit-frame-pointer -fno-lto
 CCFLAGS = -m68000 -Wall -Os -c -fomit-frame-pointer -flto -DUSE_SCD_IN_RAM
 ASFLAGS = -m68000 --register-prefix-optional
 ASFLAGS += --defsym CHECKSUM=1
+ASFLAGS += --defsym H32_SAFE_PALETTE=1
 LINKFLAGS = -T $(LDSCRIPTSDIR)/mars-md.ld -Wl,-Map=output.map -nostdlib -flto
 
 PREFIX = $(ROOTDIR)/m68k-elf/bin/m68k-elf-
