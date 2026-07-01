@@ -477,27 +477,11 @@ D_printf ("Done\n");
 	testtex = &textures[R_TextureNumForName("GFZROCK")];
 }
 
-VINT CalcFlatSize(int lumplength)
+const flatsize_t *GetFlatSize(int index)
 {
-	if (lumplength < 2*2)
-		return 1;
-	
-	if (lumplength < 4*4)
-		return 2;
+	const flatsize_t *flatsizes = (flatsize_t*)W_POINTLUMPNUM(W_GetNumForName("FLATINFO"));
 
-	if (lumplength < 8*8)
-		return 4;
-
-	if (lumplength < 16*16)
-		return 8;
-
-	if (lumplength < 32*32)
-		return 16;
-	
-	if (lumplength < 64*64)
-		return 32;
-
-	return 64;
+	return &flatsizes[index];
 }
 
 
@@ -891,7 +875,9 @@ static boolean IsRotatedFlat(uint8_t flatnum)
 */
 void R_SetFlatData(int f, uint8_t *start, int size)
 {
-	VINT w = CalcFlatSize(size);
+	const flatsize_t *flatSize = GetFlatSize(f);
+	VINT w = 1 << flatSize->width;
+	VINT h = 1 << flatSize->height;
 	uint8_t *data = start;
 
 #ifdef FLATMIPS
@@ -914,7 +900,8 @@ void R_SetFlatData(int f, uint8_t *start, int size)
 	}
 #else
 	flatpixels[f].data[0] = data;
-	flatpixels[f].size = w;
+	flatpixels[f].width = w;
+	flatpixels[f].height = h;
 	flatpixels[f].flags = 0;
 	if (IsWavyFlat(f))
 		flatpixels[f].flags |= FLF_WAVY;

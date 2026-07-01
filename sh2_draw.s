@@ -459,7 +459,7 @@ do_span_color_low_loop_1px:
 !
 !void I_DrawSpanLow(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
 !                fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep,
-!                inpixel_t *ds_source, int ds_height)
+!                inpixel_t *ds_source, int ds_width, int ds_height)
 
         .align  4
         .global _I_DrawSpanLowA
@@ -496,13 +496,16 @@ _I_DrawSpanLowA:
         mov.l   @(28,r15),r3    /* xstep */
         mov.l   @(32,r15),r5    /* ystep */
         mov.l   @(36,r15),r9    /* ds_source */
-        mov.l   @(40,r15),r12   /* ds_height */
+        mov.l   @(40,r15),r12   /* ds_width */
+        mov.l   @(44,r15),r13   /* ds_height */
 
-        mov     r12,r11
-        dt      r11
-        mulu.w  r12,r11         /* (ds_height-1) * ds_height */
-        dt      r12             /* (ds_height-1) */
-        sts     macl,r11        /* draw_flat_ymask */
+        /* === Create Masks === */
+        mov     r13,r11         /* r11 = ds_height */
+        dt      r11             /* r11 = ds_height-1 */
+        mulu.w  r13,r11         /* (ds_height-1) * ds_height */
+        sts     macl,r11        /* r11 = Y mask */
+        dt      r13             /* r13 = ds_height-1 */
+        dt      r12             /* r12 = ds_width-1 */
 
         swap.w  r4,r1           /* (yfrac >> 16) */
         and     r11,r1          /* (yfrac >> 16) & 63*64 */

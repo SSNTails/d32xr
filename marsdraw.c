@@ -379,7 +379,7 @@ void I_DrawColumnNoDraw(int dc_x, int dc_yl, int dc_yh, int light, fixed_t frac_
 }
 
 void I_DrawSpanNoDraw(int ds_y, int ds_x1, int ds_x2, int light, fixed_t ds_xfrac,
-	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texheight)
+	fixed_t ds_yfrac, fixed_t ds_xstep, fixed_t ds_ystep, inpixel_t* ds_source, int dc_texwidth, int dc_texheight)
 {
 
 }
@@ -846,7 +846,8 @@ void DrawTiledLetterbox2(int flat)
 		return;
 
 	int			yt;
-	const int	w = CalcFlatSize(W_LumpLength(flat)), top_h = 21, bottom_h = 21-10;
+	const flatsize_t *flatSize = GetFlatSize(flat - firstflat);
+	const int	w = (1 << flatSize->width), top_h = 21, bottom_h = 21-10;
 	const int	hw = w / 2;
 	const int xtiles = (320 + w - 1) / w;
 	pixel_t* bdest;
@@ -952,8 +953,9 @@ void ClearViewportOverdraw(void)
 void DrawTiledBackground2(int flat)
 {
 	int			y, yt;
-	const int	w = CalcFlatSize(flat);
-	const int 	h = CalcFlatSize(flat);
+	const flatsize_t *flatSize = GetFlatSize(flat - firstflat);
+	const int	w = 1 << flatSize->width;
+	const int 	h = 1 << flatSize->height;
 	const int	hw = w / 2;
 	const int xtiles = (320 + w - 1) / w;
 	const int ytiles = (224 + h - 1) / h;

@@ -181,7 +181,8 @@ static void R_UpdateCache(void)
         flattex_t *flat = &flatpixels[id - numtextures];
         data = (void **)flat->data;
         pdata = (void**)&data[i];
-        w = h = flat->size;
+        w = flat->width;
+        h = flat->height;
         pixels = w * h;
       }
       else
