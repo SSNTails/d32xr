@@ -142,7 +142,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     yfrac = FixedMul(finesine(angle), length);
     yfrac = lpl->y - yfrac + (lpl->yoff << FRACBITS);
 #ifdef MARS
-    yfrac *= flatpixels[flatnum].width;
+    yfrac *= flatpixels[flatnum].height; // TODO: Is this correct?
 #endif
 
 #if MIPLEVELS > 1 && FLATMIPS
@@ -431,7 +431,7 @@ static void R_DrawPlanes2(int isFOF)
         lpl.wavy = flatpixels[flatnum].flags & FLF_WAVY;
 
 #ifdef MARS
-        lpl.baseyscale *= flatpixels[flatnum].width;
+        lpl.baseyscale *= flatpixels[flatnum].height; // TODO: Is this correct?
 #endif
 
         I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
