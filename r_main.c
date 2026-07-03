@@ -820,6 +820,7 @@ static boolean IsWavyFlat(uint8_t flatnum)
 
 static boolean IsRotatedFlat(uint8_t flatnum)
 {
+	return false;
 	return flatnum == 5
 		|| flatnum == 6
 		|| flatnum == 7
