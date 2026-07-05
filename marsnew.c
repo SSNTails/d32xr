@@ -519,7 +519,7 @@ byte *I_WorkBuffer (void)
 		else {
 			workbuf_high = (byte *)(framebuffer + 320 / 2 * (I_FrameBufferHeight() +1)); // +1 for the blank line
 		}*/
-		workbuf_high = (byte *)(framebuffer + 320 / 2 * I_FrameBufferHeight()); // +1 for the blank line
+		workbuf_high = (byte *)(framebuffer + 320 / 2 * viewportHeight); // +1 for the blank line
 	}
 	return workbuf_high;
 }
@@ -596,7 +596,7 @@ void I_FillFrameBuffer (unsigned char palette_index)
 {
 	const int long_fill = (palette_index << 24) | (palette_index << 16) | (palette_index << 8) | palette_index;
 	//const int line_count = I_FrameBufferHeight()+1 - (IsLevel() ? 11 : 0); // Allow for larger WorkBuffer on levels.
-	const int line_count = I_FrameBufferHeight();
+	const int line_count = viewportHeight;
 
 	int* p = (int*)framebuffer;
 	int* p_end = (int*)(framebuffer + 320 / 2 * line_count);
