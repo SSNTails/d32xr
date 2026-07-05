@@ -903,7 +903,8 @@ void ClearViewportOverdraw(void)
 	pixel_t *framebuffer = I_OverwriteBuffer();
 
 	// For levels, the last 11 lines are free memory; don't overwrite!
-	const int lines_used = IsLevel() ? 224-11 : 224;
+	//const int lines_used = IsLevel() ? 224-11 : 224;
+	const int lines_used = IsLevel() ? 180 : 224;
 
 #if (VIEWPORT_OVERDRAW_AREA & 0xF) == 0
 	const int overdraw_width = VIEWPORT_OVERDRAW_AREA >> 4;
@@ -1657,7 +1658,8 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 		distortion_line_bit_shift[i] = 0;
 	}
 
-	for (int i=0; i < 202; i++) {
+	//for (int i=0; i < 202; i++) {
+	for (int i=0; i < 180; i++) {
 		signed char shift_value;
 
 		distortion_line_bit_shift[i>>5] <<= 1;
@@ -1678,6 +1680,7 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 		pixel_offset += (320/2);
 	}
 
+	/*
 	// Reuse the black pixels from the top of the screen for the next line.
 	lines[202] = lines[21];
 
@@ -1692,6 +1695,7 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 	for (int i=214; i < 224; i++) {
 		lines[i] = lines[i-214];
 	}
+	*/
 
 	effects_flags |= EFFECTS_DISTORTION_ENABLED;
 }
@@ -1705,11 +1709,25 @@ void RemoveDistortionFilters()
 
 	if (IsLevel()) {
 		// Set line offsets for the entire viewport (180 pixels) and top border (22 pixels)
-		for (int i=0; i < 202; i++) {
+		//for (int i=0; i < 202; i++) {
+		for (int i=0; i < 21; i++) {
+			lines[i] = 242;	// RLE thru
+		}
+
+		lines[22] = 240;	// RLE black
+
+		for (int i=22; i < 202; i++) {
 			lines[i] = pixel_offset;
 			pixel_offset += (320/2);
 		}
 
+		lines[202] = 240;	// RLE black
+
+		for (int i=203; i < 224; i++) {
+			lines[i] = 242;	// RLE thru
+		}
+
+		/*
 		// Reuse the black pixels from the top of the screen for the next line.
 		lines[202] = lines[21];
 		
@@ -1723,6 +1741,7 @@ void RemoveDistortionFilters()
 		for (int i=214; i < 224; i++) {
 			lines[i] = lines[i-214];
 		}
+		*/
 	}
 	else {
 		for (int i=0; i < 224; i++) {

@@ -512,13 +512,14 @@ byte *I_WorkBuffer (void)
 {
 	while (!I_RefreshCompleted());
 	if (workbuf_high == NULL) {
-		if (IsLevel()) {
+		/*if (IsLevel()) {
 			// Allow for larger WorkBuffer on levels.
 			workbuf_high = (byte *)(framebuffer + 320 / 2 * (I_FrameBufferHeight() +1 - 11)); // +1 for the blank line
 		}
 		else {
 			workbuf_high = (byte *)(framebuffer + 320 / 2 * (I_FrameBufferHeight() +1)); // +1 for the blank line
-		}
+		}*/
+		workbuf_high = (byte *)(framebuffer + 320 / 2 * I_FrameBufferHeight()); // +1 for the blank line
 	}
 	return workbuf_high;
 }
@@ -555,6 +556,7 @@ pixel_t* I_OverwriteBuffer(void)
 
 int I_ViewportYPos(void)
 {
+	/*
 	const int fbh = I_FrameBufferHeight();
 
 	if (splitscreen)
@@ -565,6 +567,8 @@ int I_ViewportYPos(void)
 	//if ((viewportWidth == (VIEWPORT_WIDTH>>1) && lowResMode) || viewportWidth == 320)
 		return (fbh - jo_stbar_height - viewportHeight);
 	//return (fbh - jo_stbar_height - viewportHeight) / 2;
+	*/
+	return 0;
 }
 
 pixel_t	*I_ViewportBuffer (void)
@@ -591,7 +595,8 @@ pixel_t	*I_ViewportBuffer (void)
 void I_FillFrameBuffer (unsigned char palette_index)
 {
 	const int long_fill = (palette_index << 24) | (palette_index << 16) | (palette_index << 8) | palette_index;
-	const int line_count = I_FrameBufferHeight()+1 - (IsLevel() ? 11 : 0); // Allow for larger WorkBuffer on levels.
+	//const int line_count = I_FrameBufferHeight()+1 - (IsLevel() ? 11 : 0); // Allow for larger WorkBuffer on levels.
+	const int line_count = I_FrameBufferHeight();
 
 	int* p = (int*)framebuffer;
 	int* p_end = (int*)(framebuffer + 320 / 2 * line_count);

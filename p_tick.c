@@ -924,7 +924,15 @@ void P_Drawer (void)
 
 void P_Start (void)
 {
-	DoubleBufferSetup();
+	// Sync frames.
+	//while (frame_sync == mars_vblank_count);
+	//frame_sync = mars_vblank_count;
+	while (!I_RefreshCompleted())
+		;
+	for (int i=0; i < 2; i++) {
+		Mars_SetVideoMode(MARS_VDP_MODE_256, 22);
+		Mars_FlipFrameBuffers(true);
+	}
 
 	/* load a level */
 	G_DoLoadLevel();

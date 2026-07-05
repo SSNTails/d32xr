@@ -640,6 +640,51 @@ pri_h_irq:
         mov.w   r0,@(0x18,r1)           /* clear H IRQ */
 
 
+        /* Set bitmap mode */
+        mov.l   phi_rle_border_size,r2
+        mov.l   @r2,r2
+        mov     #0,r0
+        cmp/eq  r0,r2
+        bt      2f
+
+        mov.l   phi_line,r1
+        mov.l   @r1,r0
+
+        mov.l   phi_bitmap_mode,r1
+
+        !mov     #11,r2
+        add     #1,r2
+        cmp/eq  r2,r0
+        bt      0f
+
+        !mov     #215,r2
+        not     r2,r2
+        add     #-29,r2
+        extu.b  r2,r2
+        cmp/eq  r2,r0
+        bt      1f
+
+        bra     2f
+0:
+        mov.w   @r1,r0
+        mov     #3,r2
+        not     r2,r2
+        and     r2,r0
+        mov.l   phi_mars_display_mode,r2
+        mov.l   @r2,r2
+        add     r2,r0           ! Packed pixel (1) or direct color (2)
+        mov.w   r0,@r1
+        bra     2f
+1:
+        mov.w   @r1,r0
+        mov     #3,r2
+        not     r2,r2
+        and     r2,r0
+        add     #3,r0           ! RLE
+        mov.w   r0,@r1
+        !bra     2f
+2:
+
         /* Distortion */
         mov.l   phi_effects_flags,r1
         mov.b   @r1,r0
@@ -728,6 +773,20 @@ do_copper:
         .align  4
 phi_mars_adapter:
         .long   0x20004000
+
+phi_bitmap_mode:
+        .long   0x20004100
+
+phi_top_letterbox_ends:
+        .long   10
+phi_bottom_letterbox_begins:
+        .long   214
+
+phi_rle_border_size:
+        .long   _rle_border_size
+
+phi_mars_display_mode:
+        .long   _mars_display_mode
 
 phi_sh2_frtctl:
         .long   0xfffffe10

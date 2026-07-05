@@ -41,6 +41,10 @@ static volatile int analog[MARS_MAX_CONTROLLERS];
 
 volatile uint8_t legacy_emulator = 0;
 
+volatile unsigned int rle_border_size = 0;
+
+volatile unsigned int mars_display_mode = MARS_VDP_MODE_256;
+
 volatile unsigned int mars_thru_rgb = 0;
 volatile unsigned int mars_hblank_count = 0;
 volatile unsigned int mars_hblank_count_peak = 0;
@@ -53,8 +57,6 @@ unsigned mars_frtc2msec_frac = 0;
 static const uint8_t* mars_newpalette = NULL;
 
 uint16_t mars_thru_rgb_reference = 0;
-
-uint8_t mars_display_mode = MARS_VDP_MODE_256;
 
 int16_t mars_requested_lines = 224;
 uint16_t mars_framebuffer_height = 224;
@@ -116,33 +118,32 @@ void Mars_InitLineTable(void)
 		offset = (240 - 224) / 2;
 	}
 
+	lines[240] = 0xA01F;	// RLE black (160 pixels)
+	lines[241] = 0xA01F;	// RLE black (160 pixels)
+	lines[242] = 0xA0FF;	// RLE thru (160 pixels)
+	lines[243] = 0xA0FF;	// RLE thru (160 pixels)
+
+	for (j=0; j < rle_border_size; j++) {
+		lines[offset+j] = 240;	// RLE black
+	}
+
+	offset = (224-rle_border_size);
+	for (j=0; j < rle_border_size; j++) {
+		lines[offset+j] = 240;	// RLE black
+	}
+
+	offset = rle_border_size;
+
 	switch (mars_display_mode) {
 		case MARS_VDP_MODE_256:
-			for (j=0; j < mars_requested_lines; j++) {
-				lines[offset+j] = (j * 320 / 2 + 0x100) + ((~h40_sky) & h32_adjust);
+			for (j=0; j < (224-(rle_border_size<<1)); j++) {
+				lines[offset+j] = (j * (320/2) + 0x100) + (((~h40_sky) & h32_adjust)<<1);
 			}
-
-			blank = j * 320 / 2;
-
-			// set the rest of the line table to a blank line
-			for (; j < 256; j++)
-				lines[offset+j] = blank + 0x100;
-
-			for (j = 0; j < offset; j++)
-				lines[j] = blank + 0x100;
-
-			// make sure blank line is clear
-			for (j = blank; j < (blank + 160); j++)
-				lines[j] = 0;
-
 			break;
 
 		case MARS_VDP_MODE_32K:
-			for (j=0; j < 204; j++) {
+			for (j=0; j < (224-(rle_border_size<<1)); j++) {
 				lines[offset+j] = (j * 320 + 0x100) + (((~h40_sky) & h32_adjust)<<1);
-			}
-			for (j=204; j < mars_requested_lines; j++) {
-				lines[offset+j] = (uint16_t)(204 * 320 + 0x100);
 			}
 			break;
 
@@ -281,12 +282,13 @@ void Mars_Init(void)
 	}
 }
 
-void Mars_SetVideoMode(int mode)
+void Mars_SetVideoMode(int mode, int border)
 {
 	MARS_VDP_DISPMODE &= 0xFFFC;
 	MARS_VDP_DISPMODE |= mode;
 
 	mars_display_mode = mode;
+	rle_border_size = border;
 
 	Mars_InitLineTable();
 }
@@ -982,7 +984,7 @@ void pri_vbi_handler(void)
 			mars_newpalette = NULL;
 	}
 
-	if (effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_ENABLED)) {
+	/*if (effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_ENABLED)) {
 		if (IsLevel() && !(effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_SKY_IN_VIEW))) {
 			MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
 		}
@@ -992,7 +994,8 @@ void pri_vbi_handler(void)
 	}
 	else {
 		MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
-	}
+	}*/
+	MARS_SYS_INTMSK |= MARS_SYS_HINT;
 
 	// Update copper buffer
 	if (effects_flags & EFFECTS_COPPER_ENABLED && effects_flags & EFFECTS_COPPER_REFRESH 
