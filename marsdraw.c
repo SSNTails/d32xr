@@ -1711,20 +1711,20 @@ void RemoveDistortionFilters()
 		// Set line offsets for the entire viewport (180 pixels) and top border (22 pixels)
 		//for (int i=0; i < 202; i++) {
 		for (int i=0; i < 21; i++) {
-			lines[i] = 242;	// RLE thru
+			lines[i] = (512 + (320 * 181)) / 2;	// Thru
 		}
 
-		lines[22] = 240;	// RLE black
+		lines[21] = (512 + (320 * 180)) / 2;	// Black
 
 		for (int i=22; i < 202; i++) {
 			lines[i] = pixel_offset;
 			pixel_offset += (320/2);
 		}
 
-		lines[202] = 240;	// RLE black
+		lines[202] = (512 + (320 * 180)) / 2;	// Black
 
 		for (int i=203; i < 224; i++) {
-			lines[i] = 242;	// RLE thru
+			lines[i] = (512 + (320 * 181)) / 2;	// Thru
 		}
 
 		/*

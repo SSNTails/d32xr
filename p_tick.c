@@ -930,7 +930,7 @@ void P_Start (void)
 	while (!I_RefreshCompleted())
 		;
 	for (int i=0; i < 2; i++) {
-		Mars_SetVideoMode(MARS_VDP_MODE_256, 22);
+		Mars_SetVideoMode(MARS_VDP_MODE_256, 0);
 		Mars_FlipFrameBuffers(true);
 	}
 
