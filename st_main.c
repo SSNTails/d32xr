@@ -240,9 +240,9 @@ static void ST_DrawTitleCard()
 	if (gametic < 30)
 	{
 		if (gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)
-			DrawFillRect(0, 22, 320, 180, COLOR_WHITE);
+			DrawFillRect(0, 0, 320, 180, COLOR_WHITE);
 		else
-			DrawFillRect(0, 22, 320, 180, COLOR_BLACK);
+			DrawFillRect(0, 0, 320, 180, COLOR_BLACK);
 	}
 
 	if (gametic < 16) {
@@ -261,11 +261,11 @@ static void ST_DrawTitleCard()
 		DrawScrollingChevrons(chev_lump, 16 + ((gametic-16) << 4), -gametic << 1);
 
 		if (gamemapinfo.act >= 1 && gamemapinfo.act <= 3) {
-			DrawJagobjLump(lt_lump, titlecard_x_offset + 70-24 + ((16 - gametic) << 5), 100 - ((16 - gametic) << 5), NULL, NULL);
-			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 70 + ((16 - gametic) << 5), 124-4, gamemapinfo.act);
+			DrawJagobjLump(lt_lump, titlecard_x_offset + 70-24 + ((16 - gametic) << 5), 78 - ((16 - gametic) << 5), NULL, NULL);
+			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 70 + ((16 - gametic) << 5), 102-4, gamemapinfo.act);
 		}
-		V_DrawStringRight(&titleFont, titlecard_x_offset + 68 - ((16 - gametic) << 5), 100, gamemapinfo.name);
-		V_DrawStringLeft(&titleFont, titlecard_x_offset + ((16 - gametic) << 5), 124, "Zone");
+		V_DrawStringRight(&titleFont, titlecard_x_offset + 68 - ((16 - gametic) << 5), 78, gamemapinfo.name);
+		V_DrawStringLeft(&titleFont, titlecard_x_offset + ((16 - gametic) << 5), 102, "Zone");
 	}
 	else
 #ifndef OST_BLACKNESS
@@ -279,12 +279,12 @@ static void ST_DrawTitleCard()
 		DrawScrollingChevrons(chev_lump, 16, -gametic << 1);
 
 		if (gamemapinfo.act >= 1 && gamemapinfo.act <= 3) {
-			DrawJagobjLump(lt_lump, titlecard_x_offset + 68-24, 100, NULL, NULL);
+			DrawJagobjLump(lt_lump, titlecard_x_offset + 68-24, 78, NULL, NULL);
 
-			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 68, 124-4, gamemapinfo.act);
+			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 68, 102-4, gamemapinfo.act);
 		}
-		V_DrawStringRight(&titleFont, titlecard_x_offset + 68, 100, gamemapinfo.name);
-		V_DrawStringLeft(&titleFont, titlecard_x_offset, 124, "Zone");
+		V_DrawStringRight(&titleFont, titlecard_x_offset + 68, 78, gamemapinfo.name);
+		V_DrawStringLeft(&titleFont, titlecard_x_offset, 102, "Zone");
 	}
 #ifndef OST_BLACKNESS
 	else {
@@ -295,17 +295,19 @@ static void ST_DrawTitleCard()
 
 		if (gamemapinfo.act >= 1 && gamemapinfo.act <= 3) {
 			jagobj_t *lt_obj = (jagobj_t*)W_POINTLUMPNUM(lt_lump);
-			VINT lt_y = 100 + ((gametic - 80) << 5);
-			VINT lt_height = lt_y + lt_obj->height > (180+22)
-					? lt_obj->height - ((lt_y + lt_obj->height) - (180+22))
+			VINT lt_y = 78 + ((gametic - 80) << 5);
+			VINT lt_height = lt_y + lt_obj->height > 180
+					? lt_obj->height - ((lt_y + lt_obj->height) - 180)
 					: lt_obj->height;
-			DrawJagobj3(lt_obj, titlecard_x_offset + 68-24 - ((gametic - 80) << 5), lt_y, 0, 0,
-					lt_obj->width, lt_height, 320, I_OverwriteBuffer());
+			if (lt_height > 0) {
+				DrawJagobj3(lt_obj, titlecard_x_offset + 68-24 - ((gametic - 80) << 5), lt_y, 0, 0,
+						lt_obj->width, lt_height, 320, I_OverwriteBuffer());
+			}
 			
-			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 68 - ((gametic - 80) << 5), 124-4, gamemapinfo.act);
+			V_DrawValueLeft(&titleNumberFont, titlecard_x_offset + 68 - ((gametic - 80) << 5), 102-4, gamemapinfo.act);
 		}
-		V_DrawStringRight(&titleFont, titlecard_x_offset + 68 + ((gametic - 80) << 5), 100, gamemapinfo.name);
-		V_DrawStringLeft(&titleFont, titlecard_x_offset - ((gametic - 80) << 5), 124, "Zone");
+		V_DrawStringRight(&titleFont, titlecard_x_offset + 68 + ((gametic - 80) << 5), 78, gamemapinfo.name);
+		V_DrawStringLeft(&titleFont, titlecard_x_offset - ((gametic - 80) << 5), 102, "Zone");
 	}
 #endif
 
@@ -586,26 +588,26 @@ static void ST_Drawer_ (stbar_t* sb)
 		if (gametic < 94) {
 			const int interval = gametic-89;
 			const int offset_x = 16 + ((6-interval) << 3);
-			DrawScaledJagobj(W_POINTLUMPNUM(score), offset_x, 10+22+((6-interval)<<1), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
-			DrawScaledJagobj(W_POINTLUMPNUM(time), offset_x, 26+22+((6-interval)<<2), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
-			DrawScaledJagobj(W_POINTLUMPNUM(rings), offset_x, 42+22+((6-interval)<<3), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(score), offset_x, (-12)+((6-interval)<<1), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(time), offset_x, 4+((6-interval)<<2), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(rings), offset_x, 20+((6-interval)<<3), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
 		}
 		else {
-			DrawJagobjLump(score, 16, 10+22, NULL, NULL);
-			V_DrawValuePaddedRight(&hudNumberFont, 16 + 120, 10+22, sb->score, 0);
-			DrawJagobjLump(time, 16, 26+22, NULL, NULL);
-			V_DrawValuePaddedRight(&hudNumberFont, 72, 26+22, minutes, 0);
-			DrawJagobjLump(timecolon, 72, 26+22, NULL, NULL);
-			V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26+22, seconds, 2);
+			DrawJagobjLump(score, 16, 10, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 16 + 120, 10, sb->score, 0);
+			DrawJagobjLump(time, 16, 26, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 72, 26, minutes, 0);
+			DrawJagobjLump(timecolon, 72, 26, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26, seconds, 2);
 			if (sb->rings <= 0 && (gametic / 4 & 1))
-				DrawJagobjLumpWithColormap(rings, 16, 42+22, NULL, NULL, YELLOWTEXTCOLORMAP);
+				DrawJagobjLumpWithColormap(rings, 16, 42, NULL, NULL, YELLOWTEXTCOLORMAP);
 			else
-				DrawJagobjLump(rings, 16, 42+22, NULL, NULL);
-			V_DrawValuePaddedRight(&hudNumberFont, 96, 42+22, sb->rings, 0);
-			DrawJagobjLump(face, 16, 176, NULL, NULL);
-			V_DrawStringLeftWithColormap(&menuFont, 16 + 20, 176, "SONIC", YELLOWTEXTCOLORMAP);
-			DrawJagobjLump(livex, 16 + 22, 176 + 10, NULL, NULL);
-			V_DrawValuePaddedRight(&menuFont, 16 + 58, 176+8, sb->lives, 0);
+				DrawJagobjLump(rings, 16, 42, NULL, NULL);
+			V_DrawValuePaddedRight(&hudNumberFont, 96, 42, sb->rings, 0);
+			DrawJagobjLump(face, 16, 180-24, NULL, NULL);
+			V_DrawStringLeftWithColormap(&menuFont, 16 + 20, 180-24, "SONIC", YELLOWTEXTCOLORMAP);
+			DrawJagobjLump(livex, 16 + 22, 180-16+2, NULL, NULL);
+			V_DrawValuePaddedRight(&menuFont, 16 + 58, 180-16, sb->lives, 0);
 		}
 #endif
 	}

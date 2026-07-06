@@ -708,7 +708,7 @@ void DrawScrollingBanner(short ltzz_lump, int x_pos, int y_shift)
 {
 	const jagobj_t *jo = (jagobj_t*)W_POINTLUMPNUM(ltzz_lump);
 	pixel_t *fb = I_OverwriteBuffer();
-	pixel_t *dest = fb + ((320*22) / 2);	// Don't draw over the top letterbox.
+	pixel_t *dest = fb;
 	const pixel_t *source;
 	const short height = jo->height;
 
@@ -764,7 +764,7 @@ void DrawScrollingChevrons(short chev_lump, int x_pos, int y_shift)
 {
 	const jagobj_t *jo = (jagobj_t*)W_POINTLUMPNUM(chev_lump);
 	pixel_t *fb = I_OverwriteBuffer();
-	pixel_t *dest = fb + ((320*22) / 2);	// Don't draw over the top letterbox.
+	pixel_t *dest = fb;
 	const pixel_t *source;
 	const short height = 32;
 
