@@ -1727,6 +1727,14 @@ void RemoveDistortionFilters()
 			lines[i] = (512 + (320 * 181)) / 2;	// Thru
 		}
 
+		pixel_t *end_of_viewport = lines + ((512 + (320*180)) / 2);
+		for (int i=0; i < (320/2); i++) {
+			*end_of_viewport++ = 0x1F1F;	// Black line
+		}
+		for (int i=0; i < (320/2); i++) {
+			*end_of_viewport++ = 0xFFFF;	// Thru line
+		}
+
 		/*
 		// Reuse the black pixels from the top of the screen for the next line.
 		lines[202] = lines[21];

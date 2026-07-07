@@ -1500,7 +1500,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	viewportbuffer = (pixel_t*)I_ViewportBuffer();
 
 	if (gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
-		viewportbuffer += (160*22);
+		viewportbuffer += (160*(224-180));	// Make sure the title draws all the way to the bottom.
 	}
 
 	palette = 0;
