@@ -351,18 +351,18 @@ static void ST_Drawer_ (stbar_t* sb)
 #endif
 
 #ifdef SKYDEBUG
-	V_DrawStringRightWithColormap(&menuFont, 280, 32, "SCROLL A:", YELLOWTEXTCOLORMAP);
-	V_DrawStringRightWithColormap(&menuFont, 280, 44, "SCROLL B:", YELLOWTEXTCOLORMAP);
-	V_DrawStringRightWithColormap(&menuFont, 280, 56, "COPPER:", YELLOWTEXTCOLORMAP);
-	V_DrawStringRightWithColormap(&menuFont, 280, 76, "PALETTE:", YELLOWTEXTCOLORMAP);
-	V_DrawStringRightWithColormap(&menuFont, 280, 88, "TILES:", YELLOWTEXTCOLORMAP);
-	V_DrawStringRightWithColormap(&menuFont, 280, 100, "METADATA:", YELLOWTEXTCOLORMAP);
-	V_DrawValueLeft(&menuFont, 288, 32, load_sky_lump_scroll_a);
-	V_DrawValueLeft(&menuFont, 288, 44, load_sky_lump_scroll_b);
-	V_DrawValueLeft(&menuFont, 288, 56, load_sky_lump_copper);
-	V_DrawValueLeft(&menuFont, 288, 76, load_sky_lump_palette);
-	V_DrawValueLeft(&menuFont, 288, 88, load_sky_lump_tiles);
-	V_DrawValueLeft(&menuFont, 288, 100, load_sky_lump_metadata);
+	V_DrawStringRightWithColormap(&menuFont, 280, 12, "SCROLL A:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 24, "SCROLL B:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 36, "COPPER:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 56, "PALETTE:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 68, "TILES:", YELLOWTEXTCOLORMAP);
+	V_DrawStringRightWithColormap(&menuFont, 280, 80, "METADATA:", YELLOWTEXTCOLORMAP);
+	V_DrawValueLeft(&menuFont, 288, 12, load_sky_lump_scroll_a);
+	V_DrawValueLeft(&menuFont, 288, 24, load_sky_lump_scroll_b);
+	V_DrawValueLeft(&menuFont, 288, 36, load_sky_lump_copper);
+	V_DrawValueLeft(&menuFont, 288, 56, load_sky_lump_palette);
+	V_DrawValueLeft(&menuFont, 288, 68, load_sky_lump_tiles);
+	V_DrawValueLeft(&menuFont, 288, 80, load_sky_lump_metadata);
 #endif
 
 	if (gametic <= 88 && !(gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)) {
@@ -374,7 +374,7 @@ static void ST_Drawer_ (stbar_t* sb)
 		{
 			char getSpheres[16];
 			D_snprintf(getSpheres, sizeof(getSpheres), "GET %d SPHERES", gamemapinfo.spheresNeeded);
-			V_DrawStringCenterWithColormap(&menuFont, 160, 224/2, getSpheres, YELLOWTEXTCOLORMAP);
+			V_DrawStringCenterWithColormap(&menuFont, 160, 180/2, getSpheres, YELLOWTEXTCOLORMAP);
 		}
 
 		// Special stage HUD
@@ -382,91 +382,91 @@ static void ST_Drawer_ (stbar_t* sb)
 
 		// Bracket (top)
 		if (nbrackt_jagobj != NULL) {
-			DrawJagobj(nbrackt_jagobj, 16+2, 8+16);
-			DrawJagobj(nbrackt_jagobj, 72+2, 8+16);
-			DrawJagobj(nbrackt_jagobj, 272+2, 8+16);
+			DrawJagobj(nbrackt_jagobj, 16+2, 2);
+			DrawJagobj(nbrackt_jagobj, 72+2, 2);
+			DrawJagobj(nbrackt_jagobj, 272+2, 2);
 		}
 		else {
-			DrawJagobjLump(nbrackt, 16+2, 8+16, NULL, NULL);
-			DrawJagobjLump(nbrackt, 72+2, 8+16, NULL, NULL);
-			DrawJagobjLump(nbrackt, 272+2, 8+16, NULL, NULL);
+			DrawJagobjLump(nbrackt, 16+2, 2, NULL, NULL);
+			DrawJagobjLump(nbrackt, 72+2, 2, NULL, NULL);
+			DrawJagobjLump(nbrackt, 272+2, 2, NULL, NULL);
 		}
 
 		// Bracket (left)
 		if (nbrackl_jagobj != NULL) {
-			DrawJagobj(nbrackl_jagobj, 16, 8+16+3);
-			DrawJagobj(nbrackl_jagobj, 72, 8+16+3);
-			DrawJagobj(nbrackl_jagobj, 272, 8+16+3);
+			DrawJagobj(nbrackl_jagobj, 16, 2+3);
+			DrawJagobj(nbrackl_jagobj, 72, 2+3);
+			DrawJagobj(nbrackl_jagobj, 272, 2+3);
 		}
 		else {
-			DrawJagobjLump(nbrackl, 16, 8+16+3, NULL, NULL);
-			DrawJagobjLump(nbrackl, 72, 8+16+3, NULL, NULL);
-			DrawJagobjLump(nbrackl, 272, 8+16+3, NULL, NULL);
+			DrawJagobjLump(nbrackl, 16, 2+3, NULL, NULL);
+			DrawJagobjLump(nbrackl, 72, 2+3, NULL, NULL);
+			DrawJagobjLump(nbrackl, 272, 2+3, NULL, NULL);
 		}
 
 		// Bracket (right)
 		if (nbrackr_jagobj != NULL) {
-			DrawJagobj(nbrackr_jagobj, 16+28, 8+16+3);
-			DrawJagobj(nbrackr_jagobj, 72+28, 8+16+3);
-			DrawJagobj(nbrackr_jagobj, 272+28, 8+16+3);
+			DrawJagobj(nbrackr_jagobj, 16+28, 2+3);
+			DrawJagobj(nbrackr_jagobj, 72+28, 2+3);
+			DrawJagobj(nbrackr_jagobj, 272+28, 2+3);
 		}
 		else {
-			DrawJagobjLump(nbrackr, 16+28, 8+16+3, NULL, NULL);
-			DrawJagobjLump(nbrackr, 72+28, 8+16+3, NULL, NULL);
-			DrawJagobjLump(nbrackr, 272+28, 8+16+3, NULL, NULL);
+			DrawJagobjLump(nbrackr, 16+28, 2+3, NULL, NULL);
+			DrawJagobjLump(nbrackr, 72+28, 2+3, NULL, NULL);
+			DrawJagobjLump(nbrackr, 272+28, 2+3, NULL, NULL);
 		}
 
 		// Bracket (bottom)
 		if (nbrackb_jagobj != NULL) {
-			DrawJagobj(nbrackb_jagobj, 16+2, 8+16+29);
-			DrawJagobj(nbrackb_jagobj, 72+2, 8+16+29);
-			DrawJagobj(nbrackb_jagobj, 272+2, 8+16+29);
+			DrawJagobj(nbrackb_jagobj, 16+2, 2+29);
+			DrawJagobj(nbrackb_jagobj, 72+2, 2+29);
+			DrawJagobj(nbrackb_jagobj, 272+2, 2+29);
 		}
 		else {
-			DrawJagobjLump(nbrackb, 16+2, 8+16+29, NULL, NULL);
-			DrawJagobjLump(nbrackb, 72+2, 8+16+29, NULL, NULL);
-			DrawJagobjLump(nbrackb, 272+2, 8+16+29, NULL, NULL);
+			DrawJagobjLump(nbrackb, 16+2, 2+29, NULL, NULL);
+			DrawJagobjLump(nbrackb, 72+2, 2+29, NULL, NULL);
+			DrawJagobjLump(nbrackb, 272+2, 2+29, NULL, NULL);
 		}
 
 		// Blue sphere icon
 		if (nsshud_jagobj != NULL) {
-			DrawJagobj(nsshud_jagobj, 24, 16+16);
+			DrawJagobj(nsshud_jagobj, 24, 10);
 		}
 		else {
-			DrawJagobjLump(nsshud, 24, 16+16, NULL, NULL);
+			DrawJagobjLump(nsshud, 24, 10, NULL, NULL);
 		}
 
 		// Ring icon
 		if (nrng1_jagobj != NULL) {
-			DrawJagobj(nrng1_jagobj, 280, 17+16);
+			DrawJagobj(nrng1_jagobj, 280, 11);
 		}
 		else {
-			DrawJagobjLump(nrng1, 280, 17+16, NULL, NULL);
+			DrawJagobjLump(nrng1, 280, 11, NULL, NULL);
 		}
 
 		// Chaos emerald icon
 		if (chaos_jagobj != NULL) {
-			DrawJagobj(chaos_jagobj, 77, 13+16);
+			DrawJagobj(chaos_jagobj, 77, 7);
 		}
 		else {
-			DrawJagobjLump(chaos+(gamemapinfo.mapNumber - SSTAGE_START), 77, 13+16, NULL, NULL);
+			DrawJagobjLump(chaos+(gamemapinfo.mapNumber - SSTAGE_START), 77, 7, NULL, NULL);
 		}
 
 		// Arrow (left side)
-		DrawJagobjLump(narrow1 + ((gametic/2) & 3), 40, 13+16, NULL, NULL);
+		DrawJagobjLump(narrow1 + ((gametic/2) & 3), 40, 7, NULL, NULL);
 
 		// Arrow (right side)
 		if (narrow9_jagobj != NULL) {
-			DrawJagobj(narrow9_jagobj, 240, 13+16);
+			DrawJagobj(narrow9_jagobj, 240, 7);
 		}
 		else {
-			DrawJagobjLump(narrow9, 240, 13+16, NULL, NULL);
+			DrawJagobjLump(narrow9, 240, 7, NULL, NULL);
 		}
 
-		V_DrawValueCenter(&hudNumberFont, 260, 8+12+16, totalitems - sb->rings);
-		V_DrawValueCenter(&hudNumberFont, 60, 13+6+16, gamemapinfo.spheresNeeded);
+		V_DrawValueCenter(&hudNumberFont, 260, 14, totalitems - sb->rings);
+		V_DrawValueCenter(&hudNumberFont, 60, 14, gamemapinfo.spheresNeeded);
 
-		V_DrawStringCenter(&menuFont, 160, 12+16, "TIME LEFT");
+		V_DrawStringCenter(&menuFont, 160, 6, "TIME LEFT");
 #endif
 		const int delaytime = 3*TICRATE;
 		int playTime = players[0].playTime - delaytime + TICRATE - sb->exiting - sb->deadTimer;
@@ -477,7 +477,7 @@ static void ST_Drawer_ (stbar_t* sb)
 			timeLeft = gamemapinfo.timeLimit/TICRATE;
 #ifndef HIDE_HUD
 		if (timeLeft > 9) {
-			V_DrawValueCenter(&hudNumberFont, 160, 24+16, timeLeft);
+			V_DrawValueCenter(&hudNumberFont, 160, 18, timeLeft);
 		}
 		else if (timeLeft >= 0) {
 			int size_index = (((playTime<<5) / 15) & 63);
@@ -485,7 +485,7 @@ static void ST_Drawer_ (stbar_t* sb)
 			DrawScaledJagobj(
 					hudNumberFont.charCache[timeLeft],
 					160-8+(size_index>>2)-(size_index>>3),
-					24+16-7+(size_index>>3),
+					18+(size_index>>3),
 					size_scale,
 					size_scale,
 					I_OverwriteBuffer());
@@ -524,57 +524,57 @@ static void ST_Drawer_ (stbar_t* sb)
 
 #ifndef HIDE_HUD
 #ifdef INPUTDEBUG
-		V_DrawValueLeft(&menuFont, 160+(8*0x0), 32, (ticrealbuttons >> 0x1F) & 1);
-		V_DrawValueLeft(&menuFont, 160+(8*0x1), 32, (ticrealbuttons >> 0x1E) & 1);
-		V_DrawValueLeft(&menuFont, 160+(8*0x2), 32, (ticrealbuttons >> 0x1D) & 1);
-		V_DrawValueLeft(&menuFont, 160+(8*0x3), 32, (ticrealbuttons >> 0x1C) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x4), 32, (ticrealbuttons >> 0x1B) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x5), 32, (ticrealbuttons >> 0x1A) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x6), 32, (ticrealbuttons >> 0x19) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x7), 32, (ticrealbuttons >> 0x18) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0x8), 32, (ticrealbuttons >> 0x17) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0x9), 32, (ticrealbuttons >> 0x16) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0xA), 32, (ticrealbuttons >> 0x15) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0xB), 32, (ticrealbuttons >> 0x14) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xC), 32, (ticrealbuttons >> 0x13) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xD), 32, (ticrealbuttons >> 0x12) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xE), 32, (ticrealbuttons >> 0x11) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xF), 32, (ticrealbuttons >> 0x10) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x0), 12, (ticrealbuttons >> 0x1F) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x1), 12, (ticrealbuttons >> 0x1E) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x2), 12, (ticrealbuttons >> 0x1D) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x3), 12, (ticrealbuttons >> 0x1C) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x4), 12, (ticrealbuttons >> 0x1B) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x5), 12, (ticrealbuttons >> 0x1A) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x6), 12, (ticrealbuttons >> 0x19) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x7), 12, (ticrealbuttons >> 0x18) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0x8), 12, (ticrealbuttons >> 0x17) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0x9), 12, (ticrealbuttons >> 0x16) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0xA), 12, (ticrealbuttons >> 0x15) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0xB), 12, (ticrealbuttons >> 0x14) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xC), 12, (ticrealbuttons >> 0x13) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xD), 12, (ticrealbuttons >> 0x12) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xE), 12, (ticrealbuttons >> 0x11) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xF), 12, (ticrealbuttons >> 0x10) & 1);
 
-		V_DrawValueLeft(&menuFont, 160+(8*0x0), 44, (ticrealbuttons >> 0xF) & 1);
-		V_DrawValueLeft(&menuFont, 160+(8*0x1), 44, (ticrealbuttons >> 0xE) & 1);
-		V_DrawValueLeft(&menuFont, 160+(8*0x2), 44, (ticrealbuttons >> 0xD) & 1);
-		V_DrawValueLeft(&menuFont, 160+(8*0x3), 44, (ticrealbuttons >> 0xC) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x4), 44, (ticrealbuttons >> 0xB) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x5), 44, (ticrealbuttons >> 0xA) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x6), 44, (ticrealbuttons >> 0x9) & 1);
-		V_DrawValueLeft(&menuFont, 168+(8*0x7), 44, (ticrealbuttons >> 0x8) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0x8), 44, (ticrealbuttons >> 0x7) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0x9), 44, (ticrealbuttons >> 0x6) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0xA), 44, (ticrealbuttons >> 0x5) & 1);
-		V_DrawValueLeft(&menuFont, 176+(8*0xB), 44, (ticrealbuttons >> 0x4) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xC), 44, (ticrealbuttons >> 0x3) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xD), 44, (ticrealbuttons >> 0x2) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xE), 44, (ticrealbuttons >> 0x1) & 1);
-		V_DrawValueLeft(&menuFont, 184+(8*0xF), 44, (ticrealbuttons >> 0x0) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x0), 24, (ticrealbuttons >> 0xF) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x1), 24, (ticrealbuttons >> 0xE) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x2), 24, (ticrealbuttons >> 0xD) & 1);
+		V_DrawValueLeft(&menuFont, 160+(8*0x3), 24, (ticrealbuttons >> 0xC) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x4), 24, (ticrealbuttons >> 0xB) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x5), 24, (ticrealbuttons >> 0xA) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x6), 24, (ticrealbuttons >> 0x9) & 1);
+		V_DrawValueLeft(&menuFont, 168+(8*0x7), 24, (ticrealbuttons >> 0x8) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0x8), 24, (ticrealbuttons >> 0x7) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0x9), 24, (ticrealbuttons >> 0x6) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0xA), 24, (ticrealbuttons >> 0x5) & 1);
+		V_DrawValueLeft(&menuFont, 176+(8*0xB), 24, (ticrealbuttons >> 0x4) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xC), 24, (ticrealbuttons >> 0x3) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xD), 24, (ticrealbuttons >> 0x2) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xE), 24, (ticrealbuttons >> 0x1) & 1);
+		V_DrawValueLeft(&menuFont, 184+(8*0xF), 24, (ticrealbuttons >> 0x0) & 1);
 
-		V_DrawStringRightWithColormap(&menuFont, 256, 56, "AX:", YELLOWTEXTCOLORMAP);
-		V_DrawStringRightWithColormap(&menuFont, 256, 68, "AY:", YELLOWTEXTCOLORMAP);
-		V_DrawStringRightWithColormap(&menuFont, 256, 80, "AT:", YELLOWTEXTCOLORMAP);
+		V_DrawStringRightWithColormap(&menuFont, 256, 36, "AX:", YELLOWTEXTCOLORMAP);
+		V_DrawStringRightWithColormap(&menuFont, 256, 48, "AY:", YELLOWTEXTCOLORMAP);
+		V_DrawStringRightWithColormap(&menuFont, 256, 60, "AT:", YELLOWTEXTCOLORMAP);
 
 		if (ticrealanalogx < 0) {
-			V_DrawStringRight(&menuFont, 264, 56, "-");
+			V_DrawStringRight(&menuFont, 264, 36, "-");
 		}
 		if (ticrealanalogy < 0) {
-			V_DrawStringRight(&menuFont, 264, 68, "-");
+			V_DrawStringRight(&menuFont, 264, 48, "-");
 		}
 		if (ticrealanalogt < 0) {
-			V_DrawStringRight(&menuFont, 264, 80, "-");
+			V_DrawStringRight(&menuFont, 264, 60, "-");
 		}
 
-		V_DrawValueLeft(&menuFont, 272, 56, D_abs(ticrealanalogx));
-		V_DrawValueLeft(&menuFont, 272, 68, D_abs(ticrealanalogy));
-		V_DrawValueLeft(&menuFont, 272, 80, D_abs(ticrealanalogt));
+		V_DrawValueLeft(&menuFont, 272, 36, D_abs(ticrealanalogx));
+		V_DrawValueLeft(&menuFont, 272, 48, D_abs(ticrealanalogy));
+		V_DrawValueLeft(&menuFont, 272, 60, D_abs(ticrealanalogt));
 #endif //INPUTDEBUG
 
 		const int delaytime = gamemapinfo.act == 3 ? 2*TICRATE : 3*TICRATE;
@@ -588,9 +588,9 @@ static void ST_Drawer_ (stbar_t* sb)
 		if (gametic < 94) {
 			const int interval = gametic-89;
 			const int offset_x = 16 + ((6-interval) << 3);
-			DrawScaledJagobj(W_POINTLUMPNUM(score), offset_x, (-12)+((6-interval)<<1), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
-			DrawScaledJagobj(W_POINTLUMPNUM(time), offset_x, 4+((6-interval)<<2), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
-			DrawScaledJagobj(W_POINTLUMPNUM(rings), offset_x, 20+((6-interval)<<3), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(score), offset_x, 10+((6-interval)<<1), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(time), offset_x, 26+((6-interval)<<2), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+			DrawScaledJagobj(W_POINTLUMPNUM(rings), offset_x, 42+((6-interval)<<3), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
 		}
 		else {
 			DrawJagobjLump(score, 16, 10, NULL, NULL);
@@ -615,20 +615,20 @@ static void ST_Drawer_ (stbar_t* sb)
 #ifndef HIDE_HUD
 
 #ifdef SHOW_COORDINATES
-	V_DrawValueLeft(&menuFont, 320-112, 32, (players[0].mo->x >> 16) & 0xFFFF);
-	V_DrawValueLeft(&menuFont, 320-112, 40, (players[0].mo->y >> 16) & 0xFFFF);
-	V_DrawValueLeft(&menuFont, 320-112, 48, (players[0].mo->z >> 16) & 0xFFFF);
-	V_DrawValueLeft(&menuFont, 320-112, 56, (players[0].mo->angle >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-112, 12, (players[0].mo->x >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-112, 20, (players[0].mo->y >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-112, 28, (players[0].mo->z >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-112, 36, (players[0].mo->angle >> 16) & 0xFFFF);
 
-	V_DrawValueLeft(&menuFont, 320-64, 32, (camera.x >> 16) & 0xFFFF);
-	V_DrawValueLeft(&menuFont, 320-64, 40, (camera.y >> 16) & 0xFFFF);
-	V_DrawValueLeft(&menuFont, 320-64, 48, (camera.z >> 16) & 0xFFFF);
-	V_DrawValueLeft(&menuFont, 320-64, 56, (camera.angle >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-64, 12, (camera.x >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-64, 20, (camera.y >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-64, 28, (camera.z >> 16) & 0xFFFF);
+	V_DrawValueLeft(&menuFont, 320-64, 36, (camera.angle >> 16) & 0xFFFF);
 #endif
 
 #if defined(REC_INPUT_DEMO) || defined(REC_POS_DEMO)
 	if (IsDemoModeType(DemoMode_Recording)) {
-		V_DrawStringRightWithColormap(&menuFont, 320 - 16, 192, "RECORDING", YELLOWTEXTCOLORMAP);
+		V_DrawStringRightWithColormap(&menuFont, 320 - 16, 168, "RECORDING", YELLOWTEXTCOLORMAP);
 	}
 #endif
 
@@ -762,9 +762,9 @@ void ST_Drawer(void)
 	if (consoleMsgTics)
 	{
 		if (consoleCenter)
-			V_DrawStringCenter(&menuFont, 160, 112, consoleMsg);
+			V_DrawStringCenter(&menuFont, 160, 90, consoleMsg);
 		else
-			V_DrawStringLeft(&menuFont, 8, 24, consoleMsg);
+			V_DrawStringLeft(&menuFont, 8, 0, consoleMsg);
 		
 		consoleMsgTics--;
 
