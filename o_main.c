@@ -10,7 +10,7 @@
 #endif
 
 #define MOVEWAIT		(I_IsPAL() ? TICVBLS*5 : TICVBLS*6)
-#define STARTY		48
+#define STARTY		26
 #define CURSORX		(112)
 #define CURSORWIDTH	24
 #define ITEMX		(CURSORX+CURSORWIDTH)
@@ -722,7 +722,7 @@ void O_Drawer (void)
 	}
 
 	if (screenpos == ms_help)
-		O_DrawHelp(80);
+		O_DrawHelp(58);
 
 	if (screenpos == ms_main)
 	{
