@@ -851,7 +851,7 @@ void P_Drawer (void)
 		//else
 		//	DrawTiledBackground();
 
-		DrawTiledLetterbox();
+		//DrawTiledLetterbox();
 
 		if (viewportNum == VIEWPORT_H32 && clear_h32_borders == 0) {
 			ClearViewportOverdraw();

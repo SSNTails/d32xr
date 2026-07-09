@@ -838,6 +838,7 @@ void DrawScrollingChevrons(short chev_lump, int x_pos, int y_shift)
 =
 =============
 */
+/*
 void DrawTiledLetterbox2(int flat)
 {
 	if (debugmode == DEBUGMODE_NODRAW)
@@ -897,6 +898,7 @@ void DrawTiledLetterbox(void)
 		DrawTiledLetterbox2(gamemapinfo.borderFlat);
 	}
 }
+*/
 
 void ClearViewportOverdraw(void)
 {
@@ -950,6 +952,7 @@ void ClearViewportOverdraw(void)
 =
 =============
 */
+/*
 void DrawTiledBackground2(int flat)
 {
 	int			y, yt;
@@ -1002,7 +1005,7 @@ void DrawTiledBackground(void)
 	}
 	DrawTiledBackground2(gameinfo.borderFlat);
 }
-
+*/
 void EraseBlock(int x, int y, int width, int height)
 {
 }

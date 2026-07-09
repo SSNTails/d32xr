@@ -368,7 +368,7 @@ void IN_Drawer (void)
 		I_SetPalette(dc_playpals); // Normal
 	}
 
-	DrawTiledBackground2(tileLump);
+	//DrawTiledBackground2(tileLump);
 
 	if (intertype == int_spec)
 	{
