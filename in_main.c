@@ -173,7 +173,7 @@ void IN_Start (void)
 #endif
 
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4), dc_cshift_playpals); // Completely white
-	if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+	if (effects_flags & EFFECTS_COPPER_ENABLED) {
 		copper_table_brightness = 31;
 		effects_flags |= EFFECTS_COPPER_REFRESH;
 	}
@@ -343,7 +343,7 @@ void IN_Drawer (void)
 			palette = 0;
 
 		R_FadePalette(dc_playpals, palette, dc_cshift_playpals); // Fade from white to normal
-		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+		if (effects_flags & EFFECTS_COPPER_ENABLED) {
 			copper_table_brightness = 31 - (intertic << 1);
 			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}
@@ -358,7 +358,7 @@ void IN_Drawer (void)
 			palette = 10;
 
 		R_FadePalette(dc_playpals, palette, dc_cshift_playpals); // Fade from normal to black
-		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+		if (effects_flags & EFFECTS_COPPER_ENABLED) {
 			copper_table_brightness = -31 + ((endtic - intertic) >> 2);
 			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}

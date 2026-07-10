@@ -1398,7 +1398,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 					if (sky_md_layer) {
 						Mars_FadeMDPaletteFromBlack(0);	// MD VDP
 					}
-					if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+					if (effects_flags & EFFECTS_COPPER_ENABLED) {
 						copper_table_brightness = -31;
 						effects_flags |= EFFECTS_COPPER_REFRESH;
 					}
@@ -1414,7 +1414,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 					Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
 				}
 				#endif
-				if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+				if (effects_flags & EFFECTS_COPPER_ENABLED) {
 					copper_table_brightness = -31 + interval;
 					effects_flags |= EFFECTS_COPPER_REFRESH;
 				}
@@ -1430,7 +1430,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 				Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
 			}
 			#endif
-			if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+			if (effects_flags & EFFECTS_COPPER_ENABLED) {
 				copper_table_brightness = -31 + interval;
 				effects_flags |= EFFECTS_COPPER_REFRESH;
 			}
@@ -1536,7 +1536,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 			Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
 		}
 		#endif
-		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+		if (effects_flags & EFFECTS_COPPER_ENABLED) {
 			copper_table_brightness = 31 - (gametic << 1);
 			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}
@@ -1549,7 +1549,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 			Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
 		}
 		#endif
-		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+		if (effects_flags & EFFECTS_COPPER_ENABLED) {
 			copper_table_brightness = 31 - (leveltime << 1);
 			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}
@@ -1567,7 +1567,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		curpalette = palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4;
 		Mars_FadeMDPaletteFromBlack(0);
 		I_SetPalette(dc_playpals);
-		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+		if (effects_flags & EFFECTS_COPPER_ENABLED) {
 			copper_table_brightness = -31;
 			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}
