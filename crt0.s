@@ -521,6 +521,9 @@ pri_v_irq:
         mov.l   pvi_mars_adapter,r1
         mov.w   r0,@(0x16,r1)           /* clear V IRQ */
 
+        mov     #0,r0
+        mov.w   r0,@(0x04,r1)           /* reset H count register */
+
         ! handle V IRQ - save registers
         sts.l   pr,@-r15
         mov.l   r3,@-r15
@@ -640,6 +643,7 @@ pri_h_irq:
         mov.w   r0,@(0x18,r1)           /* clear H IRQ */
 
 
+1:
         /* Set bitmap mode */
         mov.l   phi_rle_border_size,r2
         mov.l   @r2,r2
@@ -716,17 +720,7 @@ do_distortion:
 0:
         tst     #2,r0   ! T=1 if distortion bit is zero
         movt    r2
-        bf/s    do_copper
-
-        nop
-        nop
-        nop
-        nop
-
-        ! handle H IRQ (remove nops if more than 8 cycles)
-
-        rts
-        nop
+        bt/s    99f
 
 do_copper:
         mov.l   phi_line,r1
@@ -760,6 +754,20 @@ do_copper:
         mov.w   r0,@r1
 
 
+99:
+        mov.l   phi_line,r1
+        mov.l   @r1,r1
+        mov.l   phi_hints_per_frame,r0
+        mov.l   @r0,r0
+        add     #-2,r0
+        extu.b  r0,r0
+        cmp/eq  r0,r1
+        bf      999f
+        mov.l   phi_mars_adapter,r1
+        mov     #127,r0
+        mov.w   r0,@(0x04,r1)           /* skip lines at the bottom of the screen */
+
+999:
         nop
         nop
         nop
@@ -781,6 +789,9 @@ phi_top_letterbox_ends:
         .long   10
 phi_bottom_letterbox_begins:
         .long   214
+
+phi_hints_per_frame:
+        .long   _hints_per_frame
 
 phi_rle_border_size:
         .long   _rle_border_size

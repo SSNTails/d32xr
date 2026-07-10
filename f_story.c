@@ -62,6 +62,8 @@ void START_Story (void)
 		UpdateBuffer();
 	}
 
+	Mars_SetHintsPerFrame(216);
+
 	effects_flags = EFFECTS_COPPER_ENABLED;
 }
 

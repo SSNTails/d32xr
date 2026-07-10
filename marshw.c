@@ -41,6 +41,7 @@ static volatile int analog[MARS_MAX_CONTROLLERS];
 
 volatile uint8_t legacy_emulator = 0;
 
+volatile unsigned int hints_per_frame = 0;
 volatile unsigned int rle_border_size = 0;
 
 volatile unsigned int mars_display_mode = MARS_VDP_MODE_256;
@@ -101,6 +102,12 @@ void Mars_FlipFrameBuffers(char wait)
 char Mars_FramebuffersFlipped(void)
 {
 	return (MARS_VDP_FBCTL & MARS_VDP_FS) == mars_activescreen;
+}
+
+void Mars_SetHintsPerFrame(int hints)
+{
+	// This sets how many HINTs occur from the top of the screen.
+	hints_per_frame = hints;
 }
 
 void Mars_InitLineTable(void)

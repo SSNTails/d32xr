@@ -902,6 +902,8 @@ void START_LevelSelect (void)
 		I_FillFrameBuffer(COLOR_THRU);
 		UpdateBuffer();
 	}
+
+	Mars_SetHintsPerFrame(220);
 }
 
 #ifdef MEMDEBUG
@@ -1599,6 +1601,7 @@ void START_Title(void)
 		I_ClearFrameBuffer();
 		UpdateBuffer();
 	}
+
 #else
 	DoubleBufferSetup();
 #endif

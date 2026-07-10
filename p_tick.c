@@ -934,6 +934,13 @@ void P_Start (void)
 		Mars_FlipFrameBuffers(true);
 	}
 
+	if (IsTitleScreen()) {
+		Mars_SetHintsPerFrame(166);
+	}
+	else {
+		Mars_SetHintsPerFrame(203);
+	}
+
 	/* load a level */
 	G_DoLoadLevel();
 
