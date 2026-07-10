@@ -1858,18 +1858,35 @@ load_md_sky:
         move.w  #0x8F02,(a0)
         lea     0xC00004,a0
         lea     0xC00000,a1
-        moveq   #0,d2
+
+        move.l  #0x48000000,(a0)        /* Write VRAM address 0x0800 */
+        lea     letterbox_sprites,a3
+        move.w  #31,d1
+1:
+        move.l  (a3)+,(a1)              /* Copy eight bytes from the source */
+        dbra    d1,1b
+
         btst.b  #0,d0                   /* Which screen resolution will be used? */
         bne.s   2f
-
         move.l  #0x11111111,d2          /* Left-border sprite pixels */
-        move.l  #0x48000000,(a0)        /* Write VRAM address 0x0800 */
+
         lea     h32_left_edge_sprites,a3
         move.w  #13,d1
 1:
-        move.l  (a3)+,(a1)              /* Copy eight pixels from the source */
+        move.l  (a3)+,(a1)              /* Copy eight bytes from the source */
         dbra    d1,1b
+
+        bra.s   22f
+
 2:
+        moveq   #0,d2
+        lea     h40_letterbox_ext_sprites,a3
+        move.w  #7,d1
+1:
+        move.l  (a3)+,(a1)              /* Copy eight bytes from the source */
+        dbra    d1,1b
+
+22:
         move.l  #0x4A000000,(a0)        /* Write VRAM address 0x0A00 */
         move.w  #31,d1
 3:
@@ -3995,14 +4012,60 @@ write_horizontal_scroll_table:
 write_sprite_attribute_table:
         dc.l    0x48000000      /* Default VRAM write to address 0x0800 */
 
+        | ----------------- |
+        | 000000yy yyyyyyyy |
+        | 0000wwhh 0nnnnnnn |
+        | pPPfmttt tttttttt |
+        | 0000000x xxxxxxxx |
+        | ----------------- |
+        | f = flip
+        | h = Height
+        | m = Mirror
+        | n = Next sprite
+        | p = Priority
+        | P = Palette line
+        | t = Tile
+        | w = Width
+        | x = X position
+        | y = Y position
+
+letterbox_sprites:
+top_letterbox_sprites:
+        dc.w    0x0075, 0x0F01, 0xC054, 0x0080
+        dc.w    0x0075, 0x0F02, 0xC054, 0x00A0
+        dc.w    0x0075, 0x0F03, 0xC054, 0x00C0
+        dc.w    0x0075, 0x0F04, 0xC054, 0x00E0
+        dc.w    0x0075, 0x0F05, 0xC054, 0x0100
+        dc.w    0x0075, 0x0F06, 0xC054, 0x0120
+        dc.w    0x0075, 0x0F07, 0xC054, 0x0140
+        dc.w    0x0075, 0x0F08, 0xC054, 0x0160
+bottom_letterbox_sprites:
+        dc.w    0x014B, 0x0F09, 0xC054, 0x0080
+        dc.w    0x014B, 0x0F0A, 0xC054, 0x00A0
+        dc.w    0x014B, 0x0F0B, 0xC054, 0x00C0
+        dc.w    0x014B, 0x0F0C, 0xC054, 0x00E0
+        dc.w    0x014B, 0x0F0D, 0xC054, 0x0100
+        dc.w    0x014B, 0x0F0E, 0xC054, 0x0120
+        dc.w    0x014B, 0x0F0F, 0xC054, 0x0140
+        dc.w    0x014B, 0x0F10, 0xC054, 0x0160
+
+h40_letterbox_ext_sprites:
+h40_top_letterbox_ext_sprites:
+        dc.w    0x0075, 0x0F11, 0xC054, 0x0180
+        dc.w    0x0075, 0x0F12, 0xC054, 0x01A0
+h40_bottom_letterbox_ext_sprites:
+        dc.w    0x014B, 0x0F13, 0xC054, 0x0180
+        dc.w    0x014B, 0x0F00, 0xC054, 0x01A0
+
 h32_left_edge_sprites:
-        dc.w    0x0080, 0x0301, 0xE050, 0x007B
-        dc.w    0x00A0, 0x0302, 0xE050, 0x007B
-        dc.w    0x00C0, 0x0303, 0xE050, 0x007B
-        dc.w    0x00E0, 0x0304, 0xE050, 0x007B
-        dc.w    0x0100, 0x0305, 0xE050, 0x007B
-        dc.w    0x0120, 0x0306, 0xE050, 0x007B
+        dc.w    0x0080, 0x0311, 0xE050, 0x007B
+        dc.w    0x00A0, 0x0312, 0xE050, 0x007B
+        dc.w    0x00C0, 0x0313, 0xE050, 0x007B
+        dc.w    0x00E0, 0x0314, 0xE050, 0x007B
+        dc.w    0x0100, 0x0315, 0xE050, 0x007B
+        dc.w    0x0120, 0x0316, 0xE050, 0x007B
         dc.w    0x0140, 0x0300, 0xE050, 0x007B
+
 
 |test_start:
 |        dc.l    0x08257368
