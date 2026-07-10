@@ -1662,43 +1662,25 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 	}
 
 	//for (int i=0; i < 202; i++) {
-	for (int i=0; i < 180; i++) {
+	for (int i=0; i < 202; i++) {
 		signed char shift_value;
 
 		distortion_line_bit_shift[i>>5] <<= 1;
 
-		if (i >= 22 && i < 224-22) {
+		if (i >= 22) {
 			// Only shift lines within the viewport.
 			shift_value = water_filter[(filter_offset + i) & 127];
 			distortion_line_bit_shift[i>>5] |= (water_filter[(filter_offset + i - 3) & 127] & 1);
 			//DLG: Why doesn't 'shift_value' work correctly with HINT pixel shifts?
+
+			lines[i] = pixel_offset + (shift_value >> 1);
+			pixel_offset += (320/2);
 		}
 		else {
 			// Letter box area should be left alone.
 			shift_value = 0;
 		}
-
-		lines[i] = pixel_offset + (shift_value >> 1);
-
-		pixel_offset += (320/2);
 	}
-
-	/*
-	// Reuse the black pixels from the top of the screen for the next line.
-	lines[202] = lines[21];
-
-	// The next eleven lines are unique.
-	pixel_offset = (((320*202)+512)/2) + ((~h40_sky) & h32_adjust);
-	for (int i=203; i < 214; i++) {
-		lines[i] = pixel_offset;
-		pixel_offset += (320/2);
-	}
-
-	// The remaining lines reuse pixels from the top border.
-	for (int i=214; i < 224; i++) {
-		lines[i] = lines[i-214];
-	}
-	*/
 
 	effects_flags |= EFFECTS_DISTORTION_ENABLED;
 }
@@ -1711,8 +1693,7 @@ void RemoveDistortionFilters()
 	short pixel_offset = (512/2) + ((~h40_sky) & h32_adjust);
 
 	if (IsLevel()) {
-		// Set line offsets for the entire viewport (180 pixels) and top border (22 pixels)
-		//for (int i=0; i < 202; i++) {
+		// Set line offsets for borders
 		for (int i=0; i < 21; i++) {
 			lines[i] = (512 + (320 * 181)) / 2;	// Thru
 		}
@@ -1737,22 +1718,6 @@ void RemoveDistortionFilters()
 		for (int i=0; i < (320/2); i++) {
 			*end_of_viewport++ = 0xFFFF;	// Thru line
 		}
-
-		/*
-		// Reuse the black pixels from the top of the screen for the next line.
-		lines[202] = lines[21];
-		
-		// The next eleven lines are unique.
-		for (int i=203; i < 214; i++) {
-			lines[i] = pixel_offset;
-			pixel_offset += (320/2);
-		}
-
-		// The remaining lines reuse pixels from the top border.
-		for (int i=214; i < 224; i++) {
-			lines[i] = lines[i-214];
-		}
-		*/
 	}
 	else {
 		for (int i=0; i < 224; i++) {
