@@ -158,6 +158,8 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 		void *sky_tiles_ptr, int sky_tiles_size);
 #endif
 
+void Mars_LoadLetterBox(void *tiles_ptr, int tiles_size, void *palette_ptr, int palette_size);
+
 void Mars_Finish(void) MARS_ATTR_DATA_CACHE_ALIGN;
 
 void Mars_MCDLoadSfx(uint16_t id, void *data, uint32_t data_len);

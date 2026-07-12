@@ -526,6 +526,38 @@ int R_SetupMDPalettes(const char *name, int palettes_lump, int bank, int flags)
 }
 
 
+
+int R_SetupLetterBox(const char *tiles_name, const char *palette_name)
+{
+	// Retrieve lumps for drawing the sky on the MD.
+	uint8_t *tiles_ptr;
+	uint8_t *palette_ptr;
+
+	uint32_t tiles_size;
+	uint32_t palette_size;
+
+	int lump;
+
+	lump = W_CheckNumForName(tiles_name);
+	if (lump == -1) {
+		return -1;
+	}
+	tiles_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
+	tiles_size = W_LumpLength(lump);
+
+	lump = W_CheckNumForName(palette_name);
+	if (lump == -1) {
+		return -1;
+	}
+	palette_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
+	palette_size = W_LumpLength(lump);
+
+	Mars_LoadLetterBox(
+			tiles_ptr, tiles_size,
+			palette_ptr, palette_size);
+}
+
+
 __attribute((noinline))
 static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 {
@@ -1056,6 +1088,8 @@ int R_SetupCopperTable(const char *background, int copper_lump, int table_bank)
 void R_SetupLevel(int gamezonemargin, char *background)
 {
 	R_SetupBackground(background, 1, 1);
+
+	R_SetupLetterBox("LBOX2T", "LBOX2P");
 
 	R_SetupTextureCaches(gamezonemargin);
 

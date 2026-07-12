@@ -679,6 +679,7 @@ no_cmd:
         dc.w    update_sfx - prireqtbl            /* 0x21 */
         dc.w    stop_sfx - prireqtbl              /* 0x22 */
         dc.w    flush_sfx - prireqtbl             /* 0x23 */
+        dc.w    load_letterbox - prireqtbl        /* 0x24 */
 
 | process request from Secondary SH2
 handle_sec_req:
@@ -1695,13 +1696,13 @@ get_lump_source_and_size:
         /* fetch lump length */
         lea     lump_size,a0
         move.w  0xA15122,0(a0)
-        move.w  #0,0xA15120         /* done with upper word */
+        move.b  #0,0xA15121         /* done with upper word */
 21:
         move.w  0xA15120,d0         /* wait on handshake in COMM0 */
         cmpi.b  #0x02,d0
         bne.b   21b
         move.w  0xA15122,2(a0)
-        move.w  #0,0xA15120         /* done with lower word */
+        move.b  #0,0xA15121         /* done with lower word */
 
         /* fetch lump offset */
         lea     lump_ptr,a0
@@ -1710,13 +1711,13 @@ get_lump_source_and_size:
         cmpi.b  #0x03,d0
         bne.b   22b
         move.w  0xA15122,0(a0)
-        move.w  #0,0xA15120         /* done with upper word */
+        move.b  #0,0xA15121         /* done with upper word */
 23:
         move.w  0xA15120,d0         /* wait on handshake in COMM0 */
         cmpi.b  #0x04,d0
         bne.b   23b
         move.w  0xA15122,2(a0)
-        move.w  #0,0xA15120         /* done with lower word */
+        move.b  #0,0xA15121         /* done with lower word */
 
         rts
 
@@ -1807,6 +1808,70 @@ load_md_palettes:
         move.l  (sp)+,a0
 
         |move.w  #0,0xA15120         /* done */
+
+        bra     main_loop
+
+
+
+load_letterbox:
+        move.w  #0x2700,sr          /* disable ints */
+
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a2,-(sp)
+        move.l  a3,-(sp)
+        move.l  a4,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+
+        /* Load patterns */
+        bsr     decompress_lump
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.w  #0x8F02,(a0)
+        move.l  #0x4A800000,(a0)        /* Write VRAM address 0x0A80 */
+        lea     decomp_buffer,a2
+        move.l  lump_size,d1
+        lsr.l   #1,d1
+        sub.l   #1,d1
+3:
+        move.w  (a2)+,(a1)              /* Copy eight pixels from the source */
+        dbra    d1,3b
+
+
+        /* Load palettes */
+        bsr     get_lump_source_and_size
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+        move.w  #0x8F02,(a0)
+        move.l  #0xC0400000,(a0)        /* Write CRAM address 64 (third palette line) */
+        move.l  lump_ptr,d0
+        andi.l  #0xFFFFF,d0
+        addi.l  #0x900000,d0
+        move.l  d0,a2
+        lea     bank1_palette_3,a3
+        move.w  #15,d1
+1:
+        move.w  (a2)+,(a3)+             /* Save color to DRAM */
+        dbra    d1,1b
+
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a4
+        move.l  (sp)+,a3
+        move.l  (sp)+,a2
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        move.w  #0,0xA15120         /* done */
+
+        move.w  #0x2000,sr          /* enable ints */
 
         bra     main_loop
 
@@ -4031,31 +4096,31 @@ write_sprite_attribute_table:
 
 letterbox_sprites:
 top_letterbox_sprites:
-        dc.w    0x0075, 0x0F01, 0xC054, 0x0080
-        dc.w    0x0075, 0x0F02, 0xC054, 0x00A0
-        dc.w    0x0075, 0x0F03, 0xC054, 0x00C0
-        dc.w    0x0075, 0x0F04, 0xC054, 0x00E0
-        dc.w    0x0075, 0x0F05, 0xC054, 0x0100
-        dc.w    0x0075, 0x0F06, 0xC054, 0x0120
-        dc.w    0x0075, 0x0F07, 0xC054, 0x0140
-        dc.w    0x0075, 0x0F08, 0xC054, 0x0160
+        dc.w    0x0075, 0x0F01, 0x4054, 0x0080
+        dc.w    0x0075, 0x0F02, 0x4054, 0x00A0
+        dc.w    0x0075, 0x0F03, 0x4054, 0x00C0
+        dc.w    0x0075, 0x0F04, 0x4054, 0x00E0
+        dc.w    0x0075, 0x0F05, 0x4054, 0x0100
+        dc.w    0x0075, 0x0F06, 0x4054, 0x0120
+        dc.w    0x0075, 0x0F07, 0x4054, 0x0140
+        dc.w    0x0075, 0x0F08, 0x4054, 0x0160
 bottom_letterbox_sprites:
-        dc.w    0x014B, 0x0F09, 0xC054, 0x0080
-        dc.w    0x014B, 0x0F0A, 0xC054, 0x00A0
-        dc.w    0x014B, 0x0F0B, 0xC054, 0x00C0
-        dc.w    0x014B, 0x0F0C, 0xC054, 0x00E0
-        dc.w    0x014B, 0x0F0D, 0xC054, 0x0100
-        dc.w    0x014B, 0x0F0E, 0xC054, 0x0120
-        dc.w    0x014B, 0x0F0F, 0xC054, 0x0140
-        dc.w    0x014B, 0x0F10, 0xC054, 0x0160
+        dc.w    0x014B, 0x0F09, 0x4054, 0x0080
+        dc.w    0x014B, 0x0F0A, 0x4054, 0x00A0
+        dc.w    0x014B, 0x0F0B, 0x4054, 0x00C0
+        dc.w    0x014B, 0x0F0C, 0x4054, 0x00E0
+        dc.w    0x014B, 0x0F0D, 0x4054, 0x0100
+        dc.w    0x014B, 0x0F0E, 0x4054, 0x0120
+        dc.w    0x014B, 0x0F0F, 0x4054, 0x0140
+        dc.w    0x014B, 0x0F10, 0x4054, 0x0160
 
 h40_letterbox_ext_sprites:
 h40_top_letterbox_ext_sprites:
-        dc.w    0x0075, 0x0F11, 0xC054, 0x0180
-        dc.w    0x0075, 0x0F12, 0xC054, 0x01A0
+        dc.w    0x0075, 0x0F11, 0x4054, 0x0180
+        dc.w    0x0075, 0x0F12, 0x4054, 0x01A0
 h40_bottom_letterbox_ext_sprites:
-        dc.w    0x014B, 0x0F13, 0xC054, 0x0180
-        dc.w    0x014B, 0x0F00, 0xC054, 0x01A0
+        dc.w    0x014B, 0x0F13, 0x4054, 0x0180
+        dc.w    0x014B, 0x0F00, 0x4054, 0x01A0
 
 h32_left_edge_sprites:
         dc.w    0x0080, 0x0311, 0xE050, 0x007B

@@ -773,18 +773,18 @@ void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size, int bank, int fl
 	s[0] = (uintptr_t)palettes_size>>16, s[1] = (uintptr_t)palettes_size&0xffff;
 	s[2] = ((uintptr_t)palettes_ptr >>16), s[3] = (uintptr_t)palettes_ptr &0xffff;
 
+	while (MARS_SYS_COMM0);
+
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x1B01+i;
 	}
 
-	while (MARS_SYS_COMM0);
+	while (MARS_SYS_COMM1_BYTE);
 	MARS_SYS_COMM2_BYTE = flags;
 	MARS_SYS_COMM3_BYTE = bank;
 	MARS_SYS_COMM0 = 0x1B05;
-
-	//while (MARS_SYS_COMM0);
 }
 
 #ifdef MDSKY
@@ -864,8 +864,10 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	s[0] = 0, s[1] = 8;
 	s[2] = ((uintptr_t)sky_metadata_ptr >>16), s[3] = (uintptr_t)sky_metadata_ptr &0xffff;
 
+	while (MARS_SYS_COMM0);
+
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x0F01+i;
 	}
@@ -877,7 +879,7 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	s[2] = ((uintptr_t)sky_palettes_ptr >>16), s[3] = (uintptr_t)sky_palettes_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x0F01+i;
 	}
@@ -889,7 +891,7 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	s[2] = ((uintptr_t)sky_tiles_ptr >>16), s[3] = (uintptr_t)sky_tiles_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x0F01+i;
 	}
@@ -901,7 +903,7 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	s[2] = ((uintptr_t)sky_names_b_ptr >>16), s[3] = (uintptr_t)sky_names_b_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x0F01+i;
 	}
@@ -913,7 +915,7 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	s[2] = ((uintptr_t)sky_names_a_ptr >>16), s[3] = (uintptr_t)sky_names_a_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x0F01+i;
 	}
@@ -921,6 +923,42 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	while (MARS_SYS_COMM0);
 }
 #endif
+
+
+void Mars_LoadLetterBox(void *tiles_ptr, int tiles_size, void *palette_ptr, int palette_size)
+{
+	int i;
+
+	uint16_t s[4];
+
+
+	// Load tiles
+
+	s[0] = (uintptr_t)tiles_size>>16, s[1] = (uintptr_t)tiles_size&0xffff;
+	s[2] = ((uintptr_t)tiles_ptr >>16), s[3] = (uintptr_t)tiles_ptr &0xffff;
+
+	while (MARS_SYS_COMM0);
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM1_BYTE);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x2401+i;
+	}
+
+
+	// Load palette
+
+	s[0] = (uintptr_t)palette_size>>16, s[1] = (uintptr_t)palette_size&0xffff;
+	s[2] = ((uintptr_t)palette_ptr >>16), s[3] = (uintptr_t)palette_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM1_BYTE);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x2401+i;
+	}
+
+	while (MARS_SYS_COMM0);
+}
 
 
 void MD_SetGamemode(int gamemode)
