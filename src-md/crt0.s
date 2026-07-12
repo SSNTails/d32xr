@@ -3284,6 +3284,7 @@ horizontal_blank:
         move.l  d1,-(sp)
         move.l  a0,-(sp)
         move.l  a1,-(sp)
+        move.l  a2,-(sp)
 
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -3304,12 +3305,16 @@ horizontal_blank:
         move.b  hint_2_interval,d1
         bra.s   5f
 2:
-        move.b  #0xFF,d1
+        move.b  #181,d1
         move.l  hint_1_scroll_y_positions,d0
+        lea     0xC00004,a2
+        move.w  #0x8C08,(a2) /* reg 12 = H40 mode, no lace, shadow/hilite */
         bra.s   4f
 3:
-        |move.b  #0,d1
+        move.b  #21,d1
         move.l  hint_2_scroll_y_positions,d0
+        lea     0xC00004,a2
+        move.w  #0x8C00,(a2) /* reg 12 = H40 mode, no lace, no shadow/hilite */
         |bra.s   4f
 4:
         move.l  d0,(a1)             /* update scroll A and B vertical positions */
@@ -3317,6 +3322,7 @@ horizontal_blank:
         move.w  d1,(a0) /* reg 10 = HINT = 0 */
         addi.b  #1,hint_count
 
+        move.l  (sp)+,a2
         move.l  (sp)+,a1
         move.l  (sp)+,a0
         move.l  (sp)+,d1
@@ -3327,6 +3333,8 @@ horizontal_blank:
 | Vertical Blank handler
 
 vert_blank:
+        move.b  #0,hint_count
+
         move.l  d1,-(sp)
         move.l  d2,-(sp)
         move.l  d3,-(sp)
@@ -3413,18 +3421,18 @@ vert_blank:
 
         /* Figure out the HINT intervals and corresponding scroll positions. */
 60:
-        move.b  #0xFF,hint_1_interval
-        move.b  #0xFF,hint_2_interval
+        move.b  #180,hint_1_interval
+        move.b  #180,hint_2_interval
 
         move.l  d1,hint_1_scroll_y_positions
 
-        cmpi.w  #0xE0,d2
+        cmpi.w  #180,d2
         blt.s   0f
-        move.w  #0,d2           /* Interrupt intervals <=0 and >=224 will be skipped. */
+        move.w  #19,d2           /* Interrupt intervals <=0 and >=224 will be skipped. */
 0:
-        cmpi.w  #0xE0,d3
+        cmpi.w  #180,d3
         blt.s   1f
-        move.w  #0,d3           /* Interrupt intervals <=0 and >=224 will be skipped. */
+        move.w  #19,d3           /* Interrupt intervals <=0 and >=224 will be skipped. */
 1:
 
         cmp.w   d2,d3
@@ -3489,8 +3497,6 @@ vert_blank:
         move.w  d1,hint_1_scroll_b_y
         |bra.s   9f
 9:
-
-        move.b  #0,hint_count
 
         move.w  #0x8A00,d0
         move.w  d0,(a0)             /* reg 10 = HINT = 0 */
