@@ -925,7 +925,8 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 #endif
 
 
-void Mars_LoadLetterBox(void *tiles_ptr, int tiles_size, void *palette_ptr, int palette_size)
+void Mars_LoadLetterBox(void *tiles_ptr, int tiles_size, void *sprites_ptr, int sprites_size,
+		void *palette_ptr, int palette_size)
 {
 	int i;
 
@@ -938,6 +939,18 @@ void Mars_LoadLetterBox(void *tiles_ptr, int tiles_size, void *palette_ptr, int 
 	s[2] = ((uintptr_t)tiles_ptr >>16), s[3] = (uintptr_t)tiles_ptr &0xffff;
 
 	while (MARS_SYS_COMM0);
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM1_BYTE);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x2401+i;
+	}
+
+
+	// Load sprites
+
+	s[0] = (uintptr_t)sprites_size>>16, s[1] = (uintptr_t)sprites_size&0xffff;
+	s[2] = ((uintptr_t)sprites_ptr >>16), s[3] = (uintptr_t)sprites_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
 		while (MARS_SYS_COMM1_BYTE);

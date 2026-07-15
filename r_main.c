@@ -297,8 +297,8 @@ VINT R_PointInSubsector2 (fixed_t x, fixed_t y)
 /*============================================================================= */
 
 const VINT viewports[][2][3] = {	// [viewport][splitscreen][attribute]
-	{ { (VIEWPORT_WIDTH_H32>>1), 180, true  }, {  (VIEWPORT_WIDTH_H32>>2), 180, true  } },
-	{ { (VIEWPORT_WIDTH_H40>>1), 180, true  }, {  (VIEWPORT_WIDTH_H40>>2), 180, true  } },
+	{ { (VIEWPORT_WIDTH_H32>>1), 176, true  }, {  (VIEWPORT_WIDTH_H32>>2), 176, true  } },
+	{ { (VIEWPORT_WIDTH_H40>>1), 176, true  }, {  (VIEWPORT_WIDTH_H40>>2), 176, true  } },
 };
 
 VINT viewportNum;
@@ -527,16 +527,19 @@ int R_SetupMDPalettes(const char *name, int palettes_lump, int bank, int flags)
 
 
 
-int R_SetupLetterBox(const char *tiles_name, const char *palette_name)
+int R_SetupLetterBox(const char *tiles_name, const char *sprites_name, const char *palette_name)
 {
 	// Retrieve lumps for drawing the sky on the MD.
 	uint8_t *tiles_ptr;
+	uint8_t *sprites_ptr;
 	uint8_t *palette_ptr;
 
 	uint32_t tiles_size;
+	uint32_t sprites_size;
 	uint32_t palette_size;
 
 	int lump;
+
 
 	lump = W_CheckNumForName(tiles_name);
 	if (lump == -1) {
@@ -545,6 +548,15 @@ int R_SetupLetterBox(const char *tiles_name, const char *palette_name)
 	tiles_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
 	tiles_size = W_LumpLength(lump);
 
+
+	lump = W_CheckNumForName(sprites_name);
+	if (lump == -1) {
+		return -1;
+	}
+	sprites_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
+	sprites_size = W_LumpLength(lump);
+
+
 	lump = W_CheckNumForName(palette_name);
 	if (lump == -1) {
 		return -1;
@@ -552,8 +564,10 @@ int R_SetupLetterBox(const char *tiles_name, const char *palette_name)
 	palette_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
 	palette_size = W_LumpLength(lump);
 
+
 	Mars_LoadLetterBox(
 			tiles_ptr, tiles_size,
+			sprites_ptr, sprites_size,
 			palette_ptr, palette_size);
 }
 
@@ -1089,7 +1103,7 @@ void R_SetupLevel(int gamezonemargin, char *background)
 {
 	R_SetupBackground(background, 1, 1);
 
-	R_SetupLetterBox("LBOX2T", "LBOX2P");
+	R_SetupLetterBox("LBOX3T", "LBOX3S", "LBOX3P");
 
 	R_SetupTextureCaches(gamezonemargin);
 
