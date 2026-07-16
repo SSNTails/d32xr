@@ -133,7 +133,8 @@ _start:
 
 | 0x880880 - 68000 Level 4 interrupt handler - HBlank IRQ
 
-        jmp     horizontal_blank    /* This jump is only used by Gens */
+        |jmp     horizontal_blank    /* This jump is only used by Gens */
+        jmp     test_hblank
 
         .align  64
 
@@ -446,7 +447,7 @@ checksum_pass:
 .endif
 
 setup_horizontal_interrupt:
-        move.l  #horizontal_blank,0x70  /* Stay within RAM */
+        move.l  #test_hblank,0x70  /* Stay within RAM */
 
 | check flash cart status
         cmpi.w  #2,megasd_ok
@@ -3342,6 +3343,73 @@ rst_ym2612:
 
 
 | Horizontal Blank handler
+
+test_hblank:
+        |TODO: DELETE ME!!!
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        move.l  #0x40000010,(a0)
+
+        move.w  #0x8A00,d1
+        cmpi.b  #1,hint_count
+        beq.s   1f
+        cmpi.b  #2,hint_count
+        beq.s   2f
+        cmpi.b  #3,hint_count
+        beq.s   3f
+        cmpi.b  #4,hint_count
+        beq.s   4f
+        cmpi.b  #5,hint_count
+        beq.s   5f
+0:
+        move.b  #21,d1
+        move.w  #0x8C08,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
+        bra.s   7f
+1:
+        move.b  #175,d1
+        move.w  #0x8C08,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
+        bra.s   7f
+2:
+        move.b  #0xFF,d1
+        /* This controls shadow/highlight for the sky */
+        move.w  #0x8C00,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        move.w  #0x9200,(a0) /* reg 18 = W Pos V = top */
+        bra.s   7f
+3:
+        move.b  #0,d1
+        move.w  #0x8C08,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
+        bra.s   7f
+
+
+
+4:
+        move.b  #0,d1
+        move.l  hint_1_scroll_y_positions,d0
+        bra.s   6f
+5:
+        move.b  #0xFF,d1
+        move.l  hint_2_scroll_y_positions,d0
+        |bra.s   6f
+6:
+        |move.l  d0,(a1)             /* update scroll A and B vertical positions */
+7:
+        move.w  d1,(a0) /* reg 10 = HINT = 0 */
+        addi.b  #1,hint_count
+
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        rte
 
 horizontal_blank:
         move.l  d0,-(sp)

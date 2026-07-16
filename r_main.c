@@ -1123,7 +1123,7 @@ void R_SetShadowHighlight(boolean enabled)
 	if (h40_sky || legacy_emulator == LEGACY_EMULATOR_GENS) {
 		reg12_write |= 0x81;
 	}
-	Mars_WriteMDVDPRegister(reg12_write);
+	//Mars_WriteMDVDPRegister(reg12_write);
 }
 
 static void R_ColorShiftPalette(const uint8_t *in, int idx, uint8_t *out)
