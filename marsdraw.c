@@ -727,7 +727,7 @@ void DrawScrollingBanner(short ltzz_lump, int x_pos, int y_shift)
 		x_pos -= (VIEWPORT_OVERDRAW_AREA >> 1);
 	}
 
-	for (int dest_row=0; dest_row < 224-44; dest_row++)
+	for (int dest_row=0; dest_row < viewportHeight; dest_row++)
 	{
 		source_offset += 16;
 		source_offset %= (height*16);
@@ -791,7 +791,7 @@ void DrawScrollingChevrons(short chev_lump, int x_pos, int y_shift)
 		x_pos = 0;
 	}
 
-	for (int dest_row=0; dest_row < 224-44; dest_row++)
+	for (int dest_row=0; dest_row < viewportHeight; dest_row++)
 	{
 		source = (pixel_t *)(jo->data + source_offset);
 
@@ -906,7 +906,7 @@ void ClearViewportOverdraw(void)
 
 	// For levels, the last 11 lines are free memory; don't overwrite!
 	//const int lines_used = IsLevel() ? 224-11 : 224;
-	const int lines_used = IsLevel() ? 180 : 224;
+	const int lines_used = IsLevel() ? viewportHeight : 224;
 
 #if (VIEWPORT_OVERDRAW_AREA & 0xF) == 0
 	const int overdraw_width = VIEWPORT_OVERDRAW_AREA >> 4;
@@ -1657,17 +1657,20 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 	uint16_t *lines = Mars_FrameBufferLines();
 	short pixel_offset = (512/2) + ((~h40_sky) & h32_adjust);
 
+	int viewportTop = (224 - viewportHeight) >> 1;
+	int viewportBottom = 224 - viewportTop;
+
 	for (int i=0; i < 7; i++) {
 		distortion_line_bit_shift[i] = 0;
 	}
 
 	//for (int i=0; i < 202; i++) {
-	for (int i=0; i < 202; i++) {
+	for (int i=0; i < viewportBottom; i++) {
 		signed char shift_value;
 
 		distortion_line_bit_shift[i>>5] <<= 1;
 
-		if (i >= 22) {
+		if (i >= viewportTop) {
 			// Only shift lines within the viewport.
 			shift_value = water_filter[(filter_offset + i) & 127];
 			distortion_line_bit_shift[i>>5] |= (water_filter[(filter_offset + i - 3) & 127] & 1);
@@ -1692,26 +1695,29 @@ void RemoveDistortionFilters()
 	uint16_t *lines = Mars_FrameBufferLines();
 	short pixel_offset = (512/2) + ((~h40_sky) & h32_adjust);
 
+	int viewportTop = (224 - viewportHeight) >> 1;
+	int viewportBottom = 224 - viewportTop;
+
 	if (IsLevel()) {
 		// Set line offsets for borders
-		for (int i=0; i < 21; i++) {
-			lines[i] = (512 + (320 * 181)) / 2;	// Thru
+		for (int i=0; i < viewportTop-1; i++) {
+			lines[i] = (512 + (320 * (viewportHeight+1))) / 2;	// Thru
 		}
 
-		lines[21] = (512 + (320 * 180)) / 2;	// Black
+		lines[viewportTop-1] = (512 + (320 * viewportHeight)) / 2;	// Black
 
-		for (int i=22; i < 202; i++) {
+		for (int i=viewportTop; i < viewportBottom; i++) {
 			lines[i] = pixel_offset;
 			pixel_offset += (320/2);
 		}
 
-		lines[202] = (512 + (320 * 180)) / 2;	// Black
+		lines[viewportBottom] = (512 + (320 * viewportHeight)) / 2;	// Black
 
-		for (int i=203; i < 224; i++) {
-			lines[i] = (512 + (320 * 181)) / 2;	// Thru
+		for (int i=viewportBottom+1; i < 224; i++) {
+			lines[i] = (512 + (320 * (viewportHeight+1))) / 2;	// Thru
 		}
 
-		pixel_t *end_of_viewport = lines + ((512 + (320*180)) / 2);
+		pixel_t *end_of_viewport = lines + ((512 + (320*viewportHeight)) / 2);
 		for (int i=0; i < (320/2); i++) {
 			*end_of_viewport++ = 0x1F1F;	// Black line
 		}

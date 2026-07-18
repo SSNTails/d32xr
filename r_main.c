@@ -297,8 +297,8 @@ VINT R_PointInSubsector2 (fixed_t x, fixed_t y)
 /*============================================================================= */
 
 const VINT viewports[][2][3] = {	// [viewport][splitscreen][attribute]
-	{ { (VIEWPORT_WIDTH_H32>>1), 176, true  }, {  (VIEWPORT_WIDTH_H32>>2), 176, true  } },
-	{ { (VIEWPORT_WIDTH_H40>>1), 176, true  }, {  (VIEWPORT_WIDTH_H40>>2), 176, true  } },
+	{ { (VIEWPORT_WIDTH_H32>>1), SCREENHEIGHT, true  }, {  (VIEWPORT_WIDTH_H32>>2), SCREENHEIGHT, true  } },
+	{ { (VIEWPORT_WIDTH_H40>>1), SCREENHEIGHT, true  }, {  (VIEWPORT_WIDTH_H40>>2), SCREENHEIGHT, true  } },
 };
 
 VINT viewportNum;
@@ -1413,7 +1413,8 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	if (gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
 		// The viewport for the title screen is aligned with the bottom of
 		// the screen. Therefore we shift the angle to center the horizon.
-		dy = -27;
+		//dy = -27;	// 180 viewport
+		dy = -21;	// 192 viewport
 	}
 	else {
 		G_ClipAimingPitch((int*)&vd.aimingangle);
@@ -1422,7 +1423,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 
 	yslope = &yslopetab[(3*viewportHeight/2) - dy];
 	centerY = (viewportHeight / 2) + dy;
-	centerYFrac = (180 >> 1) << FRACBITS;
+	centerYFrac = (viewportHeight >> 1) << FRACBITS;
 	centerYViewportFrac = centerY << FRACBITS;
 
 	vd.viewx_t = vd.viewx >> FRACBITS;
@@ -1548,7 +1549,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	viewportbuffer = (pixel_t*)I_ViewportBuffer();
 
 	if (gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
-		viewportbuffer += (160*(224-180));	// Make sure the title draws all the way to the bottom.
+		viewportbuffer += (160*(224-viewportHeight));	// Make sure the title draws all the way to the bottom.
 	}
 
 	palette = 0;

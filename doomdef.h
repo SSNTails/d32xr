@@ -1030,7 +1030,7 @@ extern boolean clearedGame;
 /*SYSTEM IO */
 /*--------- */
 #define	SCREENWIDTH		320
-#define	SCREENHEIGHT	180
+#define	SCREENHEIGHT	192
 
 void I_Init (void);
 byte *I_WadBase (void);

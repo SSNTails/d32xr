@@ -596,7 +596,7 @@ void I_FillFrameBuffer (unsigned char palette_index)
 {
 	const int long_fill = (palette_index << 24) | (palette_index << 16) | (palette_index << 8) | palette_index;
 	//const int line_count = I_FrameBufferHeight()+1 - (IsLevel() ? 11 : 0); // Allow for larger WorkBuffer on levels.
-	const int line_count = viewportHeight + (IsLevel() ? 2 : 44+1);
+	const int line_count = IsLevel() ? viewportHeight : 224;
 
 	int* p = (int*)framebuffer;
 	int* p_end = (int*)(framebuffer + 320 / 2 * line_count);
@@ -771,10 +771,10 @@ void I_Update(void)
 	unsigned short scroll_y_pan = (vd.aimingangle >> 22);
 
 	if (IsLevel()) {
-		scroll_y_base += 22;
+		scroll_y_base += ((224 - viewportHeight) >> 1);
 	}
 	else if (IsTitleScreen()) {
-		scroll_y_base += 44;
+		scroll_y_base += (224 - viewportHeight);
 	}
 
 	if (effects_flags & EFFECTS_COPPER_ENABLED) {

@@ -240,9 +240,9 @@ static void ST_DrawTitleCard()
 	if (gametic < 30)
 	{
 		if (gamemapinfo.mapNumber >= SSTAGE_START && gamemapinfo.mapNumber <= SSTAGE_END)
-			DrawFillRect(0, 0, 320, 180, COLOR_WHITE);
+			DrawFillRect(0, 0, 320, viewportHeight, COLOR_WHITE);
 		else
-			DrawFillRect(0, 0, 320, 180, COLOR_BLACK);
+			DrawFillRect(0, 0, 320, viewportHeight, COLOR_BLACK);
 	}
 
 	if (gametic < 16) {
@@ -296,8 +296,8 @@ static void ST_DrawTitleCard()
 		if (gamemapinfo.act >= 1 && gamemapinfo.act <= 3) {
 			jagobj_t *lt_obj = (jagobj_t*)W_POINTLUMPNUM(lt_lump);
 			VINT lt_y = 78 + ((gametic - 80) << 5);
-			VINT lt_height = lt_y + lt_obj->height > 180
-					? lt_obj->height - ((lt_y + lt_obj->height) - 180)
+			VINT lt_height = lt_y + lt_obj->height > viewportHeight
+					? lt_obj->height - ((lt_y + lt_obj->height) - viewportHeight)
 					: lt_obj->height;
 			if (lt_height > 0) {
 				DrawJagobj3(lt_obj, titlecard_x_offset + 68-24 - ((gametic - 80) << 5), lt_y, 0, 0,
@@ -374,7 +374,7 @@ static void ST_Drawer_ (stbar_t* sb)
 		{
 			char getSpheres[16];
 			D_snprintf(getSpheres, sizeof(getSpheres), "GET %d SPHERES", gamemapinfo.spheresNeeded);
-			V_DrawStringCenterWithColormap(&menuFont, 160, 180/2, getSpheres, YELLOWTEXTCOLORMAP);
+			V_DrawStringCenterWithColormap(&menuFont, 160, viewportHeight/2, getSpheres, YELLOWTEXTCOLORMAP);
 		}
 
 		// Special stage HUD
@@ -604,10 +604,10 @@ static void ST_Drawer_ (stbar_t* sb)
 			else
 				DrawJagobjLump(rings, 16, 42, NULL, NULL);
 			V_DrawValuePaddedRight(&hudNumberFont, 96, 42, sb->rings, 0);
-			DrawJagobjLump(face, 16, 180-24, NULL, NULL);
-			V_DrawStringLeftWithColormap(&menuFont, 16 + 20, 180-24, "SONIC", YELLOWTEXTCOLORMAP);
-			DrawJagobjLump(livex, 16 + 22, 180-16+2, NULL, NULL);
-			V_DrawValuePaddedRight(&menuFont, 16 + 58, 180-16, sb->lives, 0);
+			DrawJagobjLump(face, 16, viewportHeight-24, NULL, NULL);
+			V_DrawStringLeftWithColormap(&menuFont, 16 + 20, viewportHeight-24, "SONIC", YELLOWTEXTCOLORMAP);
+			DrawJagobjLump(livex, 16 + 22, viewportHeight-16+2, NULL, NULL);
+			V_DrawValuePaddedRight(&menuFont, 16 + 58, viewportHeight-16, sb->lives, 0);
 		}
 #endif
 	}

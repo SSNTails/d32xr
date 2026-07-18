@@ -44,6 +44,9 @@
         .equ STRM_DRUMV, 0xFFFA     /* Drum sample volume */
         .equ STRM_DRUMP, 0xFFFB     /* Drum sample panning */
 
+        .equ VIEWPORT_HEIGHT, 192
+
+
         .macro  z80rd adr, dst
         move.b  0xA00000+\adr,\dst
         .endm
@@ -1835,7 +1838,7 @@ load_letterbox:
         lea     0xC00004,a0
         lea     0xC00000,a1
         move.w  #0x8F02,(a0)
-        move.l  #0x41000000,(a0)        /* Write VRAM address 0x0100 */
+        move.l  #0x41400000,(a0)        /* Write VRAM address 0x0140 */
         lea     decomp_buffer,a2
         move.l  lump_size,d1
         lsr.l   #1,d1
@@ -1878,8 +1881,8 @@ load_letterbox:
 
 
         move.l  #0x40000000,(a0)        /* Write VRAM address 0 */
-        lea     letterbox_window_top,a2
-        moveq   #2,d2
+        lea     (letterbox_window_tiles + ((64-(224-VIEWPORT_HEIGHT))&0xF0)),a2
+        moveq   #(((224-VIEWPORT_HEIGHT)/16)-1),d2
 1:
         moveq   #3,d1
         |TODO: CHECK FOR H40; ADD 1 IF TRUE
@@ -1899,9 +1902,9 @@ load_letterbox:
 
 
         |TODO: CHECK FOR H40; USE ADDRESS 0x07D0 INSTEAD IF TRUE
-        move.l  #0x46400000,(a0)        /* Write VRAM address 0x0640 */
-        lea     letterbox_window_bottom,a2
-        move.w  #2,d2
+        move.l  #(0x47000000 - (((224-VIEWPORT_HEIGHT)/16)<<22)),(a0)        /* Write VRAM address 0x0600+ */
+        lea     letterbox_window_tiles,a2
+        move.w  #(((224-VIEWPORT_HEIGHT)/16)-1),d2
 1:
         move.w  #3,d1
         |TODO: CHECK FOR H40; ADD 1 IF TRUE
@@ -3368,24 +3371,24 @@ test_hblank:
         cmpi.b  #5,hint_count
         beq.s   5f
 0:
-        move.b  #21,d1
-        move.w  #0x8C08,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        move.b  #(((224-VIEWPORT_HEIGHT)/2)-3),d1
+        move.w  #0x8C08,(a0) /* reg 12 = H32 mode, no lace, shadow/hilite */
         move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
         bra.s   7f
 1:
-        move.b  #175,d1
-        move.w  #0x8C08,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        move.b  #(VIEWPORT_HEIGHT-1),d1
+        move.w  #0x8C08,(a0) /* reg 12 = H32 mode, no lace, shadow/hilite */
         move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
         bra.s   7f
 2:
         move.b  #0xFF,d1
         /* This controls shadow/highlight for the sky */
-        move.w  #0x8C00,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        move.w  #0x8C00,(a0) /* reg 12 = H32 mode, no lace, no shadow/hilite */
         move.w  #0x9200,(a0) /* reg 18 = W Pos V = top */
         bra.s   7f
 3:
         move.b  #0,d1
-        move.w  #0x8C08,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        move.w  #0x8C08,(a0) /* reg 12 = H32 mode, no lace, shadow/hilite */
         move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
         bra.s   7f
 
@@ -4209,15 +4212,11 @@ write_horizontal_scroll_table:
 write_sprite_attribute_table:
         dc.l    0x54000000      /* Default VRAM write to address 0x1400 */
 
-letterbox_window_top:
-        dc.w    0xC009, 0xC00D, 0xC011, 0xC015, 0xC009, 0xC00D, 0xC011, 0xC015  /* repeat to fill row */
+letterbox_window_tiles:
         dc.w    0xC00A, 0xC00E, 0xC012, 0xC016, 0xC00A, 0xC00E, 0xC012, 0xC016  /* repeat to fill row */
         dc.w    0xC00B, 0xC00F, 0xC013, 0xC017, 0xC00B, 0xC00F, 0xC013, 0xC017  /* repeat to fill row */
-
-letterbox_window_bottom:
-        dc.w    0xC008, 0xC00C, 0xC010, 0xC014, 0xC008, 0xC00C, 0xC010, 0xC014  /* repeat to fill row */
-        dc.w    0xC009, 0xC00D, 0xC011, 0xC015, 0xC009, 0xC00D, 0xC011, 0xC015  /* repeat to fill row */
-        dc.w    0xC00A, 0xC00E, 0xC012, 0xC016, 0xC00A, 0xC00E, 0xC012, 0xC016  /* repeat to fill row */
+        dc.w    0xC00C, 0xC010, 0xC014, 0xC018, 0xC00C, 0xC010, 0xC014, 0xC018  /* repeat to fill row */
+        dc.w    0xC00D, 0xC011, 0xC015, 0xC019, 0xC00D, 0xC011, 0xC015, 0xC019  /* repeat to fill row */
 
         | ----------------- |
         | 000000yy yyyyyyyy |
@@ -4238,31 +4237,31 @@ letterbox_window_bottom:
 
 letterbox_sprites:
 top_letterbox_sprites:
-        dc.w    0x0078, 0x0F01, 0xE0B4, 0x0080
-        dc.w    0x0078, 0x0F02, 0xE0B4, 0x00A0
-        dc.w    0x0078, 0x0F03, 0xE0B4, 0x00C0
-        dc.w    0x0078, 0x0F04, 0xE0B4, 0x00E0
-        dc.w    0x0078, 0x0F05, 0xE0B4, 0x0100
-        dc.w    0x0078, 0x0F06, 0xE0B4, 0x0120
-        dc.w    0x0078, 0x0F07, 0xE0B4, 0x0140
-        dc.w    0x0078, 0x0F08, 0xE0B4, 0x0160
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F01, 0xE0B4, 0x0080
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F02, 0xE0B4, 0x00A0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F03, 0xE0B4, 0x00C0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F04, 0xE0B4, 0x00E0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F05, 0xE0B4, 0x0100
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F06, 0xE0B4, 0x0120
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F07, 0xE0B4, 0x0140
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F08, 0xE0B4, 0x0160
 bottom_letterbox_sprites:
-        dc.w    0x0148, 0x0F09, 0xE0B4, 0x0080
-        dc.w    0x0148, 0x0F0A, 0xE0B4, 0x00A0
-        dc.w    0x0148, 0x0F0B, 0xE0B4, 0x00C0
-        dc.w    0x0148, 0x0F0C, 0xE0B4, 0x00E0
-        dc.w    0x0148, 0x0F0D, 0xE0B4, 0x0100
-        dc.w    0x0148, 0x0F0E, 0xE0B4, 0x0120
-        dc.w    0x0148, 0x0F0F, 0xE0B4, 0x0140
-        dc.w    0x0148, 0x0F10, 0xE0B4, 0x0160
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F09, 0xE0B4, 0x0080
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0A, 0xE0B4, 0x00A0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0B, 0xE0B4, 0x00C0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0C, 0xE0B4, 0x00E0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0D, 0xE0B4, 0x0100
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0E, 0xE0B4, 0x0120
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0F, 0xE0B4, 0x0140
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F10, 0xE0B4, 0x0160
 
 h40_letterbox_ext_sprites:
 h40_top_letterbox_ext_sprites:
-        dc.w    0x0078, 0x0F11, 0xE0B4, 0x0180
-        dc.w    0x0078, 0x0F12, 0xE0B4, 0x01A0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F11, 0xE0B4, 0x0180
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F12, 0xE0B4, 0x01A0
 h40_bottom_letterbox_ext_sprites:
-        dc.w    0x0148, 0x0F13, 0xE0B4, 0x0180
-        dc.w    0x0148, 0x0F00, 0xE0B4, 0x01A0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F13, 0xE0B4, 0x0180
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F00, 0xE0B4, 0x01A0
 
 h32_left_edge_sprites:
         dc.w    0x0080, 0x0311, 0xE0B0, 0x007B
