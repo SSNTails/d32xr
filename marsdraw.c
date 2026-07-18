@@ -1732,5 +1732,45 @@ void RemoveDistortionFilters()
 		}
 	}
 
+
+	// EXPERIMENTAL STRETCH:
+	for (int i=0; i < 7; i++) {
+		lines[i] = ((512 + (320*0)) / 2);
+	}
+	for (int i=7; i < 12; i++) {
+		lines[i] = ((512 + (320*1)) / 2);
+	}
+	for (int i=12; i < 16; i++) {
+		lines[i] = ((512 + (320*2)) / 2);
+	}
+	for (int i=16; i < 19; i++) {
+		lines[i] = ((512 + (320*3)) / 2);
+	}
+	for (int i=19; i < 21; i++) {
+		lines[i] = ((512 + (320*4)) / 2);
+	}
+
+
+	for (int i=21; i < 192+21; i++) {
+		lines[i] = ((512 + (320*(i-16))) / 2);
+	}
+
+
+	for (int i=223; i > 223-7; i--) {
+		lines[i] = ((512 + (320*191)) / 2);
+	}
+	for (int i=223-7; i > 223-12; i--) {
+		lines[i] = ((512 + (320*190)) / 2);
+	}
+	for (int i=223-12; i > 223-16; i--) {
+		lines[i] = ((512 + (320*189)) / 2);
+	}
+	for (int i=223-16; i > 223-19; i--) {
+		lines[i] = ((512 + (320*188)) / 2);
+	}
+	for (int i=223-19; i > 223-21; i--) {
+		lines[i] = ((512 + (320*187)) / 2);
+	}
+
 	MARS_VDP_SCRSHFT = ((~h40_sky) & h32_adjust);
 }
