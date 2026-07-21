@@ -1838,14 +1838,25 @@ load_letterbox:
         lea     0xC00004,a0
         lea     0xC00000,a1
         move.w  #0x8F02,(a0)
-        move.l  #0x41400000,(a0)        /* Write VRAM address 0x0140 */
+        move.l  #0x41800000,(a0)        /* Write VRAM address 0x180 */
+
         lea     decomp_buffer,a2
-        move.l  lump_size,d1
-        lsr.l   #1,d1
+        move.w  #31,d1                  /* Four tiles for the left-most part of the letterbox */
+1:
+        move.w  (a2)+,d2                /* Copy four bytes from the source */
+        andi.w  #0x000E,d2
+        ori.w   #0x1110,d2              /* Mask the first three pixels */
+        move.w  d2,(a1)
+        move.w  (a2)+,(a1)              /* Copy four bytes from the source */
+        dbra    d1,1b
+
+        lea     decomp_buffer,a2
+        move.l  lump_size,d1            /* Regular letterbox graphics */
+        lsr.l   #2,d1
         sub.l   #1,d1
-3:
-        move.w  (a2)+,(a1)              /* Copy eight pixels from the source */
-        dbra    d1,3b
+2:
+        move.l  (a2)+,(a1)              /* Copy eight bytes from the source */
+        dbra    d1,2b
 
 
         /* Load sprites */
@@ -1856,10 +1867,10 @@ load_letterbox:
         move.l  #0x56800000,(a0)        /* Write VRAM address 0x1680 */
         lea     decomp_buffer,a2
         move.l  lump_size,d1
-        lsr.l   #1,d1
+        lsr.l   #2,d1
         sub.l   #1,d1
 3:
-        move.w  (a2)+,(a1)              /* Copy eight pixels from the source */
+        move.l  (a2)+,(a1)              /* Copy eight pixels from the source */
         dbra    d1,3b
 
 
@@ -2049,7 +2060,7 @@ load_md_sky:
 4:
         cmpi.b  #7,d2                   /* Is this H40? */
         beq.s   6f                      /* If true, don't store left-border tiles */
-        move.l  #0x56000000,(a0)        /* Write VRAM address 0x1600 */
+        move.l  #0x41000000,(a0)        /* Write VRAM address 0x100 */
         move.l  #0x11111111,d2          /* Left-border sprite pixels */
         move.w  #31,d1
 5:
@@ -4255,10 +4266,10 @@ write_sprite_attribute_table:
         dc.l    0x54000000      /* Default VRAM write to address 0x1400 */
 
 letterbox_window_tiles:
-        dc.w    0xC00A, 0xC00E, 0xC012, 0xC016, 0xC00A, 0xC00E, 0xC012, 0xC016  /* repeat to fill row */
-        dc.w    0xC00B, 0xC00F, 0xC013, 0xC017, 0xC00B, 0xC00F, 0xC013, 0xC017  /* repeat to fill row */
-        dc.w    0xC00C, 0xC010, 0xC014, 0xC018, 0xC00C, 0xC010, 0xC014, 0xC018  /* repeat to fill row */
-        dc.w    0xC00D, 0xC011, 0xC015, 0xC019, 0xC00D, 0xC011, 0xC015, 0xC019  /* repeat to fill row */
+        dc.w    0xC010, 0xC014, 0xC018, 0xC01C, 0xC010, 0xC014, 0xC018, 0xC01C  /* repeat to fill row */
+        dc.w    0xC011, 0xC015, 0xC019, 0xC01D, 0xC011, 0xC015, 0xC019, 0xC01D  /* repeat to fill row */
+        dc.w    0xC012, 0xC016, 0xC01A, 0xC01E, 0xC012, 0xC016, 0xC01A, 0xC01E  /* repeat to fill row */
+        dc.w    0xC013, 0xC017, 0xC01B, 0xC01F, 0xC013, 0xC017, 0xC01B, 0xC01F  /* repeat to fill row */
 
         | ----------------- |
         | 000000yy yyyyyyyy |
@@ -4277,39 +4288,48 @@ letterbox_window_tiles:
         | x = X position
         | y = Y position
 
+h32_left_edge_sprites:
+        dc.w    0x0080, 0x0301, 0xE008, 0x007B
+        dc.w    0x00A0, 0x0302, 0xE008, 0x007B
+        dc.w    0x00C0, 0x0303, 0xE008, 0x007B
+        dc.w    0x00E0, 0x0304, 0xE008, 0x007B
+        dc.w    0x0100, 0x0305, 0xE008, 0x007B
+        dc.w    0x0120, 0x0306, 0xE008, 0x007B
+        dc.w    0x0140, 0x0307, 0xE008, 0x007B
+
+        | TODO:
+        | When in H32...
+        | > Update first two letterbox sprites:
+        |    - To be 24x32 in size.
+        |    - To move them forward 8 pixels.
+        |    - To be mapped to tiles 4-15 (dropping 0-3).
+        | > Update left-edge sprites:
+        |    - To no longer occupy the letterbox space.
+        |    - To make 8x32 sprites with new tiles that have an edge embedded.
+
 letterbox_sprites:
         dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F01, 0xE0B4, 0x0080
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F02, 0xE0B4, 0x00A0
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F03, 0xE0B4, 0x00C0
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F04, 0xE0B4, 0x00E0
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F05, 0xE0B4, 0x0100
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F06, 0xE0B4, 0x0120
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F07, 0xE0B4, 0x0140
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F08, 0xE0B4, 0x0160
-
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F09, 0xE0B4, 0x0080
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0A, 0xE0B4, 0x00A0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0B, 0xE0B4, 0x00C0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0C, 0xE0B4, 0x00E0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0D, 0xE0B4, 0x0100
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0E, 0xE0B4, 0x0120
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0F, 0xE0B4, 0x0140
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F02, 0xE0B4, 0x0080
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F03, 0xE0B4, 0x00A0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F04, 0xE0B4, 0x00A0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F05, 0xE0B4, 0x00C0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F06, 0xE0B4, 0x00C0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F07, 0xE0B4, 0x00E0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F08, 0xE0B4, 0x00E0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F09, 0xE0B4, 0x0100
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0A, 0xE0B4, 0x0100
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0B, 0xE0B4, 0x0120
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0C, 0xE0B4, 0x0120
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0D, 0xE0B4, 0x0140
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0E, 0xE0B4, 0x0140
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0F, 0xE0B4, 0x0160
         dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F10, 0xE0B4, 0x0160
 
 h40_letterbox_ext_sprites:
         dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F11, 0xE0B4, 0x0180
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F12, 0xE0B4, 0x01A0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F13, 0xE0B4, 0x0180
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F12, 0xE0B4, 0x0180
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F13, 0xE0B4, 0x01A0
         dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F14, 0xE0B4, 0x01A0
-
-h32_left_edge_sprites:
-        dc.w    0x0080, 0x0301, 0xE0B0, 0x007B
-        dc.w    0x00A0, 0x0302, 0xE0B0, 0x007B
-        dc.w    0x00C0, 0x0303, 0xE0B0, 0x007B
-        dc.w    0x00E0, 0x0304, 0xE0B0, 0x007B
-        dc.w    0x0100, 0x0305, 0xE0B0, 0x007B
-        dc.w    0x0120, 0x0306, 0xE0B0, 0x007B
-        dc.w    0x0140, 0x0307, 0xE0B0, 0x007B
 
 
 |test_start:
