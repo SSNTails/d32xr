@@ -359,15 +359,15 @@ void P_PlayerCheckForStillPickups(mobj_t *mobj)
 	if(xh < 0)
 		return;
 
-   xl = (unsigned)xl >> MAPBLOCKSHIFT;
-   xh = (unsigned)xh >> MAPBLOCKSHIFT;
-   yl = (unsigned)yl >> MAPBLOCKSHIFT;
-   yh = (unsigned)yh >> MAPBLOCKSHIFT;
+   xl = (unsigned)xl >> MAPTHINGBLOCKSHIFT;
+   xh = (unsigned)xh >> MAPTHINGBLOCKSHIFT;
+   yl = (unsigned)yl >> MAPTHINGBLOCKSHIFT;
+   yh = (unsigned)yh >> MAPTHINGBLOCKSHIFT;
 
-   if(xh >= bmapwidth)
-      xh = bmapwidth - 1;
-   if(yh >= bmapheight)
-      yh = bmapheight - 1;
+   if(xh >= tmapwidth)
+      xh = tmapwidth - 1;
+   if(yh >= tmapheight)
+      yh = tmapheight - 1;
 
    // check things
    for(bx = xl; bx <= xh; bx++)
@@ -433,15 +433,15 @@ boolean PM_CheckPosition(pmovework_t *mw)
       if(xh < 0)
          return true;
 
-      xl = (unsigned)xl >> MAPBLOCKSHIFT;
-      xh = (unsigned)xh >> MAPBLOCKSHIFT;
-      yl = (unsigned)yl >> MAPBLOCKSHIFT;
-      yh = (unsigned)yh >> MAPBLOCKSHIFT;
+      xl = (unsigned)xl >> MAPTHINGBLOCKSHIFT;
+      xh = (unsigned)xh >> MAPTHINGBLOCKSHIFT;
+      yl = (unsigned)yl >> MAPTHINGBLOCKSHIFT;
+      yh = (unsigned)yh >> MAPTHINGBLOCKSHIFT;
 
-      if(xh >= bmapwidth)
-         xh = bmapwidth - 1;
-      if(yh >= bmapheight)
-         yh = bmapheight - 1;
+      if(xh >= tmapwidth)
+         xh = tmapwidth - 1;
+      if(yh >= tmapheight)
+         yh = tmapheight - 1;
 
       // check things
       for(bx = xl; bx <= xh; bx++)

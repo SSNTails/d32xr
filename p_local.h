@@ -17,11 +17,12 @@
 #define	VIEWHEIGHT			(41*FRACUNIT)
 
 /* mapblocks are used to check movement against lines and things */
-#define MAPBLOCKUNITS	256
-#define	MAPBLOCKSIZE	(MAPBLOCKUNITS*FRACUNIT)
+//#define MAPBLOCKUNITS	256
+//#define	MAPBLOCKSIZE	(MAPBLOCKUNITS*FRACUNIT)
 #define	MAPBLOCKSHIFT	(FRACBITS+8)
-#define	MAPBMASK		(MAPBLOCKSIZE-1)
-#define	MAPBTOFRAC		(MAPBLOCKSHIFT-FRACBITS)
+#define MAPTHINGBLOCKSHIFT (FRACBITS+9)
+//#define	MAPBMASK		(MAPBLOCKSIZE-1)
+//#define	MAPBTOFRAC		(MAPBLOCKSHIFT-FRACBITS)
 
 /* MAXRADIUS is for precalculated sector block boxes */
 /* the spider demon is larger, but we don't have any moving sectors */
@@ -285,6 +286,7 @@ void P_CheckSights (void);
 extern	byte		*rejectmatrix;			/* for fast sight rejection */
 extern	short		*blockmaplump;		/* offsets in blockmap are from here */
 extern	VINT		bmapwidth, bmapheight;	/* in mapblocks */
+extern VINT         tmapwidth, tmapheight;
 extern	fixed_t		bmaporgx, bmaporgy;		/* origin of block map */
 extern	SPTR		*blocklinks;			/* for thing chains */
 

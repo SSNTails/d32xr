@@ -127,19 +127,19 @@ void CalculateSectorBlockBox(sector_t *sector, VINT blockbox[4])
 	GetSectorAABB(sector, bbox);
 
 	/* adjust bounding box to map blocks */
-	block = (unsigned)(bbox[BOXTOP]-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
-	block = block >= bmapheight ? bmapheight-1 : block;
+	block = (unsigned)(bbox[BOXTOP]-bmaporgy+MAXRADIUS)>>MAPTHINGBLOCKSHIFT;
+	block = block >= tmapheight ? tmapheight-1 : block;
 	blockbox[BOXTOP]=block;
 
-	block = (bbox[BOXBOTTOM]-bmaporgy-MAXRADIUS)>>MAPBLOCKSHIFT;
+	block = (bbox[BOXBOTTOM]-bmaporgy-MAXRADIUS)>>MAPTHINGBLOCKSHIFT;
 	block = block < 0 ? 0 : block;
 	blockbox[BOXBOTTOM]=block;
 
-	block = (unsigned)(bbox[BOXRIGHT]-bmaporgx+MAXRADIUS)>>MAPBLOCKSHIFT;
-	block = block >= bmapwidth ? bmapwidth-1 : block;
+	block = (unsigned)(bbox[BOXRIGHT]-bmaporgx+MAXRADIUS)>>MAPTHINGBLOCKSHIFT;
+	block = block >= tmapwidth ? tmapwidth-1 : block;
 	blockbox[BOXRIGHT]=block;
 
-	block = (bbox[BOXLEFT]-bmaporgx-MAXRADIUS)>>MAPBLOCKSHIFT;
+	block = (bbox[BOXLEFT]-bmaporgx-MAXRADIUS)>>MAPTHINGBLOCKSHIFT;
 	block = block < 0 ? 0 : block;
 	blockbox[BOXLEFT]=block;
 }

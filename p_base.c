@@ -312,6 +312,25 @@ static boolean PB_CheckPosition(pmovetest_t *mt)
    if(yh < 0)
       return true;
 
+   xl = (unsigned)xl >> MAPTHINGBLOCKSHIFT;
+   xh = (unsigned)xh >> MAPTHINGBLOCKSHIFT;
+   yl = (unsigned)yl >> MAPTHINGBLOCKSHIFT;
+   yh = (unsigned)yh >> MAPTHINGBLOCKSHIFT;
+
+   if(xh >= tmapwidth)
+      xh = tmapwidth - 1;
+   if(yh >= tmapheight)
+      yh = tmapheight - 1;
+
+   for(bx = xl; bx <= xh; bx++)
+   {
+      for(by = yl; by <= yh; by++)
+      {
+         if(((mo->flags & MF_SOLID) || (mo->flags2 & MF2_MISSILE)) && !P_BlockThingsIterator(bx, by, (blockthingsiter_t)PB_CheckThing, mt))
+            return false;
+      }
+   }
+
    xl = (unsigned)xl >> MAPBLOCKSHIFT;
    xh = (unsigned)xh >> MAPBLOCKSHIFT;
    yl = (unsigned)yl >> MAPBLOCKSHIFT;
@@ -326,8 +345,6 @@ static boolean PB_CheckPosition(pmovetest_t *mt)
    {
       for(by = yl; by <= yh; by++)
       {
-         if(((mo->flags & MF_SOLID) || (mo->flags2 & MF2_MISSILE)) && !P_BlockThingsIterator(bx, by, (blockthingsiter_t)PB_CheckThing, mt))
-            return false;
          if(!P_BlockLinesIterator(bx, by, (blocklinesiter_t)PB_CrossCheck, mt))
             return false;
       }
