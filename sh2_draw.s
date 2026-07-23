@@ -498,13 +498,11 @@ _I_DrawSpanLowA:
         mov.l   @(36,r15),r5    /* ystep */
         mov.l   @(40,r15),r9    /* ds_source */
         mov.l   @(44,r15),r12   /* ds_width */
-        mov.l   @(48,r15),r13   /* ds_height */
+        mov.l   @(48,r15),r11   /* ds_height */
 
         /* === Create Masks === */
-        mov     r13,r11         /* r11 = ds_height */
         dt      r11             /* r11 = ds_height-1 */
         mulu.w  r12,r11         /* (ds_height-1) * ds_width */
-        dt      r13             /* r13 = ds_height-1 */
         sts     macl,r11        /* r11 = Y mask */
         dt      r12             /* r12 = ds_width-1 */
 
