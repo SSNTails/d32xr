@@ -191,7 +191,7 @@ init_hardware:
         move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
         move.w  #0x8300,(a0) /* reg 3 = Name Tbl W = 0x0000 */
         move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        move.w  #0x850A,(a0) /* reg 5 = Sprite Attr Tbl = 0x1400 */
+        move.w  #0x850C,(a0) /* reg 5 = Sprite Attr Tbl = 0x1800 */
         move.w  #0x8600,(a0) /* reg 6 = always 0 */
         move.w  #0x8700,(a0) /* reg 7 = BG color */
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
@@ -200,7 +200,7 @@ init_hardware:
         move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
         |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
-        move.w  #0x8D03,(a0) /* reg 13 = HScroll Tbl = 0x0C00 */
+        move.w  #0x8D04,(a0) /* reg 13 = HScroll Tbl = 0x1000 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
         move.w  #0x8F01,(a0) /* reg 15 = data INC = 1 */
         move.w  #0x9010,(a0) /* reg 16 = Scroll Size = 32x64 */
@@ -1838,7 +1838,7 @@ load_letterbox:
         lea     0xC00004,a0
         lea     0xC00000,a1
         move.w  #0x8F02,(a0)
-        move.l  #0x56800000,(a0)        /* Write VRAM address 0x1680 */
+        move.l  #0x48000000,(a0)        /* Write VRAM address 0x800 */
         lea     decomp_buffer,a2
         move.l  lump_size,d1            /* Regular letterbox graphics */
         lsr.l   #2,d1
@@ -1899,13 +1899,12 @@ load_letterbox:
         move.l  #0x40000000,(a0)        /* Write VRAM address 0 */
         lea     (letterbox_window_tiles + ((64-(224-VIEWPORT_HEIGHT))&0xF0)),a2
         moveq   #(((224-VIEWPORT_HEIGHT)/16)-1),d2
+        move.w  #16,d0
 1:
         moveq   #0,d1
         move.b  register_12_default,d1  /* If H40, do another loop iteration */
         andi.b  #1,d1
-        move.w  d1,d0
-        addq    #4,d0
-        lsl.w   #2,d0
+        lsl.b   #2,d1
         addq    #3,d1
 2:
         move.w  (a2)+,(a1)
@@ -1930,19 +1929,17 @@ load_letterbox:
         move.l  #(0x47000000 - (((224-VIEWPORT_HEIGHT)/16)<<22)),d0
         btst.b  #0,d1
         beq.s   9f
-        addi.l  #0xD00000,d0
+        move.l  #(0x4E000000 - (((224-VIEWPORT_HEIGHT)/16)<<23)),d0
 9:
         move.l  d0,(a0)        /* Write VRAM address 0x0600+ */
         lea     letterbox_window_tiles,a2
         move.w  #(((224-VIEWPORT_HEIGHT)/16)-1),d2
-
+        move.w  #16,d0
 1:
         moveq   #0,d1
         move.b  register_12_default,d1  /* If H40, do another loop iteration */
         andi.b  #1,d1
-        move.w  d1,d0
-        addq    #4,d0
-        lsl.w   #2,d0
+        lsl.b   #2,d1
         addq    #3,d1
 2:
         move.w  (a2)+,(a1)
@@ -2001,9 +1998,9 @@ load_md_sky:
         ||move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
         ||move.w  #0x8300,(a0) /* reg 3 = Name Tbl W = 0x0000 */
         ||move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        ||move.w  #0x850A,(a0) /* reg 5 = Sprite Attr Tbl = 0x1400 */
+        ||move.w  #0x850C,(a0) /* reg 5 = Sprite Attr Tbl = 0x1800 */
         ||move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
-        ||move.w  #0x8D03,(a0) /* reg 13 = HScroll Tbl = 0x0C00 */
+        ||move.w  #0x8D04,(a0) /* reg 13 = HScroll Tbl = 0x1000 */
 
 
         /* Load metadata */
@@ -2028,7 +2025,7 @@ load_md_sky:
         lea     0xC00004,a0
         lea     0xC00000,a1
 
-        move.l  #0x54000000,(a0)        /* Write VRAM address 0x1400 */
+        move.l  #0x58000000,(a0)        /* Write VRAM address 0x1800 */
 
         moveq   #0,d2
         btst.b  #0,d0                   /* Which screen resolution will be used? */
@@ -3100,7 +3097,7 @@ init_vdp:
         move.w  #0x8230,(a0) /* reg 2 = Name Tbl A = 0xC000 */
         move.w  #0x8300,(a0) /* reg 3 = Name Tbl W = 0x0000 */
         move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
-        move.w  #0x850A,(a0) /* reg 5 = Sprite Attr Tbl = 0x1400 */
+        move.w  #0x850C,(a0) /* reg 5 = Sprite Attr Tbl = 0x1800 */
         move.w  #0x8600,(a0) /* reg 6 = always 0 */
         move.w  #0x8700,(a0) /* reg 7 = BG color */
         move.w  #0x8800,(a0) /* reg 8 = always 0 */
@@ -3109,7 +3106,7 @@ init_vdp:
         move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
         |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
         move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
-        move.w  #0x8D03,(a0) /* reg 13 = HScroll Tbl = 0x0C00 */
+        move.w  #0x8D04,(a0) /* reg 13 = HScroll Tbl = 0x1000 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
         move.w  #0x8F01,(a0) /* reg 15 = data INC = 1 */
         move.w  #0x9010,(a0) /* reg 16 = Scroll Size = 32x64 */
@@ -4294,15 +4291,15 @@ scroll_a_address_register_values_4:
         dc.b    0x30
 
 write_horizontal_scroll_table:
-        dc.l    0x4C000000      /* Default VRAM write to address 0x0C00 */
+        dc.l    0x50000000      /* Default VRAM write to address 0x1000 */
 write_sprite_attribute_table:
-        dc.l    0x54000000      /* Default VRAM write to address 0x1400 */
+        dc.l    0x58000000      /* Default VRAM write to address 0x1800 */
 
 letterbox_window_tiles:
-        dc.w    0xC0B4, 0xC0B8, 0xC0BC, 0xC0C0, 0xC0B4, 0xC0B8, 0xC0BC, 0xC0C0  /* repeat to fill row */
-        dc.w    0xC0B5, 0xC0B9, 0xC0BD, 0xC0C1, 0xC0B5, 0xC0B9, 0xC0BD, 0xC0C1  /* repeat to fill row */
-        dc.w    0xC0B6, 0xC0BA, 0xC0BE, 0xC0C2, 0xC0B6, 0xC0BA, 0xC0BE, 0xC0C2  /* repeat to fill row */
-        dc.w    0xC0B7, 0xC0BB, 0xC0BF, 0xC0C3, 0xC0B7, 0xC0BB, 0xC0BF, 0xC0C3  /* repeat to fill row */
+        dc.w    0xC040, 0xC044, 0xC048, 0xC04C, 0xC040, 0xC044, 0xC048, 0xC04C  /* repeat to fill row */
+        dc.w    0xC041, 0xC045, 0xC049, 0xC04D, 0xC041, 0xC045, 0xC049, 0xC04D  /* repeat to fill row */
+        dc.w    0xC042, 0xC046, 0xC04A, 0xC04E, 0xC042, 0xC046, 0xC04A, 0xC04E  /* repeat to fill row */
+        dc.w    0xC043, 0xC047, 0xC04B, 0xC04F, 0xC043, 0xC047, 0xC04B, 0xC04F  /* repeat to fill row */
 
         | ----------------- |
         | 000000yy yyyyyyyy |
