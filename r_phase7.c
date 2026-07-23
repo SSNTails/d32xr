@@ -141,7 +141,21 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     xfrac = lpl->x + xfrac - (lpl->xoff << FRACBITS);
     yfrac = FixedMul(finesine(angle), length);
     yfrac = lpl->y - yfrac + (lpl->yoff << FRACBITS);
-    yfrac *= flatpixels[flatnum].height; // This needs to change
+    yfrac *= mipsizeY;
+
+    if (mipsizeY < mipsizeX)
+    {
+        yfrac <<= 1;
+        ystep <<= 1;
+    }
+    else if (mipsizeX < mipsizeY)
+    {
+        yfrac >>= 1;
+        ystep >>= 1;
+    }
+
+//    xfrac = FixedMul(xfrac, mipsizeX << FRACBITS);
+//    yfrac = FixedMul(yfrac, mipsizeY << FRACBITS);
 
 #if MIPLEVELS > 1 && FLATMIPS
     if (miplevel > 0) {
