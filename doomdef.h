@@ -1105,7 +1105,7 @@ void CONS_Printf(char *msg, ...);
 #define I_DrawSkyColumnLow I_DrawSkyColumnLowA
 #define I_Draw32XSkyColumnLow I_Draw32XSkyColumnLowA
 #define I_DrawColumnNPo2Low I_DrawColumnNPo2LowA
-#define I_DrawSpanLow I_DrawSpanLowA
+#define I_DrawSpanLow I_DrawSpanLowC
 #define I_DrawSpanColorLow I_DrawSpanColorLowA
 
 #define I_DrawColumn I_DrawColumnA

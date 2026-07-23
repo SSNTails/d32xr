@@ -141,9 +141,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     xfrac = lpl->x + xfrac - (lpl->xoff << FRACBITS);
     yfrac = FixedMul(finesine(angle), length);
     yfrac = lpl->y - yfrac + (lpl->yoff << FRACBITS);
-#ifdef MARS
-    yfrac *= flatpixels[flatnum].height; // TODO: Is this correct?
-#endif
+    yfrac *= flatpixels[flatnum].height; // This needs to change
 
 #if MIPLEVELS > 1 && FLATMIPS
     if (miplevel > 0) {
