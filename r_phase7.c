@@ -22,7 +22,8 @@ typedef struct localplane_s
     fixed_t x, y;
     uint16_t xoff;
     uint16_t yoff;
-    boolean wavy;
+    uint16_t flags;
+    int16_t sizeShift;
 #ifndef SIMPLELIGHT
     int lightmin;
 #endif
@@ -143,15 +144,15 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     yfrac = lpl->y - yfrac + (lpl->yoff << FRACBITS);
     yfrac *= mipsizeY;
 
-    if (mipsizeY < mipsizeX)
+    if (lpl->sizeShift > 0)
     {
-        yfrac <<= 1;
-        ystep <<= 1;
+        yfrac <<= lpl->sizeShift;
+        ystep <<= lpl->sizeShift;
     }
-    else if (mipsizeX < mipsizeY)
+    else if (lpl->sizeShift < 0)
     {
-        yfrac >>= 1;
-        ystep >>= 1;
+        yfrac >>= -lpl->sizeShift;
+        ystep >>= -lpl->sizeShift;
     }
 
 //    xfrac = FixedMul(xfrac, mipsizeX << FRACBITS);
@@ -197,7 +198,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     }
 #endif
 
-    if (flatpixels[flatnum].flags & FLF_WAVY)
+    if (lpl->flags & FLF_WAVY)
     {
         const int x_offset = 0;
         const int y_offset = 56;
@@ -266,8 +267,7 @@ static void R_PlaneLoop(localplane_t *lpl)
     t1 >>= 8;
     t2 = *pl_openptr;
 
-    uint8_t flatnum = lpl->pl->flatandlight&0xff;
-    if (flatpixels[flatnum].width <= 1)
+    if (lpl->flags & FLF_COLOR)
         mapplane = &R_MapColorPlane;
     else
         mapplane = &R_MapFlatPlane;
@@ -440,7 +440,18 @@ static void R_DrawPlanes2(int isFOF)
             lpl.yoff = LOWER8(pl->offs);
         }
 
-        lpl.wavy = flatpixels[flatnum].flags & FLF_WAVY;
+        lpl.flags = flatpixels[flatnum].flags;
+
+        if (flatpixels[flatnum].height < flatpixels[flatnum].width)
+        {
+            lpl.sizeShift = 1;
+        }
+        else if (flatpixels[flatnum].width < flatpixels[flatnum].height)
+        {
+            lpl.sizeShift = -1;
+        }
+        else
+            lpl.sizeShift = 0;
 
 #ifdef MARS
         lpl.baseyscale *= flatpixels[flatnum].height; // TODO: Is this correct?

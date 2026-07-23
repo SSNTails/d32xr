@@ -235,7 +235,9 @@ static void R_UpdateCache(void)
         int j;
         texture_t* tex = &textures[id];
         uint8_t *src = *pdata;
+#ifdef USE_DECALS
         uint8_t *dst;
+#endif
 
         for (j = 0; j < tex->width; j++) {
 #ifdef USE_DECALS

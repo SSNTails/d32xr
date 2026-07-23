@@ -225,6 +225,7 @@ typedef struct
 
 #define FLF_WAVY 1
 #define FLF_ROTATE 2
+#define FLF_COLOR 4 // Drawn as solid color
 
 typedef struct
 {
@@ -239,7 +240,8 @@ typedef struct
 #endif
 	uint8_t width;
 	uint8_t height;
-	VINT flags;
+	uint8_t flags;
+	int8_t sizeShift;
 } flattex_t;
 
 /*

@@ -908,6 +908,8 @@ void R_SetFlatData(int f, uint8_t *start, int size)
 		flatpixels[f].flags |= FLF_WAVY;
 	if (IsRotatedFlat(f))
 		flatpixels[f].flags |= FLF_ROTATE;
+	if (w == 1 && h == 1)
+		flatpixels[f].flags |= FLF_COLOR;
 #endif
 }
 
