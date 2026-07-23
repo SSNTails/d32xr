@@ -480,6 +480,7 @@ _I_DrawSpanLowA:
         mov.l   r10,@-r15
         mov.l   r11,@-r15
         mov.l   r12,@-r15
+        mov.l   r13,@-r15
         mov.l   @(DOOMTLS_COLORMAP, gbr),r0
         add     r7,r7
         add     r0,r7           /* ds_colormap = colormap + light */
@@ -551,6 +552,7 @@ do_span_low_loop_1px:
         bf/s    do_span_low_loop
         add     #2,r8           /* fb++ */
 
+        mov.l   @r15+,r13
         mov.l   @r15+,r12
         mov.l   @r15+,r11
         mov.l   @r15+,r10
