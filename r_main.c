@@ -886,11 +886,6 @@ void R_SetFlatData(int f, uint8_t *start, int size)
 	{
 		flatpixels[f].data[j] = data;
 		flatpixels[f].size = w;
-		flatpixels[f].flags = 0;
-		if (IsWavyFlat(f))
-			flatpixels[f].flags |= FLF_WAVY;
-		if (IsRotatedFlat(f))
-			flatpixels[f].flags |= FLF_ROTATE;
 		if (texmips) {
 			data += w * w;
 			w >>= 1;
@@ -903,6 +898,8 @@ void R_SetFlatData(int f, uint8_t *start, int size)
 	flatpixels[f].data[0] = data;
 	flatpixels[f].width = w;
 	flatpixels[f].height = h;
+#endif
+
 	flatpixels[f].flags = 0;
 	if (IsWavyFlat(f))
 		flatpixels[f].flags |= FLF_WAVY;
@@ -910,7 +907,31 @@ void R_SetFlatData(int f, uint8_t *start, int size)
 		flatpixels[f].flags |= FLF_ROTATE;
 	if (w == 1 && h == 1)
 		flatpixels[f].flags |= FLF_COLOR;
-#endif
+
+	// Determine the sizeShift value
+	flatpixels[f].sizeShift = 0;
+	if (flatpixels[f].height < flatpixels[f].width)
+	{
+		// Positive value
+		w = flatpixels[f].width;
+		h = flatpixels[f].height;
+		while (w > h)
+		{
+			w >>= 1;
+			flatpixels[f].sizeShift++;
+		}
+	}
+	else if (flatpixels[f].width < flatpixels[f].height)
+	{
+		// Negative value
+		w = flatpixels[f].width;
+		h = flatpixels[f].height;
+		while (h > w)
+		{
+			h >>= 1;
+			flatpixels[f].sizeShift--;
+		}
+	}
 }
 
 void R_ResetTextures(void)

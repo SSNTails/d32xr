@@ -441,17 +441,7 @@ static void R_DrawPlanes2(int isFOF)
         }
 
         lpl.flags = flatpixels[flatnum].flags;
-
-        if (flatpixels[flatnum].height < flatpixels[flatnum].width)
-        {
-            lpl.sizeShift = 1;
-        }
-        else if (flatpixels[flatnum].width < flatpixels[flatnum].height)
-        {
-            lpl.sizeShift = -1;
-        }
-        else
-            lpl.sizeShift = 0;
+        lpl.sizeShift = flatpixels[flatnum].sizeShift;
 
 #ifdef MARS
         lpl.baseyscale *= flatpixels[flatnum].height; // TODO: Is this correct?
