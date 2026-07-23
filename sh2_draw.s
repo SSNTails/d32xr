@@ -492,13 +492,13 @@ _I_DrawSpanLowA:
         add     r4,r8
         shlr2   r4
         add     r4,r8           /* fb += (ds_y*256 + ds_y*64) */
-        mov.l   @(20,r15),r2    /* xfrac */
-        mov.l   @(24,r15),r4    /* yfrac */
-        mov.l   @(28,r15),r3    /* xstep */
-        mov.l   @(32,r15),r5    /* ystep */
-        mov.l   @(36,r15),r9    /* ds_source */
-        mov.l   @(40,r15),r12   /* ds_width */
-        mov.l   @(44,r15),r13   /* ds_height */
+        mov.l   @(24,r15),r2    /* xfrac */
+        mov.l   @(28,r15),r4    /* yfrac */
+        mov.l   @(32,r15),r3    /* xstep */
+        mov.l   @(36,r15),r5    /* ystep */
+        mov.l   @(40,r15),r9    /* ds_source */
+        mov.l   @(44,r15),r12   /* ds_width */
+        mov.l   @(48,r15),r13   /* ds_height */
 
         /* === Create Masks === */
         mov     r13,r11         /* r11 = ds_height */
