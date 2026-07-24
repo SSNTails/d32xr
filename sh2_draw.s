@@ -285,6 +285,7 @@ _I_DrawColumnLowA:
         mov.l   @(20,r15),r4
         mov.l   draw_width,r1
         add     #-1,r4          /* heightmask = texheight - 1 */
+        sub     r1,r8           /* fb -= SCREENWIDTH */
         swap.w  r2,r0           /* (frac >> 16) */
         and     r4,r0           /* (frac >> 16) & heightmask */
 
@@ -303,8 +304,8 @@ do_col_loop_low:
         add     r3,r2           /* frac += fracstep */
         swap.w  r2,r0           /* (frac >> 16) */
         and     r4,r0           /* (frac >> 16) & heightmask */
-        mov.w   r9,@r8          /* *fb = dpix */
         add     r1,r8           /* fb += SCREENWIDTH */
+        mov.w   r9,@r8          /* *fb = dpix */
 do_col_loop_low_1px:
         mov.b   @(r0,r5),r0     /* pix = dc_source[(frac >> 16) & heightmask] */
         add     r0,r0
@@ -312,10 +313,10 @@ do_col_loop_low_1px:
         add     r3,r2           /* frac += fracstep */
         dt      r6              /* count-- */
         swap.w  r2,r0           /* (frac >> 16) */
-        mov.w   r9,@r8          /* *fb = dpix */
         and     r4,r0           /* (frac >> 16) & heightmask */
-        bf/s    do_col_loop_low
         add     r1,r8           /* fb += SCREENWIDTH */
+        mov.w   r9,@r8          /* *fb = dpix */
+        bf      do_col_loop_low
 
         mov.l   @r15+,r9
         rts
@@ -507,8 +508,8 @@ _I_DrawSpanLowA:
         dt      r12             /* r12 = ds_width-1 */
 
         swap.w  r4,r1           /* (yfrac >> 16) */
-        and     r11,r1          /* (yfrac >> 16) & 63*64 */
         swap.w  r2,r0           /* (xfrac >> 16) */
+        and     r11,r1          /* (yfrac >> 16) & 63*64 */
         and     r12,r0          /* (xfrac >> 16) & 63 */
         or      r1,r0           /* spot = ((yfrac >> 16) & *64) | ((xfrac >> 16) & 63) */
 
@@ -526,8 +527,8 @@ do_span_low_loop:
         add     r0,r0
         mov.w   @(r0,r7),r10    /* dpix = ds_colormap[pix] */
         swap.w  r4,r1           /* (yfrac >> 16) */
-        and     r11,r1          /* (yfrac >> 16) & 63*64 */
         swap.w  r2,r0           /* (xfrac >> 16) */
+        and     r11,r1          /* (yfrac >> 16) & 63*64 */
         and     r12,r0          /* (xfrac >> 16) & 63 */
         or      r1,r0           /* spot = ((yfrac >> 16) & *64) | ((xfrac >> 16) & 63) */
         mov.w   r10,@r8         /* *fb = dpix */
@@ -540,8 +541,8 @@ do_span_low_loop_1px:
         add     r0,r0
         mov.w   @(r0,r7),r10    /* dpix = ds_colormap[pix] */
         swap.w  r4,r1           /* (yfrac >> 16) */
-        and     r11,r1          /* (yfrac >> 16) & 63*64 */
         swap.w  r2,r0           /* (xfrac >> 16) */
+        and     r11,r1          /* (yfrac >> 16) & 63*64 */
         and     r12,r0          /* (xfrac >> 16) & 63 */
         or      r1,r0           /* spot = ((yfrac >> 16) & *64) | ((xfrac >> 16) & 63) */
         mov.w   r10,@r8         /* *fb = dpix */
