@@ -820,11 +820,12 @@ static boolean IsWavyFlat(uint8_t flatnum)
 
 static boolean IsRotatedFlat(uint8_t flatnum)
 {
-	return false;
 	return flatnum == 5
 		|| flatnum == 6
 		|| flatnum == 7
 		|| flatnum == 8
+		|| flatnum == 32
+		|| flatnum == 36
 		|| flatnum == 39
 		|| flatnum == 40
 		|| flatnum == 41
@@ -847,24 +848,25 @@ static boolean IsRotatedFlat(uint8_t flatnum)
 		|| flatnum == 81
 		|| flatnum == 83
 		|| flatnum == 85
-		|| flatnum == 94
 		|| flatnum == 95
 		|| flatnum == 96
 		|| flatnum == 97
 		|| flatnum == 98
 		|| flatnum == 99
-		|| flatnum == 105
-		|| flatnum == 108
-		|| flatnum == 110
-		|| flatnum == 115
+		|| flatnum == 100
+		|| flatnum == 106
+		|| flatnum == 109
+		|| flatnum == 111
 		|| flatnum == 116
+		|| flatnum == 117
 		|| flatnum == 124
-		|| flatnum == 128
-		|| flatnum == 130
-		|| flatnum == 133
+		|| flatnum == 125
+		|| flatnum == 129
+		|| flatnum == 131
 		|| flatnum == 134
-		|| flatnum == 140
-		|| flatnum == 141;
+		|| flatnum == 135
+		|| flatnum == 141
+		|| flatnum == 142;
 }
 
 /*
