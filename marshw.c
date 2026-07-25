@@ -762,6 +762,12 @@ void Mars_WriteMDVDPRegister(int write)
 	MARS_SYS_COMM0 = 0x1C00;
 }
 
+void Mars_SetShadowHighlight(boolean enabled)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM0 = 0x2500 | enabled;
+}
+
 void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size, int bank, int flags)
 {
 	int i;

@@ -1655,7 +1655,8 @@ const int8_t water_filter[128] =
 void ApplyHorizontalDistortionFilter(int filter_offset)
 {
 	uint16_t *lines = Mars_FrameBufferLines();
-	short pixel_offset = (512/2) + ((~h40_sky) & h32_adjust);
+	int screen_shift = ((~h40_sky) & h32_adjust);
+	short pixel_offset = (512/2) + screen_shift;
 
 	int viewportTop = (224 - viewportHeight) >> 1;
 	int viewportBottom = 224 - viewportTop;
@@ -1664,24 +1665,22 @@ void ApplyHorizontalDistortionFilter(int filter_offset)
 		distortion_line_bit_shift[i] = 0;
 	}
 
-	//for (int i=0; i < 202; i++) {
-	for (int i=0; i < viewportBottom; i++) {
-		signed char shift_value;
+	for (int i=0; i < 224; i++) {
+		signed char line_shift_value;
 
 		distortion_line_bit_shift[i>>5] <<= 1;
 
-		if (i >= viewportTop) {
+		if (i >= viewportTop && i < viewportBottom) {
 			// Only shift lines within the viewport.
-			shift_value = water_filter[(filter_offset + i) & 127];
+			line_shift_value = water_filter[(filter_offset + i) & 127];
 			distortion_line_bit_shift[i>>5] |= (water_filter[(filter_offset + i - 3) & 127] & 1);
 			//DLG: Why doesn't 'shift_value' work correctly with HINT pixel shifts?
 
-			lines[i] = pixel_offset + (shift_value >> 1);
+			lines[i] = pixel_offset + (line_shift_value >> 1);
 			pixel_offset += (320/2);
 		}
 		else {
-			// Letter box area should be left alone.
-			shift_value = 0;
+			distortion_line_bit_shift[i>>5] |= screen_shift;
 		}
 	}
 
@@ -1693,7 +1692,8 @@ void RemoveDistortionFilters()
 	effects_flags &= (~EFFECTS_DISTORTION_ENABLED);
 
 	uint16_t *lines = Mars_FrameBufferLines();
-	short pixel_offset = (512/2) + ((~h40_sky) & h32_adjust);
+	int screen_shift = ((~h40_sky) & h32_adjust);
+	short pixel_offset = (512/2) + screen_shift;
 
 	int viewportTop = (224 - viewportHeight) >> 1;
 	int viewportBottom = 224 - viewportTop;
@@ -1701,28 +1701,43 @@ void RemoveDistortionFilters()
 	if (IsLevel()) {
 		// Set line offsets for borders
 		for (int i=0; i < viewportTop-1; i++) {
-			lines[i] = (512 + (320 * (viewportHeight+1))) / 2;	// Thru
+			// Plus 1 word for H32 due to issue caused by the screen shift register.
+			lines[i] = ((512 + (320 * viewportHeight)) / 2) + screen_shift;	// Thru
 		}
 
-		lines[viewportTop-1] = (512 + (320 * viewportHeight)) / 2;	// Black
+		// Minus 1 word for H32 due to issue caused by the screen shift register.
+		lines[viewportTop-1] = ((512 + (320 * (viewportHeight+1))) / 2) - screen_shift;	// Black
 
 		for (int i=viewportTop; i < viewportBottom; i++) {
 			lines[i] = pixel_offset;
 			pixel_offset += (320/2);
 		}
 
-		lines[viewportBottom] = (512 + (320 * viewportHeight)) / 2;	// Black
+		// Minus 1 word for H32 due to issue caused by the screen shift register.
+		lines[viewportBottom] = ((512 + (320 * (viewportHeight+1))) / 2) - screen_shift;	// Black
 
 		for (int i=viewportBottom+1; i < 224; i++) {
-			lines[i] = (512 + (320 * (viewportHeight+1))) / 2;	// Thru
+			// Plus 1 word for H32 due to issue caused by the screen shift register.
+			lines[i] = ((512 + (320 * viewportHeight)) / 2) + screen_shift;	// Thru
 		}
 
 		pixel_t *end_of_viewport = lines + ((512 + (320*viewportHeight)) / 2);
-		for (int i=0; i < (320/2); i++) {
-			*end_of_viewport++ = 0x1F1F;	// Black line
+		if (screen_shift) {
+			*end_of_viewport++ = 0x1F1F;
+			*end_of_viewport++ = 0x1F1F;
+			for (int i=2; i < (320/2)-2; i++) {
+				*end_of_viewport++ = 0xFFFF;	// Thru line
+			}
+			*end_of_viewport++ = 0x1F1F;
+			*end_of_viewport++ = 0x1F1F;
+		}
+		else {
+			for (int i=0; i < (320/2); i++) {
+				*end_of_viewport++ = 0xFFFF;	// Thru line
+			}
 		}
 		for (int i=0; i < (320/2); i++) {
-			*end_of_viewport++ = 0xFFFF;	// Thru line
+			*end_of_viewport++ = 0x1F1F;	// Black line
 		}
 	}
 	else {
@@ -1732,5 +1747,5 @@ void RemoveDistortionFilters()
 		}
 	}
 
-	MARS_VDP_SCRSHFT = ((~h40_sky) & h32_adjust);
+	MARS_VDP_SCRSHFT = screen_shift;
 }

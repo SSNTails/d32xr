@@ -1114,18 +1114,6 @@ void R_SetupLevel(int gamezonemargin, char *background)
 #endif
 }
 
-void R_SetShadowHighlight(boolean enabled)
-{
-	int reg12_write = 0x8C00;
-	if (enabled) {
-		reg12_write |= 0x08;
-	}
-	if (h40_sky || legacy_emulator == LEGACY_EMULATOR_GENS) {
-		reg12_write |= 0x81;
-	}
-	//Mars_WriteMDVDPRegister(reg12_write);
-}
-
 static void R_ColorShiftPalette(const uint8_t *in, int idx, uint8_t *out)
 {
 	int	i;

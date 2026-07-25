@@ -228,12 +228,12 @@ void P_Weather()
 				// Close strike
 				if (count == 8) {
 					// Disable shadow for a short time to lighten the sky.
-					R_SetShadowHighlight(false);
+					Mars_SetShadowHighlight(false);
 					P_SpawnLightningStrike(true);
 				}
 				else if (count == 5) {
 					// Re-enable shadow to return the sky back to normal (i.e. dark).
-					R_SetShadowHighlight(true);
+					Mars_SetShadowHighlight(true);
 					S_StartSoundId(sfx_litng1);
 				}
 			}
@@ -245,7 +245,7 @@ void P_Weather()
 				// Distant strike
 				if (count == 1) {
 					// Enable shadow in case it wasn't already enabled previously.
-					R_SetShadowHighlight(true);
+					Mars_SetShadowHighlight(true);
 					S_StartSoundId(sfx_litng2);
 				}
 			}

@@ -193,7 +193,7 @@ void STOP_Story (void)
 	// Initialize framebuffers if necessary.
 	clearscreen = 2;
 	if (clearscreen > 0) {
-		h32_adjust = false;
+		h32_adjust = true;
 		Mars_SetVideoMode(MARS_VDP_MODE_256, 0);
 		clearscreen--;
 	}

@@ -141,6 +141,8 @@ int Mars_ROMSize(void);
 
 void Mars_WriteMDVDPRegister(int write);
 
+void Mars_SetShadowHighlight(boolean enabled);
+
 void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size, int bank, int flags);
 
 #ifdef MDSKY

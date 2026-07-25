@@ -137,7 +137,7 @@ _start:
 | 0x880880 - 68000 Level 4 interrupt handler - HBlank IRQ
 
         |jmp     horizontal_blank    /* This jump is only used by Gens */
-        jmp     test_hblank
+        rte
 
         .align  64
 
@@ -450,7 +450,7 @@ checksum_pass:
 .endif
 
 setup_horizontal_interrupt:
-        move.l  #test_hblank,0x70  /* Stay within RAM */
+        move.l  #title_hblank,0x70  /* Stay within RAM */
 
 | check flash cart status
         cmpi.w  #2,megasd_ok
@@ -684,6 +684,7 @@ no_cmd:
         dc.w    stop_sfx - prireqtbl              /* 0x22 */
         dc.w    flush_sfx - prireqtbl             /* 0x23 */
         dc.w    load_letterbox - prireqtbl        /* 0x24 */
+        dc.w    set_shadow_highlight - prireqtbl  /* 0x25 */
 
 | process request from Secondary SH2
 handle_sec_req:
@@ -1690,7 +1691,18 @@ set_music_volume:
 
 
 set_gamemode:
-        move.b  0xA15122,gamemode
+        move.b  0xA15122,d0
+
+        move.b  d0,gamemode
+        andi.b  #0x30,d0
+        cmpi.b  #0x10,d0
+        bne.s   88f
+10:
+        move.l  #level_hblank,0x70  /* Stay within RAM */
+        bra.s   99f
+88:
+        move.l  #title_hblank,0x70  /* Stay within RAM */
+99:
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 
@@ -1747,9 +1759,19 @@ decompress_lump_done:
 
 queue_register_write:
         move.w  0xA15122,register_write_queue
-
         move.w  #0,0xA15120         /* done */
+        bra     main_loop
 
+
+
+set_shadow_highlight:
+        move.b  0xA15121,d0
+        lsl.b   #3,d0
+        move.b  register_12_state,d1
+        andi.b  #0xF7,d1
+        or.b    d0,d1
+        move.b  d1,register_12_state
+        move.w  #0,0xA15120         /* done */
         bra     main_loop
 
 
@@ -1832,7 +1854,30 @@ load_letterbox:
         lea     0xC00004,a0
         lea     0xC00000,a1
 
+        /* HACK -- clear VRAM from 0x000 through 0xFFF (except 0x100 through 0x17F) */
+        move.b  gamemode,d0
+        cmpi.b  #4,d0
+        bne.s   1f
 
+        move.w  #0x8F02,(a0)
+        moveq   #0,d0
+
+        move.l  #0x40000000,(a0)        /* Write VRAM address 0x000 */
+        move.w  #256,d1
+0:
+        move.l  d0,(a1)                 /* Erase four bytes */
+        dbra    d1,0b
+
+        move.l  #0x41800000,(a0)        /* Write VRAM address 0x180 */
+        move.w  #928,d1
+0:
+        move.l  d0,(a1)                 /* Erase four bytes */
+        dbra    d1,0b
+
+        bra.w   99f                     /* Nothing more to do */
+
+
+1:
         /* Load patterns */
         bsr     decompress_lump
         lea     0xC00004,a0
@@ -1862,7 +1907,7 @@ load_letterbox:
         move.l  (a2)+,(a1)              /* Copy eight pixels from the source */
         dbra    d1,3b
 
-        move.b  register_12_default,d1  /* If H32, create letterbox sprites for the left-side */
+        move.b  register_12_state,d1    /* If H32, create letterbox sprites for the left-side */
         btst.b  #0,d1
         bne.s   5f
 
@@ -1902,7 +1947,7 @@ load_letterbox:
         move.w  #16,d0
 1:
         moveq   #0,d1
-        move.b  register_12_default,d1  /* If H40, do another loop iteration */
+        move.b  register_12_state,d1    /* If H40, do another loop iteration */
         andi.b  #1,d1
         lsl.b   #2,d1
         addq    #3,d1
@@ -1924,7 +1969,7 @@ load_letterbox:
         |TODO: CHECK FOR H40; USE ADDRESS 0x07D0 INSTEAD IF TRUE
 8:
         moveq   #0,d1
-        move.b  register_12_default,d1  /* If H40, do another loop iteration */
+        move.b  register_12_state,d1    /* If H40, do another loop iteration */
 
         move.l  #(0x47000000 - (((224-VIEWPORT_HEIGHT)/16)<<22)),d0
         btst.b  #0,d1
@@ -1937,7 +1982,7 @@ load_letterbox:
         move.w  #16,d0
 1:
         moveq   #0,d1
-        move.b  register_12_default,d1  /* If H40, do another loop iteration */
+        move.b  register_12_state,d1    /* If H40, do another loop iteration */
         andi.b  #1,d1
         lsl.b   #2,d1
         addq    #3,d1
@@ -1960,6 +2005,7 @@ load_letterbox:
         |move.w  #0x9203,(a0) /* reg 18 = W Pos V = top */
 
 
+99:
         move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
@@ -2018,7 +2064,7 @@ load_md_sky:
         bne.s   0f
         or.b    #0x0081,d0              /* Force Gens to use H40 */
 0:
-        move.b  d0,register_12_default
+        move.b  d0,register_12_state
         cmpi.b  #1,legacy_emulator      /* Check for a legacy emulator (not Ares) */
         bgt.s   4f
         move.w  #0x8F02,(a0)
@@ -2099,7 +2145,7 @@ load_md_sky:
 7:
         |move.w  d0,(a0) /* reg 12 */
         move.w  #0x8C00,d0
-        move.b  register_12_default,d0
+        move.b  register_12_state,d0
         move.w  d0,register_write_queue     /* Set register 12 during VBlank */
 
         move.w  #0x9000, d0
@@ -3420,7 +3466,10 @@ rst_ym2612:
 
 | Horizontal Blank handler
 
-test_hblank:
+title_hblank:
+        rte
+
+level_hblank:
         |TODO: DELETE ME!!!
         move.l  d0,-(sp)
         move.l  d1,-(sp)
@@ -3433,8 +3482,8 @@ test_hblank:
         move.l  #0x40000010,(a0)
 
         move.w  #0x8C00,d0
-        move.b  register_12_default,d1
-        add.b   d1,d0
+        move.b  register_12_state,d1
+        move.b  d1,d0
 
         move.w  #0x8A00,d1
         cmpi.b  #1,hint_count
@@ -4099,7 +4148,7 @@ need_ctrl_int:
 gamemode:
         dc.b    0
 
-register_12_default:
+register_12_state:
         dc.b    0
 
 legacy_emulator:
