@@ -505,15 +505,15 @@ void A_BuzzFly(mobj_t *actor, int16_t var1, int16_t var2)
 		return;
 	}
 
-	// turn towards movement direction if not there yet
-	actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
-
 	// chase towards player
 	{
 		int dist, realspeed;
 //		const fixed_t mf = 5*(FRACUNIT/4);
 
 		realspeed = mobjinfo[actor->type].speed;
+
+		if (actor->target->type == MT_PLAYER && (players[actor->target->player-1].pflags & PF_UNDERWATER))
+			realspeed = -realspeed;
 
 		dist = P_AproxDistance3D(actor->target->x - actor->x,
 			actor->target->y - actor->y, actor->target->z - actor->z);
@@ -531,6 +531,9 @@ void A_BuzzFly(mobj_t *actor, int16_t var1, int16_t var2)
 			actor->z = watertop;
 			actor->momz = 0;
 		}
+
+		// turn towards movement direction if not there yet
+		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->x + actor->momx, actor->y + actor->momy);
 	}
 }
 
