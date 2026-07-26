@@ -3536,7 +3536,10 @@ level_hblank:
 7:
         move.w  d1,(a0) /* reg 10 = HINT = 0 */
         addi.b  #1,hint_count
-
+        cmpi.b  #4,hint_count
+        blo.s   8f
+        move.b  #0,hint_count
+8:
         move.l  (sp)+,a1
         move.l  (sp)+,a0
         move.l  (sp)+,d1

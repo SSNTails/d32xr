@@ -1044,7 +1044,9 @@ void pri_vbi_handler(void)
 	if (effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_ENABLED)) {
 		if (IsLevel() && !(effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_SKY_IN_VIEW))) {
 			// Disable horizontal interrupts when there's no sky nor water.
+#ifndef HINTS_ALWAYS_ENABLED
 			MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
+#endif
 		}
 		else {
 			MARS_SYS_INTMSK |= MARS_SYS_HINT;
@@ -1052,7 +1054,9 @@ void pri_vbi_handler(void)
 	}
 	else {
 		// Disable horizontal interrupts when effects flags are all off.
+#ifndef HINTS_ALWAYS_ENABLED
 		MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
+#endif
 	}
 
 	// Update copper buffer

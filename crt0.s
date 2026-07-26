@@ -653,18 +653,18 @@ pri_h_irq:
         mov.l   phi_bitmap_mode,r1
 
         !mov     #11,r2
-        add     #1,r2
-        cmp/eq  r2,r0
-        bt      0f
+        !add     #1,r2
+        cmp/hi  r0,r2
+        bt      1f
 
         !mov     #215,r2
         not     r2,r2
-        add     #-29,r2
+        add     #-31,r2
         extu.b  r2,r2
-        cmp/eq  r2,r0
+        cmp/hi  r2,r0
         bt      1f
 
-        bra     2f
+        !bra     0f
 0:
         mov.w   @r1,r0
         mov     #3,r2
