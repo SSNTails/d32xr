@@ -63,7 +63,9 @@ static void R_FinishWall(viswall_t* wc)
     if (flatpixels[floorpicnum] == NULL)
     {
         flatpixels[floorpicnum].data = R_CheckPixels(firstflat + floorpicnum);
-        flatpixels[floorpicnum].size = CalcFlatSize(W_LumpLength(firstflat + floorpicnum));
+        const flatsize_t *flatSize = GetFlatSize(floorpicnum);
+        flatpixels[floorpicnum].width = 1 << flatSize->width;
+        flatpixels[floorpicnum].height =1 << flatSize->height;
     }
 
     // is there sky at this wall?
@@ -78,7 +80,9 @@ static void R_FinishWall(viswall_t* wc)
         if (flatpixels[ceilingpicnum] == NULL)
         {
             flatpixels[ceilingpicnum].data = R_CheckPixels(firstflat + ceilingpicnum);
-            flatpixels[ceilingpicnum].size = CalcFlatSize(W_LumpLength(firstflat + ceilingpicnum));
+            const flatsize_t *flatSize = GetFlatSize(ceilingpicnum);
+            flatpixels[ceilingpicnum].width = 1 << flatSize->width;
+            flatpixels[ceilingpicnum].height = 1 << flatSize->height;
         }
     }
 }

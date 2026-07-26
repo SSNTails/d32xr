@@ -477,27 +477,11 @@ D_printf ("Done\n");
 	testtex = &textures[R_TextureNumForName("GFZROCK")];
 }
 
-VINT CalcFlatSize(int lumplength)
+const flatsize_t *GetFlatSize(int index)
 {
-	if (lumplength < 2*2)
-		return 1;
-	
-	if (lumplength < 4*4)
-		return 2;
+	const flatsize_t *flatsizes = (flatsize_t*)W_POINTLUMPNUM(W_GetNumForName("FLATINFO"));
 
-	if (lumplength < 8*8)
-		return 4;
-
-	if (lumplength < 16*16)
-		return 8;
-
-	if (lumplength < 32*32)
-		return 16;
-	
-	if (lumplength < 64*64)
-		return 32;
-
-	return 64;
+	return &flatsizes[index];
 }
 
 
@@ -840,6 +824,8 @@ static boolean IsRotatedFlat(uint8_t flatnum)
 		|| flatnum == 6
 		|| flatnum == 7
 		|| flatnum == 8
+		|| flatnum == 32
+		|| flatnum == 36
 		|| flatnum == 39
 		|| flatnum == 40
 		|| flatnum == 41
@@ -862,24 +848,25 @@ static boolean IsRotatedFlat(uint8_t flatnum)
 		|| flatnum == 81
 		|| flatnum == 83
 		|| flatnum == 85
-		|| flatnum == 94
 		|| flatnum == 95
 		|| flatnum == 96
 		|| flatnum == 97
 		|| flatnum == 98
 		|| flatnum == 99
-		|| flatnum == 105
-		|| flatnum == 108
-		|| flatnum == 110
-		|| flatnum == 115
+		|| flatnum == 100
+		|| flatnum == 106
+		|| flatnum == 109
+		|| flatnum == 111
 		|| flatnum == 116
+		|| flatnum == 117
 		|| flatnum == 124
-		|| flatnum == 128
-		|| flatnum == 130
-		|| flatnum == 133
+		|| flatnum == 125
+		|| flatnum == 129
+		|| flatnum == 131
 		|| flatnum == 134
-		|| flatnum == 140
-		|| flatnum == 141;
+		|| flatnum == 135
+		|| flatnum == 141
+		|| flatnum == 142;
 }
 
 /*
@@ -891,7 +878,9 @@ static boolean IsRotatedFlat(uint8_t flatnum)
 */
 void R_SetFlatData(int f, uint8_t *start, int size)
 {
-	VINT w = CalcFlatSize(size);
+	const flatsize_t *flatSize = GetFlatSize(f);
+	VINT w = 1 << flatSize->width;
+	VINT h = 1 << flatSize->height;
 	uint8_t *data = start;
 
 #ifdef FLATMIPS
@@ -899,11 +888,6 @@ void R_SetFlatData(int f, uint8_t *start, int size)
 	{
 		flatpixels[f].data[j] = data;
 		flatpixels[f].size = w;
-		flatpixels[f].flags = 0;
-		if (IsWavyFlat(f))
-			flatpixels[f].flags |= FLF_WAVY;
-		if (IsRotatedFlat(f))
-			flatpixels[f].flags |= FLF_ROTATE;
 		if (texmips) {
 			data += w * w;
 			w >>= 1;
@@ -914,13 +898,42 @@ void R_SetFlatData(int f, uint8_t *start, int size)
 	}
 #else
 	flatpixels[f].data[0] = data;
-	flatpixels[f].size = w;
+	flatpixels[f].width = w;
+	flatpixels[f].height = h;
+#endif
+
 	flatpixels[f].flags = 0;
 	if (IsWavyFlat(f))
 		flatpixels[f].flags |= FLF_WAVY;
 	if (IsRotatedFlat(f))
 		flatpixels[f].flags |= FLF_ROTATE;
-#endif
+	if (w == 1 && h == 1)
+		flatpixels[f].flags |= FLF_COLOR;
+
+	// Determine the sizeShift value
+	flatpixels[f].sizeShift = 0;
+	if (flatpixels[f].height < flatpixels[f].width)
+	{
+		// Positive value
+		w = flatpixels[f].width;
+		h = flatpixels[f].height;
+		while (w > h)
+		{
+			w >>= 1;
+			flatpixels[f].sizeShift++;
+		}
+	}
+	else if (flatpixels[f].width < flatpixels[f].height)
+	{
+		// Negative value
+		w = flatpixels[f].width;
+		h = flatpixels[f].height;
+		while (h > w)
+		{
+			h >>= 1;
+			flatpixels[f].sizeShift--;
+		}
+	}
 }
 
 void R_ResetTextures(void)

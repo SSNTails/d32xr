@@ -22,7 +22,8 @@ typedef struct localplane_s
     fixed_t x, y;
     uint16_t xoff;
     uint16_t yoff;
-    boolean wavy;
+    uint16_t flags;
+    int16_t sizeShift;
 #ifndef SIMPLELIGHT
     int lightmin;
 #endif
@@ -95,7 +96,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     int light;
     unsigned scale;
 #endif
-    unsigned miplevel, mipsize;
+    unsigned miplevel, mipsizeX, mipsizeY;
 
     remaining = x2 - x + 1;
 
@@ -131,7 +132,8 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     mipsize = lpl->mipsize[miplevel];
 #else
     miplevel = 0;
-    mipsize = flatpixels[flatnum].size;
+    mipsizeX = flatpixels[flatnum].width;
+    mipsizeY = flatpixels[flatnum].height;
 #endif
 
     angle = (lpl->angle + (xtoviewangle[x]<<FRACBITS)) >> ANGLETOFINESHIFT;
@@ -140,9 +142,21 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     xfrac = lpl->x + xfrac - (lpl->xoff << FRACBITS);
     yfrac = FixedMul(finesine(angle), length);
     yfrac = lpl->y - yfrac + (lpl->yoff << FRACBITS);
-#ifdef MARS
-    yfrac *= flatpixels[flatnum].size;
-#endif
+    yfrac *= mipsizeY;
+
+    if (lpl->sizeShift > 0)
+    {
+        yfrac <<= lpl->sizeShift;
+        ystep <<= lpl->sizeShift;
+    }
+    else if (lpl->sizeShift < 0)
+    {
+        yfrac >>= -lpl->sizeShift;
+        ystep >>= -lpl->sizeShift;
+    }
+
+//    xfrac = FixedMul(xfrac, mipsizeX << FRACBITS);
+//    yfrac = FixedMul(yfrac, mipsizeY << FRACBITS);
 
 #if MIPLEVELS > 1 && FLATMIPS
     if (miplevel > 0) {
@@ -184,7 +198,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     }
 #endif
 
-    if (flatpixels[flatnum].flags & FLF_WAVY)
+    if (lpl->flags & FLF_WAVY)
     {
         const int x_offset = 0;
         const int y_offset = 56;
@@ -206,7 +220,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
         }
     }
 
-    drawspan(y, x, x2, light, xfrac, yfrac, xstep, ystep, lpl->ds_source[miplevel], mipsize);
+    drawspan(y, x, x2, light, xfrac, yfrac, xstep, ystep, lpl->ds_source[miplevel], mipsizeX, mipsizeY);
 }
 
 //
@@ -253,13 +267,10 @@ static void R_PlaneLoop(localplane_t *lpl)
     t1 >>= 8;
     t2 = *pl_openptr;
 
-    uint8_t flatnum = lpl->pl->flatandlight&0xff;
-    if (flatpixels[flatnum].size <= 2) {
+    if (lpl->flags & FLF_COLOR)
         mapplane = &R_MapColorPlane;
-    }
-    else {
+    else
         mapplane = &R_MapFlatPlane;
-    }
   
     do
     {
@@ -429,10 +440,11 @@ static void R_DrawPlanes2(int isFOF)
             lpl.yoff = LOWER8(pl->offs);
         }
 
-        lpl.wavy = flatpixels[flatnum].flags & FLF_WAVY;
+        lpl.flags = flatpixels[flatnum].flags;
+        lpl.sizeShift = flatpixels[flatnum].sizeShift;
 
 #ifdef MARS
-        lpl.baseyscale *= flatpixels[flatnum].size;
+        lpl.baseyscale *= flatpixels[flatnum].height; // TODO: Is this correct?
 #endif
 
         I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);

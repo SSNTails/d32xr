@@ -225,6 +225,7 @@ typedef struct
 
 #define FLF_WAVY 1
 #define FLF_ROTATE 2
+#define FLF_COLOR 4 // Drawn as solid color
 
 typedef struct
 {
@@ -237,8 +238,10 @@ typedef struct
 #else
 	pixel_t		*data[MIPLEVELS];			/* cached data to draw from */
 #endif
-	VINT size;
-	VINT flags;
+	uint8_t width;
+	uint8_t height;
+	uint8_t flags;
+	int8_t sizeShift;
 } flattex_t;
 
 /*
@@ -380,7 +383,7 @@ const sector_t *R_FakeFlat(const sector_t *, sector_t *, boolean) ATTR_DATA_CACH
 
 typedef void (*drawcol_t)(int, int, int, int, fixed_t, fixed_t, inpixel_t*, int);
 typedef void (*drawskycol_t)(int, int, int);
-typedef void (*drawspan_t)(int, int, int, int, fixed_t, fixed_t, fixed_t, fixed_t, inpixel_t*, int);
+typedef void (*drawspan_t)(int, int, int, int, fixed_t, fixed_t, fixed_t, fixed_t, inpixel_t*, int, int);
 typedef void (*drawspancolor_t)(int, int, int, int);
 
 extern drawcol_t drawcol;
@@ -547,7 +550,12 @@ extern 	texdecal_t  *decals;
 extern	uint8_t			*flattranslation;		/* for global animation */
 extern	uint8_t			*texturetranslation;	/* for global animation */
 extern	flattex_t		*flatpixels;
-VINT CalcFlatSize(int lumplength);
+typedef struct
+{
+	uint8_t width;
+	uint8_t height;
+} flatsize_t;
+const flatsize_t *GetFlatSize(int index);
 
 extern	VINT		firstflat, numflats;
 
