@@ -490,10 +490,10 @@ static void P_UnlinkBlockmap(mobj_t *thing)
 		
 		if (blockx >= 0 && blocky >= 0)
 		{
-			blockx = (unsigned)blockx >> MAPBLOCKSHIFT;
-			blocky = (unsigned)blocky >> MAPBLOCKSHIFT;
-			if (blockx < bmapwidth && blocky <bmapheight)
-				blocklinks[blocky*bmapwidth+blockx] = thing->bnext;
+			blockx = (unsigned)blockx >> MAPTHINGBLOCKSHIFT;
+			blocky = (unsigned)blocky >> MAPTHINGBLOCKSHIFT;
+			if (blockx < tmapwidth && blocky < tmapheight)
+				blocklinks[blocky*(tmapwidth)+blockx] = thing->bnext;
 		}
 	}
 }
@@ -505,11 +505,11 @@ static void P_LinkBlockmap(mobj_t *thing, fixed_t x, fixed_t y)
 
 	if (blockx>=0 && blocky>=0)
 	{
-		blockx = (unsigned)blockx >> MAPBLOCKSHIFT;
-		blocky = (unsigned)blocky >> MAPBLOCKSHIFT;
-		if (blockx < bmapwidth && blocky <bmapheight)
+		blockx = (unsigned)blockx >> MAPTHINGBLOCKSHIFT;
+		blocky = (unsigned)blocky >> MAPTHINGBLOCKSHIFT;
+		if (blockx < tmapwidth && blocky < tmapheight)
 		{
-			SPTR *link = &blocklinks[blocky*bmapwidth+blockx];
+			SPTR *link = &blocklinks[blocky*tmapwidth+blockx];
 			thing->bprev = (SPTR)0;
 			thing->bnext = *link;
 			if (*link)
@@ -708,7 +708,7 @@ boolean P_BlockThingsIterator (int x, int y, blockthingsiter_t func, void *userp
 	//if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
 	//	return true;
 
-	for (mobj = SPTR_TO_LPTR(blocklinks[y*bmapwidth+x]) ; mobj ; mobj = SPTR_TO_LPTR(mobj->bnext))
+	for (mobj = SPTR_TO_LPTR(blocklinks[y*tmapwidth+x]) ; mobj ; mobj = SPTR_TO_LPTR(mobj->bnext))
 		if (!func( mobj, userp ) )
 			return false;	
 

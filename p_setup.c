@@ -39,6 +39,7 @@ sidetex_t   *sidetexes;
 
 short		*blockmaplump;			/* offsets in blockmap are from here */
 VINT		bmapwidth, bmapheight;	/* in mapblocks */
+VINT        tmapwidth, tmapheight;
 fixed_t		bmaporgx, bmaporgy;		/* origin of block map */
 SPTR		*blocklinks;			/* for thing chains */
 
@@ -699,9 +700,14 @@ void P_LoadBlockMap (int lump)
 	bmaporgy = blockmaplump[1]<<FRACBITS;
 	bmapwidth = blockmaplump[2];
 	bmapheight = blockmaplump[3];
+
+	tmapwidth = bmapwidth >> 1;
+	tmapheight = bmapheight >> 1;
+	tmapwidth++;
+	tmapheight++;
 	
 /* clear out mobj chains */
-	count = sizeof(*blocklinks)* bmapwidth*bmapheight;
+	count = sizeof(*blocklinks)* tmapwidth*tmapheight;
 	blocklinks = Z_Malloc (count,PU_LEVEL);
 	D_memset (blocklinks, 0, count);
 }
