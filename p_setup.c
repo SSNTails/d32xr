@@ -893,7 +893,7 @@ extern byte *debugscreen;
 		gamezonemargin = DEFAULT_GAME_ZONE_MARGIN;
 	}
 
-	R_SetupLevel(gamezonemargin, gamemapinfo.sky);
+	R_SetupLevel(gamezonemargin, gamemapinfo.sky, gamemapinfo.borderType);
 
 #ifdef MARS
 	Mars_CommSlaveClearCache();

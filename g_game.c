@@ -494,19 +494,19 @@ void G_Init(void)
 
 	if (G_FindGameinfo(&gameinfo))
 	{
-		if (gameinfo.borderFlat <= 0)
-			gameinfo.borderFlat = W_CheckNumForName("SRB2TILE");
+		if (gameinfo.borderType <= 0)
+			gameinfo.borderType = 0;
 		if (gameinfo.endFlat <= 0)
-			gameinfo.endFlat = gameinfo.borderFlat;
+			gameinfo.endFlat = gameinfo.borderType;
 		return;
 	}
 
-	gameinfo.borderFlat = W_CheckNumForName("SRB2TILE");
+	gameinfo.borderType = 0;
 	gameinfo.titlePage = W_CheckNumForName("TITLE");
 	gameinfo.titlePageA = W_CheckNumForName("M_TITLEA");
 	gameinfo.titlePageB = W_CheckNumForName("M_TITLEB");
 	gameinfo.titleTime = 540;
-	gameinfo.endFlat = gameinfo.borderFlat;
+	gameinfo.endFlat = gameinfo.borderType;
 	gameinfo.endShowCast = 1;
 }
 

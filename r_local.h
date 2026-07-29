@@ -371,9 +371,9 @@ void    R_ResetTextures(void);
 int		R_SetupMDPalettes(const char *name, int palettes_lump, int bank, int flags);
 void	R_SetupBackground(const char *background, int palettes_lump, int copper_lump);
 void	R_SetupMDSky(const char *name, int palettes_lump);
-int		R_SetupLetterBox(const char *tiles_name, const char *sprites_name, const char *palette_name);
+int		R_SetupLetterBox(int border_type);
 int		R_SetupCopperTable(const char *background, int copper_lump, int table_bank);
-void	R_SetupLevel(int gamezonemargin, char *background);
+void	R_SetupLevel(int gamezonemargin, char *background, int border_type);
 void	R_SetupTextureCaches(int gamezonemargin);
 // killough 4/13/98: fake floors/ceilings for deep water / fake ceilings:
 const sector_t *R_FakeFlat(const sector_t *, sector_t *, boolean) ATTR_DATA_CACHE_ALIGN;

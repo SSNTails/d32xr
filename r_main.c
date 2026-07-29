@@ -527,7 +527,7 @@ int R_SetupMDPalettes(const char *name, int palettes_lump, int bank, int flags)
 
 
 
-int R_SetupLetterBox(const char *tiles_name, const char *sprites_name, const char *palette_name)
+int R_SetupLetterBox(int border_type)
 {
 	// Retrieve lumps for drawing the sky on the MD.
 	uint8_t *tiles_ptr;
@@ -540,8 +540,10 @@ int R_SetupLetterBox(const char *tiles_name, const char *sprites_name, const cha
 
 	int lump;
 
+	char lumpname[9];
 
-	lump = W_CheckNumForName(tiles_name);
+	D_snprintf(lumpname, 8, "LBOX%dT", border_type);
+	lump = W_CheckNumForName(lumpname);
 	if (lump == -1) {
 		return -1;
 	}
@@ -549,7 +551,8 @@ int R_SetupLetterBox(const char *tiles_name, const char *sprites_name, const cha
 	tiles_size = W_LumpLength(lump);
 
 
-	lump = W_CheckNumForName(sprites_name);
+	D_snprintf(lumpname, 8, "LBOX%dS", border_type);
+	lump = W_CheckNumForName(lumpname);
 	if (lump == -1) {
 		return -1;
 	}
@@ -557,7 +560,8 @@ int R_SetupLetterBox(const char *tiles_name, const char *sprites_name, const cha
 	sprites_size = W_LumpLength(lump);
 
 
-	lump = W_CheckNumForName(palette_name);
+	D_snprintf(lumpname, 8, "LBOX%dP", border_type);
+	lump = W_CheckNumForName(lumpname);
 	if (lump == -1) {
 		return -1;
 	}
@@ -1099,11 +1103,11 @@ int R_SetupCopperTable(const char *background, int copper_lump, int table_bank)
 	return R_SetupSkyGradient(background, copper_lump, table_bank);
 }
 
-void R_SetupLevel(int gamezonemargin, char *background)
+void R_SetupLevel(int gamezonemargin, char *background, int border_type)
 {
 	R_SetupBackground(background, 1, 1);
 
-	R_SetupLetterBox("LBOX42T", "LBOX42S", "LBOX42P");
+	R_SetupLetterBox(border_type);
 
 	R_SetupTextureCaches(gamezonemargin);
 
