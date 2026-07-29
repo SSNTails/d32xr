@@ -1103,7 +1103,7 @@ void R_SetupLevel(int gamezonemargin, char *background)
 {
 	R_SetupBackground(background, 1, 1);
 
-	R_SetupLetterBox("LBOX3T", "LBOX3S", "LBOX3P");
+	R_SetupLetterBox("LBOX42T", "LBOX42S", "LBOX42P");
 
 	R_SetupTextureCaches(gamezonemargin);
 

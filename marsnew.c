@@ -514,8 +514,7 @@ byte *I_WorkBuffer (void)
 	if (workbuf_high == NULL) {
 		if (IsLevel()) {
 			// Allow for larger WorkBuffer on levels.
-			//workbuf_high = (byte *)(framebuffer + 320 / 2 * (I_FrameBufferHeight() +1 - 11)); // +1 for the blank line
-		workbuf_high = (byte *)(framebuffer + 320 / 2 * (viewportHeight + 2)); // +2 for black and thru lines
+			workbuf_high = (byte *)(framebuffer + 320 / 2 * (viewportHeight + 1)); // +1 for black line
 		}
 		else {
 			workbuf_high = (byte *)(framebuffer + 320 / 2 * (I_FrameBufferHeight() +1)); // +1 for the blank line

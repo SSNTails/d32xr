@@ -1698,15 +1698,19 @@ void RemoveDistortionFilters()
 	int viewportTop = (224 - viewportHeight) >> 1;
 	int viewportBottom = 224 - viewportTop;
 
+	int thru_line = h40_sky ? 242 : 244;
+
 	if (IsLevel()) {
 		// Set line offsets for borders
 		for (int i=0; i < viewportTop-1; i++) {
 			// Plus 1 word for H32 due to issue caused by the screen shift register.
-			lines[i] = ((512 + (320 * viewportHeight)) / 2) + screen_shift;	// Thru
+			//lines[i] = ((512 + (320 * (viewportHeight+1))) / 2) + screen_shift;	// Thru
+			lines[i] = thru_line;
 		}
 
 		// Minus 1 word for H32 due to issue caused by the screen shift register.
-		lines[viewportTop-1] = ((512 + (320 * (viewportHeight+1))) / 2) - screen_shift;	// Black
+		lines[viewportTop-1] = ((512 + (320 * viewportHeight)) / 2) - screen_shift;	// Black
+		//lines[viewportTop-1] = 240;
 
 		for (int i=viewportTop; i < viewportBottom; i++) {
 			lines[i] = pixel_offset;
@@ -1714,28 +1718,16 @@ void RemoveDistortionFilters()
 		}
 
 		// Minus 1 word for H32 due to issue caused by the screen shift register.
-		lines[viewportBottom] = ((512 + (320 * (viewportHeight+1))) / 2) - screen_shift;	// Black
+		lines[viewportBottom] = ((512 + (320 * viewportHeight)) / 2) - screen_shift;	// Black
+		//lines[viewportBottom] = 240;
 
 		for (int i=viewportBottom+1; i < 224; i++) {
 			// Plus 1 word for H32 due to issue caused by the screen shift register.
-			lines[i] = ((512 + (320 * viewportHeight)) / 2) + screen_shift;	// Thru
+			//lines[i] = ((512 + (320 * (viewportHeight+1))) / 2) + screen_shift;	// Thru
+			lines[i] = thru_line;
 		}
 
 		pixel_t *end_of_viewport = lines + ((512 + (320*viewportHeight)) / 2);
-		if (screen_shift) {
-			*end_of_viewport++ = 0x1F1F;
-			*end_of_viewport++ = 0x1F1F;
-			for (int i=2; i < (320/2)-2; i++) {
-				*end_of_viewport++ = 0xFFFF;	// Thru line
-			}
-			*end_of_viewport++ = 0x1F1F;
-			*end_of_viewport++ = 0x1F1F;
-		}
-		else {
-			for (int i=0; i < (320/2); i++) {
-				*end_of_viewport++ = 0xFFFF;	// Thru line
-			}
-		}
 		for (int i=0; i < (320/2); i++) {
 			*end_of_viewport++ = 0x1F1F;	// Black line
 		}

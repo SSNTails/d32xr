@@ -1886,7 +1886,7 @@ load_letterbox:
         move.l  #0x48000000,(a0)        /* Write VRAM address 0x800 */
         lea     decomp_buffer,a2
         move.l  lump_size,d1            /* Regular letterbox graphics */
-        lsr.l   #2,d1
+        lsr.l   #1,d1
         sub.l   #1,d1
 2:
         move.l  (a2)+,(a1)              /* Copy eight bytes from the source */
@@ -1901,7 +1901,7 @@ load_letterbox:
         move.l  #0x42000000,(a0)        /* Write VRAM address 0x200 */
         lea     decomp_buffer,a2
         move.l  lump_size,d1
-        lsr.l   #2,d1
+        lsr.l   #1,d1
         sub.l   #1,d1
 3:
         move.l  (a2)+,(a1)              /* Copy eight pixels from the source */
@@ -4348,10 +4348,10 @@ write_sprite_attribute_table:
         dc.l    0x58000000      /* Default VRAM write to address 0x1800 */
 
 letterbox_window_tiles:
-        dc.w    0xC040, 0xC044, 0xC048, 0xC04C, 0xC040, 0xC044, 0xC048, 0xC04C  /* repeat to fill row */
-        dc.w    0xC041, 0xC045, 0xC049, 0xC04D, 0xC041, 0xC045, 0xC049, 0xC04D  /* repeat to fill row */
-        dc.w    0xC042, 0xC046, 0xC04A, 0xC04E, 0xC042, 0xC046, 0xC04A, 0xC04E  /* repeat to fill row */
-        dc.w    0xC043, 0xC047, 0xC04B, 0xC04F, 0xC043, 0xC047, 0xC04B, 0xC04F  /* repeat to fill row */
+        dc.w    0xC040, 0xC044, 0xC048, 0xC04C, 0xC050, 0xC054, 0xC058, 0xC05C  /* repeat to fill row */
+        dc.w    0xC041, 0xC045, 0xC049, 0xC04D, 0xC051, 0xC055, 0xC059, 0xC05D  /* repeat to fill row */
+        dc.w    0xC042, 0xC046, 0xC04A, 0xC04E, 0xC052, 0xC056, 0xC05A, 0xC05E  /* repeat to fill row */
+        dc.w    0xC043, 0xC047, 0xC04B, 0xC04F, 0xC053, 0xC057, 0xC05B, 0xC05F  /* repeat to fill row */
 
         | ----------------- |
         | 000000yy yyyyyyyy |
@@ -4415,26 +4415,26 @@ h32_left_edge_sprites:
 letterbox_sprites:
         dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F01, 0xE010, 0x0080
         dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F02, 0xE010, 0x0080
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F03, 0xE010, 0x00A0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F04, 0xE010, 0x00A0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F03, 0xE020, 0x00A0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F04, 0xE020, 0x00A0
         dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F05, 0xE010, 0x00C0
         dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F06, 0xE010, 0x00C0
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F07, 0xE010, 0x00E0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F08, 0xE010, 0x00E0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F07, 0xE020, 0x00E0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F08, 0xE020, 0x00E0
         dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F09, 0xE010, 0x0100
         dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0A, 0xE010, 0x0100
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0B, 0xE010, 0x0120
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0C, 0xE010, 0x0120
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0B, 0xE020, 0x0120
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0C, 0xE020, 0x0120
         dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0D, 0xE010, 0x0140
         dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0E, 0xE010, 0x0140
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0F, 0xE010, 0x0160
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F10, 0xE010, 0x0160
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0F, 0xE020, 0x0160
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F10, 0xE020, 0x0160
 
 h40_letterbox_ext_sprites:
         dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F11, 0xE010, 0x0180
         dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F12, 0xE010, 0x0180
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F13, 0xE010, 0x01A0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F14, 0xE010, 0x01A0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F13, 0xE020, 0x01A0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F14, 0xE020, 0x01A0
 
 
 |test_start:

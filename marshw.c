@@ -118,10 +118,16 @@ void Mars_InitLineTable(void)
 		offset = (240 - 224) / 2;
 	}
 
-	lines[240] = 0xA01F;	// RLE black (160 pixels)
-	lines[241] = 0xA01F;	// RLE black (160 pixels)
-	lines[242] = 0xA0FF;	// RLE thru (160 pixels)
-	lines[243] = 0xA0FF;	// RLE thru (160 pixels)
+	lines[240] = 0xFF1F;	// RLE black (256 pixels)
+	lines[241] = 0xFF1F;	// RLE black (256 pixels)
+
+	lines[242] = 0xFFFF;	// RLE thru (256 pixels)
+	lines[243] = 0xFFFF;	// RLE thru (256 pixels)
+
+	lines[244] = 0x011F;	// RLE black (2 pixel)
+	lines[245] = 0x9BFF;	// RLE thru (156 pixels)
+	lines[246] = 0x9BFF;	// RLE thru (156 pixels)
+	lines[247] = 0x061F;	// RLE black (7 pixels)
 
 	for (j=0; j < rle_border_size; j++) {
 		lines[offset+j] = 240;	// RLE black
