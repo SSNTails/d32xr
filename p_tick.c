@@ -929,10 +929,6 @@ void P_Start (void)
 	//frame_sync = mars_vblank_count;
 	while (!I_RefreshCompleted())
 		;
-	for (int i=0; i < 2; i++) {
-		Mars_SetVideoMode(MARS_VDP_MODE_256, (224-viewportHeight)>>1);
-		Mars_FlipFrameBuffers(true);
-	}
 
 	/* load a level */
 	G_DoLoadLevel();
@@ -944,6 +940,11 @@ void P_Start (void)
 		else {
 			SetLevel(LevelType_Normal);
 		}
+	}
+
+	for (int i=0; i < 2; i++) {
+		Mars_SetVideoMode(MARS_VDP_MODE_256, IsLevel() ? (224-viewportHeight)>>1 : 0);
+		Mars_FlipFrameBuffers(true);
 	}
 
 #ifndef MARS
