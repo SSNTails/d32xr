@@ -1886,11 +1886,21 @@ load_letterbox:
         move.l  #0x48000000,(a0)        /* Write VRAM address 0x800 */
         lea     decomp_buffer,a2
         move.l  lump_size,d1            /* Regular letterbox graphics */
-        lsr.l   #1,d1
+        lsr.l   #2,d1
         sub.l   #1,d1
-2:
+        cmpi.w  #127,d1               /* If graphic is 32x32, branch */
+        beq.s   20f
+        move.w  #255,d1               /* Assume graphic is 64x32 */
+        bra.s   22f
+20:
+        move.l  a2,a3
+        move.w  d1,d2
+21:
+        move.l  (a3)+,(a1)              /* Copy eight bytes from the source */
+        dbra    d2,21b
+22:
         move.l  (a2)+,(a1)              /* Copy eight bytes from the source */
-        dbra    d1,2b
+        dbra    d1,22b
 
 
         /* Load sprites */
@@ -1901,11 +1911,22 @@ load_letterbox:
         move.l  #0x42000000,(a0)        /* Write VRAM address 0x200 */
         lea     decomp_buffer,a2
         move.l  lump_size,d1
-        lsr.l   #1,d1
+        lsr.l   #2,d1
         sub.l   #1,d1
-3:
+        cmpi.w  #127,d1               /* If graphic is 32x32, branch */
+        beq.s   30f
+        move.w  #255,d1               /* Assume graphic is 64x32 */
+        bra.s   32f
+30:
+        move.l  a2,a3
+        move.w  d1,d2
+31:
+        move.l  (a3)+,(a1)              /* Copy eight pixels from the source */
+        dbra    d2,31b
+32:
         move.l  (a2)+,(a1)              /* Copy eight pixels from the source */
-        dbra    d1,3b
+        dbra    d1,32b
+
 
         move.b  register_12_state,d1    /* If H32, create letterbox sprites for the left-side */
         btst.b  #0,d1
