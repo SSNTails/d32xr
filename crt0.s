@@ -718,6 +718,13 @@ do_distortion:
         movt    r2
         bf/s    do_copper
 
+
+
+        mov.l   phi_line,r1
+        mov.l   @r1,r2
+        add     #1,r2
+        mov.l   r2,@r1
+
         nop
         nop
         nop
@@ -729,13 +736,14 @@ do_distortion:
         nop
 
 do_copper:
+        ! TODO: Remove logic that updates the line number from 'do_copper'.
         mov.l   phi_line,r1
         mov.l   @r1,r2
         mov     r2,r0
         add     r0,r0
 
         add     #1,r2
-        mov.l   r2,@r1
+        !mov.l   r2,@r1
 
         mov.l   phi_last_hint,r1
         cmp/ge  r1,r2
@@ -759,6 +767,12 @@ do_copper:
         mov.l   phi_mars_thru_color,r1
         mov.w   r0,@r1
 
+
+
+        mov.l   phi_line,r1
+        mov.l   @r1,r2
+        add     #1,r2
+        mov.l   r2,@r1
 
         nop
         nop
