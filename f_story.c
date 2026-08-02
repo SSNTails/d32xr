@@ -61,6 +61,8 @@ void START_Story (void)
 		I_FillFrameBuffer(COLOR_THRU);
 		UpdateBuffer();
 	}
+
+	effects_flags = EFFECTS_COPPER_ENABLED;
 }
 
 int TIC_Story (void)
@@ -151,7 +153,7 @@ void DRAW_Story (void)
 	// Initialize framebuffers if necessary.
 	if (clearscreen > 0) {
 		h32_adjust = false;
-		Mars_SetVideoMode(MARS_VDP_MODE_32K);
+		Mars_SetVideoMode(MARS_VDP_MODE_32K, 10);
 		clearscreen--;
 	}
 
@@ -184,6 +186,18 @@ void DRAW_Story (void)
 
 void STOP_Story (void)
 {
+	// Sync frames.
+	while (frame_sync == mars_vblank_count);
+	frame_sync = mars_vblank_count;
+
+	// Initialize framebuffers if necessary.
+	clearscreen = 2;
+	if (clearscreen > 0) {
+		h32_adjust = true;
+		Mars_SetVideoMode(MARS_VDP_MODE_256, 0);
+		clearscreen--;
+	}
+
 	DoubleBufferSetup();	// Clear frame buffers to black.
 
 	Z_Free(tf);

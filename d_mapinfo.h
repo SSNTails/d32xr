@@ -47,7 +47,7 @@ typedef struct
 	VINT skyBitmapOffsetY;
 	VINT skyBitmapScrollRate;
 	VINT lumpNum;
-	VINT borderFlat;
+	VINT borderType;
 	VINT skyTopColor;
 	VINT skyBottomColor;
 	VINT mapNumber;
@@ -65,7 +65,7 @@ typedef struct
 
 typedef struct
 {
-	VINT borderFlat;
+	VINT borderType;
 	VINT titleTime;
 	VINT titlePage;
 	VINT titlePageA;

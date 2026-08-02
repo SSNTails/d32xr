@@ -108,7 +108,7 @@ void Y_IntermissionDrawer(void)
 
 	if (intertype == int_coop)
 	{
-		const int offset = 24;
+		const int offset = 2;
 		const int squeeze = 12;
 
 		// draw the "got through act" lines and act number

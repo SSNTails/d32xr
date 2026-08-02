@@ -710,7 +710,7 @@ void DrawScrollingBanner(short ltzz_lump, int x_pos, int y_shift)
 {
 	const jagobj_t *jo = (jagobj_t*)W_POINTLUMPNUM(ltzz_lump);
 	pixel_t *fb = I_OverwriteBuffer();
-	pixel_t *dest = fb + ((320*22) / 2);	// Don't draw over the top letterbox.
+	pixel_t *dest = fb;
 	const pixel_t *source;
 	const short height = jo->height;
 
@@ -729,7 +729,7 @@ void DrawScrollingBanner(short ltzz_lump, int x_pos, int y_shift)
 		x_pos -= (VIEWPORT_OVERDRAW_AREA >> 1);
 	}
 
-	for (int dest_row=0; dest_row < 224-44; dest_row++)
+	for (int dest_row=0; dest_row < viewportHeight; dest_row++)
 	{
 		source_offset += 16;
 		source_offset %= (height*16);
@@ -766,7 +766,7 @@ void DrawScrollingChevrons(short chev_lump, int x_pos, int y_shift)
 {
 	const jagobj_t *jo = (jagobj_t*)W_POINTLUMPNUM(chev_lump);
 	pixel_t *fb = I_OverwriteBuffer();
-	pixel_t *dest = fb + ((320*22) / 2);	// Don't draw over the top letterbox.
+	pixel_t *dest = fb;
 	const pixel_t *source;
 	const short height = 32;
 
@@ -793,7 +793,7 @@ void DrawScrollingChevrons(short chev_lump, int x_pos, int y_shift)
 		x_pos = 0;
 	}
 
-	for (int dest_row=0; dest_row < 224-44; dest_row++)
+	for (int dest_row=0; dest_row < viewportHeight; dest_row++)
 	{
 		source = (pixel_t *)(jo->data + source_offset);
 
@@ -840,6 +840,7 @@ void DrawScrollingChevrons(short chev_lump, int x_pos, int y_shift)
 =
 =============
 */
+/*
 void DrawTiledLetterbox2(int flat)
 {
 	if (debugmode == DEBUGMODE_NODRAW)
@@ -900,13 +901,15 @@ void DrawTiledLetterbox(void)
 		DrawTiledLetterbox2(gamemapinfo.borderFlat);
 	}
 }
+*/
 
 void ClearViewportOverdraw(void)
 {
 	pixel_t *framebuffer = I_OverwriteBuffer();
 
 	// For levels, the last 11 lines are free memory; don't overwrite!
-	const int lines_used = IsLevel() ? 224-11 : 224;
+	//const int lines_used = IsLevel() ? 224-11 : 224;
+	const int lines_used = IsLevel() ? viewportHeight : 224;
 
 #if (VIEWPORT_OVERDRAW_AREA & 0xF) == 0
 	const int overdraw_width = VIEWPORT_OVERDRAW_AREA >> 4;
@@ -952,6 +955,7 @@ void ClearViewportOverdraw(void)
 =
 =============
 */
+/*
 void DrawTiledBackground2(int flat)
 {
 	int			y, yt;
@@ -1005,7 +1009,7 @@ void DrawTiledBackground(void)
 	}
 	DrawTiledBackground2(gameinfo.borderFlat);
 }
-
+*/
 void EraseBlock(int x, int y, int width, int height)
 {
 }
@@ -1655,46 +1659,33 @@ const int8_t water_filter[128] =
 void ApplyHorizontalDistortionFilter(int filter_offset)
 {
 	uint16_t *lines = Mars_FrameBufferLines();
-	short pixel_offset = (512/2) + ((~h40_sky) & h32_adjust);
+	int screen_shift = ((~h40_sky) & h32_adjust);
+	short pixel_offset = (512/2) + screen_shift;
+
+	int viewportTop = (224 - viewportHeight) >> 1;
+	int viewportBottom = 224 - viewportTop;
 
 	for (int i=0; i < 7; i++) {
 		distortion_line_bit_shift[i] = 0;
 	}
 
-	for (int i=0; i < 202; i++) {
-		signed char shift_value;
+	for (int i=0; i < 224; i++) {
+		signed char line_shift_value;
 
 		distortion_line_bit_shift[i>>5] <<= 1;
 
-		if (i >= 22 && i < 224-22) {
+		if (i >= viewportTop && i < viewportBottom) {
 			// Only shift lines within the viewport.
-			shift_value = water_filter[(filter_offset + i) & 127];
+			line_shift_value = water_filter[(filter_offset + i) & 127];
 			distortion_line_bit_shift[i>>5] |= (water_filter[(filter_offset + i - 3) & 127] & 1);
 			//DLG: Why doesn't 'shift_value' work correctly with HINT pixel shifts?
+
+			lines[i] = pixel_offset + (line_shift_value >> 1);
+			pixel_offset += (320/2);
 		}
 		else {
-			// Letter box area should be left alone.
-			shift_value = 0;
+			distortion_line_bit_shift[i>>5] |= screen_shift;
 		}
-
-		lines[i] = pixel_offset + (shift_value >> 1);
-
-		pixel_offset += (320/2);
-	}
-
-	// Reuse the black pixels from the top of the screen for the next line.
-	lines[202] = lines[21];
-
-	// The next eleven lines are unique.
-	pixel_offset = (((320*202)+512)/2) + ((~h40_sky) & h32_adjust);
-	for (int i=203; i < 214; i++) {
-		lines[i] = pixel_offset;
-		pixel_offset += (320/2);
-	}
-
-	// The remaining lines reuse pixels from the top border.
-	for (int i=214; i < 224; i++) {
-		lines[i] = lines[i-214];
 	}
 
 	effects_flags |= EFFECTS_DISTORTION_ENABLED;
@@ -1705,27 +1696,44 @@ void RemoveDistortionFilters()
 	effects_flags &= (~EFFECTS_DISTORTION_ENABLED);
 
 	uint16_t *lines = Mars_FrameBufferLines();
-	short pixel_offset = (512/2) + ((~h40_sky) & h32_adjust);
+	int screen_shift = ((~h40_sky) & h32_adjust);
+	short pixel_offset = (512/2) + screen_shift;
+
+	int viewportTop = (224 - viewportHeight) >> 1;
+	int viewportBottom = 224 - viewportTop;
+
+	int thru_line = h40_sky ? 242 : 244;
 
 	if (IsLevel()) {
-		// Set line offsets for the entire viewport (180 pixels) and top border (22 pixels)
-		for (int i=0; i < 202; i++) {
+		// Set line offsets for borders
+		for (int i=0; i < viewportTop-1; i++) {
+			// Plus 1 word for H32 due to issue caused by the screen shift register.
+			//lines[i] = ((512 + (320 * (viewportHeight+1))) / 2) + screen_shift;	// Thru
+			lines[i] = thru_line;
+		}
+
+		// Minus 1 word for H32 due to issue caused by the screen shift register.
+		lines[viewportTop-1] = ((512 + (320 * viewportHeight)) / 2) - screen_shift;	// Black
+		//lines[viewportTop-1] = 240;
+
+		for (int i=viewportTop; i < viewportBottom; i++) {
 			lines[i] = pixel_offset;
 			pixel_offset += (320/2);
 		}
 
-		// Reuse the black pixels from the top of the screen for the next line.
-		lines[202] = lines[21];
-		
-		// The next eleven lines are unique.
-		for (int i=203; i < 214; i++) {
-			lines[i] = pixel_offset;
-			pixel_offset += (320/2);
+		// Minus 1 word for H32 due to issue caused by the screen shift register.
+		lines[viewportBottom] = ((512 + (320 * viewportHeight)) / 2) - screen_shift;	// Black
+		//lines[viewportBottom] = 240;
+
+		for (int i=viewportBottom+1; i < 224; i++) {
+			// Plus 1 word for H32 due to issue caused by the screen shift register.
+			//lines[i] = ((512 + (320 * (viewportHeight+1))) / 2) + screen_shift;	// Thru
+			lines[i] = thru_line;
 		}
 
-		// The remaining lines reuse pixels from the top border.
-		for (int i=214; i < 224; i++) {
-			lines[i] = lines[i-214];
+		pixel_t *end_of_viewport = lines + ((512 + (320*viewportHeight)) / 2);
+		for (int i=0; i < (320/2); i++) {
+			*end_of_viewport++ = 0x1F1F;	// Black line
 		}
 	}
 	else {
@@ -1735,5 +1743,5 @@ void RemoveDistortionFilters()
 		}
 	}
 
-	MARS_VDP_SCRSHFT = ((~h40_sky) & h32_adjust);
+	MARS_VDP_SCRSHFT = screen_shift;
 }

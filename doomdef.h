@@ -1030,7 +1030,7 @@ extern boolean clearedGame;
 /*SYSTEM IO */
 /*--------- */
 #define	SCREENWIDTH		320
-#define	SCREENHEIGHT	180
+#define	SCREENHEIGHT	192
 
 void I_Init (void);
 byte *I_WadBase (void);
@@ -1510,10 +1510,10 @@ boolean GetSaveInfo(int slotnumber, VINT* mapnum, VINT* skill, VINT *mode);
 
 void PrintHex (int x, int y, unsigned num);
 void DrawPlaque (jagobj_t *pl);
-void DrawTiledLetterbox2(int flat);
-void DrawTiledLetterbox(void);
-void DrawTiledBackground2(int flat);
-void DrawTiledBackground(void);
+//void DrawTiledLetterbox2(int flat);
+//void DrawTiledLetterbox(void);
+//void DrawTiledBackground2(int flat);
+//void DrawTiledBackground(void);
 void DrawScrollingBanner(short ltzz_lump, int x, int y_shift);
 void DrawScrollingChevrons(short chev_lump, int x, int y_shift);
 

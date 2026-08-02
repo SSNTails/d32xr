@@ -10,7 +10,7 @@
 #define CURSORX		(96)
 #define CURSORWIDTH	24
 #define ITEMX		(CURSORX+CURSORWIDTH)
-#define STARTY			48
+#define STARTY		26
 #define ITEMSPACE	12
 #define CURSORY(y)	(STARTY+ITEMSPACE*(y))
 #define	NUMLCHARS 64	
@@ -844,7 +844,7 @@ void M_Drawer (void)
 	}
 
 	if (scrpos == ms_help) {
-		O_DrawHelp(80);
+		O_DrawHelp(IsLevel() ? 58 : 80);
 		return;
 	}
 
@@ -912,7 +912,8 @@ void M_Drawer (void)
 
 		V_DrawStringLeft(&menuFont, (320 - (tmplen * 14)) >> 1, y + ITEMSPACE + 2, tmp);
 
-		O_DrawHelp(120);
+		//TODO: This spills over into the border region.
+		//O_DrawHelp(98);
 	}
 	else if (scrpos == ms_load || scrpos == ms_save)
 	{

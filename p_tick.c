@@ -228,12 +228,12 @@ void P_Weather()
 				// Close strike
 				if (count == 8) {
 					// Disable shadow for a short time to lighten the sky.
-					R_SetShadowHighlight(false);
+					Mars_SetShadowHighlight(false);
 					P_SpawnLightningStrike(true);
 				}
 				else if (count == 5) {
 					// Re-enable shadow to return the sky back to normal (i.e. dark).
-					R_SetShadowHighlight(true);
+					Mars_SetShadowHighlight(true);
 					S_StartSoundId(sfx_litng1);
 				}
 			}
@@ -245,7 +245,7 @@ void P_Weather()
 				// Distant strike
 				if (count == 1) {
 					// Enable shadow in case it wasn't already enabled previously.
-					R_SetShadowHighlight(true);
+					Mars_SetShadowHighlight(true);
 					S_StartSoundId(sfx_litng2);
 				}
 			}
@@ -699,7 +699,7 @@ gameaction_t PlayDemo()
 	if (rec_end_time - rec_current_time <= 30) {
 		int palette = PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + (((30 - (rec_end_time - rec_current_time)) * 2) / 3);
 		R_FadePalette(dc_playpals, palette, dc_cshift_playpals);
-		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+		if (effects_flags & EFFECTS_COPPER_ENABLED) {
 			copper_table_brightness = -31 + (rec_end_time - rec_current_time);
 			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}
@@ -851,7 +851,7 @@ void P_Drawer (void)
 		//else
 		//	DrawTiledBackground();
 
-		DrawTiledLetterbox();
+		//DrawTiledLetterbox();
 
 		if (viewportNum == VIEWPORT_H32 && clear_h32_borders == 0) {
 			ClearViewportOverdraw();
@@ -924,7 +924,11 @@ void P_Drawer (void)
 
 void P_Start (void)
 {
-	DoubleBufferSetup();
+	// Sync frames.
+	//while (frame_sync == mars_vblank_count);
+	//frame_sync = mars_vblank_count;
+	while (!I_RefreshCompleted())
+		;
 
 	/* load a level */
 	G_DoLoadLevel();
@@ -936,6 +940,11 @@ void P_Start (void)
 		else {
 			SetLevel(LevelType_Normal);
 		}
+	}
+
+	for (int i=0; i < 2; i++) {
+		Mars_SetVideoMode(MARS_VDP_MODE_256, IsLevel() ? (224-viewportHeight)>>1 : 0);
+		Mars_FlipFrameBuffers(true);
 	}
 
 #ifndef MARS

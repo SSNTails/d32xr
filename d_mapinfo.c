@@ -252,8 +252,8 @@ static void G_AddMapinfoKey(char* key, char* value, dmapinfo_t* mi)
 		mi->zone = D_atoi(value);
 	else if (!D_strcasecmp(key, "act"))
 		mi->act = D_atoi(value);
-	else if (!D_strcasecmp(key, "borderFlat"))
-		mi->borderFlat = W_CheckNumForName(value);
+	else if (!D_strcasecmp(key, "borderType"))
+		mi->borderType = D_atoi(value);
 	else if (!D_strcasecmp(key, "sky"))
 		mi->sky = value;
 	else if (!D_strcasecmp(key, "skyOffsetY"))
@@ -288,8 +288,8 @@ static void G_AddMapinfoKey(char* key, char* value, dmapinfo_t* mi)
 
 static void G_AddGameinfoKey(char* key, char* value, dgameinfo_t* gi)
 {
-	if (!D_strcasecmp(key, "borderFlat"))
-		gi->borderFlat = W_CheckNumForName(value);
+	if (!D_strcasecmp(key, "borderType"))
+		gi->borderType = D_atoi(value);
 	else if (!D_strcasecmp(key, "titleTime"))
 		gi->titleTime = D_atoi(value);
 	else if (!D_strcasecmp(key, "creditsTime"))

@@ -41,6 +41,10 @@ static volatile int analog[MARS_MAX_CONTROLLERS];
 
 volatile uint8_t legacy_emulator = 0;
 
+volatile unsigned int rle_border_size = 0;
+
+volatile unsigned int mars_display_mode = MARS_VDP_MODE_256;
+
 volatile unsigned int mars_thru_rgb = 0;
 volatile unsigned int mars_hblank_count = 0;
 volatile unsigned int mars_hblank_count_peak = 0;
@@ -53,8 +57,6 @@ unsigned mars_frtc2msec_frac = 0;
 static const uint8_t* mars_newpalette = NULL;
 
 uint16_t mars_thru_rgb_reference = 0;
-
-uint8_t mars_display_mode = MARS_VDP_MODE_256;
 
 int16_t mars_requested_lines = 224;
 uint16_t mars_framebuffer_height = 224;
@@ -116,33 +118,38 @@ void Mars_InitLineTable(void)
 		offset = (240 - 224) / 2;
 	}
 
+	lines[240] = 0xFF1F;	// RLE black (256 pixels)
+	lines[241] = 0xFF1F;	// RLE black (256 pixels)
+
+	lines[242] = 0xFFFF;	// RLE thru (256 pixels)
+	lines[243] = 0xFFFF;	// RLE thru (256 pixels)
+
+	lines[244] = 0x011F;	// RLE black (2 pixel)
+	lines[245] = 0x9BFF;	// RLE thru (156 pixels)
+	lines[246] = 0x9BFF;	// RLE thru (156 pixels)
+	lines[247] = 0x061F;	// RLE black (7 pixels)
+
+	for (j=0; j < rle_border_size; j++) {
+		lines[offset+j] = 240;	// RLE black
+	}
+
+	offset = (224-rle_border_size);
+	for (j=0; j < rle_border_size; j++) {
+		lines[offset+j] = 240;	// RLE black
+	}
+
+	offset = rle_border_size;
+
 	switch (mars_display_mode) {
 		case MARS_VDP_MODE_256:
-			for (j=0; j < mars_requested_lines; j++) {
-				lines[offset+j] = (j * 320 / 2 + 0x100) + ((~h40_sky) & h32_adjust);
+			for (j=0; j < (224-(rle_border_size<<1)); j++) {
+				lines[offset+j] = (j * (320/2) + 0x100) + (((~h40_sky) & h32_adjust)<<1);
 			}
-
-			blank = j * 320 / 2;
-
-			// set the rest of the line table to a blank line
-			for (; j < 256; j++)
-				lines[offset+j] = blank + 0x100;
-
-			for (j = 0; j < offset; j++)
-				lines[j] = blank + 0x100;
-
-			// make sure blank line is clear
-			for (j = blank; j < (blank + 160); j++)
-				lines[j] = 0;
-
 			break;
 
 		case MARS_VDP_MODE_32K:
-			for (j=0; j < 204; j++) {
+			for (j=0; j < (224-(rle_border_size<<1)); j++) {
 				lines[offset+j] = (j * 320 + 0x100) + (((~h40_sky) & h32_adjust)<<1);
-			}
-			for (j=204; j < mars_requested_lines; j++) {
-				lines[offset+j] = (uint16_t)(204 * 320 + 0x100);
 			}
 			break;
 
@@ -281,12 +288,13 @@ void Mars_Init(void)
 	}
 }
 
-void Mars_SetVideoMode(int mode)
+void Mars_SetVideoMode(int mode, int border)
 {
 	MARS_VDP_DISPMODE &= 0xFFFC;
 	MARS_VDP_DISPMODE |= mode;
 
 	mars_display_mode = mode;
+	rle_border_size = border;
 
 	Mars_InitLineTable();
 }
@@ -760,6 +768,12 @@ void Mars_WriteMDVDPRegister(int write)
 	MARS_SYS_COMM0 = 0x1C00;
 }
 
+void Mars_SetShadowHighlight(boolean enabled)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM0 = 0x2500 | enabled;
+}
+
 void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size, int bank, int flags)
 {
 	int i;
@@ -771,18 +785,18 @@ void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size, int bank, int fl
 	s[0] = (uintptr_t)palettes_size>>16, s[1] = (uintptr_t)palettes_size&0xffff;
 	s[2] = ((uintptr_t)palettes_ptr >>16), s[3] = (uintptr_t)palettes_ptr &0xffff;
 
+	while (MARS_SYS_COMM0);
+
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x1B01+i;
 	}
 
-	while (MARS_SYS_COMM0);
+	while (MARS_SYS_COMM1_BYTE);
 	MARS_SYS_COMM2_BYTE = flags;
 	MARS_SYS_COMM3_BYTE = bank;
 	MARS_SYS_COMM0 = 0x1B05;
-
-	//while (MARS_SYS_COMM0);
 }
 
 #ifdef MDSKY
@@ -862,8 +876,10 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	s[0] = 0, s[1] = 8;
 	s[2] = ((uintptr_t)sky_metadata_ptr >>16), s[3] = (uintptr_t)sky_metadata_ptr &0xffff;
 
+	while (MARS_SYS_COMM0);
+
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x0F01+i;
 	}
@@ -875,7 +891,7 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	s[2] = ((uintptr_t)sky_palettes_ptr >>16), s[3] = (uintptr_t)sky_palettes_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x0F01+i;
 	}
@@ -887,7 +903,7 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	s[2] = ((uintptr_t)sky_tiles_ptr >>16), s[3] = (uintptr_t)sky_tiles_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x0F01+i;
 	}
@@ -899,7 +915,7 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	s[2] = ((uintptr_t)sky_names_b_ptr >>16), s[3] = (uintptr_t)sky_names_b_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x0F01+i;
 	}
@@ -911,7 +927,7 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	s[2] = ((uintptr_t)sky_names_a_ptr >>16), s[3] = (uintptr_t)sky_names_a_ptr &0xffff;
 
 	for (i = 0; i < 4; i++) {
-		while (MARS_SYS_COMM0);
+		while (MARS_SYS_COMM1_BYTE);
 		MARS_SYS_COMM2 = s[i];
 		MARS_SYS_COMM0 = 0x0F01+i;
 	}
@@ -919,6 +935,55 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	while (MARS_SYS_COMM0);
 }
 #endif
+
+
+void Mars_LoadLetterBox(void *tiles_ptr, int tiles_size, void *sprites_ptr, int sprites_size,
+		void *palette_ptr, int palette_size)
+{
+	int i;
+
+	uint16_t s[4];
+
+
+	// Load tiles
+
+	s[0] = (uintptr_t)tiles_size>>16, s[1] = (uintptr_t)tiles_size&0xffff;
+	s[2] = ((uintptr_t)tiles_ptr >>16), s[3] = (uintptr_t)tiles_ptr &0xffff;
+
+	while (MARS_SYS_COMM0);
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM1_BYTE);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x2401+i;
+	}
+
+
+	// Load sprites
+
+	s[0] = (uintptr_t)sprites_size>>16, s[1] = (uintptr_t)sprites_size&0xffff;
+	s[2] = ((uintptr_t)sprites_ptr >>16), s[3] = (uintptr_t)sprites_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM1_BYTE);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x2401+i;
+	}
+
+
+	// Load palette
+
+	s[0] = (uintptr_t)palette_size>>16, s[1] = (uintptr_t)palette_size&0xffff;
+	s[2] = ((uintptr_t)palette_ptr >>16), s[3] = (uintptr_t)palette_ptr &0xffff;
+
+	for (i = 0; i < 4; i++) {
+		while (MARS_SYS_COMM1_BYTE);
+		MARS_SYS_COMM2 = s[i];
+		MARS_SYS_COMM0 = 0x2401+i;
+	}
+
+	while (MARS_SYS_COMM0);
+}
 
 
 void MD_SetGamemode(int gamemode)
@@ -984,14 +1049,20 @@ void pri_vbi_handler(void)
 
 	if (effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_ENABLED)) {
 		if (IsLevel() && !(effects_flags & (EFFECTS_DISTORTION_ENABLED | EFFECTS_COPPER_SKY_IN_VIEW))) {
+			// Disable horizontal interrupts when there's no sky nor water.
+#ifndef HINTS_ALWAYS_ENABLED
 			MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
+#endif
 		}
 		else {
 			MARS_SYS_INTMSK |= MARS_SYS_HINT;
 		}
 	}
 	else {
+		// Disable horizontal interrupts when effects flags are all off.
+#ifndef HINTS_ALWAYS_ENABLED
 		MARS_SYS_INTMSK &= (~MARS_SYS_HINT);
+#endif
 	}
 
 	// Update copper buffer

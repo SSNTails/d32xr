@@ -297,8 +297,8 @@ VINT R_PointInSubsector2 (fixed_t x, fixed_t y)
 /*============================================================================= */
 
 const VINT viewports[][2][3] = {	// [viewport][splitscreen][attribute]
-	{ { (VIEWPORT_WIDTH_H32>>1), 180, true  }, {  (VIEWPORT_WIDTH_H32>>2), 180, true  } },
-	{ { (VIEWPORT_WIDTH_H40>>1), 180, true  }, {  (VIEWPORT_WIDTH_H40>>2), 180, true  } },
+	{ { (VIEWPORT_WIDTH_H32>>1), SCREENHEIGHT, true  }, {  (VIEWPORT_WIDTH_H32>>2), SCREENHEIGHT, true  } },
+	{ { (VIEWPORT_WIDTH_H40>>1), SCREENHEIGHT, true  }, {  (VIEWPORT_WIDTH_H40>>2), SCREENHEIGHT, true  } },
 };
 
 VINT viewportNum;
@@ -507,6 +507,56 @@ int R_SetupMDPalettes(const char *name, int palettes_lump, int bank, int flags)
 	Mars_LoadMDPalettes(palettes_ptr, palettes_size, bank, flags);
 
 	return 0;
+}
+
+
+
+int R_SetupLetterBox(int border_type)
+{
+	// Retrieve lumps for drawing the sky on the MD.
+	uint8_t *tiles_ptr;
+	uint8_t *sprites_ptr;
+	uint8_t *palette_ptr;
+
+	uint32_t tiles_size;
+	uint32_t sprites_size;
+	uint32_t palette_size;
+
+	int lump;
+
+	char lumpname[9];
+
+	D_snprintf(lumpname, 8, "LBOX%dT", border_type);
+	lump = W_CheckNumForName(lumpname);
+	if (lump == -1) {
+		return -1;
+	}
+	tiles_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
+	tiles_size = W_LumpLength(lump);
+
+
+	D_snprintf(lumpname, 8, "LBOX%dS", border_type);
+	lump = W_CheckNumForName(lumpname);
+	if (lump == -1) {
+		return -1;
+	}
+	sprites_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
+	sprites_size = W_LumpLength(lump);
+
+
+	D_snprintf(lumpname, 8, "LBOX%dP", border_type);
+	lump = W_CheckNumForName(lumpname);
+	if (lump == -1) {
+		return -1;
+	}
+	palette_ptr = (uint8_t *)W_POINTLUMPNUM(lump);
+	palette_size = W_LumpLength(lump);
+
+
+	Mars_LoadLetterBox(
+			tiles_ptr, tiles_size,
+			sprites_ptr, sprites_size,
+			palette_ptr, palette_size);
 }
 
 
@@ -1066,9 +1116,11 @@ int R_SetupCopperTable(const char *background, int copper_lump, int table_bank)
 	return R_SetupSkyGradient(background, copper_lump, table_bank);
 }
 
-void R_SetupLevel(int gamezonemargin, char *background)
+void R_SetupLevel(int gamezonemargin, char *background, int border_type)
 {
 	R_SetupBackground(background, 1, 1);
+
+	R_SetupLetterBox(border_type);
 
 	R_SetupTextureCaches(gamezonemargin);
 
@@ -1077,18 +1129,6 @@ void R_SetupLevel(int gamezonemargin, char *background)
 #ifdef MARS
 	curpalette = -1;
 #endif
-}
-
-void R_SetShadowHighlight(boolean enabled)
-{
-	int reg12_write = 0x8C00;
-	if (enabled) {
-		reg12_write |= 0x08;
-	}
-	if (h40_sky || legacy_emulator == LEGACY_EMULATOR_GENS) {
-		reg12_write |= 0x81;
-	}
-	Mars_WriteMDVDPRegister(reg12_write);
 }
 
 static void R_ColorShiftPalette(const uint8_t *in, int idx, uint8_t *out)
@@ -1378,7 +1418,8 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	if (gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
 		// The viewport for the title screen is aligned with the bottom of
 		// the screen. Therefore we shift the angle to center the horizon.
-		dy = -27;
+		//dy = -27;	// 180 viewport
+		dy = -21;	// 192 viewport
 	}
 	else {
 		G_ClipAimingPitch((int*)&vd.aimingangle);
@@ -1387,7 +1428,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 
 	yslope = &yslopetab[(3*viewportHeight/2) - dy];
 	centerY = (viewportHeight / 2) + dy;
-	centerYFrac = (180 >> 1) << FRACBITS;
+	centerYFrac = (viewportHeight >> 1) << FRACBITS;
 	centerYViewportFrac = centerY << FRACBITS;
 
 	vd.viewx_t = vd.viewx >> FRACBITS;
@@ -1399,7 +1440,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	vd.doubleclipangle = vd.clipangle * 2;
 	vd.viewangletox = viewangletox;
 
-	if (gamemapinfo.mapNumber != TITLE_MAP_NUMBER && (gamemapinfo.mapNumber < SSTAGE_START || gamemapinfo.mapNumber > SSTAGE_END))
+	if (IsLevelType(LEVELTYPE_NORMAL))
 	{
 		if (leveltime < 62)
 		{
@@ -1408,10 +1449,9 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 				vd.fixedcolormap = HWLIGHT(0);	// 32X VDP
 				#ifdef MDSKY
 				if (leveltime == 0) {
-					if (sky_md_layer) {
-						Mars_FadeMDPaletteFromBlack(0);	// MD VDP
-					}
-					if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+					Mars_FadeMDPaletteFromBlack(0);	// MD VDP
+
+					if (effects_flags & EFFECTS_COPPER_ENABLED) {
 						copper_table_brightness = -31;
 						effects_flags |= EFFECTS_COPPER_REFRESH;
 					}
@@ -1423,11 +1463,10 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 				int interval = leveltime-30;
 				vd.fixedcolormap = HWLIGHT(interval << 3);	// 32X VDP
 				#ifdef MDSKY
-				if (sky_md_layer) {
-					Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
-				}
+				Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
+
 				#endif
-				if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+				if (effects_flags & EFFECTS_COPPER_ENABLED) {
 					copper_table_brightness = -31 + interval;
 					effects_flags |= EFFECTS_COPPER_REFRESH;
 				}
@@ -1439,11 +1478,10 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 //			vd.fixedcolormap = HWLIGHT((TICRATE-fadetime)*8);	// 32X VDP
 			int interval = TICRATE-(fadetime*3);
 			#ifdef MDSKY
-			if (sky_md_layer) {
-				Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
-			}
+			Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
+
 			#endif
-			if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+			if (effects_flags & EFFECTS_COPPER_ENABLED) {
 				copper_table_brightness = -31 + interval;
 				effects_flags |= EFFECTS_COPPER_REFRESH;
 			}
@@ -1513,7 +1551,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	viewportbuffer = (pixel_t*)I_ViewportBuffer();
 
 	if (gamemapinfo.mapNumber == TITLE_MAP_NUMBER) {
-		viewportbuffer += (160*22);
+		viewportbuffer += (160*(224-viewportHeight));	// Make sure the title draws all the way to the bottom.
 	}
 
 	palette = 0;
@@ -1545,11 +1583,10 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 			palette = 0;
 
 		#ifdef MDSKY
-		if (sky_md_layer) {
-			Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
-		}
+		Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
+
 		#endif
-		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+		if (effects_flags & EFFECTS_COPPER_ENABLED) {
 			copper_table_brightness = 31 - (gametic << 1);
 			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}
@@ -1558,11 +1595,10 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4 - (leveltime / 3);
 
 		#ifdef MDSKY
-		if (sky_md_layer) {
-			Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
-		}
+		Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
+
 		#endif
-		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+		if (effects_flags & EFFECTS_COPPER_ENABLED) {
 			copper_table_brightness = 31 - (leveltime << 1);
 			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}
@@ -1580,7 +1616,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		curpalette = palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_BLACK + 4;
 		Mars_FadeMDPaletteFromBlack(0);
 		I_SetPalette(dc_playpals);
-		if (effects_flags &= EFFECTS_COPPER_ENABLED) {
+		if (effects_flags & EFFECTS_COPPER_ENABLED) {
 			copper_table_brightness = -31;
 			effects_flags |= EFFECTS_COPPER_REFRESH;
 		}

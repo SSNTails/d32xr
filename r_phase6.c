@@ -294,7 +294,8 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
     if (overlay_graphics == og_title) {
         do {
             if (x < 70 || x > 240) {
-                R_Draw32XSky(44, 76, x/2, draw32xsky, drawmdsky);
+                int sky_y = (viewportHeight-136);
+                R_Draw32XSky(sky_y, sky_y + 32, x/2, draw32xsky, drawmdsky);
             }
         } while (++x, ++x <= stop);
     }
