@@ -1427,7 +1427,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	vd.doubleclipangle = vd.clipangle * 2;
 	vd.viewangletox = viewangletox;
 
-	if (gamemapinfo.mapNumber != TITLE_MAP_NUMBER && (gamemapinfo.mapNumber < SSTAGE_START || gamemapinfo.mapNumber > SSTAGE_END))
+	if (IsLevelType(LEVELTYPE_NORMAL))
 	{
 		if (leveltime < 62)
 		{
@@ -1436,9 +1436,8 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 				vd.fixedcolormap = HWLIGHT(0);	// 32X VDP
 				#ifdef MDSKY
 				if (leveltime == 0) {
-					if (sky_md_layer) {
-						Mars_FadeMDPaletteFromBlack(0);	// MD VDP
-					}
+					Mars_FadeMDPaletteFromBlack(0);	// MD VDP
+
 					if (effects_flags & EFFECTS_COPPER_ENABLED) {
 						copper_table_brightness = -31;
 						effects_flags |= EFFECTS_COPPER_REFRESH;
@@ -1451,9 +1450,8 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 				int interval = leveltime-30;
 				vd.fixedcolormap = HWLIGHT(interval << 3);	// 32X VDP
 				#ifdef MDSKY
-				if (sky_md_layer) {
-					Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
-				}
+				Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
+
 				#endif
 				if (effects_flags & EFFECTS_COPPER_ENABLED) {
 					copper_table_brightness = -31 + interval;
@@ -1467,9 +1465,8 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 //			vd.fixedcolormap = HWLIGHT((TICRATE-fadetime)*8);	// 32X VDP
 			int interval = TICRATE-(fadetime*3);
 			#ifdef MDSKY
-			if (sky_md_layer) {
-				Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
-			}
+			Mars_FadeMDPaletteFromBlack(md_palette_fade_table[interval - (interval/3)]);	// MD VDP
+
 			#endif
 			if (effects_flags & EFFECTS_COPPER_ENABLED) {
 				copper_table_brightness = -31 + interval;
@@ -1573,9 +1570,8 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 			palette = 0;
 
 		#ifdef MDSKY
-		if (sky_md_layer) {
-			Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
-		}
+		Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
+
 		#endif
 		if (effects_flags & EFFECTS_COPPER_ENABLED) {
 			copper_table_brightness = 31 - (gametic << 1);
@@ -1586,9 +1582,8 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 		palette = PALETTE_SHIFT_CONVENTIONAL_FADE_TO_WHITE + 4 - (leveltime / 3);
 
 		#ifdef MDSKY
-		if (sky_md_layer) {
-			Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
-		}
+		Mars_FadeMDPaletteFromBlack(0xEEE); //TODO: Replace with Mars_FadeMDPaletteFromWhite()
+
 		#endif
 		if (effects_flags & EFFECTS_COPPER_ENABLED) {
 			copper_table_brightness = 31 - (leveltime << 1);
