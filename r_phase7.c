@@ -100,6 +100,11 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
 
     remaining = x2 - x + 1;
 
+    /*if (y >= (viewportHeight-8) && remaining == viewportWidth) {
+        //TODO: Do some RLE here!
+        return;
+    }*/
+
     if (remaining <= 0)
         return; // nothing to draw (shouldn't happen)
 
@@ -221,6 +226,9 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     }
 
     drawspan(y, x, x2, light, xfrac, yfrac, xstep, ystep, lpl->ds_source[miplevel], mipsizeX, mipsizeY);
+    if (/*IsLevel() &&*/ y < viewportHeight-1) {
+        drawspan(y+1, x, x2, light, xfrac+(FRACUNIT>>1), yfrac+(FRACUNIT>>1), xstep, ystep, lpl->ds_source[miplevel], mipsizeX, mipsizeY);
+    }
 }
 
 //
@@ -252,6 +260,14 @@ static void R_PlaneLoop(localplane_t *lpl)
 
     pl_x       = pl->minx;
     pl_stopx   = pl->maxx;
+
+    //if (pl_stopx - pl_x >= 77) {
+        // Make this line RLE!
+    //    return;
+    //}
+    /*if (pl_stopx == pl_x) {
+        return;
+    }*/
 
     // see if there is any open space
     if(pl_x > pl_stopx)
@@ -287,14 +303,16 @@ static void R_PlaneLoop(localplane_t *lpl)
         // top diffs
         while (t1 < t2 && t1 <= b1)
         {
-            mapplane(lpl, t1, spanstart[t1], x2);
+            if (/*IsTitleScreen() ||*/ t1 & 1)
+                mapplane(lpl, t1, spanstart[t1], x2);
             ++t1;
         }
 
         // bottom diffs
         while (b1 > b2 && b1 >= t1)
         {
-            mapplane(lpl, b1, spanstart[b1], x2);
+            if (/*IsTitleScreen() ||*/ b1 & 1)
+                mapplane(lpl, b1, spanstart[b1], x2);
             --b1;
         }
 
