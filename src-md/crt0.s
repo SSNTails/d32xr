@@ -1938,7 +1938,7 @@ load_letterbox:
 4:
         move.w  (a2)+,d2                /* Copy four bytes from the source */
         andi.w  #0x000E,d2
-        ori.w   #0x1110,d2              /* Mask the first three pixels */
+        ori.w   #0x111F,d2              /* Mask the first three pixels (and assume fourth should be shadowed) */
         move.w  d2,(a1)
         move.w  (a2)+,(a1)              /* Copy four bytes from the source */
         dbra    d1,4b
