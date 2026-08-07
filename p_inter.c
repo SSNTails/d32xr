@@ -340,12 +340,21 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 
 				P_ResetPlayer(player);
 
-				S_StartSound(toucher, sfx_s3k_3c);
-				P_SetMobjState(toucher, S_PLAY_ATK1);
-
 				// disable controls shortly
 				player->justSprung = TICRATE >> 2;
 				player->pflags |= PF_MACESPIN;
+
+				if (special->type == MT_HOOK)
+				{
+					player->pflags |= PF_MACEHANG;
+					S_StartSound(toucher, sfx_s3k_4a);
+					P_SetMobjState(toucher, S_PLAY_HANG);
+				}
+				else
+				{
+					S_StartSound(toucher, sfx_s3k_3c);
+					P_SetMobjState(toucher, S_PLAY_ATK1);
+				}
 
 				toucher->target = special;
 			}
@@ -361,6 +370,31 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 		if (player == &players[consoleplayer] || (splitscreen && player == &players[consoleplayer^1]))
 			toucher = NULL;
 		S_StartSound (toucher, sound);
+		return;
+	}
+	else if (special->type == MT_HOOK)
+	{
+		if (!(player->pflags & PF_MACESPIN))
+		{
+			if (P_MobjFlip(toucher) * toucher->momz > 0) // Only activates when falling downward or on a surface
+				return;
+
+			if (player->powers[pw_flashing])
+				return;
+
+			P_ResetPlayer(player);
+
+			// disable controls shortly
+			player->justSprung = TICRATE >> 2;
+			player->pflags |= PF_MACESPIN;
+
+			player->pflags |= PF_MACEHANG;
+			S_StartSound(toucher, sfx_s3k_4a);
+			P_SetMobjState(toucher, S_PLAY_HANG);
+
+			toucher->target = special;
+		}
+		
 		return;
 	}
 

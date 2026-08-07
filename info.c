@@ -59,6 +59,7 @@ const char * const sprnames[NUMSPRITES] = {
 "FWR6",
 "GFZC",
 "GOOP",
+"HOOK",
 "IVSP",
 "JETF",
 "JJAW",
@@ -439,6 +440,8 @@ STATE(SPR_SMCE,0,-1,NULL,S_NULL), // S_SMALLMACE
 STATE(SPR_BMCE,0,-1,NULL,S_NULL), // S_BIGMACE
 STATE(SPR_SMCH,1,-1,NULL,S_NULL), // S_SMALLGRABCHAIN
 STATE(SPR_BMCH,1,-1,NULL,S_NULL), // S_BIGGRABCHAIN
+
+STATE(SPR_HOOK,FF_FULLBRIGHT,-1,NULL,S_NULL), // S_HOOK1
 
 STATE(SPR_STLG,0,-1,NULL,S_NULL), // S_STLG0
 STATE(SPR_STLG,1,-1,NULL,S_NULL), // S_STLG1
@@ -1539,6 +1542,31 @@ MF2_SHOOTABLE, // flags2
 		sfx_None,       // activesound
 		MF_NOBLOCKMAP|MF_NOCLIP|MF_NOGRAVITY|MF_STATIC, // flags
 		0, // flags2
+	},
+	{            // MT_HOOK
+		-1,             // doomednum
+		S_HOOK1,        // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,       // seesound
+		8,              // reactiontime
+		sfx_None,       // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		sfx_None,       // deathsound
+		48*FRACUNIT,    // speed
+		34*FRACUNIT,    // radius
+		4*FRACUNIT,    // height
+		100,            // mass
+		1,              // damage
+		sfx_None,       // activesound
+		MF_NOGRAVITY|MF_SPECIAL, // flags
+		0          // flags2
 	},
 	{           // MT_MBROWN
 		-1,           // doomednum
@@ -3112,6 +3140,31 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		1,              // damage
 		sfx_None,       // activesound
 		MF_NOGRAVITY|MF_STATIC|MF_SPECIAL|MF_RINGMOBJ, // flags
+		0          // flags2
+	},
+	{           // MT_HOOKPOINT
+		1150,           // doomednum
+		S_NULL,         // spawnstate
+		1000,           // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,       // seesound
+		0,              // reactiontime
+		sfx_None,       // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		sfx_None,       // deathsound
+		10*FRACUNIT,    // speed
+		128*FRACUNIT,   // radius
+		1*FRACUNIT,     // height
+		10000,          // mass
+		0,              // damage
+		sfx_None,       // activesound
+		MF_STATIC|MF_NOBLOCKMAP|MF_NOSECTOR|MF_NOCLIP|MF_NOGRAVITY|MF_RINGMOBJ, // flags
 		0          // flags2
 	},
 	{           // MT_STALAGMITE0

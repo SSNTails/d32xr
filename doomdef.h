@@ -473,6 +473,7 @@ typedef enum
 #define PF_MACESPIN 65536
 #define PF_CHANGESECTOR 131072
 #define PF_SPRINGSHELL 262144
+#define PF_MACEHANG 524288
 
 boolean P_IsObjectOnGround(mobj_t *mo);
 int8_t P_MobjFlip(mobj_t *mo);
@@ -1627,6 +1628,86 @@ typedef struct
 } swingmace_t;
 
 void T_SwingMace(swingmace_t *sm);
+
+typedef enum
+{
+	SHF_ALLOWUP = 1,
+	SHF_ALLOWDOWN = 2,
+} shflags_e;
+
+/* ----------------------------------------------------------------
+ * Configuration
+ * ---------------------------------------------------------------- */
+#define BEZIER_LUT_SIZE     64      // samples per segment (higher = smoother)
+#define BEZIER_MAX_SEGMENTS 32      // hard limit for one path
+
+/* ----------------------------------------------------------------
+ * Bezier structs
+ * ---------------------------------------------------------------- */
+
+// One cubic Bezier segment (control points in map units, fixed_t)
+typedef struct {
+    int16_t x0, y0;     // start
+    int16_t x1, y1;     // control 1
+    int16_t x2, y2;     // control 2
+    int16_t x3, y3;     // end
+} bezier_segment_t;
+
+// Precomputed LUT entry
+typedef struct {
+    fixed_t t;          // parameter 0..FRACUNIT
+    fixed_t dist;       // cumulative arc length up to this sample
+    int16_t x, y;       // position at this sample (optional cache)
+} bezier_lut_entry_t;
+
+// One fully processed segment
+typedef struct {
+    bezier_segment_t  seg;
+    bezier_lut_entry_t lut[BEZIER_LUT_SIZE];
+    fixed_t           length; // total length of this segment
+} bezier_processed_t;
+
+// Complete path
+typedef struct {
+    bezier_processed_t *segs;
+    int                 num_segs;
+    fixed_t             total_length;
+} bezier_path_t;
+
+// Runtime state attached to a mobj (or kept separately)
+typedef struct {
+    bezier_path_t  *path;
+    fixed_t         dist_travelled; // 0 .. path->total_length
+    int             current_seg;    // which segment we are on
+    fixed_t         speed;          // distance per call (fixed_t)
+    boolean         active;
+} bezier_follower_t;
+
+typedef struct
+{
+	thinker_t thinker;
+//	bezier_path_t *bezierPath;
+//	bezier_follower_t bezier_follower;
+
+	mobj_t *maceball;
+	vector3b_t nv; // Normalized vector
+	vector3b_t rotation;
+
+	int16_t x, y, z; // Origin location
+
+	int16_t mphase;
+	int16_t length; // In FRACUNITs
+	int16_t mspeed;
+	int16_t originalZ; // Return to this position
+	int16_t  flags;
+
+	int16_t aboveDelta; // fracunits you can move above originalZ
+	int16_t belowDelta; // fracunits you can move below originalZ
+
+	boolean done;
+} swinghang_t;
+
+void T_SwingHang(swinghang_t *sh);
 
 typedef struct
 {

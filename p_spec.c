@@ -1475,6 +1475,7 @@ void P_SSNMaceRotate(swingmace_t *sm)
 			newPos.x = (sm->macechain.x << FRACBITS) + (rotVec.x * dist);
 			newPos.y = (sm->macechain.y << FRACBITS) + (rotVec.y * dist);
 			newPos.z = (sm->macechain.z << FRACBITS) + (rotVec.z * dist) - (P_GetPlayerSpinHeight() >> 1) - (P_GetPlayerSpinHeight() >> 2);
+
 			player->mo->momx = (newPos.x - player->mo->x) << 1;
 			player->mo->momy = (newPos.y - player->mo->y) << 1;
 			player->mo->momz = (newPos.z - player->mo->z) << 1;
@@ -1524,6 +1525,500 @@ void P_PreallocateMaces(int numMaces)
 	D_memset(cursorMace, 0, allocSize);
 }
 
+static swinghang_t *cursorSwing = NULL;
+void P_PreallocateSwings(int numSwings)
+{
+	if (numSwings <= 0)
+	{
+		cursorSwing = NULL;
+		return;
+	}
+
+	size_t allocSize = sizeof(swinghang_t) * numSwings;
+	cursorSwing = Z_Malloc(allocSize, PU_LEVSPEC);
+	D_memset(cursorSwing, 0, allocSize);
+}
+
+/* ================================================================
+ * Constant-speed Bezier path following (16.16 fixed-point)
+ * ================================================================ */
+
+typedef struct
+{
+	fixed_t x0, y0; // start
+    fixed_t x1, y1; // control 1
+    fixed_t x2, y2; // control 2
+    fixed_t x3, y3; // end
+} bezier_segment32_t;
+
+// Evaluate cubic Bezier at parameter t (0..FRACUNIT)
+static void BezierEval(const bezier_segment_t *s, fixed_t t,
+                       fixed_t *outx, fixed_t *outy)
+{
+	bezier_segment32_t fullSeg;
+	fullSeg.x0 = s->x0 << FRACBITS;
+	fullSeg.y0 = s->y0 << FRACBITS;
+	fullSeg.x1 = s->x1 << FRACBITS;
+	fullSeg.y1 = s->y1 << FRACBITS;
+	fullSeg.x2 = s->x2 << FRACBITS;
+	fullSeg.y2 = s->y2 << FRACBITS;
+	fullSeg.x3 = s->x3 << FRACBITS;
+	fullSeg.y3 = s->y3 << FRACBITS;
+
+    fixed_t u  = FRACUNIT - t;
+    fixed_t tt = FixedMul(t, t);
+    fixed_t uu = FixedMul(u, u);
+    fixed_t uuu = FixedMul(uu, u);
+    fixed_t ttt = FixedMul(tt, t);
+    fixed_t uut = FixedMul(uu, t);
+    fixed_t utt = FixedMul(u, tt);
+
+    /* B(t) = (1-t)^3 P0 + 3(1-t)^2 t P1 + 3(1-t)t^2 P2 + t^3 P3 */
+    *outx = FixedMul(uuu, fullSeg.x0)
+          + FixedMul(3 * uut, fullSeg.x1)
+          + FixedMul(3 * utt, fullSeg.x2)
+          + FixedMul(ttt, fullSeg.x3);
+
+    *outy = FixedMul(uuu, fullSeg.y0)
+          + FixedMul(3 * uut, fullSeg.y1)
+          + FixedMul(3 * utt, fullSeg.y2)
+          + FixedMul(ttt, fullSeg.y3);
+}
+
+// Approximate derivative magnitude ||B'(t)|| (for length estimation)
+static fixed_t BezierSpeed(const bezier_segment_t *s, fixed_t t)
+{
+    // B'(t) = 3(1-t)^2 (P1-P0) + 6(1-t)t (P2-P1) + 3t^2 (P3-P2)
+    fixed_t u = FRACUNIT - t;
+    fixed_t uu = FixedMul(u, u);
+    fixed_t tt = FixedMul(t, t);
+    fixed_t ut = FixedMul(u, t);
+
+    fixed_t dx = FixedMul(3 * uu, (s->x1 << FRACBITS) - (s->x0 << FRACBITS))
+               + FixedMul(6 * ut, (s->x2 << FRACBITS) - (s->x1 << FRACBITS))
+               + FixedMul(3 * tt, (s->x3 << FRACBITS) - (s->x2 << FRACBITS));
+
+    fixed_t dy = FixedMul(3 * uu, (s->y1 << FRACBITS) - (s->y0 << FRACBITS))
+               + FixedMul(6 * ut, (s->y2 << FRACBITS) - (s->y1 << FRACBITS))
+               + FixedMul(3 * tt, (s->y3 << FRACBITS) - (s->y2 << FRACBITS));
+
+    return FixedSqrt(FixedMul(dx, dx) + FixedMul(dy, dy));
+}
+
+/* ----------------------------------------------------------------
+ * Preprocessing – build the LUT
+ * ---------------------------------------------------------------- */
+
+void Bezier_ProcessSegment(bezier_processed_t *out, const bezier_segment_t *in)
+{
+    int i;
+    fixed_t t, prevx, prevy, x, y, d;
+    fixed_t cumulative = 0;
+
+    out->seg = *in;
+
+    // first sample
+    BezierEval(in, 0, &prevx, &prevy);
+    out->lut[0].t    = 0;
+    out->lut[0].dist = 0;
+    out->lut[0].x    = prevx >> FRACBITS;
+    out->lut[0].y    = prevy >> FRACBITS;
+
+    for (i = 1; i < BEZIER_LUT_SIZE; i++)
+    {
+        t = (i * FRACUNIT) / (BEZIER_LUT_SIZE - 1);
+        BezierEval(in, t, &x, &y);
+
+        d = FixedSqrt(FixedMul(x - prevx, x - prevx) +
+                      FixedMul(y - prevy, y - prevy));
+        cumulative += d;
+
+        out->lut[i].t = t;
+        out->lut[i].dist = cumulative;
+        out->lut[i].x = x >> FRACBITS;
+        out->lut[i].y = y >> FRACBITS;
+
+        prevx = x;
+        prevy = y;
+    }
+
+    out->length = cumulative;
+}
+
+// Build a complete path from an array of raw segments
+bezier_path_t *Bezier_CreatePath(const bezier_segment_t *segs, int count)
+{
+    bezier_path_t *path;
+    int i;
+
+    if (count <= 0 || count > BEZIER_MAX_SEGMENTS)
+        return NULL;
+
+    path = Z_Malloc(sizeof(*path), PU_LEVEL);
+    path->segs = Z_Malloc(count * sizeof(bezier_processed_t), PU_LEVEL);
+    path->num_segs = count;
+    path->total_length = 0;
+
+    for (i = 0; i < count; i++)
+    {
+        Bezier_ProcessSegment(&path->segs[i], &segs[i]);
+        path->total_length += path->segs[i].length;
+    }
+    return path;
+}
+/*
+void Bezier_DestroyPath(bezier_path_t *path)
+{
+    if (!path)
+		return;
+
+    Z_Free(path->segs);
+    Z_Free(path);
+}*/
+
+/* ----------------------------------------------------------------
+ * Lookup: given distance inside one segment -> position
+ * ---------------------------------------------------------------- */
+static void Bezier_PointAtDistance(const bezier_processed_t *seg,
+                                   fixed_t dist,
+                                   fixed_t *x, fixed_t *y)
+{
+    int lo = 0, hi = BEZIER_LUT_SIZE - 1, mid;
+    fixed_t frac;
+    const bezier_lut_entry_t *a, *b;
+
+    if (dist <= 0)
+    {
+        *x = seg->lut[0].x << FRACBITS;
+        *y = seg->lut[0].y << FRACBITS;
+        return;
+    }
+    if (dist >= seg->length)
+    {
+        *x = seg->lut[BEZIER_LUT_SIZE-1].x << FRACBITS;
+        *y = seg->lut[BEZIER_LUT_SIZE-1].y << FRACBITS;
+        return;
+    }
+
+    // binary search for the bracketing samples
+    while (lo < hi - 1)
+    {
+        mid = (lo + hi) >> 1;
+        if (seg->lut[mid].dist < dist)
+            lo = mid;
+        else
+            hi = mid;
+    }
+
+    a = &seg->lut[lo];
+    b = &seg->lut[hi];
+
+    if (b->dist == a->dist)
+    {
+        *x = a->x << FRACBITS;
+        *y = a->y << FRACBITS;
+        return;
+    }
+
+    frac = FixedDiv(dist - a->dist, b->dist - a->dist);
+    *x = (a->x << FRACBITS) + FixedMul(frac, (b->x << FRACBITS) - (a->x << FRACBITS));
+    *y = (a->y << FRACBITS) + FixedMul(frac, (b->y << FRACBITS) - (a->y << FRACBITS));
+}
+
+/* ----------------------------------------------------------------
+ * Follower API
+ * ---------------------------------------------------------------- */
+
+void Bezier_InitFollower(bezier_follower_t *f, bezier_path_t *path, fixed_t speed)
+{
+    f->path           = path;
+    f->dist_travelled = 0;
+    f->current_seg    = 0;
+    f->speed          = speed;
+    f->active         = true;
+}
+
+// Advance the follower by its speed. Returns false when the path ends.
+boolean Bezier_UpdateFollower(bezier_follower_t *f, swinghang_t *sh)
+{
+    fixed_t remaining;
+    fixed_t x, y;
+
+    if (!f->active || !f->path)
+        return false;
+
+	// Apply speed (negative is also supported for backwards)
+    f->dist_travelled += f->speed;
+
+	// Do some clamping
+	if (f->dist_travelled <= 0)
+	{
+		// snap to first point?
+		f->dist_travelled = 0;
+		f->active = false;
+
+		// Add an option to loop
+//		f->dist_travelled += f->path->total_length; // wrap
+	}
+    else if (f->dist_travelled >= f->path->total_length)
+    {
+        // snap to final point
+        const bezier_processed_t *last = &f->path->segs[f->path->num_segs-1];
+		P_UnsetThingPosition((mobj_t*)sh->maceball);
+        sh->maceball->x = last->lut[BEZIER_LUT_SIZE-1].x;
+        sh->maceball->y = last->lut[BEZIER_LUT_SIZE-1].y;
+		P_SetThingPosition2((mobj_t*)sh->maceball, R_PointInSubsector2(sh->maceball->x, sh->maceball->y));
+        f->active = false;
+
+		// Add an option to loop
+//		f->dist_travelled -= f->path->total_length; // wrap
+
+        return false;
+    }
+
+    // find which segment we are on
+    remaining = f->dist_travelled;
+    f->current_seg = 0;
+    while (f->current_seg < f->path->num_segs - 1 &&
+           remaining >= f->path->segs[f->current_seg].length)
+    {
+        remaining -= f->path->segs[f->current_seg].length;
+        f->current_seg++;
+    }
+
+    Bezier_PointAtDistance(&f->path->segs[f->current_seg], remaining, &x, &y);
+
+	P_UnsetThingPosition((mobj_t*)sh->maceball);
+    sh->maceball->x = x;
+    sh->maceball->y = y;
+	P_SetThingPosition2((mobj_t*)sh->maceball, R_PointInSubsector2(sh->maceball->x, sh->maceball->y));
+
+    return true;
+}
+
+void T_SwingHang(swinghang_t *sh)
+{
+	boolean nearSomebody = false;
+/*
+	if (sh->done || leveltime < 10*TICRATE)
+		return;
+
+	if (!Bezier_UpdateFollower(&sh->bezier_follower, sh))
+	{
+		sh->done = true;
+		CONS_Printf("Done!");
+		return;
+	}
+
+	// Is a player attached?
+	for (int count = 0; count < MAXPLAYERS; count++)
+	{
+		if (!playeringame[count])
+			continue;
+
+		const player_t *player = &players[count];
+
+		if ((player->pflags & PF_MACESPIN)
+			&& player->mo->target == (mobj_t*)sh->maceball)
+		{
+			vector3_t newPos;
+			newPos.x = sh->maceball->x;
+			newPos.y = sh->maceball->y;
+
+			{
+				sh->z += player->forwardmove >> (FRACBITS-3);
+				sh->maceball->z += player->forwardmove >> 3;
+
+				if (sh->z < (player->mo->floorz >> FRACBITS) + 64)
+					sh->z = (player->mo->floorz >> FRACBITS) + 64;
+				else if (sh->z > (player->mo->ceilingz >> FRACBITS) - 64)
+					sh->z = (player->mo->ceilingz >> FRACBITS) - 64;
+
+				P_SetMobjState(player->mo, S_PLAY_HANG);
+				newPos.z = sh->maceball->z - (mobjinfo[MT_PLAYER].height * 2) + (8*FRACUNIT);
+			}
+
+			player->mo->momx = (newPos.x - player->mo->x) << 1;
+			player->mo->momy = (newPos.y - player->mo->y) << 1;
+			player->mo->momz = (newPos.z - player->mo->z) << 1;
+			P_UnsetThingPosition(player->mo);
+			player->mo->x = newPos.x;
+			player->mo->y = newPos.y;
+			player->mo->z = newPos.z + (mobjinfo[MT_PLAYER].height) - 16*FRACUNIT;
+			P_SetThingPosition(player->mo);
+		}
+	}
+
+	return;
+*/
+	vector3_t rotatePoint;
+	rotatePoint.x = sh->x << FRACBITS;
+	rotatePoint.y = sh->y << FRACBITS;
+	rotatePoint.z = sh->z << FRACBITS;
+
+	// Are you near a player? Otherwise don't bother
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		const mobj_t *playermo = players[i].mo;
+
+		if (D_abs(rotatePoint.x - playermo->x) > 2048*FRACUNIT
+			|| D_abs(rotatePoint.y - playermo->y) > 2048*FRACUNIT)
+			continue;
+
+		nearSomebody = true;
+	}
+
+	if (!nearSomebody)
+		return;
+
+	player_t *player = NULL;
+	boolean controlsPressed = false;
+
+	// Is a player attached?
+	for (int count = 0; count < MAXPLAYERS; count++)
+	{
+		if (!playeringame[count])
+			continue;
+
+		player_t *plr = &players[count];
+
+		if ((plr->pflags & PF_MACEHANG)
+			&& plr->mo->target == sh->maceball)
+		{
+			player = plr;
+			controlsPressed = player->forwardmove;
+
+			if (((sh->flags & SHF_ALLOWUP) && player->forwardmove > 0)
+				|| ((sh->flags & SHF_ALLOWDOWN) && player->forwardmove < 0))
+			{
+				sh->z += player->forwardmove >> (FRACBITS-3);
+			}
+
+			if (sh->z > sh->originalZ + sh->aboveDelta)
+				sh->z = sh->originalZ + sh->aboveDelta;
+			else if (sh->z < sh->originalZ - sh->belowDelta)
+				sh->z = sh->originalZ - sh->belowDelta;
+
+			if (sh->z < (player->mo->floorz >> FRACBITS) + 64)
+				sh->z = (player->mo->floorz >> FRACBITS) + 64;
+			else if (sh->z > (player->mo->ceilingz >> FRACBITS) - 64)
+				sh->z = (player->mo->ceilingz >> FRACBITS) - 64;
+		}
+	}
+
+	if (!controlsPressed)
+	{
+		if (sh->originalZ < sh->z)
+			sh->z--;
+		else if (sh->originalZ > sh->z)
+			sh->z++;
+
+		if (sh->originalZ < sh->z)
+			sh->z--;
+		else if (sh->originalZ > sh->z)
+			sh->z++;
+	}
+
+	// Always update movedir to prevent desync. But do we really have to?
+	// Can't this be calculated from leveltime? Why yes, yes it can...
+	int16_t curPos = (sh->mspeed * (leveltime + sh->mphase)) & FINEMASK;
+
+	vector3_t axis;
+	vector3_t rotationDir;
+
+//		CONS_Printf("a: %d, %d, %d; r: %d, %d, %d", sm->nv.x, sm->nv.y, sm->nv.z, sm->rotation.x, sm->rotation.y, sm->rotation.z);
+
+	// int8_t to fixed_t
+	axis.x = (fixed_t)sh->nv.x << 9;
+	axis.y = (fixed_t)sh->nv.y << 9;
+	axis.z = (fixed_t)sh->nv.z << 9;
+	rotationDir.x = (fixed_t)sh->rotation.x << 9;
+	rotationDir.y = (fixed_t)sh->rotation.y << 9;
+	rotationDir.z = (fixed_t)sh->rotation.z << 9;
+
+	vector4_t rotVec = FV3_RotateVector(&rotationDir, &axis, curPos);
+
+//	CONS_Printf("%d, %d, %d", rotVec.x, rotVec.y, rotVec.z);
+
+	fixed_t dist = sh->length;
+
+	P_UnsetThingPosition((mobj_t*)sh->maceball);
+	sh->maceball->x = rotatePoint.x + (rotVec.x * dist);
+	sh->maceball->y = rotatePoint.y + (rotVec.y * dist);
+	sh->maceball->z = rotatePoint.z + (rotVec.z * dist);
+//	sm->maceball->z -= (mobjinfo[sm->maceball->type].height >> FRACBITS) >> 1;
+	P_SetThingPosition2(sh->maceball, R_PointInSubsector2(sh->maceball->x, sh->maceball->y));
+
+	if (player)
+	{
+		vector3_t newPos;
+		newPos.x = sh->maceball->x;
+		newPos.y = sh->maceball->y;
+
+		P_SetMobjState(player->mo, S_PLAY_HANG);
+		newPos.z = sh->maceball->z - (mobjinfo[MT_PLAYER].height);
+
+		player->mo->momx = 0;//(newPos.x - player->mo->x);
+		player->mo->momy = 0;//(newPos.y - player->mo->y);
+		player->mo->momz = 0;//(newPos.z - player->mo->z);
+		P_UnsetThingPosition(player->mo);
+		player->mo->x = newPos.x;
+		player->mo->y = newPos.y;
+		player->mo->z = newPos.z;
+		P_SetThingPosition(player->mo);
+	}
+}
+
+void P_AddSwingHang(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, VINT *args)
+{
+	swinghang_t *sh = cursorSwing;
+	cursorSwing++;
+	sh->thinker.function = T_SwingHang;
+	P_AddThinker(&sh->thinker);
+
+	sh->flags = args[11];
+	sh->aboveDelta = args[12];
+	sh->belowDelta = args[13];
+/*
+	bezier_segment_t raw[2] = {
+		{ 0,0,  64*2,128*2,  192*2,128*2,  256*2,0 },
+		{ 256*2,0,  320*2,-64*2,  384*2,64*2,  448*2,0 }
+	};
+	sh->bezierPath = Bezier_CreatePath(raw, 2);
+	Bezier_InitFollower(&sh->bezier_follower, sh->bezierPath, 4*FRACUNIT);*/
+	sh->done = false;
+
+	sh->length = D_abs(args[0]);
+	sh->mspeed = D_abs(args[3]);
+	sh->mphase = args[10];
+
+	fixed_t x = point->x << FRACBITS;
+	fixed_t y = point->y << FRACBITS;
+	fixed_t z = (point->options >> 4) << FRACBITS;
+	int i;
+	for (i=0 ; i< NUMMOBJTYPES ; i++)
+		if (point->type == mobjinfo[i].doomednum)
+			break;
+	z = P_GetMapThingSpawnHeight(i, point, x, y, z);
+	sh->x = x >> FRACBITS;
+	sh->y = y >> FRACBITS;
+	sh->z = z >> FRACBITS;
+	sh->originalZ = sh->z;
+
+	sh->nv.x = axis->x;
+	sh->nv.y = axis->y;
+	sh->nv.z = axis->z;
+	sh->rotation.x = rotation->x;
+	sh->rotation.y = rotation->y;
+	sh->rotation.z = rotation->z;
+
+	// We don't get fancy here. We just need one object.
+	sh->maceball = P_SpawnMobj(x, y, z, MT_HOOK);
+}
+
 // TODO:
 // Support for creating rows of chains (ceilingheight?) - ehh, not sure about this yet
 void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, VINT *args)
@@ -1535,7 +2030,7 @@ void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 	swingmace_t *sm = cursorMace;
 	cursorMace++;
 	sm->thinker.function = T_SwingMace;
-	P_AddThinker (&sm->thinker);
+	P_AddThinker(&sm->thinker);
 
 	// 1:1 style
 	sm->mlength = D_abs(args[0]);
@@ -1572,6 +2067,13 @@ void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 	sm->macechain.x = x >> FRACBITS;
 	sm->macechain.y = y >> FRACBITS;
 	sm->macechain.z = z >> FRACBITS;
+
+	sm->nv.x = axis->x;
+	sm->nv.y = axis->y;
+	sm->nv.z = axis->z;
+	sm->rotation.x = rotation->x;
+	sm->rotation.y = rotation->y;
+	sm->rotation.z = rotation->z;
 
 	mobjtype_t macetype;
 	mobjtype_t chainlink;
@@ -1659,13 +2161,6 @@ void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 	const fixed_t spawnY = y + FixedMul(dist, sm->nv.y);
 	const fixed_t spawnZ = (z - (mobjinfo[macetype].height >> 1)) + FixedMul(dist, sm->nv.z);
 	sm->macechain.maceball = (ringmobj_t*)P_SpawnMobj(spawnX, spawnY, spawnZ, macetype);
-
-	sm->nv.x = axis->x;
-	sm->nv.y = axis->y;
-	sm->nv.z = axis->z;
-	sm->rotation.x = rotation->x;
-	sm->rotation.y = rotation->y;
-	sm->rotation.z = rotation->z;
 /*
 	if (sm->tag == 137 || sm->tag == 138)
 	{

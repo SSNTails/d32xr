@@ -324,7 +324,7 @@ static short P_GetMaceLinkCount(mapthing_t *mthing)
 
 static void P_SetupMace(mapthing_t *mthing)
 {
-	VINT args[11];
+	VINT args[16];
 	int tag = mthing->angle;
 	line_t *line = NULL;
 	for (int i = 0; i < numlines; i++)
@@ -416,7 +416,21 @@ static void P_SetupMace(mapthing_t *mthing)
 //	args[5], args[6], args[7], args[8], args[9], rotation.x, rotation.y, rotation.z, axis.x, axis.y, axis.z);
 
 	// Whew! We gathered all of the info. Let's do something with it, now.
-	P_AddMaceChain(mthing, &axis, &rotation, args);
+	if (mthing->type == 1150)
+	{
+		args[11] = 0;
+		if (line->flags & ML_DONTPEGTOP)
+			args[11] |= SHF_ALLOWUP;
+		if (line->flags & ML_DONTPEGBOTTOM)
+			args[11] |= SHF_ALLOWDOWN;
+
+		args[12] = ((int16_t)frontsector->lightlevel) << 3;
+		args[13] = ((int16_t)backsector->lightlevel) << 3;
+
+		P_AddSwingHang(mthing, &axis, &rotation, args);
+	}
+	else
+		P_AddMaceChain(mthing, &axis, &rotation, args);
 }
 
 //#define BAREBONESMAP
@@ -461,6 +475,7 @@ void P_LoadThings (int lump)
 	}
 
 	int numMaces = 0;
+	int numSwings = 0;
 
 	mt = (mapthing_t *)data;
 	for (i=0 ; i<numthings ; i++, mt++)
@@ -486,6 +501,11 @@ void P_LoadThings (int lump)
 			numringthings++; // One more?? Why?
 			numMaces++;
 #endif
+		}
+		else if (mt->type == 1150) // CEZ Hook
+		{
+			numringthings++;
+			numSwings++;
 		}
 		else
 		{
@@ -533,6 +553,7 @@ void P_LoadThings (int lump)
 
 	// Pre-allocate maces, too.
 	P_PreallocateMaces(numMaces);
+	P_PreallocateSwings(numSwings);
 
 	mt = (mapthing_t *)data;
 	for (i=0 ; i<numthings ; i++, mt++)
@@ -549,7 +570,7 @@ void P_LoadThings (int lump)
 			P_SpawnItemRow(mt, mobjinfo[MT_RING].doomednum, 5, 64, 64);
 		else if (mt->type == 603) // 10 diagonal rings (yellow spring)
 			P_SpawnItemRow(mt, mobjinfo[MT_RING].doomednum, 10, 64, 64);
-		else if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
+		else if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107 || mt->type == 1150) // Mace points
 		{
 #ifndef BAREBONESMAP
 			P_SetupMace(mt);

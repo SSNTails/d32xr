@@ -240,7 +240,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 		camdist -= D_abs(analog_t << 15);
 	}
 
-   if (!player->exiting && player->stillTimer > TICRATE/2)
+   if (!(player->pflags & PF_MACEHANG) && !player->exiting && player->stillTimer > TICRATE/2)
       camspeed >>= 2;
 
 	if (!player->exiting && (mo->flags2 & MF2_SHOOTABLE) && thiscam->distFromPlayer > camdist * 3)
@@ -259,7 +259,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
         dist *= 3; // Even farther away when exiting
         camspeed >>= 2;
     }
-    else if (player->pflags & PF_MACESPIN)
+    else if ((player->pflags & PF_MACESPIN) && !(player->pflags & PF_MACEHANG))
 		dist = (dist << 1) - (dist >> 1); // * 1.5
 
 	// Destination XY

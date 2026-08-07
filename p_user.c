@@ -299,6 +299,7 @@ void P_ResetPlayer(player_t *player)
 	player->pflags &= ~PF_THOKKED;
 	player->pflags &= ~PF_ELEMENTALBOUNCE;
 	player->pflags &= ~PF_MACESPIN;
+	player->pflags &= ~PF_MACEHANG;
 	player->homingTimer = 0;
 	player->onconveyor = 0;
 	player->cmomx = player->cmomy = 0;
@@ -1086,7 +1087,28 @@ boolean PIT_LookForTarget(mobj_t *thing, homingFinder_t *hf)
 	if (thing->type == MT_PLAYER)
 		return true;
 
-	if (thing->flags & MF_RINGMOBJ)
+	if (thing->type == MT_HOOK)
+	{
+		mobj_t *macePoint = thing;
+
+		if ((macePoint->z) > player->mo->z + (player->mo->theight << FRACBITS))
+			return true;
+
+		const fixed_t dist = P_AproxDistance3D((macePoint->x) - player->mo->x, (macePoint->y) - player->mo->y, (macePoint->z) - player->mo->z);
+
+		if (dist < hf->closestDist)
+		{
+			// Well, it's the closest, but is it in front of us?
+			angle_t ang = R_PointToAngle2(player->mo->x, player->mo->y, macePoint->x, macePoint->y) - player->mo->angle;
+
+			if (ang > ANG90 && ang < ANG270)
+				return true;
+
+			hf->closest = thing;
+			hf->closestDist = dist;
+		}
+	}
+	else if (thing->flags & MF_RINGMOBJ)
 	{
 		if (thing->type == MT_BIGGRABCHAIN || thing->type == MT_SMALLGRABCHAIN
 			|| (thing->type >= MT_YELLOWSPRING && thing->type <= MT_REDHORIZ))
@@ -1254,12 +1276,21 @@ static void P_DoJumpStuff(player_t *player)
 			if (player->pflags & PF_MACESPIN)
 			{
 				player->mo->target = NULL;
-				player->powers[pw_flashing] = TICRATE >> 2;
 				player->pflags &= ~PF_MACESPIN;
-				player->pflags |= PF_JUMPED;
 				player->mo->momx = FixedMul(player->mo->momx, FRACUNIT + (FRACUNIT >> 1)); // 1.5x
 				player->mo->momy = FixedMul(player->mo->momy, FRACUNIT + (FRACUNIT >> 1));
-				player->mo->momz = FixedMul(player->mo->momz, FRACUNIT + (FRACUNIT >> 1));
+
+				if (player->pflags & PF_MACEHANG)
+				{
+					P_DoJump(player);
+					player->pflags &= ~PF_MACEHANG;
+				}
+				else
+				{
+					player->pflags |= PF_JUMPED;
+					player->mo->momz = FixedMul(player->mo->momz, FRACUNIT + (FRACUNIT >> 1));
+					player->powers[pw_flashing] = TICRATE >> 2;
+				}
 			}
 			else if (player->mo->state != S_PLAY_PAIN && P_IsObjectOnGround(player->mo) && !P_IsReeling(player))
 			{

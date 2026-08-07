@@ -264,6 +264,9 @@ typedef enum
 	TMM_ALWAYSTHINK     = 1<<7,
 } textmapmaceflags_t;
 
+void P_PreallocateSwings(int numSwings);
+void P_AddSwingHang(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, VINT *args);
+
 void P_PreallocateMaces(int numMaces);
 void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, VINT *args);
 
