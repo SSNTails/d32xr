@@ -35,6 +35,9 @@ typedef enum
 	mi_resolution,
 	mi_anamorphic,
 
+	mi_hardware,
+	mi_upscaler,
+
 	mi_controltype,
 	mi_strafebtns,
 
@@ -198,6 +201,14 @@ void O_Init (void)
 	menuitem[mi_anamorphic].x = ITEMX - 32;
 	menuitem[mi_anamorphic].y = STARTY + ITEMSPACE * 2;
 
+	menuitem[mi_hardware].name = "OPTIMIZE FOR HARDWARE";
+	menuitem[mi_hardware].x = ITEMX - 32;
+	menuitem[mi_hardware].y = STARTY + ITEMSPACE * 3;
+
+	menuitem[mi_upscaler].name = "OPTIMIZE FOR UPSCALER";
+	menuitem[mi_upscaler].x = ITEMX - 32;
+	menuitem[mi_upscaler].y = STARTY + ITEMSPACE * 4;
+
 
 	menuitem[mi_controltype].name = "Gamepad";
 	menuitem[mi_controltype].x = ITEMX;
@@ -226,7 +237,7 @@ void O_Init (void)
 
 	menuscreen[ms_video].name = "VIDEO";
 	menuscreen[ms_video].firstitem = mi_anamorphic;
-	menuscreen[ms_video].numitems = mi_anamorphic - mi_anamorphic + 1;
+	menuscreen[ms_video].numitems = mi_upscaler - mi_anamorphic + 1;
 
 	menuscreen[ms_help].name = "HELP / ABOUT";
 	menuscreen[ms_help].firstitem = 0;
@@ -551,28 +562,52 @@ void O_Control (player_t *player)
 			else if (screenpos == ms_video)
 			{
 				int oldanamorphicview = anamorphicview;
+				int oldHardwareOptimized = hardwareOptimized;
+				int oldUpscalerOptimized = upscalerOptimized;
 
 				if (buttons & BT_ACTION_RIGHT)
 				{
 					switch (itemno) {
-					case mi_anamorphic:
-						if (++anamorphicview > 1) {
-							anamorphicview = 1;
-						}
-						cameraTargetDistance = CAM_DIST_ANAMORPHIC;
-						break;
+						case mi_anamorphic:
+							if (++anamorphicview > 1) {
+								anamorphicview = 1;
+							}
+							cameraTargetDistance = CAM_DIST_ANAMORPHIC;
+							break;
+						case mi_hardware:
+							if (++hardwareOptimized> 1) {
+								hardwareOptimized = 1;
+							}
+							break;
+						case mi_upscaler:
+							if (++upscalerOptimized> 1) {
+								upscalerOptimized = 1;
+							}
+							h32_adjust = false;
+							break;
 					}
 				}
 
 				if (buttons & BT_ACTION_LEFT)
 				{
 					switch (itemno) {
-					case mi_anamorphic:
-						if (--anamorphicview < 0) {
-							anamorphicview = 0;
-						}
-						cameraTargetDistance = CAM_DIST_NORMAL;
-						break;
+						case mi_anamorphic:
+							if (--anamorphicview < 0) {
+								anamorphicview = 0;
+							}
+							cameraTargetDistance = CAM_DIST_NORMAL;
+							break;
+						case mi_hardware:
+							if (--hardwareOptimized < 0) {
+								hardwareOptimized = 0;
+							}
+							break;
+						case mi_upscaler:
+							if (--upscalerOptimized < 0) {
+								upscalerOptimized = 0;
+							}
+							h32_adjust = true;
+							break;
 					}
 				}
 
@@ -712,12 +747,30 @@ void O_Drawer (void)
 		I_Print8(menuitem[mi_resolution].x + 114, (unsigned)menuitem[mi_resolution].y/8 + 3, tmp);
 */
 		switch (anamorphicview) {
-		case 0:
-			V_DrawStringLeft(&menuFont, menuitem[mi_anamorphic].x + 150, menuitem[mi_anamorphic].y, "off");
-			break;
-		case 1:
-			V_DrawStringLeft(&menuFont, menuitem[mi_anamorphic].x + 150, menuitem[mi_anamorphic].y, "on");
-			break;
+			case 0:
+				V_DrawStringLeft(&menuFont, menuitem[mi_anamorphic].x + 150, menuitem[mi_anamorphic].y, "off");
+				break;
+			case 1:
+				V_DrawStringLeft(&menuFont, menuitem[mi_anamorphic].x + 150, menuitem[mi_anamorphic].y, "on");
+				break;
+		}
+
+		switch (hardwareOptimized) {
+			case 0:
+				V_DrawStringLeft(&menuFont, menuitem[mi_hardware].x + 176, menuitem[mi_hardware].y, "off");
+				break;
+			case 1:
+				V_DrawStringLeft(&menuFont, menuitem[mi_hardware].x + 176, menuitem[mi_hardware].y, "on");
+				break;
+		}
+
+		switch (upscalerOptimized) {
+			case 0:
+				V_DrawStringLeft(&menuFont, menuitem[mi_upscaler].x + 176, menuitem[mi_upscaler].y, "off");
+				break;
+			case 1:
+				V_DrawStringLeft(&menuFont, menuitem[mi_upscaler].x + 176, menuitem[mi_upscaler].y, "on");
+				break;
 		}
 	}
 

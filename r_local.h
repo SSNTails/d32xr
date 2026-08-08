@@ -54,6 +54,9 @@ extern fixed_t stretchX;
 extern VINT viewportnum;
 extern VINT anamorphicview;
 
+extern VINT hardwareOptimized;
+extern VINT upscalerOptimized;
+
 /*
 ==============================================================================
 

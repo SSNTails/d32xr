@@ -20,6 +20,9 @@ fixed_t stretchX;
 VINT anamorphicview = 0;
 VINT initmathtables = 2;
 
+VINT hardwareOptimized = 1;
+VINT upscalerOptimized = 0;
+
 drawcol_t drawcol;
 drawcol_t drawcolflipped;
 drawcol_t drawcolnpo2;
