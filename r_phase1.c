@@ -189,7 +189,6 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    const line_t    *li   = rbsp->curldef;
    const short      offset = seg->sideoffset >> 1;
    const side_t    *si   = rbsp->curside;
-   const sector_t  *front_sector = rbsp->curfsector, *back_sector = rbsp->curbsector;
    fixed_t    f_floorheight, f_ceilingheight;
    fixed_t    b_floorheight, b_ceilingheight;
    int        f_lightlevel, b_lightlevel, lightshift;
@@ -207,7 +206,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    segl->fofSector = *fofInfo = -1; // fofSector is back sector FOF, fofInfo is front sector FOF
    #endif
 
-   front_sector = R_FakeFlat(front_sector, &ftempsec, vd.viewsubsector == rbsp->frontsubsec);
+   sector_t *front_sector = R_FakeFlat(rbsp->curfsector, &ftempsec, vd.viewsubsector == rbsp->frontsubsec);
 
    {
       textureoffset = si->textureoffset & 0xfff;
@@ -243,10 +242,11 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       segl->m_texturenum = (uint8_t)-1;
       segl->fof_texturenum = (uint8_t)-1;
 
-      if (!back_sector)
+      sector_t *back_sector;
+      if (!rbsp->curbsector)
          back_sector = &emptysector;
       else
-         back_sector = R_FakeFlat(back_sector, &btempsec, false);
+         back_sector = R_FakeFlat(rbsp->curbsector, &btempsec, false);
 
       b_floorpic      = back_sector->floorpic;
       b_ceilingpic    = back_sector->ceilingpic;
@@ -775,7 +775,7 @@ const sector_t *R_FakeFlat(const sector_t *sec, sector_t *tempsec,
          }
       }
 
-      sec = tempsec;
+      return tempsec;
    }
    else if (sec->heightsec >= 0)
    {
@@ -819,7 +819,8 @@ const sector_t *R_FakeFlat(const sector_t *sec, sector_t *tempsec,
          tempsec->floorheight = sec->floorheight;
          tempsec->lightlevel = sec->lightlevel;
       }
-      sec = tempsec;               // Use other sector
+
+      return tempsec;               // Use other sector
    }
 
    return sec;
