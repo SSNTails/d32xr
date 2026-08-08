@@ -827,7 +827,7 @@ void R_SetTextureData(texture_t *tex, uint8_t *start, int size, boolean skiphead
 {
 	int j;
 	int mipcount = 1;
-	int w = tex->width, h = tex->height;
+	int w = tex->fullWidth, h = tex->fullHeight;
 	uint8_t *data = skipheader ? R_SkipJagObjHeader(start, size, w, h) : start;
 #if MIPLEVELS > 1
 	uint8_t *end = start + size;

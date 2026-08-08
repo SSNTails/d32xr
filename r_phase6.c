@@ -448,7 +448,7 @@ static void R_SetupDrawTexture(drawtex_t *drawtex, texture_t *tex,
     fixed_t texturemid, fixed_t topheight, fixed_t bottomheight)
 {
     int j;
-    int width = tex->width, height = tex->height;
+    int width = tex->fullWidth, height = tex->fullHeight;
 #ifdef USE_DECALS
     uint8_t *columncache = drawtex->columncache;
 #endif

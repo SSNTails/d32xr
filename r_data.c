@@ -124,25 +124,30 @@ void R_InitTextures (void)
 		masked = *((byte *)&mtexture->masked);
 
 		texture = &textures[i];
-		texture->width = LITTLESHORT(mtexture->width);
-		texture->height = LITTLESHORT(mtexture->height);
+		texture->fullWidth = LITTLESHORT(mtexture->width);
+		texture->fullHeight = LITTLESHORT(mtexture->height);
+		texture->halfWidth = texture->fullWidth >> 1;
+		texture->halfHeight = texture->fullHeight >> 1;
+		texture->dblWidth = texture->dblWidth << 1;
+		texture->dblHeight = texture->dblHeight << 1;
 #ifdef USE_DECALS
 		texture->decals = 0;
 #endif
-		D_memcpy(texture->name, mtexture->name, 8);
+		char texName[8];
+		D_memcpy(texName, mtexture->name, 8);
 		for (j = 0; j < 8; j++)
 		{
-			c = texture->name[j];
+			c = texName[j];
 			if (c >= 'a' && c <= 'z')
-				texture->name[j] = c - ('a' - 'A');
+				texName[j] = c - ('a' - 'A');
 		}
 
 		if (masked)
-			texture->lumpnum = W_CheckRangeForName(texture->name, firstsprite, endsprite);
+			texture->lumpnum = W_CheckRangeForName(texName, firstsprite, endsprite);
 		else if (start >= 0 && end > 0)
-			texture->lumpnum = W_CheckRangeForName(texture->name, start, end);
+			texture->lumpnum = W_CheckRangeForName(texName, start, end);
 		else
-			texture->lumpnum = W_CheckNumForName(texture->name);
+			texture->lumpnum = W_CheckNumForName(texName);
 	}
 
 	// process patches/decals
@@ -228,7 +233,7 @@ void R_InitTextures (void)
 	texture = textures;
 	for (i = 0; i < numtextures; i++, texture++)
 	{
-		int w = texture->width, h = texture->height;
+		int w = texture->fullWidth, h = texture->fullHeight;
 		uint8_t *start = R_CheckPixels(texture->lumpnum);
 		int size = W_LumpLength(texture->lumpnum);
 		uint8_t *end = start + size;
@@ -408,15 +413,11 @@ int	R_CheckTextureNumForName (const char *name)
 {
 	int		i,c;
 	char	temp[8];
-	int		v1, v2;
 	texture_t	*texture_p;
 		
 	if (name[0] == '-')		/* no texture marker */
 		return 0;
-	
-	*(int *)&temp[0] = 0;
-	*(int *)&temp[4] = 0;
-	
+
 	for (i=0 ; i<8 && name[i] ; i++)
 	{
 		c = name[i];
@@ -424,17 +425,27 @@ int	R_CheckTextureNumForName (const char *name)
 			c -= ('a'-'A');
 		temp[i] = c;
 	}
-
-	v1 = *(int *)temp;
-	v2 = *(int *)&temp[4];
 		
 	texture_p = textures;
 	
-	for (i=0 ; i<numtextures ; i++,texture_p++)
-		if (*(int *)&texture_p->name[4] == v2
-		&&  (*(int *)texture_p->name) == v1)
+	int firstTex = W_CheckNumForName("T_START" + 1);
+
+	int f = W_CheckRangeForName (temp, firstTex, firstTex + numtextures);
+	if (f < 0)
+	{
+		// Maybe it's a sprite?
+		f = W_CheckNumForName(name); // Not as robust, checking entire WAD, but whatever
+
+		if (f < 0)
+			return -1;
+	}
+
+	for (i = 0; i < numtextures; i++,texture_p++)
+	{
+		if (texture_p->lumpnum == f)
 			return i;
-		
+	}
+
 	return -1;
 }
 
