@@ -147,7 +147,11 @@ void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts)
     distangle = ANG90 - offsetangle;
     sineval = finesine(distangle >> ANGLETOFINESHIFT);
     rw_distance = FixedMul(hyp, sineval);
+#ifdef WALLDRAW2X
+    wc->distance = rw_distance >> 1;
+#else
     wc->distance = rw_distance;
+#endif
 
     scalefrac = scale2 = wc->scalefrac =
         R_ScaleFromGlobalAngle(rw_distance, vd.viewangle + (xtoviewangle[wc->start]<<FRACBITS), normalangle);
