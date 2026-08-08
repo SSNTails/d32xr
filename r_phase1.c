@@ -187,7 +187,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 {
    const seg_t     *seg  = segl->seg;
    const line_t    *li   = rbsp->curldef;
-   short      offset = seg->sideoffset >> 1;
+   const short      offset = seg->sideoffset >> 1;
    const side_t    *si   = rbsp->curside;
    const sector_t  *front_sector = rbsp->curfsector, *back_sector = rbsp->curbsector;
    fixed_t    f_floorheight, f_ceilingheight;
@@ -196,9 +196,9 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    short      f_floorpic, f_ceilingpic;
    short      b_floorpic, b_ceilingpic;
    int        b_texturemid, t_texturemid, m_texturemid, fof_texturemid;
-   short      floorskyhack;
-   short      skyhack;
-   short      actionbits;
+   boolean    floorskyhack;
+   boolean    skyhack;
+   int        actionbits;
    int16_t    rowoffset, textureoffset;
    const short liflags = li->flags;
    static sector_t ftempsec;
@@ -257,20 +257,10 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       t_texturemid = b_texturemid = m_texturemid = fof_texturemid = 0;
       actionbits = 0;
 
-      if(f_floorpic == (uint8_t)-1 && b_floorpic == (uint8_t)-1) {
-         floorskyhack = true;
-      }
-      else { 
-         floorskyhack = false;
-      }
+      floorskyhack = f_floorpic == 0xff && b_floorpic == 0xff;
 
       // deal with sky ceilings (also missing in 3DO)
-      if(f_ceilingpic == (uint8_t)-1 && b_ceilingpic == (uint8_t)-1) {
-         skyhack = true;
-      }
-      else {
-         skyhack = false;
-      }
+      skyhack = f_ceilingpic == 0xff && b_ceilingpic == 0xff;
 
       // add floors and ceilings if the wall needs them
       if(!floorskyhack                                         && // not a sky hack wall
@@ -317,7 +307,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 
             // handle unpegging (bottom of texture at bottom, or top of texture at top)
             if(liflags & ML_DONTPEGBOTTOM)
-               t_texturemid = f_floorheight + (((textures[segl->t_texturenum].height << 1) + rowoffset) << FRACBITS);
+               t_texturemid = f_floorheight + (((textures[segl->t_texturenum].dblHeight) + rowoffset) << FRACBITS);
             else
                t_texturemid = f_ceilingheight + (rowoffset<<FRACBITS);
 
@@ -359,9 +349,9 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                const fixed_t rf_floorheight = rbsp->curfsector->floorheight - vd.viewz;
                const fixed_t rb_floorheight = rbsp->curbsector->floorheight - vd.viewz;
                if(rf_floorheight > rb_floorheight)
-                  m_texturemid = rf_floorheight + (((textures[segl->m_texturenum].height << 1) + rowoffset) << FRACBITS);
+                  m_texturemid = rf_floorheight + (((textures[segl->m_texturenum].dblHeight) + rowoffset) << FRACBITS);
                else
-                  m_texturemid = rb_floorheight + (((textures[segl->m_texturenum].height << 1) + rowoffset) << FRACBITS);
+                  m_texturemid = rb_floorheight + (((textures[segl->m_texturenum].dblHeight) + rowoffset) << FRACBITS);
             }
             else
             {
@@ -490,7 +480,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
                if(liflags & ML_DONTPEGTOP)
                   t_texturemid = f_ceilingheight + (rowoffset<<FRACBITS);
                else
-                  t_texturemid = b_ceilingheight + (((textures[segl->t_texturenum].height << 1) + rowoffset) << FRACBITS);
+                  t_texturemid = b_ceilingheight + (((textures[segl->t_texturenum].dblHeight) + rowoffset) << FRACBITS);
 
 #ifdef WALLDRAW2X
                t_texturemid >>= 1;
@@ -541,7 +531,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
          lightshift = 0;
 
       // save local data to the viswall structure
-      segl->actionbits    = actionbits;
+      segl->actionbits    = (uint16_t)actionbits;
       segl->t_texturemid  = t_texturemid;
       segl->b_texturemid  = b_texturemid;
       segl->m_texturemid  = m_texturemid;
