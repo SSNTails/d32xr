@@ -128,8 +128,8 @@ void R_InitTextures (void)
 		texture->fullHeight = LITTLESHORT(mtexture->height);
 		texture->halfWidth = texture->fullWidth >> 1;
 		texture->halfHeight = texture->fullHeight >> 1;
-		texture->dblWidth = texture->dblWidth << 1;
-		texture->dblHeight = texture->dblHeight << 1;
+		texture->dblWidth = texture->fullWidth << 1;
+		texture->dblHeight = texture->fullHeight << 1;
 #ifdef USE_DECALS
 		texture->decals = 0;
 #endif
