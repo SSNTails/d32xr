@@ -206,7 +206,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    segl->fofSector = *fofInfo = -1; // fofSector is back sector FOF, fofInfo is front sector FOF
    #endif
 
-   sector_t *front_sector = R_FakeFlat(rbsp->curfsector, &ftempsec, vd.viewsubsector == rbsp->frontsubsec);
+   const sector_t *front_sector = R_FakeFlat(rbsp->curfsector, &ftempsec, vd.viewsubsector == rbsp->frontsubsec);
 
    {
       textureoffset = si->textureoffset & 0xfff;
@@ -220,29 +220,11 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       f_lightlevel    = front_sector->lightlevel;
       f_floorheight   = front_sector->floorheight   - vd.viewz;
       f_ceilingheight = front_sector->ceilingheight - vd.viewz;
-  
-      if (f_floorpic != 0xff)
-      {
-          segl->floorpicnum = flattranslation[f_floorpic];
-          segl->floor_offs = front_sector->floor_xoffs;
-      }
-      else
-      {
-          segl->floorpicnum = (uint8_t)-1;
-          segl->floor_offs = 0;
-      }
-
-      if (f_ceilingpic != 0xff)
-      {
-         segl->ceilpicnum = flattranslation[f_ceilingpic];
-      }
-      else
-         segl->ceilpicnum = (uint8_t)-1;
 
       segl->m_texturenum = (uint8_t)-1;
       segl->fof_texturenum = (uint8_t)-1;
 
-      sector_t *back_sector;
+      const sector_t *back_sector;
       if (!rbsp->curbsector)
          back_sector = &emptysector;
       else
@@ -538,6 +520,23 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       segl->fof_texturemid = fof_texturemid;
       segl->seglightlevel = (lightshift << 8) | f_lightlevel;
       segl->offset        = ((fixed_t)textureoffset + offset) << FRACBITS;
+      if (f_floorpic != 0xff)
+      {
+          segl->floorpicnum = flattranslation[f_floorpic];
+          segl->floor_offs = front_sector->floor_xoffs;
+      }
+      else
+      {
+          segl->floorpicnum = (uint8_t)-1;
+          segl->floor_offs = 0;
+      }
+
+      if (f_ceilingpic != 0xff)
+      {
+         segl->ceilpicnum = flattranslation[f_ceilingpic];
+      }
+      else
+         segl->ceilpicnum = (uint8_t)-1;
    }
 }
 
