@@ -44,7 +44,7 @@
         .equ STRM_DRUMV, 0xFFFA     /* Drum sample volume */
         .equ STRM_DRUMP, 0xFFFB     /* Drum sample panning */
 
-        .equ VIEWPORT_HEIGHT, 192
+        .equ VIEWPORT_HEIGHT_DEFAULT, 192
 
 
         .macro  z80rd adr, dst
@@ -1963,8 +1963,22 @@ load_letterbox:
 
 
         move.l  #0x40000000,(a0)        /* Write VRAM address 0 */
-        lea     (letterbox_window_tiles + ((64-(224-VIEWPORT_HEIGHT))&0xF0)),a2
-        moveq   #(((224-VIEWPORT_HEIGHT)/16)-1),d2
+
+        moveq   #0,d0   | Needed?
+        moveq   #0,d1   | Needed?
+        moveq   #0,d2   | Needed?
+        move.b  #224,d0
+        move.b  viewport_height,d1
+        sub.b   d1,d0           | (224 - viewport_height)
+        move.b  d0,d2
+        move.b  #64,d1
+        sub.b   d0,d1           | (64 - (224 - viewport_height))
+        andi.w  #0xF0,d1        | ((64 - (224 - viewport_height)) & 0xF0)
+        lea     letterbox_window_tiles,a2
+        adda.w  d1,a2
+
+        lsr.b   #4,d2
+        sub.b   #1,d2
         move.w  #16,d0
 1:
         moveq   #0,d1
@@ -1992,14 +2006,28 @@ load_letterbox:
         moveq   #0,d1
         move.b  register_12_state,d1    /* If H40, do another loop iteration */
 
-        move.l  #(0x47000000 - (((224-VIEWPORT_HEIGHT)/16)<<22)),d0
+        moveq   #0,d2   | Needed?
+        move.b  #224,d2
+        move.b  viewport_height,d0
+        sub.b   d0,d2           | (224 - viewport_height)
+        andi.b  #0xF0,d2
+        move.w  d2,-(sp)
+        lsl.w   #8,d2
+        lsl.w   #8,d2
+        lsl.w   #2,d2           | (((224 - viewport_height)/16)<<22))
+
+        move.l  #0x47000000,d0
+        sub.l   d2,d0           | (0x47000000 - (((224-viewport_height)/16)<<22))
         btst.b  #0,d1
         beq.s   9f
-        move.l  #(0x4E000000 - (((224-VIEWPORT_HEIGHT)/16)<<23)),d0
+        move.l  #0x4E000000,d0
+        sub.l   d2,d0
+        sub.l   d2,d0           | (0x4E000000 - (((224-viewport_height)/16)<<23))
 9:
         move.l  d0,(a0)        /* Write VRAM address 0x0600+ */
         lea     letterbox_window_tiles,a2
-        move.w  #(((224-VIEWPORT_HEIGHT)/16)-1),d2
+        move.w  (sp)+,d2
+        subi.w  #1,d2           | (((224-viewport_height)/16)-1)
         move.w  #16,d0
 1:
         moveq   #0,d1
@@ -2087,7 +2115,7 @@ load_md_sky:
 0:
         move.b  d0,register_12_state
         cmpi.b  #1,legacy_emulator      /* Check for a legacy emulator (not Ares) */
-        bgt.s   4f
+        bgt.w   4f
         move.w  #0x8F02,(a0)
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -2096,26 +2124,35 @@ load_md_sky:
 
         moveq   #0,d2
         btst.b  #0,d0                   /* Which screen resolution will be used? */
-        bne.s   5f                      /* Branch if H40 */
+        bne.w   5f                      /* Branch if H40 */
 
         /* Generate H32 left-edge sprites */
         lea     h32_left_edge_sprites,a3
-.if VIEWPORT_HEIGHT==160
+
+        move.b  viewport_height,d0
+        cmpi.b  #208,d0
+        bhs.s   208f
+        cmpi.b  #192,d0
+        bhs.s   192f
+        cmpi.b  #176,d0
+        bhs.s   176f
+        |bra.s   160f
+160:
         move.w  #13,d1
         moveq   #7,d2                   /* Adjust letterbox sprite 'next' values by seven */
-.elseif VIEWPORT_HEIGHT==176
+        bra.s   1f
+176:
         move.w  #15,d1
         moveq   #8,d2                   /* Adjust letterbox sprite 'next' values by eight */
-.elseif VIEWPORT_HEIGHT==192
+        bra.s   1f
+192:
         move.w  #15,d1
         moveq   #8,d2                   /* Adjust letterbox sprite 'next' values by eight */
-.elseif VIEWPORT_HEIGHT==208
+        bra.s   1f
+208:
         move.w  #17,d1
         moveq   #9,d2                   /* Adjust letterbox sprite 'next' values by nine */
-.else
-        move.w  #17,d1
-        moveq   #9,d2                   /* Adjust letterbox sprite 'next' values by nine */
-.endif
+        |bra.s   1f
 1:
         move.l  (a3)+,(a1)              /* Copy four bytes from the source */
         dbra    d1,1b
@@ -3521,13 +3558,17 @@ level_hblank:
         bset.b  #3,d0   /* Enable shadow/highlight */
         move.w  d0,(a0)
         move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
-        move.b  #(((224-VIEWPORT_HEIGHT)/2)-3),d1
+        move.b  #224,d1
+        sub.b   viewport_height,d1
+        lsr.b   #1,d1
+        subi.b  #3,d1           | (((224-viewport_height)/2)-3)
         bra.s   7f
 1:
         bset.b  #3,d0   /* Enable shadow/highlight */
         move.w  d0,(a0)
         move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
-        move.b  #(VIEWPORT_HEIGHT-1),d1
+        move.b  viewport_height,d1
+        subi.b  #1,d1           | (viewport_height - 1)
         bra.s   7f
 2:
         /* This controls shadow/highlight for the sky */
@@ -4172,6 +4213,15 @@ need_ctrl_int:
 gamemode:
         dc.b    0
 
+hardware_optimized:
+        dc.b    0
+
+upscaler_optimized:
+        dc.b    0
+
+viewport_height:
+        dc.b    192
+
 register_12_state:
         dc.b    0
 
@@ -4392,28 +4442,28 @@ letterbox_window_tiles:
         | y = Y position
 
 h32_left_edge_sprites:
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0301, 0xE00C, 0x0080
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0302, 0xE00C, 0x0080
+        dc.w    (0x0080-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0301, 0xE00C, 0x0080
+        dc.w    (0x0140+((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0302, 0xE00C, 0x0080
 
-        dc.w    (0x00A0-((VIEWPORT_HEIGHT-160)/2)), 0x0303, 0xE008, 0x007B
-        dc.w    (0x00C0-((VIEWPORT_HEIGHT-160)/2)), 0x0304, 0xE008, 0x007B
-        dc.w    (0x00E0-((VIEWPORT_HEIGHT-160)/2)), 0x0305, 0xE008, 0x007B
-        dc.w    (0x0100-((VIEWPORT_HEIGHT-160)/2)), 0x0306, 0xE008, 0x007B
-        dc.w    (0x0120-((VIEWPORT_HEIGHT-160)/2)), 0x0307, 0xE008, 0x007B
+        dc.w    (0x00A0-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0303, 0xE008, 0x007B
+        dc.w    (0x00C0-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0304, 0xE008, 0x007B
+        dc.w    (0x00E0-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0305, 0xE008, 0x007B
+        dc.w    (0x0100-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0306, 0xE008, 0x007B
+        dc.w    (0x0120-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0307, 0xE008, 0x007B
 
-.if VIEWPORT_HEIGHT==176
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0108, 0xE008, 0x007B
+.if VIEWPORT_HEIGHT_DEFAULT==176
+        dc.w    (0x0140-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0108, 0xE008, 0x007B
 .endif
-.if VIEWPORT_HEIGHT==192
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0308, 0xE008, 0x007B
+.if VIEWPORT_HEIGHT_DEFAULT==192
+        dc.w    (0x0140-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0308, 0xE008, 0x007B
 .endif
-.if VIEWPORT_HEIGHT==208
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0308, 0xE008, 0x007B
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0109, 0xE008, 0x007B
+.if VIEWPORT_HEIGHT_DEFAULT==208
+        dc.w    (0x0140-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0308, 0xE008, 0x007B
+        dc.w    (0x0140-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0109, 0xE008, 0x007B
 .endif
-.if VIEWPORT_HEIGHT==224
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0308, 0xE008, 0x007B
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0309, 0xE008, 0x007B
+.if VIEWPORT_HEIGHT_DEFAULT==224
+        dc.w    (0x0140-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0308, 0xE008, 0x007B
+        dc.w    (0x0140-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0309, 0xE008, 0x007B
 .endif
 
         |dc.w    0x00A0, 0x0302, 0xE008, 0x007B
@@ -4434,28 +4484,28 @@ h32_left_edge_sprites:
         |    - To make 8x32 sprites with new tiles that have an edge embedded.
 
 letterbox_sprites:
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F01, 0xE010, 0x0080
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F02, 0xE010, 0x0080
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F03, 0xE020, 0x00A0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F04, 0xE020, 0x00A0
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F05, 0xE010, 0x00C0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F06, 0xE010, 0x00C0
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F07, 0xE020, 0x00E0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F08, 0xE020, 0x00E0
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F09, 0xE010, 0x0100
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0A, 0xE010, 0x0100
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0B, 0xE020, 0x0120
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0C, 0xE020, 0x0120
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0D, 0xE010, 0x0140
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0E, 0xE010, 0x0140
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0F, 0xE020, 0x0160
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F10, 0xE020, 0x0160
+        dc.w    (0x0080-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F01, 0xE010, 0x0080
+        dc.w    (0x0140+((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F02, 0xE010, 0x0080
+        dc.w    (0x0080-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F03, 0xE020, 0x00A0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F04, 0xE020, 0x00A0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F05, 0xE010, 0x00C0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F06, 0xE010, 0x00C0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F07, 0xE020, 0x00E0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F08, 0xE020, 0x00E0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F09, 0xE010, 0x0100
+        dc.w    (0x0140+((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F0A, 0xE010, 0x0100
+        dc.w    (0x0080-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F0B, 0xE020, 0x0120
+        dc.w    (0x0140+((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F0C, 0xE020, 0x0120
+        dc.w    (0x0080-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F0D, 0xE010, 0x0140
+        dc.w    (0x0140+((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F0E, 0xE010, 0x0140
+        dc.w    (0x0080-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F0F, 0xE020, 0x0160
+        dc.w    (0x0140+((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F10, 0xE020, 0x0160
 
 h40_letterbox_ext_sprites:
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F11, 0xE010, 0x0180
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F12, 0xE010, 0x0180
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F13, 0xE020, 0x01A0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F14, 0xE020, 0x01A0
+        dc.w    (0x0080-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F11, 0xE010, 0x0180
+        dc.w    (0x0140+((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F12, 0xE010, 0x0180
+        dc.w    (0x0080-((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F13, 0xE020, 0x01A0
+        dc.w    (0x0140+((VIEWPORT_HEIGHT_DEFAULT-160)/2)), 0x0F14, 0xE020, 0x01A0
 
 
 |test_start:
