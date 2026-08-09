@@ -31,6 +31,7 @@ typedef struct
    const sector_t *curbsector;
    const side_t      *curside;
    const line_t      *curldef;
+   const sidetex_t   *sidetex;
    angle_t    lineangle1;
    int        splitspans; /* generate wall splits until this reaches 0 */
    VINT lastv1;
@@ -187,7 +188,6 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 {
    const seg_t     *seg  = segl->seg;
    const line_t    *li   = rbsp->curldef;
-   const short      offset = seg->sideoffset >> 1;
    const side_t    *si   = rbsp->curside;
    fixed_t    f_floorheight, f_ceilingheight;
    fixed_t    b_floorheight, b_ceilingheight;
@@ -208,336 +208,334 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
 
    const sector_t *front_sector = R_FakeFlat(rbsp->curfsector, &ftempsec, vd.viewsubsector == rbsp->frontsubsec);
 
+   textureoffset = si->textureoffset & 0xfff;
+   textureoffset <<= 4; // sign extend
+   textureoffset >>= 4; // sign extend
+   rowoffset = (si->textureoffset & 0xf000) | ((unsigned)si->rowoffset << 4);
+   rowoffset >>= 4; // sign extend
+
+   f_floorpic      = front_sector->floorpic;
+   f_ceilingpic    = front_sector->ceilingpic;
+   f_lightlevel    = front_sector->lightlevel;
+   f_floorheight   = front_sector->floorheight   - vd.viewz;
+   f_ceilingheight = front_sector->ceilingheight - vd.viewz;
+
+   segl->m_texturenum = (uint8_t)-1;
+   segl->fof_texturenum = (uint8_t)-1;
+
+   const sector_t *back_sector;
+   if (!rbsp->curbsector)
+      back_sector = &emptysector;
+   else
+      back_sector = R_FakeFlat(rbsp->curbsector, &btempsec, false);
+
+   b_floorpic      = back_sector->floorpic;
+   b_ceilingpic    = back_sector->ceilingpic;
+   b_lightlevel    = back_sector->lightlevel;
+   b_floorheight   = back_sector->floorheight   - vd.viewz;
+   b_ceilingheight = back_sector->ceilingheight - vd.viewz;
+
+   t_texturemid = b_texturemid = m_texturemid = fof_texturemid = 0;
+   actionbits = 0;
+
+   floorskyhack = f_floorpic == 0xff && b_floorpic == 0xff;
+
+   // deal with sky ceilings (also missing in 3DO)
+   skyhack = f_ceilingpic == 0xff && b_ceilingpic == 0xff;
+
+   // add floors and ceilings if the wall needs them
+   if(!floorskyhack                                         && // not a sky hack wall
+      (f_floorheight < 0 || f_floorpic == (uint8_t)-1)        && // is the camera above the floor?
+      (f_floorpic      != b_floorpic                   || // floor texture changes across line?
+         f_floorheight   != b_floorheight                || // height changes across line?
+         f_lightlevel    != b_lightlevel                 || // light level changes across line?
+         b_ceilingheight == b_floorheight))                 // backsector is closed?
    {
-      textureoffset = si->textureoffset & 0xfff;
-      textureoffset <<= 4; // sign extend
-      textureoffset >>= 4; // sign extend
-      rowoffset = (si->textureoffset & 0xf000) | ((unsigned)si->rowoffset << 4);
-      rowoffset >>= 4; // sign extend
-
-      f_floorpic      = front_sector->floorpic;
-      f_ceilingpic    = front_sector->ceilingpic;
-      f_lightlevel    = front_sector->lightlevel;
-      f_floorheight   = front_sector->floorheight   - vd.viewz;
-      f_ceilingheight = front_sector->ceilingheight - vd.viewz;
-
-      segl->m_texturenum = (uint8_t)-1;
-      segl->fof_texturenum = (uint8_t)-1;
-
-      const sector_t *back_sector;
-      if (!rbsp->curbsector)
-         back_sector = &emptysector;
+      if(f_floorpic == (uint8_t)-1)
+         actionbits |= (AC_ADDFLOORSKY|AC_NEWFLOOR);
       else
-         back_sector = R_FakeFlat(rbsp->curbsector, &btempsec, false);
+         actionbits |= (AC_ADDFLOOR|AC_NEWFLOOR);
+   }
+   *floorheight = *floornewheight = f_floorheight;
+   segl->floorheight_t = f_floorheight >> FRACBITS;
 
-      b_floorpic      = back_sector->floorpic;
-      b_ceilingpic    = back_sector->ceilingpic;
-      b_lightlevel    = back_sector->lightlevel;
-      b_floorheight   = back_sector->floorheight   - vd.viewz;
-      b_ceilingheight = back_sector->ceilingheight - vd.viewz;
+   segl->t_bottomheight = f_floorheight; // bottom of texturemap
 
-      t_texturemid = b_texturemid = m_texturemid = fof_texturemid = 0;
-      actionbits = 0;
+   if(!skyhack                                         && // not a sky hack wall
+      (f_ceilingheight > 0 || f_ceilingpic == (uint8_t)-1)      && // ceiling below camera, or sky
+      (f_ceilingpic    != b_ceilingpic                 || // ceiling texture changes across line?
+         f_ceilingheight != b_ceilingheight              || // height changes across line?              
+         f_lightlevel    != b_lightlevel                 || // light level changes across line?
+         b_ceilingheight == b_floorheight))                 // backsector is closed?
+   {
+      if(f_ceilingpic == (uint8_t)-1)
+         actionbits |= (AC_ADDSKY|AC_NEWCEILING);
+      else
+         actionbits |= (AC_ADDCEILING|AC_NEWCEILING);
+   }
+   segl->ceilingheight = *ceilingnewheight = f_ceilingheight;
 
-      floorskyhack = f_floorpic == 0xff && b_floorpic == 0xff;
+   segl->t_topheight = f_ceilingheight; // top of texturemap
 
-      // deal with sky ceilings (also missing in 3DO)
-      skyhack = f_ceilingpic == 0xff && b_ceilingpic == 0xff;
+   const sidetex_t *st = SIDETEX(si);
 
-      // add floors and ceilings if the wall needs them
-      if(!floorskyhack                                         && // not a sky hack wall
-         (f_floorheight < 0 || f_floorpic == (uint8_t)-1)        && // is the camera above the floor?
-         (f_floorpic      != b_floorpic                   || // floor texture changes across line?
-          f_floorheight   != b_floorheight                || // height changes across line?
-          f_lightlevel    != b_lightlevel                 || // light level changes across line?
-          b_ceilingheight == b_floorheight))                 // backsector is closed?
-      {
-         if(f_floorpic == (uint8_t)-1)
-            actionbits |= (AC_ADDFLOORSKY|AC_NEWFLOOR);
-         else
-            actionbits |= (AC_ADDFLOOR|AC_NEWFLOOR);
-      }
-      *floorheight = *floornewheight = f_floorheight;
-      segl->floorheight_t = f_floorheight >> FRACBITS;
-
-      segl->t_bottomheight = f_floorheight; // bottom of texturemap
-
-      if(!skyhack                                         && // not a sky hack wall
-         (f_ceilingheight > 0 || f_ceilingpic == (uint8_t)-1)      && // ceiling below camera, or sky
-         (f_ceilingpic    != b_ceilingpic                 || // ceiling texture changes across line?
-          f_ceilingheight != b_ceilingheight              || // height changes across line?              
-          f_lightlevel    != b_lightlevel                 || // light level changes across line?
-          b_ceilingheight == b_floorheight))                 // backsector is closed?
-      {
-         if(f_ceilingpic == (uint8_t)-1)
-            actionbits |= (AC_ADDSKY|AC_NEWCEILING);
-         else
-            actionbits |= (AC_ADDCEILING|AC_NEWCEILING);
-      }
-      segl->ceilingheight = *ceilingnewheight = f_ceilingheight;
-
-      segl->t_topheight = f_ceilingheight; // top of texturemap
-
-      const sidetex_t *st = SIDETEX(si);
-
-      if (li->sidenum[1] < 0)
-      {
-         // single-sided line
+   if (li->sidenum[1] < 0)
+   {
+      // single-sided line
 //         if (si->midtexture > 0)
-         {
-            segl->t_texturenum = texturetranslation[st->midtexture];
+      {
+         segl->t_texturenum = texturetranslation[st->midtexture];
 
-            // handle unpegging (bottom of texture at bottom, or top of texture at top)
-            if(liflags & ML_DONTPEGBOTTOM)
-               t_texturemid = f_floorheight + (((textures[segl->t_texturenum].dblHeight) + rowoffset) << FRACBITS);
+         // handle unpegging (bottom of texture at bottom, or top of texture at top)
+         if(liflags & ML_DONTPEGBOTTOM)
+            t_texturemid = f_floorheight + (((textures[segl->t_texturenum].dblHeight) + rowoffset) << FRACBITS);
+         else
+            t_texturemid = f_ceilingheight + (rowoffset<<FRACBITS);
+
+#ifdef WALLDRAW2X
+         t_texturemid >>= 1;
+#endif
+         segl->t_bottomheight = f_floorheight; // set bottom height
+         actionbits |= (AC_SOLIDSIL|AC_TOPTEXTURE);                   // solid line; draw middle texture only
+      }
+
+#ifdef FLOOR_OVER_FLOOR
+      if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
+      {
+         const sector_t *frontFOF = I_TO_SEC(front_sector->fofsec);
+         *fofInfo = front_sector->fofsec;
+
+         if (frontFOF->ceilingheight < vd.viewz)
+         {
+            // Top of FOF is visible
+            actionbits |= AC_FOFTOP;
+         }
+         else if (frontFOF->floorheight > vd.viewz)
+         {
+            // Bottom of FOF is visible
+            actionbits |= AC_FOFBOTTOM;
+         }
+      }
+#endif
+   }
+   else
+   {
+      // two-sided line
+//         if (st->midtexture > 0)
+      if (st->midtexture > 0 && D_abs(vd.viewx_t - ((vertexes[li->v1].x+vertexes[li->v2].x)>>1)) < ((liflags & ML_CULL_MIDTEXTURE) ? 768 : 1536) && D_abs(vd.viewy_t - ((vertexes[li->v1].y+vertexes[li->v2].y)>>1)) < ((liflags & ML_CULL_MIDTEXTURE) ? 768 : 1536)) // Don't draw midtextures when too far away to really matter
+      {
+         segl->m_texturenum = texturetranslation[st->midtexture];
+         if(liflags & ML_DONTPEGBOTTOM)
+         {
+            const fixed_t rf_floorheight = rbsp->curfsector->floorheight - vd.viewz;
+            const fixed_t rb_floorheight = rbsp->curbsector->floorheight - vd.viewz;
+            if(rf_floorheight > rb_floorheight)
+               m_texturemid = rf_floorheight + (((textures[segl->m_texturenum].dblHeight) + rowoffset) << FRACBITS);
             else
+               m_texturemid = rb_floorheight + (((textures[segl->m_texturenum].dblHeight) + rowoffset) << FRACBITS);
+         }
+         else
+         {
+            const fixed_t rf_ceilingheight = rbsp->curfsector->ceilingheight - vd.viewz;
+            const fixed_t rb_ceilingheight = rbsp->curbsector->ceilingheight - vd.viewz;
+            if(rb_ceilingheight > rf_ceilingheight)
+               m_texturemid = rf_ceilingheight;
+            else
+               m_texturemid = rb_ceilingheight;
+
+            m_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
+         }
+#ifdef WALLDRAW2X
+         m_texturemid >>= 1;
+#endif
+         actionbits |= AC_MIDTEXTURE; // set bottom and top masks
+      }
+
+#ifdef FLOOR_OVER_FLOOR
+      if (back_sector->fofsec >= 0 && !(back_sector->flags & SF_FOF_SWAPHEIGHTS))
+      {
+         const sector_t *backFOF = I_TO_SEC(back_sector->fofsec);
+         segl->fofSector = back_sector->fofsec;
+         *fofInfo = front_sector->fofsec;
+         actionbits |= AC_FOFSIDE; // Means the backsector has a FOF
+
+         if (backFOF->ceilingheight < vd.viewz)
+            segl->fof_picnum = backFOF->ceilingpic;
+         else if (backFOF->floorheight > vd.viewz)
+            segl->fof_picnum = backFOF->floorpic;
+
+         if (front_sector->fofsec != back_sector->fofsec)
+         {
+            const line_t *fofline = &lines[backFOF->specline];
+            const side_t *fofside = &sides[fofline->sidenum[0]];
+            fof_texturemid = backFOF->ceilingheight - vd.viewz;
+#ifdef WALLDRAW2X
+            fof_texturemid >>= 1;
+#endif
+            segl->fof_texturenum = texturetranslation[SIDETEX(fofside)->midtexture];
+            segl->fof_sideThickness = (backFOF->ceilingheight - backFOF->floorheight) >> FRACBITS;
+//               fof_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
+
+            if (front_sector->fofsec >= 0)
+            {
+               const sector_t *frontFOF = I_TO_SEC(front_sector->fofsec);
+
+               if (frontFOF->ceilingheight >= backFOF->ceilingheight
+                  && frontFOF->floorheight <= backFOF->floorheight)
+                  segl->fof_texturenum = (uint8_t)-1;
+               else if (backFOF->ceilingheight > frontFOF->ceilingheight && backFOF->floorheight < frontFOF->ceilingheight)
+                  segl->fof_sideThickness -= (frontFOF->ceilingheight - backFOF->floorheight) >> FRACBITS;
+               else if (backFOF->floorheight < frontFOF->floorheight && backFOF->ceilingheight > frontFOF->floorheight)
+               {
+                  // NOTE: This may need the >>= 1 on 'amount'
+                  VINT amount = (backFOF->ceilingheight - frontFOF->floorheight) >> FRACBITS;
+                  segl->fof_sideThickness -= amount;
+                  segl->fof_texturemid -= amount;
+               }
+               
+               *fofInfo = front_sector->fofsec;
+               if (frontFOF->ceilingheight < vd.viewz)
+               {
+                  // Rendering the ceiling
+                  actionbits |= AC_FOFTOP;
+               }
+               else if (frontFOF->floorheight > vd.viewz)
+               {
+                  actionbits |= AC_FOFBOTTOM;
+               }
+            }
+            else // Regular sector in front
+            {
+               if ((f_floorheight < 0 && backFOF->ceilingheight <= front_sector->floorheight)
+                  || (f_floorheight > 0 && backFOF->floorheight >= front_sector->ceilingheight))
+                  segl->fof_texturenum = (uint8_t)-1;
+               else if (backFOF->floorheight < front_sector->floorheight)
+                  segl->fof_sideThickness -= (front_sector->floorheight - backFOF->floorheight) >> FRACBITS;
+            }
+         }
+      }
+      else if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
+      {
+         const sector_t *frontFOF = I_TO_SEC(front_sector->fofsec);
+         *fofInfo = front_sector->fofsec;
+         if (frontFOF->ceilingheight < vd.viewz)
+         {
+            // Rendering the ceiling
+            actionbits |= AC_FOFTOP;
+         }
+         else if (frontFOF->floorheight > vd.viewz)
+         {
+            actionbits |= AC_FOFBOTTOM;
+         }
+      }
+#endif
+
+      // is bottom texture visible?
+      if(b_floorheight > f_floorheight && !floorskyhack)
+      {
+//            if (si->bottomtexture > 0)
+         {
+            segl->b_texturenum = texturetranslation[st->bottomtexture];
+            if(liflags & ML_DONTPEGBOTTOM)
+               b_texturemid = f_ceilingheight;
+            else
+               b_texturemid = b_floorheight;
+
+            b_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
+#ifdef WALLDRAW2X
+            b_texturemid >>= 1;
+#endif
+
+            segl->b_topheight = *floornewheight = b_floorheight;
+            segl->b_bottomheight = f_floorheight;
+            actionbits |= (AC_BOTTOMTEXTURE|AC_NEWFLOOR); // generate bottom wall and floor
+         }
+      }
+
+      // is top texture visible?
+      if(b_ceilingheight < f_ceilingheight && !skyhack)
+      {
+//            if (si->toptexture > 0)
+         {
+            segl->t_texturenum = texturetranslation[st->toptexture];
+            if(liflags & ML_DONTPEGTOP)
                t_texturemid = f_ceilingheight + (rowoffset<<FRACBITS);
+            else
+               t_texturemid = b_ceilingheight + (((textures[segl->t_texturenum].dblHeight) + rowoffset) << FRACBITS);
 
 #ifdef WALLDRAW2X
             t_texturemid >>= 1;
 #endif
-            segl->t_bottomheight = f_floorheight; // set bottom height
-            actionbits |= (AC_SOLIDSIL|AC_TOPTEXTURE);                   // solid line; draw middle texture only
-         }
 
-#ifdef FLOOR_OVER_FLOOR
-         if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
-         {
-            const sector_t *frontFOF = I_TO_SEC(front_sector->fofsec);
-            *fofInfo = front_sector->fofsec;
-
-            if (frontFOF->ceilingheight < vd.viewz)
-            {
-               // Top of FOF is visible
-               actionbits |= AC_FOFTOP;
-            }
-            else if (frontFOF->floorheight > vd.viewz)
-            {
-               // Bottom of FOF is visible
-               actionbits |= AC_FOFBOTTOM;
-            }
+            segl->t_bottomheight = *ceilingnewheight = b_ceilingheight;
+            actionbits |= (AC_NEWCEILING|AC_TOPTEXTURE); // draw top texture and ceiling
          }
-#endif
       }
+
+      // check if this wall is solid, for sprite clipping
+      if(b_floorheight >= f_ceilingheight || b_ceilingheight <= f_floorheight)
+         actionbits |= AC_SOLIDSIL;
       else
       {
-         // two-sided line
-//         if (st->midtexture > 0)
-         if (st->midtexture > 0 && D_abs(vd.viewx_t - ((vertexes[li->v1].x+vertexes[li->v2].x)>>1)) < ((liflags & ML_CULL_MIDTEXTURE) ? 768 : 1536) && D_abs(vd.viewy_t - ((vertexes[li->v1].y+vertexes[li->v2].y)>>1)) < ((liflags & ML_CULL_MIDTEXTURE) ? 768 : 1536)) // Don't draw midtextures when too far away to really matter
+         if(!floorskyhack)
          {
-            segl->m_texturenum = texturetranslation[st->midtexture];
-            if(liflags & ML_DONTPEGBOTTOM)
+            if((b_floorheight >= 0 && b_floorheight > f_floorheight) ||
+               (f_floorheight < 0 && f_floorheight > b_floorheight))
             {
-               const fixed_t rf_floorheight = rbsp->curfsector->floorheight - vd.viewz;
-               const fixed_t rb_floorheight = rbsp->curbsector->floorheight - vd.viewz;
-               if(rf_floorheight > rb_floorheight)
-                  m_texturemid = rf_floorheight + (((textures[segl->m_texturenum].dblHeight) + rowoffset) << FRACBITS);
-               else
-                  m_texturemid = rb_floorheight + (((textures[segl->m_texturenum].dblHeight) + rowoffset) << FRACBITS);
-            }
-            else
-            {
-               const fixed_t rf_ceilingheight = rbsp->curfsector->ceilingheight - vd.viewz;
-               const fixed_t rb_ceilingheight = rbsp->curbsector->ceilingheight - vd.viewz;
-               if(rb_ceilingheight > rf_ceilingheight)
-                  m_texturemid = rf_ceilingheight;
-               else
-                  m_texturemid = rb_ceilingheight;
-
-               m_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
-            }
-#ifdef WALLDRAW2X
-            m_texturemid >>= 1;
-#endif
-            actionbits |= AC_MIDTEXTURE; // set bottom and top masks
-         }
-
-#ifdef FLOOR_OVER_FLOOR
-         if (back_sector->fofsec >= 0 && !(back_sector->flags & SF_FOF_SWAPHEIGHTS))
-         {
-            const sector_t *backFOF = I_TO_SEC(back_sector->fofsec);
-            segl->fofSector = back_sector->fofsec;
-            *fofInfo = front_sector->fofsec;
-            actionbits |= AC_FOFSIDE; // Means the backsector has a FOF
-
-            if (backFOF->ceilingheight < vd.viewz)
-               segl->fof_picnum = backFOF->ceilingpic;
-            else if (backFOF->floorheight > vd.viewz)
-               segl->fof_picnum = backFOF->floorpic;
-
-            if (front_sector->fofsec != back_sector->fofsec)
-            {
-               const line_t *fofline = &lines[backFOF->specline];
-               const side_t *fofside = &sides[fofline->sidenum[0]];
-               fof_texturemid = backFOF->ceilingheight - vd.viewz;
-#ifdef WALLDRAW2X
-               fof_texturemid >>= 1;
-#endif
-               segl->fof_texturenum = texturetranslation[SIDETEX(fofside)->midtexture];
-               segl->fof_sideThickness = (backFOF->ceilingheight - backFOF->floorheight) >> FRACBITS;
-//               fof_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
-
-               if (front_sector->fofsec >= 0)
-               {
-                  const sector_t *frontFOF = I_TO_SEC(front_sector->fofsec);
-
-                  if (frontFOF->ceilingheight >= backFOF->ceilingheight
-                     && frontFOF->floorheight <= backFOF->floorheight)
-                     segl->fof_texturenum = (uint8_t)-1;
-                  else if (backFOF->ceilingheight > frontFOF->ceilingheight && backFOF->floorheight < frontFOF->ceilingheight)
-                     segl->fof_sideThickness -= (frontFOF->ceilingheight - backFOF->floorheight) >> FRACBITS;
-                  else if (backFOF->floorheight < frontFOF->floorheight && backFOF->ceilingheight > frontFOF->floorheight)
-                  {
-                     // NOTE: This may need the >>= 1 on 'amount'
-                     VINT amount = (backFOF->ceilingheight - frontFOF->floorheight) >> FRACBITS;
-                     segl->fof_sideThickness -= amount;
-                     segl->fof_texturemid -= amount;
-                  }
-                  
-                  *fofInfo = front_sector->fofsec;
-                  if (frontFOF->ceilingheight < vd.viewz)
-                  {
-                     // Rendering the ceiling
-                     actionbits |= AC_FOFTOP;
-                  }
-                  else if (frontFOF->floorheight > vd.viewz)
-                  {
-                     actionbits |= AC_FOFBOTTOM;
-                  }
-               }
-               else // Regular sector in front
-               {
-                  if ((f_floorheight < 0 && backFOF->ceilingheight <= front_sector->floorheight)
-                     || (f_floorheight > 0 && backFOF->floorheight >= front_sector->ceilingheight))
-                     segl->fof_texturenum = (uint8_t)-1;
-                  else if (backFOF->floorheight < front_sector->floorheight)
-                     segl->fof_sideThickness -= (front_sector->floorheight - backFOF->floorheight) >> FRACBITS;
-               }
-            }
-         }
-         else if (front_sector->fofsec >= 0 && !(front_sector->flags & SF_FOF_SWAPHEIGHTS))
-         {
-            const sector_t *frontFOF = I_TO_SEC(front_sector->fofsec);
-            *fofInfo = front_sector->fofsec;
-            if (frontFOF->ceilingheight < vd.viewz)
-            {
-               // Rendering the ceiling
-               actionbits |= AC_FOFTOP;
-            }
-            else if (frontFOF->floorheight > vd.viewz)
-            {
-               actionbits |= AC_FOFBOTTOM;
-            }
-         }
-#endif
-
-         // is bottom texture visible?
-         if(b_floorheight > f_floorheight && !floorskyhack)
-         {
-//            if (si->bottomtexture > 0)
-            {
-               segl->b_texturenum = texturetranslation[st->bottomtexture];
-               if(liflags & ML_DONTPEGBOTTOM)
-                  b_texturemid = f_ceilingheight;
-               else
-                  b_texturemid = b_floorheight;
-
-               b_texturemid += rowoffset<<FRACBITS; // add in sidedef texture offset
-#ifdef WALLDRAW2X
-               b_texturemid >>= 1;
-#endif
-
-               segl->b_topheight = *floornewheight = b_floorheight;
-               segl->b_bottomheight = f_floorheight;
-               actionbits |= (AC_BOTTOMTEXTURE|AC_NEWFLOOR); // generate bottom wall and floor
+               actionbits |= AC_BOTTOMSIL; // set bottom mask
             }
          }
 
-         // is top texture visible?
-         if(b_ceilingheight < f_ceilingheight && !skyhack)
+         if(!skyhack)
          {
-//            if (si->toptexture > 0)
+            if((b_ceilingheight <= 0 && b_ceilingheight < f_ceilingheight) ||
+               (f_ceilingheight >  0 && b_ceilingheight > f_ceilingheight))
             {
-               segl->t_texturenum = texturetranslation[st->toptexture];
-               if(liflags & ML_DONTPEGTOP)
-                  t_texturemid = f_ceilingheight + (rowoffset<<FRACBITS);
-               else
-                  t_texturemid = b_ceilingheight + (((textures[segl->t_texturenum].dblHeight) + rowoffset) << FRACBITS);
-
-#ifdef WALLDRAW2X
-               t_texturemid >>= 1;
-#endif
-
-               segl->t_bottomheight = *ceilingnewheight = b_ceilingheight;
-               actionbits |= (AC_NEWCEILING|AC_TOPTEXTURE); // draw top texture and ceiling
+               actionbits |= AC_TOPSIL; // set top mask
             }
-         }
-
-         // check if this wall is solid, for sprite clipping
-         if(b_floorheight >= f_ceilingheight || b_ceilingheight <= f_floorheight)
-            actionbits |= AC_SOLIDSIL;
-         else
-         {
-            if(!floorskyhack)
-            {
-               if((b_floorheight >= 0 && b_floorheight > f_floorheight) ||
-                  (f_floorheight < 0 && f_floorheight > b_floorheight))
-               {
-                  actionbits |= AC_BOTTOMSIL; // set bottom mask
-               }
-            }
-
-            if(!skyhack)
-            {
-               if((b_ceilingheight <= 0 && b_ceilingheight < f_ceilingheight) ||
-                  (f_ceilingheight >  0 && b_ceilingheight > f_ceilingheight))
-               {
-                  actionbits |= AC_TOPSIL; // set top mask
-               }
-            }
-         }
-
-         // Special case for closed sectors acting as sky windows
-         if (b_floorheight == b_ceilingheight && b_ceilingpic == (uint8_t)-1 && b_floorpic == (uint8_t)-1)
-         {
-            actionbits &= ~(AC_TOPSIL | AC_BOTTOMSIL | AC_SOLIDSIL | AC_TOPTEXTURE | AC_BOTTOMTEXTURE | AC_MIDTEXTURE | AC_NEWCEILING | AC_NEWFLOOR);
-            actionbits |= AC_ADDSKY;
          }
       }
 
-      if (vertexes[li->v1].y == vertexes[li->v2].y)
-         lightshift = -1;
-      else if (vertexes[li->v1].x == vertexes[li->v2].x)
-         lightshift = 1;
-      else
-         lightshift = 0;
-
-      // save local data to the viswall structure
-      segl->actionbits    = (uint16_t)actionbits;
-      segl->t_texturemid  = t_texturemid;
-      segl->b_texturemid  = b_texturemid;
-      segl->m_texturemid  = m_texturemid;
-      segl->fof_texturemid = fof_texturemid;
-      segl->seglightlevel = (lightshift << 8) | f_lightlevel;
-      segl->offset        = ((fixed_t)textureoffset + offset) << FRACBITS;
-      if (f_floorpic != 0xff)
+      // Special case for closed sectors acting as sky windows
+      if (b_floorheight == b_ceilingheight && b_ceilingpic == (uint8_t)-1 && b_floorpic == (uint8_t)-1)
       {
-          segl->floorpicnum = flattranslation[f_floorpic];
-          segl->floor_offs = front_sector->floor_xoffs;
+         actionbits &= ~(AC_TOPSIL | AC_BOTTOMSIL | AC_SOLIDSIL | AC_TOPTEXTURE | AC_BOTTOMTEXTURE | AC_MIDTEXTURE | AC_NEWCEILING | AC_NEWFLOOR);
+         actionbits |= AC_ADDSKY;
       }
-      else
-      {
-          segl->floorpicnum = (uint8_t)-1;
-          segl->floor_offs = 0;
-      }
-
-      if (f_ceilingpic != 0xff)
-      {
-         segl->ceilpicnum = flattranslation[f_ceilingpic];
-      }
-      else
-         segl->ceilpicnum = (uint8_t)-1;
    }
+
+   if (vertexes[li->v1].y == vertexes[li->v2].y)
+      lightshift = -1;
+   else if (vertexes[li->v1].x == vertexes[li->v2].x)
+      lightshift = 1;
+   else
+      lightshift = 0;
+
+   // save local data to the viswall structure
+   segl->actionbits    = (uint16_t)actionbits;
+   segl->t_texturemid  = t_texturemid;
+   segl->b_texturemid  = b_texturemid;
+   segl->m_texturemid  = m_texturemid;
+   segl->fof_texturemid = fof_texturemid;
+   segl->seglightlevel = (lightshift << 8) | f_lightlevel;
+   segl->offset        = ((fixed_t)textureoffset + (seg->sideoffset >> 1)) << FRACBITS;
+   if (f_floorpic != 0xff)
+   {
+         segl->floorpicnum = flattranslation[f_floorpic];
+         segl->floor_offs = front_sector->floor_xoffs;
+   }
+   else
+   {
+         segl->floorpicnum = (uint8_t)-1;
+         segl->floor_offs = 0;
+   }
+
+   if (f_ceilingpic != 0xff)
+   {
+      segl->ceilpicnum = flattranslation[f_ceilingpic];
+   }
+   else
+      segl->ceilpicnum = (uint8_t)-1;
 }
 
 //
