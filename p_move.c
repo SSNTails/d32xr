@@ -249,7 +249,6 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
       const side_t *side = &sides[ld->sidenum[0]];
       sidetex_t *st = SIDETEX(side);
       const texture_t *tex = &textures[st->midtexture];
-      const fixed_t texheight = tex->height << (FRACBITS+1);
       int16_t rowoffset = (side->textureoffset & 0xf000) | ((unsigned)side->rowoffset << 4);
       rowoffset >>= 4; // sign extend
       fixed_t textop, texbottom;
@@ -268,12 +267,12 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
       if (lineflags & ML_DONTPEGBOTTOM)
       {
          texbottom = texfloor + ((int)rowoffset << (FRACBITS));
-         textop = texbottom + texheight;
+         textop = texbottom + (tex->fullHeight << (FRACBITS+1));
       }
       else
       {
          textop = texceiling + ((int)rowoffset << (FRACBITS));
-         texbottom = textop - texheight;
+         texbottom = textop - (tex->fullHeight << (FRACBITS+1));
       }
 
       const fixed_t texmid = texbottom + (textop - texbottom) / 2;

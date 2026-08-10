@@ -45,7 +45,7 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
    spropening = seg->clipbounds;
    maskedcol  = seg->clipbounds + (segStop - segStart + 1);
 
-   widthmask = texture->width - 1;
+   widthmask = texture->fullWidth - 1;
    fracstep  = seg->scalestep;
    scalefrac = seg->scalefrac + (x - segStart) * fracstep;
 
@@ -116,7 +116,7 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
       {
          int top    = sprtop;
          int bottom = thickness * spryscale + top;
-         int dataofs = colnum * texture->height;
+         int dataofs = colnum * texture->fullHeight;
          int count;
          fixed_t frac;
          int temp = FRACUNIT-1;
@@ -151,7 +151,7 @@ void R_DrawFOFSegRange(viswall_t *seg, int x, int stopx)
          if(count <= 0)
             continue;
 
-         drawcol(x, top, bottom, light, frac, iscale, patch + dataofs, texture->height);
+         drawcol(x, top, bottom, light, frac, iscale, patch + dataofs, texture->fullHeight);
       }
    }
 }
@@ -172,8 +172,8 @@ void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx)
 
    const texture_t *midTexture = &textures[seg->m_texturenum];
    const texture_t *fofTexture = &textures[seg->fof_texturenum];
-   const int midWidthMask = midTexture->width - 1;
-   const int fofWidthMask = fofTexture->width - 1;
+   const int midWidthMask = midTexture->fullWidth - 1;
+   const int fofWidthMask = fofTexture->fullWidth - 1;
    const fixed_t fracstep = seg->scalestep;
    fixed_t scalefrac = seg->scalefrac + (x - seg->start) * fracstep;
 
@@ -249,7 +249,7 @@ void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx)
       {
          int top    = sprtop;
          int bottom = fofThickness * spryscale + top;
-         int dataofs = fofColnum * fofTexture->height;
+         int dataofs = fofColnum * fofTexture->fullHeight;
          int count;
          fixed_t frac;
          int temp = FRACUNIT-1;
@@ -282,7 +282,7 @@ void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx)
          // calc count
          count = bottom - top + 1;
          if(count > 0)
-            drawcol(x, top, bottom, light, frac, iscale, fofPatch + dataofs, fofTexture->height);
+            drawcol(x, top, bottom, light, frac, iscale, fofPatch + dataofs, fofTexture->fullHeight);
       }
 
       // Draw the midtexture
@@ -349,7 +349,7 @@ void R_DrawMaskedSegRange(viswall_t *seg, int x, int stopx)
    maskedcol  = seg->clipbounds + (seg->stop - seg->start + 1);
 
    texture   = &textures[texturenum];
-   widthmask = texture->width - 1;
+   widthmask = texture->fullWidth - 1;
    fracstep  = seg->scalestep;
    scalefrac = seg->scalefrac + (x - seg->start) * fracstep;
 
@@ -422,8 +422,8 @@ void R_DrawMaskedSegRange(viswall_t *seg, int x, int stopx)
          // a post record has four bytes: topdelta length pixelofs*2
          {
             int top    = sprtop;
-            int bottom = texture->height * spryscale + top;
-            int dataofs = colnum * texture->height;
+            int bottom = texture->fullHeight * spryscale + top;
+            int dataofs = colnum * texture->fullHeight;
             fixed_t frac;
             int temp = FRACUNIT-1;
 
@@ -452,7 +452,7 @@ void R_DrawMaskedSegRange(viswall_t *seg, int x, int stopx)
                top = topclip;
             }
 
-            drawcol(x, top, bottom, light, frac, iscale, patch + dataofs, texture->height);
+            drawcol(x, top, bottom, light, frac, iscale, patch + dataofs, texture->fullHeight);
          }
       } while (++x <= stopx);
    }

@@ -261,11 +261,10 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
     const unsigned centerangle = segl->centerangle;
 #ifdef WALLDRAW2X
     unsigned offset = segl->offset >> 1;
-    fixed_t distance = segl->distance >> 1;
 #else
     unsigned offset = segl->offset;
-    fixed_t distance = segl->distance;
 #endif
+    fixed_t distance = segl->distance;
 
     const int floorheight = segl->floorheight_t << FRACBITS;
     const int ceilingheight = segl->ceilingheight;
@@ -448,7 +447,7 @@ static void R_SetupDrawTexture(drawtex_t *drawtex, texture_t *tex,
     fixed_t texturemid, fixed_t topheight, fixed_t bottomheight)
 {
     int j;
-    int width = tex->width, height = tex->height;
+    int width = tex->fullWidth, height = tex->fullHeight;
 #ifdef USE_DECALS
     uint8_t *columncache = drawtex->columncache;
 #endif

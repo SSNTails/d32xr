@@ -199,7 +199,7 @@ static void R_UpdateCache(void)
         }
         else
         {
-          w = tex->width, h = tex->height;
+          w = tex->fullWidth, h = tex->fullHeight;
           pixels = w * h;
           pdata = (void**)&data[i];
         }
@@ -239,7 +239,7 @@ static void R_UpdateCache(void)
         uint8_t *dst;
 #endif
 
-        for (j = 0; j < tex->width; j++) {
+        for (j = 0; j < tex->fullWidth; j++) {
 #ifdef USE_DECALS
           boolean decaled;
 

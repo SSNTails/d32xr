@@ -202,9 +202,13 @@ typedef struct
 
 typedef struct
 {
-	char		name[8];		/* for switch changing, etc */
-	VINT		width;
-	VINT		height;
+//	char		naame[8];		/* for switch changing, etc */
+	VINT		fullWidth;
+	VINT		fullHeight;
+	VINT        halfWidth;
+	VINT        halfHeight;
+	VINT        dblWidth;
+	VINT        dblHeight;
 	VINT		lumpnum;
 #ifdef USE_DECALS
 	uint16_t	decals;
@@ -704,7 +708,7 @@ typedef struct
 	fixed_t	scalefrac;
 	fixed_t	scale2;
 
-	short	actionbits;
+	uint16_t	actionbits;
 	uint16_t	floor_offs;
 
 /* */
