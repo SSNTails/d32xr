@@ -23,6 +23,15 @@ static void P_AddMobjToList (mobj_t *mobj_, mobj_t *head_)
 	head->prev = mobj;
 }
 
+static void P_AddMobjToFront(mobj_t *mobj_, mobj_t *head_)
+{
+	degenmobj_t *mobj = (void*)mobj_, *head = (void *)head_;
+	mobj->next = head->next;
+	mobj->prev = head;
+	((degenmobj_t *)head->next)->prev = mobj;
+	head->next = mobj;
+}
+
 static void P_RemoveMobjFromCurrList (mobj_t *mobj_)
 {
 	degenmobj_t *mobj = (void*)mobj_;
@@ -516,6 +525,10 @@ void P_SpawnPlayer (mapthing_t *mthing)
 		angle = ANG45 * (mthing->angle/45);
 	}
 	mobj = P_SpawnMobj (x,y,z, MT_PLAYER);
+
+	// players should always be spawned at the front of mobjhead
+	P_RemoveMobjFromCurrList(mobj);
+	P_AddMobjToFront(mobj, (void*)&mobjhead);
 	
 	mobj->angle = angle;
 

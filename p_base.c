@@ -1331,18 +1331,15 @@ void P_AnimateScenery(int8_t numframes)
 //
 void P_RunMobjBase2(void)
 {
-    mobj_t* mo;
+    mobj_t* mo = ((mobj_t*)mobjhead.next)->next;
     mobj_t* next;
 
-    for (mo = mobjhead.next; mo != (void*)&mobjhead; mo = next)
+    while (mo->type == MT_PLAYER && mo != (void*)&mobjhead)
+      mo = mo->next;
+
+    for (; mo != (void*)&mobjhead; mo = next)
     {
       next = mo->next;	// in case mo is removed this time
-/*
-         if (mo->flags & MF_RINGMOBJ) // rings or scenery (they don't think, they don't uniquely animate)
-            continue;
-*/
-      if (mo->player)
-         continue;
 
       P_MobjThinker(mo);
 

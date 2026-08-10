@@ -279,14 +279,14 @@ static boolean PS_RejectCheckSight(mobj_t *t1, mobj_t *t2)
    unsigned pnum, bitnum;
    int bytenum;
 
+   // killough 11/98: shortcut for melee situations
+   // same subsector? obviously visible
+   if (t1->isubsector == t2->isubsector || !rejectmatrix)
+      return true;
+
    // First check for trivial rejection
    s1 = subsectors[t1->isubsector].isector;
    s2 = subsectors[t2->isubsector].isector;
-
-   // killough 11/98: shortcut for melee situations
-   // same subsector? obviously visible
-   if (t1->isubsector == t2->isubsector)
-      return true;
 
    if (s1 > s2)
    {
@@ -294,6 +294,7 @@ static boolean PS_RejectCheckSight(mobj_t *t1, mobj_t *t2)
       s2 = s1;
       s1 = t;
    }
+
    pnum = s1*numsectors + s2;
    pnum -= (s1 * (s1 + 1) / 2);
    bytenum = pnum >> 3;
