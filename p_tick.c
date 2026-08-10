@@ -125,15 +125,14 @@ void P_RemoveThinker (thinker_t *thinker)
 ===============
 */
 
+void P_RunThinkers (void) ATTR_DATA_CACHE_ALIGN;
+
 void P_RunThinkers (void)
 {
-	thinker_t	*currentthinker;
+	thinker_t	*currentthinker = thinkercap.next;
 	
-	//activethinkers = 0;
-	
-	currentthinker = thinkercap.next;
 	while (currentthinker != &thinkercap)
-		{
+	{
 		if (currentthinker->function == (think_t)-1)
 		{	/* time to remove it */
 			currentthinker->next->prev = currentthinker->prev;
@@ -143,10 +142,7 @@ void P_RunThinkers (void)
 		else
 		{
 			if (currentthinker->function)
-			{
 				currentthinker->function (currentthinker);
-			}
-			//activethinkers++;
 		}
 		currentthinker = currentthinker->next;
 	}
