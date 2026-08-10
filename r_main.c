@@ -302,6 +302,8 @@ VINT R_PointInSubsector2 (fixed_t x, fixed_t y)
 const VINT viewports[][2][3] = {	// [viewport][splitscreen][attribute]
 	{ { (VIEWPORT_WIDTH_H32>>1), SCREENHEIGHT, true  }, {  (VIEWPORT_WIDTH_H32>>2), SCREENHEIGHT, true  } },
 	{ { (VIEWPORT_WIDTH_H40>>1), SCREENHEIGHT, true  }, {  (VIEWPORT_WIDTH_H40>>2), SCREENHEIGHT, true  } },
+	{ { (VIEWPORT_WIDTH_H32>>1), SCREENHEIGHT-16, true  }, {  (VIEWPORT_WIDTH_H32>>2), SCREENHEIGHT-16, true  } },
+	{ { (VIEWPORT_WIDTH_H40>>1), SCREENHEIGHT-16, true  }, {  (VIEWPORT_WIDTH_H40>>2), SCREENHEIGHT-16, true  } },
 };
 
 VINT viewportNum;

@@ -683,6 +683,7 @@ no_cmd:
         dc.w    flush_sfx - prireqtbl             /* 0x23 */
         dc.w    load_letterbox - prireqtbl        /* 0x24 */
         dc.w    set_shadow_highlight - prireqtbl  /* 0x25 */
+        dc.w    set_video_config - prireqtbl      /* 0x26 */
 
 | process request from Secondary SH2
 handle_sec_req:
@@ -1757,6 +1758,36 @@ decompress_lump_done:
 
 queue_register_write:
         move.w  0xA15122,register_write_queue
+        move.w  #0,0xA15120         /* done */
+        bra     main_loop
+
+
+
+set_video_config:
+        move.b  0xA15121,d0
+
+        move.b  d0,d1
+        andi.b  #1,d1
+        move.b  d1,hardware_optimized
+
+        lsr.b   #1,d0
+        move.b  d0,upscaler_optimized
+
+        move.b  0xA15122,d0
+
+        cmpi.b  #0,d0
+        beq.s   1f
+        move.b  d0,viewport_height
+        bra.s   3f
+1:
+        cmpi.b  #0,d1
+        beq.s   2f
+        move.b  #176,viewport_height
+        bra.s   3f
+2:
+        move.b  #192,viewport_height
+        |bra.s  3f
+3:
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 

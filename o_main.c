@@ -578,12 +578,26 @@ void O_Control (player_t *player)
 							if (++hardwareOptimized> 1) {
 								hardwareOptimized = 1;
 							}
+							else {
+								Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
+								//viewportHeight = 176;
+								R_SetViewportSize(2);
+							}
 							break;
 						case mi_upscaler:
 							if (++upscalerOptimized> 1) {
 								upscalerOptimized = 1;
 							}
-							h32_adjust = false;
+							else {
+								Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
+								h32_adjust = false;
+								Mars_FlipFrameBuffers(true);
+								//Mars_SetVideoMode(MARS_VDP_MODE_256, IsLevel() ? (224-viewportHeight)>>1 : 0);
+								RemoveDistortionFilters();	// Normalize the line table to get rid of the three-pixel shift.
+								Mars_FlipFrameBuffers(true);
+								//Mars_SetVideoMode(MARS_VDP_MODE_256, IsLevel() ? (224-viewportHeight)>>1 : 0);
+								RemoveDistortionFilters();	// Normalize the line table to get rid of the three-pixel shift.
+							}
 							break;
 					}
 				}
@@ -601,12 +615,26 @@ void O_Control (player_t *player)
 							if (--hardwareOptimized < 0) {
 								hardwareOptimized = 0;
 							}
+							else {
+								Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
+								//viewportHeight = 192;
+								R_SetViewportSize(0);
+							}
 							break;
 						case mi_upscaler:
 							if (--upscalerOptimized < 0) {
 								upscalerOptimized = 0;
 							}
-							h32_adjust = true;
+							else {
+								Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
+								h32_adjust = true;
+								Mars_FlipFrameBuffers(true);
+								//Mars_SetVideoMode(MARS_VDP_MODE_256, IsLevel() ? (224-viewportHeight)>>1 : 0);
+								RemoveDistortionFilters();	// Normalize the line table to get rid of the three-pixel shift.
+								Mars_FlipFrameBuffers(true);
+								//Mars_SetVideoMode(MARS_VDP_MODE_256, IsLevel() ? (224-viewportHeight)>>1 : 0);
+								RemoveDistortionFilters();	// Normalize the line table to get rid of the three-pixel shift.
+							}
 							break;
 					}
 				}
