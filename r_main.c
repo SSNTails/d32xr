@@ -1131,7 +1131,12 @@ void R_SetupLevel(int gamezonemargin, char *background, int border_type)
 
 	R_SetupTextureCaches(gamezonemargin);
 
-	R_SetViewportSize(h40_sky);
+	if (IsTitleScreen()) {
+		R_SetViewportSize(VIEWPORT_H32);
+	}
+	else {
+		R_SetViewportSize((hardwareOptimized<<1) + h40_sky);
+	}
 
 #ifdef MARS
 	curpalette = -1;

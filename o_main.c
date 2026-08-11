@@ -582,6 +582,7 @@ void O_Control (player_t *player)
 								Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
 								//viewportHeight = 176;
 								R_SetViewportSize(h40_sky ? VIEWPORT_H40_OPTIMIZED : VIEWPORT_H32_OPTIMIZED);
+								Mars_SetVideoMode(MARS_VDP_MODE_256, (224-viewportHeight)>>1);
 							}
 							break;
 						case mi_upscaler:
@@ -619,6 +620,7 @@ void O_Control (player_t *player)
 								Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
 								//viewportHeight = 192;
 								R_SetViewportSize(h40_sky ? VIEWPORT_H40 : VIEWPORT_H32);
+								Mars_SetVideoMode(MARS_VDP_MODE_256, (224-viewportHeight)>>1);
 							}
 							break;
 						case mi_upscaler:
