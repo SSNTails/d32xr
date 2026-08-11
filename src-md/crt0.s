@@ -1788,6 +1788,16 @@ set_video_config:
         move.b  #192,viewport_height
         |bra.s  3f
 3:
+        move.b  #224,d1
+        sub.b   viewport_height,d1
+        lsr.b   #1,d1
+        subi.b  #3,d1           | (((224-viewport_height)/2)-3)
+        move.b  d1,hint_top_letterbox_interval
+
+        move.b  viewport_height,d1
+        subi.b  #1,d1           | (viewport_height - 1)
+        move.b  d1,hint_bottom_letterbox_interval
+
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 
@@ -3662,17 +3672,13 @@ level_hblank:
         bset.b  #3,d0   /* Enable shadow/highlight */
         move.w  d0,(a0)
         move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
-        move.b  #224,d1
-        sub.b   viewport_height,d1
-        lsr.b   #1,d1
-        subi.b  #3,d1           | (((224-viewport_height)/2)-3)
+        move.b  hint_top_letterbox_interval,d1
         bra.s   7f
 1:
         bset.b  #3,d0   /* Enable shadow/highlight */
         move.w  d0,(a0)
         move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
-        move.b  viewport_height,d1
-        subi.b  #1,d1           | (viewport_height - 1)
+        move.b  hint_bottom_letterbox_interval,d1
         bra.s   7f
 2:
         /* This controls shadow/highlight for the sky */
@@ -4456,6 +4462,10 @@ hint_count:
 hint_1_interval:
         dc.b    0
 hint_2_interval:
+        dc.b    0
+hint_top_letterbox_interval:
+        dc.b    0
+hint_bottom_letterbox_interval:
         dc.b    0
         
         .align  2

@@ -29,8 +29,10 @@ extern fixed_t stretchX;
 #define VIEWPORT_WIDTH_H32				(SCREENWIDTH - VIEWPORT_OVERDRAW_AREA)
 #define VIEWPORT_WIDTH_H40				SCREENWIDTH
 
-#define VIEWPORT_H32		0
-#define VIEWPORT_H40		1
+#define VIEWPORT_H32			0
+#define VIEWPORT_H40			1
+#define VIEWPORT_H32_OPTIMIZED	2
+#define VIEWPORT_H40_OPTIMIZED	3
 
 /* */
 /* lighting constants */
