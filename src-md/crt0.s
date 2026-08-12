@@ -1804,15 +1804,21 @@ set_video_config:
         move.l  a0,-(sp)
         move.l  a1,-(sp)
         move.l  a2,-(sp)
+        move.l  a3,-(sp)
+        move.l  a4,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
         move.l  d2,-(sp)
+        move.l  d3,-(sp)
 
         bsr.w   setup_letterbox
 
+        move.l  (sp)+,d3
         move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
+        move.l  (sp)+,a4
+        move.l  (sp)+,a3
         move.l  (sp)+,a2
         move.l  (sp)+,a1
         move.l  (sp)+,a0
@@ -1901,12 +1907,12 @@ load_md_palettes:
 
 
 setup_letterbox:
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
         move.b  #0,hint_count
         move.w  #0x8A00,d0
         move.w  d0,(a0)             /* reg 10 = HINT = 0 */
-
-        lea     0xC00004,a0
-        lea     0xC00000,a1
 
         move.w  #0x8F02,(a0)
 
