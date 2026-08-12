@@ -1764,6 +1764,8 @@ queue_register_write:
 
 
 set_video_config:
+        move.w  #0x2700,sr          /* disable ints */
+
         move.b  0xA15121,d0
 
         move.b  d0,d1
@@ -1798,7 +1800,26 @@ set_video_config:
         subi.b  #1,d1           | (viewport_height - 1)
         move.b  d1,hint_bottom_letterbox_interval
 
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a2,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+
+        bsr.w   setup_letterbox
+
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a2
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
         move.w  #0,0xA15120         /* done */
+
+        move.w  #0x2000,sr          /* enable ints */
+
         bra     main_loop
 
 
@@ -1875,6 +1896,111 @@ load_md_palettes:
         |move.w  #0,0xA15120         /* done */
 
         bra     main_loop
+
+
+
+setup_letterbox:
+        move.b  #0,hint_count
+        move.w  #0x8A00,d0
+        move.w  d0,(a0)             /* reg 10 = HINT = 0 */
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        move.l  #0x40000000,(a0)        /* Write VRAM address 0 */
+
+        moveq   #0,d0   | Needed?
+        moveq   #0,d1   | Needed?
+        moveq   #0,d2   | Needed?
+        move.b  #224,d0
+        move.b  viewport_height,d1
+        sub.b   d1,d0           | (224 - viewport_height)
+        move.b  d0,d2
+        move.b  #64,d1
+        sub.b   d0,d1           | (64 - (224 - viewport_height))
+        andi.w  #0xF0,d1        | ((64 - (224 - viewport_height)) & 0xF0)
+        lea     letterbox_window_tiles,a2
+        adda.w  d1,a2
+
+        lsr.b   #4,d2
+        sub.b   #1,d2
+        move.w  #16,d0
+1:
+        moveq   #0,d1
+        move.b  register_12_state,d1    /* If H40, do another loop iteration */
+        andi.b  #1,d1
+        lsl.b   #2,d1
+        addq    #3,d1
+2:
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        suba.w  d0,a2
+        dbra    d1,2b
+        adda.w  d0,a2
+        dbra    d2,1b
+
+
+8:
+        moveq   #0,d1
+        move.b  register_12_state,d1    /* If H40, do another loop iteration */
+
+        moveq   #0,d2   | Needed?
+        move.b  #224,d2
+        move.b  viewport_height,d0
+        sub.b   d0,d2           | (224 - viewport_height)
+        lsr.b   #4,d2           | ((224 - viewport_height)/16)
+        move.w  d2,-(sp)
+        lsl.w   #8,d2
+        lsl.l   #8,d2
+        lsl.l   #6,d2           | (((224 - viewport_height)/16)<<22))
+
+        move.l  #0x47000000,d0  | H32 address
+        sub.l   d2,d0           | (0x47000000 - (((224-viewport_height)/16)<<22))
+        btst.b  #0,d1
+        beq.s   9f
+        move.l  #0x4E000000,d0  | H40 address
+        sub.l   d2,d0
+        sub.l   d2,d0           | (0x4E000000 - (((224-viewport_height)/16)<<23))
+9:
+        move.l  d0,(a0)        /* Write VRAM address 0x0600+ */
+        lea     letterbox_window_tiles,a2
+        moveq   #0,d2
+        move.w  (sp)+,d2
+        subi.w  #1,d2           | (((224-viewport_height)/16)-1)
+
+        move.w  #16,d0
+1:
+        moveq   #0,d1
+        move.b  register_12_state,d1    /* If H40, do another loop iteration */
+        andi.b  #1,d1
+        lsl.b   #2,d1
+        addq    #3,d1
+2:
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        suba.w  d0,a2
+        dbra    d1,2b
+        adda.w  d0,a2
+        dbra    d2,1b
+
+
+        /* Enable the window plane */
+        |move.w  #0x9203,(a0) /* reg 18 = W Pos V = top */
+
+99:
+        rts
 
 
 
@@ -2000,99 +2126,7 @@ load_letterbox:
         move.w  (a2)+,(a3)+             /* Save color to DRAM */
         dbra    d1,1b
 
-
-        move.l  #0x40000000,(a0)        /* Write VRAM address 0 */
-
-        moveq   #0,d0   | Needed?
-        moveq   #0,d1   | Needed?
-        moveq   #0,d2   | Needed?
-        move.b  #224,d0
-        move.b  viewport_height,d1
-        sub.b   d1,d0           | (224 - viewport_height)
-        move.b  d0,d2
-        move.b  #64,d1
-        sub.b   d0,d1           | (64 - (224 - viewport_height))
-        andi.w  #0xF0,d1        | ((64 - (224 - viewport_height)) & 0xF0)
-        lea     letterbox_window_tiles,a2
-        adda.w  d1,a2
-
-        lsr.b   #4,d2
-        sub.b   #1,d2
-        move.w  #16,d0
-1:
-        moveq   #0,d1
-        move.b  register_12_state,d1    /* If H40, do another loop iteration */
-        andi.b  #1,d1
-        lsl.b   #2,d1
-        addq    #3,d1
-2:
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        suba.w  d0,a2
-        dbra    d1,2b
-        adda.w  d0,a2
-        dbra    d2,1b
-
-
-8:
-        moveq   #0,d1
-        move.b  register_12_state,d1    /* If H40, do another loop iteration */
-
-        moveq   #0,d2   | Needed?
-        move.b  #224,d2
-        move.b  viewport_height,d0
-        sub.b   d0,d2           | (224 - viewport_height)
-        lsr.b   #4,d2           | ((224 - viewport_height)/16)
-        move.w  d2,-(sp)
-        lsl.w   #8,d2
-        lsl.l   #8,d2
-        lsl.l   #6,d2           | (((224 - viewport_height)/16)<<22))
-
-        move.l  #0x47000000,d0  | H32 address
-        sub.l   d2,d0           | (0x47000000 - (((224-viewport_height)/16)<<22))
-        btst.b  #0,d1
-        beq.s   9f
-        move.l  #0x4E000000,d0  | H40 address
-        sub.l   d2,d0
-        sub.l   d2,d0           | (0x4E000000 - (((224-viewport_height)/16)<<23))
-9:
-        move.l  d0,(a0)        /* Write VRAM address 0x0600+ */
-        lea     letterbox_window_tiles,a2
-        moveq   #0,d2
-        move.w  (sp)+,d2
-        subi.w  #1,d2           | (((224-viewport_height)/16)-1)
-
-        move.w  #16,d0
-1:
-        moveq   #0,d1
-        move.b  register_12_state,d1    /* If H40, do another loop iteration */
-        andi.b  #1,d1
-        lsl.b   #2,d1
-        addq    #3,d1
-2:
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        suba.w  d0,a2
-        dbra    d1,2b
-        adda.w  d0,a2
-        dbra    d2,1b
-
-
-        /* Enable the window plane */
-        |move.w  #0x9203,(a0) /* reg 18 = W Pos V = top */
-
+        bsr.w   setup_letterbox
 
 99:
         move.l  (sp)+,d2
