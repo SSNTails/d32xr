@@ -1908,6 +1908,166 @@ setup_letterbox:
         lea     0xC00004,a0
         lea     0xC00000,a1
 
+        move.w  #0x8F02,(a0)
+
+        move.l  #0x58000000,(a0)        /* Write VRAM address 0x1800 */
+
+        moveq   #0,d3
+        move.b  viewport_height,d3
+        sub.b   #160,d3
+        lsr.b   #1,d3                   | ((viewport_height-160)/2)
+
+        moveq   #0,d2
+        move.b  register_12_state,d0
+        btst.b  #0,d0                   /* Which screen resolution will be used? */
+        bne.w   5f                      /* Branch if H40 */
+
+        /* Generate H32 left-edge sprites */
+        lea     h32_left_edge_sprites,a3
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0
+        move.w  d0,(a1)
+        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.w   d3,d0
+        move.w  d0,(a1)
+        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        move.w  #4,d1
+1:
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0
+        move.w  d0,(a1)
+        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+        dbra    d1,1b
+
+        move.b  viewport_height,d0
+        cmpi.b  #208,d0
+        bhs.s   208f
+        cmpi.b  #192,d0
+        bhs.s   192f
+        cmpi.b  #176,d0
+        bhs.s   176f
+        |bra.s   160f
+160:
+        moveq   #7,d2                   /* Adjust letterbox sprite 'next' values by seven */
+        bra.s   2f                      | No additional data needs to be written
+176:
+        |lea     h32_left_edge_sprites_176,a3
+        move.w  #0,d1
+        moveq   #8,d2                   /* Adjust letterbox sprite 'next' values by eight */
+        bra.s   1f
+192:
+        lea     h32_left_edge_sprites_192,a3
+        move.w  #0,d1
+        moveq   #8,d2                   /* Adjust letterbox sprite 'next' values by eight */
+        bra.s   1f
+208:
+        lea     h32_left_edge_sprites_208,a3
+        move.w  #1,d1
+        moveq   #9,d2                   /* Adjust letterbox sprite 'next' values by nine */
+        |bra.s   1f
+
+1:
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0
+        move.w  d0,(a1)
+        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+        dbra    d1,1b
+2:
+
+
+        /* H32: Create letterbox sprites in sprite attribute table */
+        lea     letterbox_sprites,a3
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0                   /* Subtract ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        subi.w  #0x400,d0               /* Reduce sprite width to 24 pixels */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,d0                /* Copy four bytes from the source */
+        addi.l  #0x40008,d0             /* Increase tile number by 4; move sprite to the right 8 pixels */
+        move.l  d0,(a1)
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.w   d3,d0                   /* Add ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        subi.w  #0x400,d0               /* Reduce sprite width to 24 pixels */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,d0                /* Copy four bytes from the source */
+        addi.l  #0x40008,d0             /* Increase tile number by 4; move sprite to the right 8 pixels */
+        move.l  d0,(a1)
+
+        moveq   #0,d1
+        move.w  #6,d1
+4:
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0                   /* Subtract ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.w   d3,d0                   /* Add ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        dbra    d1,4b
+
+        move.l  #0x41000000,(a0)        /* Write VRAM address 0x100 */
+        move.l  #0x11111111,d2          /* Left-border sprite pixels */
+        move.w  #31,d1
+2:
+        move.l  d2,(a1)                 /* Create left-border tiles, or erase them */
+        dbra    d1,2b
+
+        bra.s   7f
+
+
+5:      /* H40: Create letterbox sprites in sprite attribute table */
+        lea     letterbox_sprites,a3
+        moveq   #0,d1
+        move.w  #9,d1
+6:
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0                   /* Subtract ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.w   d3,d0                   /* Add ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        dbra    d1,6b
+
+
+7:
+
+
+
+
         move.l  #0x40000000,(a0)        /* Write VRAM address 0 */
 
         moveq   #0,d0   | Needed?
@@ -2061,6 +2221,7 @@ load_letterbox:
         move.l  d0,-(sp)
         move.l  d1,-(sp)
         move.l  d2,-(sp)
+        move.l  d3,-(sp)
 
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -2152,6 +2313,7 @@ load_letterbox:
         bsr.w   setup_letterbox
 
 99:
+        move.l  (sp)+,d3
         move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
@@ -2181,7 +2343,6 @@ load_md_sky:
         move.l  d0,-(sp)
         move.l  d1,-(sp)
         move.l  d2,-(sp)
-        move.l  d3,-(sp)
 
         lea     0xC00004,a0
         lea     0xC00000,a1
@@ -2215,165 +2376,11 @@ load_md_sky:
         cmpi.b  #1,legacy_emulator      /* Check for a legacy emulator (not Ares) */
         bgt.w   4f
         move.w  #0x8F02,(a0)
-        lea     0xC00004,a0
-        lea     0xC00000,a1
 
-        move.l  #0x58000000,(a0)        /* Write VRAM address 0x1800 */
-
-        moveq   #0,d3
-        move.b  viewport_height,d3
-        sub.b   #160,d3
-        lsr.b   #1,d3                   | ((viewport_height-160)/2)
-
-        moveq   #0,d2
-        btst.b  #0,d0                   /* Which screen resolution will be used? */
-        bne.w   5f                      /* Branch if H40 */
-
-        /* Generate H32 left-edge sprites */
-        lea     h32_left_edge_sprites,a3
-
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        sub.w   d3,d0
-        move.w  d0,(a1)
-        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
-        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
-
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        add.w   d3,d0
-        move.w  d0,(a1)
-        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
-        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
-
-        move.w  #4,d1
-1:
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        sub.w   d3,d0
-        move.w  d0,(a1)
-        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
-        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
-        dbra    d1,1b
-
-        move.b  viewport_height,d0
-        cmpi.b  #208,d0
-        bhs.s   208f
-        cmpi.b  #192,d0
-        bhs.s   192f
-        cmpi.b  #176,d0
-        bhs.s   176f
-        |bra.s   160f
-160:
-        moveq   #7,d2                   /* Adjust letterbox sprite 'next' values by seven */
-        bra.s   2f                      | No additional data needs to be written
-176:
-        |lea     h32_left_edge_sprites_176,a3
-        move.w  #0,d1
-        moveq   #8,d2                   /* Adjust letterbox sprite 'next' values by eight */
-        bra.s   1f
-192:
-        lea     h32_left_edge_sprites_192,a3
-        move.w  #0,d1
-        moveq   #8,d2                   /* Adjust letterbox sprite 'next' values by eight */
-        bra.s   1f
-208:
-        lea     h32_left_edge_sprites_208,a3
-        move.w  #1,d1
-        moveq   #9,d2                   /* Adjust letterbox sprite 'next' values by nine */
-        |bra.s   1f
-
-1:
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        sub.w   d3,d0
-        move.w  d0,(a1)
-        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
-        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
-        dbra    d1,1b
-2:
-
-
-        /* H32: Create letterbox sprites in sprite attribute table */
-        lea     letterbox_sprites,a3
-
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        sub.w   d3,d0                   /* Subtract ((viewport_height-160)/2) */
-        move.w  d0,(a1)
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        subi.w  #0x400,d0               /* Reduce sprite width to 24 pixels */
-        add.b   d2,d0                   /* Adjust 'next' value */
-        move.w  d0,(a1)
-        move.l  (a3)+,d0                /* Copy four bytes from the source */
-        addi.l  #0x40008,d0             /* Increase tile number by 4; move sprite to the right 8 pixels */
-        move.l  d0,(a1)
-
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        add.w   d3,d0                   /* Add ((viewport_height-160)/2) */
-        move.w  d0,(a1)
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        subi.w  #0x400,d0               /* Reduce sprite width to 24 pixels */
-        add.b   d2,d0                   /* Adjust 'next' value */
-        move.w  d0,(a1)
-        move.l  (a3)+,d0                /* Copy four bytes from the source */
-        addi.l  #0x40008,d0             /* Increase tile number by 4; move sprite to the right 8 pixels */
-        move.l  d0,(a1)
-
-        moveq   #0,d1
-        move.w  #6,d1
-4:
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        sub.w   d3,d0                   /* Subtract ((viewport_height-160)/2) */
-        move.w  d0,(a1)
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        add.b   d2,d0                   /* Adjust 'next' value */
-        move.w  d0,(a1)
-        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
-
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        add.w   d3,d0                   /* Add ((viewport_height-160)/2) */
-        move.w  d0,(a1)
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        add.b   d2,d0                   /* Adjust 'next' value */
-        move.w  d0,(a1)
-        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
-
-        dbra    d1,4b
-
-        move.l  #0x41000000,(a0)        /* Write VRAM address 0x100 */
-        move.l  #0x11111111,d2          /* Left-border sprite pixels */
-        move.w  #31,d1
-2:
-        move.l  d2,(a1)                 /* Create left-border tiles, or erase them */
-        dbra    d1,2b
-
-        bra.s   7f
-
-
-5:      /* H40: Create letterbox sprites in sprite attribute table */
-        lea     letterbox_sprites,a3
-        moveq   #0,d1
-        move.w  #9,d1
-6:
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        sub.w   d3,d0                   /* Subtract ((viewport_height-160)/2) */
-        move.w  d0,(a1)
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        add.b   d2,d0                   /* Adjust 'next' value */
-        move.w  d0,(a1)
-        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
-
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        add.w   d3,d0                   /* Add ((viewport_height-160)/2) */
-        move.w  d0,(a1)
-        move.w  (a3)+,d0                /* Copy two bytes from the source */
-        add.b   d2,d0                   /* Adjust 'next' value */
-        move.w  d0,(a1)
-        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
-
-        dbra    d1,6b
-
-
-7:
         |move.w  d0,(a0) /* reg 12 */
         move.w  #0x8C00,d0
         move.b  register_12_state,d0
+4:
         move.w  d0,register_write_queue     /* Set register 12 during VBlank */
 
         move.w  #0x9000, d0
@@ -2723,7 +2730,6 @@ load_md_sky:
 
 
 
-        move.l  (sp)+,d3
         move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
