@@ -1127,15 +1127,15 @@ void R_SetupLevel(int gamezonemargin, char *background, int border_type)
 {
 	R_SetupBackground(background, 1, 1);
 
-	R_SetupLetterBox(border_type);
-
 	R_SetupTextureCaches(gamezonemargin);
 
 	if (IsTitleScreen()) {
+		Mars_ClearLetterBox();
 		R_SetViewportSize(VIEWPORT_H32);
 	}
 	else {
 		R_SetViewportSize((hardwareOptimized<<1) + h40_sky);
+		R_SetupLetterBox(border_type);
 	}
 
 #ifdef MARS

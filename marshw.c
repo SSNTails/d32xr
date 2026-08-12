@@ -944,6 +944,13 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 #endif
 
 
+void Mars_ClearLetterBox(void)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM0 = 0x2700;
+}
+
+
 void Mars_LoadLetterBox(void *tiles_ptr, int tiles_size, void *sprites_ptr, int sprites_size,
 		void *palette_ptr, int palette_size)
 {

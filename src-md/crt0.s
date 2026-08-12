@@ -684,6 +684,7 @@ no_cmd:
         dc.w    load_letterbox - prireqtbl        /* 0x24 */
         dc.w    set_shadow_highlight - prireqtbl  /* 0x25 */
         dc.w    set_video_config - prireqtbl      /* 0x26 */
+        dc.w    clear_letterbox - prireqtbl       /* 0x27 */
 
 | process request from Secondary SH2
 handle_sec_req:
@@ -2004,25 +2005,16 @@ setup_letterbox:
 
 
 
-load_letterbox:
+clear_letterbox:
         move.w  #0x2700,sr          /* disable ints */
 
         move.l  a0,-(sp)
         move.l  a1,-(sp)
-        move.l  a2,-(sp)
-        move.l  a3,-(sp)
-        move.l  a4,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
-        move.l  d2,-(sp)
 
         lea     0xC00004,a0
         lea     0xC00000,a1
-
-        /* HACK -- clear VRAM from 0x000 through 0xFFF (except 0x100 through 0x17F) */
-        move.b  gamemode,d0
-        cmpi.b  #4,d0
-        bne.s   1f
 
         move.w  #0x8F02,(a0)
         moveq   #0,d0
@@ -2039,10 +2031,41 @@ load_letterbox:
         move.l  d0,(a1)                 /* Erase four bytes */
         dbra    d1,0b
 
-        bra.w   99f                     /* Nothing more to do */
+        move.l  #0x58000000,(a0)        /* Write VRAM address 0x1800 */
+        move.w  #160,d1
+0:
+        move.l  d0,(a1)                 /* Erase four bytes */
+        dbra    d1,0b
+
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        move.w  #0,0xA15120         /* done */
+
+        move.w  #0x2000,sr          /* enable ints */
+
+        bra     main_loop
 
 
-1:
+
+load_letterbox:
+        move.w  #0x2700,sr          /* disable ints */
+
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a2,-(sp)
+        move.l  a3,-(sp)
+        move.l  a4,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+
         /* Load patterns */
         bsr     decompress_lump
         lea     0xC00004,a0
