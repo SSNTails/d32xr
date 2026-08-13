@@ -2374,9 +2374,9 @@ load_md_sky:
 
         move.w  #0x8C00,d0
         or.b    (a2)+,d0
-        cmpi.b  #3,legacy_emulator      /* Check for Gens */
-        bne.s   0f
-        or.b    #0x0081,d0              /* Force Gens to use H40 */
+        cmpi.b  #0,upscaler_optimized   /* Check for upscaler optimization setting */
+        beq.s   0f
+        andi.b  #0x7E,d0                /* Force H32 */
 0:
         move.b  d0,register_12_state
         cmpi.b  #1,legacy_emulator      /* Check for a legacy emulator (not Ares) */
