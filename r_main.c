@@ -20,6 +20,9 @@ fixed_t stretchX;
 VINT anamorphicview = 0;
 VINT initmathtables = 2;
 
+VINT hardwareOptimized = 1;
+VINT upscalerOptimized = 0;
+
 drawcol_t drawcol;
 drawcol_t drawcolflipped;
 drawcol_t drawcolnpo2;
@@ -299,6 +302,8 @@ VINT R_PointInSubsector2 (fixed_t x, fixed_t y)
 const VINT viewports[][2][3] = {	// [viewport][splitscreen][attribute]
 	{ { (VIEWPORT_WIDTH_H32>>1), SCREENHEIGHT, true  }, {  (VIEWPORT_WIDTH_H32>>2), SCREENHEIGHT, true  } },
 	{ { (VIEWPORT_WIDTH_H40>>1), SCREENHEIGHT, true  }, {  (VIEWPORT_WIDTH_H40>>2), SCREENHEIGHT, true  } },
+	{ { (VIEWPORT_WIDTH_H32>>1), SCREENHEIGHT-16, true  }, {  (VIEWPORT_WIDTH_H32>>2), SCREENHEIGHT-16, true  } },
+	{ { (VIEWPORT_WIDTH_H40>>1), SCREENHEIGHT-16, true  }, {  (VIEWPORT_WIDTH_H40>>2), SCREENHEIGHT-16, true  } },
 };
 
 VINT viewportNum;
@@ -465,7 +470,9 @@ D_printf ("R_InitData\n");
 	R_InitData ();
 D_printf ("Done\n");
 
-	R_SetViewportSize(VIEWPORT_H40);
+	R_SetViewportSize(VIEWPORT_H40_OPTIMIZED);
+
+	Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
 
 	framecount = 0;
 	viewplayer = &players[0];
@@ -795,7 +802,12 @@ void R_SetupMDSky(const char *name, int palettes_lump)
 
 	// Get the thru-pixel color from the metadata.
 	mars_thru_rgb_reference = sky_metadata_ptr[0];
-	h40_sky = (sky_metadata_ptr[2] & 0x81);	// false = H32 mode; true = H40 mode
+	if (upscalerOptimized) {
+		h40_sky = false;
+	}
+	else {
+		h40_sky = (sky_metadata_ptr[2] & 0x81);	// false = H32 mode; true = H40 mode
+	}
 
 	if (h40_sky) {
 		distortion_action = DISTORTION_NORMALIZE_H40; // Necessary to normalize the next frame buffer.
@@ -1120,11 +1132,16 @@ void R_SetupLevel(int gamezonemargin, char *background, int border_type)
 {
 	R_SetupBackground(background, 1, 1);
 
-	R_SetupLetterBox(border_type);
-
 	R_SetupTextureCaches(gamezonemargin);
 
-	R_SetViewportSize(h40_sky);
+	if (IsTitleScreen()) {
+		Mars_ClearLetterBox();
+		R_SetViewportSize(VIEWPORT_H32);
+	}
+	else {
+		R_SetViewportSize((hardwareOptimized<<1) + h40_sky);
+		R_SetupLetterBox(border_type);
+	}
 
 #ifdef MARS
 	curpalette = -1;

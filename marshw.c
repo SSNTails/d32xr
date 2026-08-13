@@ -768,6 +768,13 @@ void Mars_WriteMDVDPRegister(int write)
 	MARS_SYS_COMM0 = 0x1C00;
 }
 
+void Mars_SetVideoConfig(int hardware_optimized, int upscaler_optimized, int viewport_height)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM2 = viewport_height;
+	MARS_SYS_COMM0 = 0x2600 | (upscaler_optimized << 1) | hardware_optimized;
+}
+
 void Mars_SetShadowHighlight(boolean enabled)
 {
 	while (MARS_SYS_COMM0);
@@ -935,6 +942,13 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 	while (MARS_SYS_COMM0);
 }
 #endif
+
+
+void Mars_ClearLetterBox(void)
+{
+	while (MARS_SYS_COMM0);
+	MARS_SYS_COMM0 = 0x2700;
+}
 
 
 void Mars_LoadLetterBox(void *tiles_ptr, int tiles_size, void *sprites_ptr, int sprites_size,

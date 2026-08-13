@@ -141,6 +141,8 @@ int Mars_ROMSize(void);
 
 void Mars_WriteMDVDPRegister(int write);
 
+void Mars_SetVideoConfig(int hardware_optimized, int upscaler_optimized, int viewport_height);
+
 void Mars_SetShadowHighlight(boolean enabled);
 
 void Mars_LoadMDPalettes(void *palettes_ptr, int palettes_size, int bank, int flags);
@@ -159,6 +161,8 @@ void Mars_LoadMDSky(void *sky_metadata_ptr,
 		void *sky_palettes_ptr, int sky_palettes_size,
 		void *sky_tiles_ptr, int sky_tiles_size);
 #endif
+
+void Mars_ClearLetterBox(void);
 
 void Mars_LoadLetterBox(void *tiles_ptr, int tiles_size, void *sprites_ptr, int sprites_size,
 		void *palette_ptr, int palette_size);

@@ -723,7 +723,7 @@ void DrawScrollingBanner(short ltzz_lump, int x_pos, int y_shift)
 		source_offset = ((-y_shift % height) << 4) - x_pos;
 	}
 
-	if (viewportNum == VIEWPORT_H32) {
+	if ((viewportNum & 1) == VIEWPORT_H32) {
 		source_offset += (VIEWPORT_OVERDRAW_AREA >> 1);
 		dest += ((VIEWPORT_OVERDRAW_AREA >> 1) >> 1);
 		x_pos -= (VIEWPORT_OVERDRAW_AREA >> 1);
@@ -782,7 +782,7 @@ void DrawScrollingChevrons(short chev_lump, int x_pos, int y_shift)
 	if (x_pos <= 0) {
 		source_offset -= x_pos;
 
-		if (viewportNum == VIEWPORT_H32) {
+		if ((viewportNum & 1) == VIEWPORT_H32) {
 			source_offset += (VIEWPORT_OVERDRAW_AREA >> 1);
 			dest += ((VIEWPORT_OVERDRAW_AREA >> 1) >> 1);
 			x_pos -= (VIEWPORT_OVERDRAW_AREA >> 1);

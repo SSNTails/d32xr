@@ -44,8 +44,6 @@
         .equ STRM_DRUMV, 0xFFFA     /* Drum sample volume */
         .equ STRM_DRUMP, 0xFFFB     /* Drum sample panning */
 
-        .equ VIEWPORT_HEIGHT, 192
-
 
         .macro  z80rd adr, dst
         move.b  0xA00000+\adr,\dst
@@ -685,6 +683,8 @@ no_cmd:
         dc.w    flush_sfx - prireqtbl             /* 0x23 */
         dc.w    load_letterbox - prireqtbl        /* 0x24 */
         dc.w    set_shadow_highlight - prireqtbl  /* 0x25 */
+        dc.w    set_video_config - prireqtbl      /* 0x26 */
+        dc.w    clear_letterbox - prireqtbl       /* 0x27 */
 
 | process request from Secondary SH2
 handle_sec_req:
@@ -1764,6 +1764,73 @@ queue_register_write:
 
 
 
+set_video_config:
+        move.w  #0x2700,sr          /* disable ints */
+
+        move.b  0xA15121,d0
+
+        move.b  d0,d1
+        andi.b  #1,d1
+        move.b  d1,hardware_optimized
+
+        lsr.b   #1,d0
+        move.b  d0,upscaler_optimized
+
+        move.b  0xA15122,d0
+
+        cmpi.b  #0,d0
+        beq.s   1f
+        move.b  d0,viewport_height
+        bra.s   3f
+1:
+        cmpi.b  #0,d1
+        beq.s   2f
+        move.b  #176,viewport_height
+        bra.s   3f
+2:
+        move.b  #192,viewport_height
+        |bra.s  3f
+3:
+        move.b  #224,d1
+        sub.b   viewport_height,d1
+        lsr.b   #1,d1
+        subi.b  #3,d1           | (((224-viewport_height)/2)-3)
+        move.b  d1,hint_top_letterbox_interval
+
+        move.b  viewport_height,d1
+        subi.b  #1,d1           | (viewport_height - 1)
+        move.b  d1,hint_bottom_letterbox_interval
+
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a2,-(sp)
+        move.l  a3,-(sp)
+        move.l  a4,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+        move.l  d3,-(sp)
+
+        bsr.w   setup_letterbox
+
+        move.l  (sp)+,d3
+        move.l  (sp)+,d2
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a4
+        move.l  (sp)+,a3
+        move.l  (sp)+,a2
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        move.w  #0,0xA15120         /* done */
+
+        move.w  #0x2000,sr          /* enable ints */
+
+        bra     main_loop
+
+
+
 set_shadow_highlight:
         move.b  0xA15121,d0
         lsl.b   #3,d0
@@ -1839,25 +1906,281 @@ load_md_palettes:
 
 
 
-load_letterbox:
+setup_letterbox:
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        move.b  #0,hint_count
+        move.w  #0x8A00,d0
+        move.w  d0,(a0)             /* reg 10 = HINT = 0 */
+
+        move.w  #0x8F02,(a0)
+
+        move.l  #0x58000000,(a0)        /* Write VRAM address 0x1800 */
+
+        moveq   #0,d3
+        move.b  viewport_height,d3
+        sub.b   #160,d3
+        lsr.b   #1,d3                   | ((viewport_height-160)/2)
+
+        moveq   #0,d2
+        move.b  register_12_state,d0
+        btst.b  #0,d0                   /* Which screen resolution will be used? */
+        bne.w   5f                      /* Branch if H40 */
+
+        /* Generate H32 left-edge sprites */
+        lea     h32_left_edge_sprites,a3
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0
+        move.w  d0,(a1)
+        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.w   d3,d0
+        move.w  d0,(a1)
+        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        move.w  #4,d1
+1:
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0
+        move.w  d0,(a1)
+        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+        dbra    d1,1b
+
+        move.b  viewport_height,d0
+        cmpi.b  #208,d0
+        bhs.s   208f
+        cmpi.b  #192,d0
+        bhs.s   192f
+        cmpi.b  #176,d0
+        bhs.s   176f
+        |bra.s   160f
+160:
+        moveq   #7,d2                   /* Adjust letterbox sprite 'next' values by seven */
+        bra.s   2f                      | No additional data needs to be written
+176:
+        |lea     h32_left_edge_sprites_176,a3
+        move.w  #0,d1
+        moveq   #8,d2                   /* Adjust letterbox sprite 'next' values by eight */
+        bra.s   1f
+192:
+        lea     h32_left_edge_sprites_192,a3
+        move.w  #0,d1
+        moveq   #8,d2                   /* Adjust letterbox sprite 'next' values by eight */
+        bra.s   1f
+208:
+        lea     h32_left_edge_sprites_208,a3
+        move.w  #1,d1
+        moveq   #9,d2                   /* Adjust letterbox sprite 'next' values by nine */
+        |bra.s   1f
+
+1:
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0
+        move.w  d0,(a1)
+        move.w  (a3)+,(a1)              /* Copy two bytes from the source */
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+        dbra    d1,1b
+2:
+
+
+        /* H32: Create letterbox sprites in sprite attribute table */
+        lea     letterbox_sprites,a3
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0                   /* Subtract ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        subi.w  #0x400,d0               /* Reduce sprite width to 24 pixels */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,d0                /* Copy four bytes from the source */
+        addi.l  #0x40008,d0             /* Increase tile number by 4; move sprite to the right 8 pixels */
+        move.l  d0,(a1)
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.w   d3,d0                   /* Add ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        subi.w  #0x400,d0               /* Reduce sprite width to 24 pixels */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,d0                /* Copy four bytes from the source */
+        addi.l  #0x40008,d0             /* Increase tile number by 4; move sprite to the right 8 pixels */
+        move.l  d0,(a1)
+
+        moveq   #0,d1
+        move.w  #6,d1
+4:
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0                   /* Subtract ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.w   d3,d0                   /* Add ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        dbra    d1,4b
+
+        move.l  #0x41000000,(a0)        /* Write VRAM address 0x100 */
+        move.l  #0x11111111,d2          /* Left-border sprite pixels */
+        move.w  #31,d1
+2:
+        move.l  d2,(a1)                 /* Create left-border tiles, or erase them */
+        dbra    d1,2b
+
+        bra.s   7f
+
+
+5:      /* H40: Create letterbox sprites in sprite attribute table */
+        lea     letterbox_sprites,a3
+        moveq   #0,d1
+        move.w  #9,d1
+6:
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        sub.w   d3,d0                   /* Subtract ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.w   d3,d0                   /* Add ((viewport_height-160)/2) */
+        move.w  d0,(a1)
+        move.w  (a3)+,d0                /* Copy two bytes from the source */
+        add.b   d2,d0                   /* Adjust 'next' value */
+        move.w  d0,(a1)
+        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
+
+        dbra    d1,6b
+
+
+7:
+
+
+
+
+        move.l  #0x40000000,(a0)        /* Write VRAM address 0 */
+
+        moveq   #0,d0   | Needed?
+        moveq   #0,d1   | Needed?
+        moveq   #0,d2   | Needed?
+        move.b  #224,d0
+        move.b  viewport_height,d1
+        sub.b   d1,d0           | (224 - viewport_height)
+        move.b  d0,d2
+        move.b  #64,d1
+        sub.b   d0,d1           | (64 - (224 - viewport_height))
+        andi.w  #0xF0,d1        | ((64 - (224 - viewport_height)) & 0xF0)
+        lea     letterbox_window_tiles,a2
+        adda.w  d1,a2
+
+        lsr.b   #4,d2
+        sub.b   #1,d2
+        move.w  #16,d0
+1:
+        moveq   #0,d1
+        move.b  register_12_state,d1    /* If H40, do another loop iteration */
+        andi.b  #1,d1
+        lsl.b   #2,d1
+        addq    #3,d1
+2:
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        suba.w  d0,a2
+        dbra    d1,2b
+        adda.w  d0,a2
+        dbra    d2,1b
+
+
+8:
+        moveq   #0,d1
+        move.b  register_12_state,d1    /* If H40, do another loop iteration */
+
+        moveq   #0,d2   | Needed?
+        move.b  #224,d2
+        move.b  viewport_height,d0
+        sub.b   d0,d2           | (224 - viewport_height)
+        lsr.b   #4,d2           | ((224 - viewport_height)/16)
+        move.w  d2,-(sp)
+        lsl.w   #8,d2
+        lsl.l   #8,d2
+        lsl.l   #6,d2           | (((224 - viewport_height)/16)<<22))
+
+        move.l  #0x47000000,d0  | H32 address
+        sub.l   d2,d0           | (0x47000000 - (((224-viewport_height)/16)<<22))
+        btst.b  #0,d1
+        beq.s   9f
+        move.l  #0x4E000000,d0  | H40 address
+        sub.l   d2,d0
+        sub.l   d2,d0           | (0x4E000000 - (((224-viewport_height)/16)<<23))
+9:
+        move.l  d0,(a0)        /* Write VRAM address 0x0600+ */
+        lea     letterbox_window_tiles,a2
+        moveq   #0,d2
+        move.w  (sp)+,d2
+        subi.w  #1,d2           | (((224-viewport_height)/16)-1)
+
+        move.w  #16,d0
+1:
+        moveq   #0,d1
+        move.b  register_12_state,d1    /* If H40, do another loop iteration */
+        andi.b  #1,d1
+        lsl.b   #2,d1
+        addq    #3,d1
+2:
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        move.w  (a2)+,(a1)
+        suba.w  d0,a2
+        dbra    d1,2b
+        adda.w  d0,a2
+        dbra    d2,1b
+
+
+        /* Enable the window plane */
+        |move.w  #0x9203,(a0) /* reg 18 = W Pos V = top */
+
+99:
+        rts
+
+
+
+clear_letterbox:
         move.w  #0x2700,sr          /* disable ints */
 
         move.l  a0,-(sp)
         move.l  a1,-(sp)
-        move.l  a2,-(sp)
-        move.l  a3,-(sp)
-        move.l  a4,-(sp)
         move.l  d0,-(sp)
         move.l  d1,-(sp)
-        move.l  d2,-(sp)
 
         lea     0xC00004,a0
         lea     0xC00000,a1
-
-        /* HACK -- clear VRAM from 0x000 through 0xFFF (except 0x100 through 0x17F) */
-        move.b  gamemode,d0
-        cmpi.b  #4,d0
-        bne.s   1f
 
         move.w  #0x8F02,(a0)
         moveq   #0,d0
@@ -1874,10 +2197,42 @@ load_letterbox:
         move.l  d0,(a1)                 /* Erase four bytes */
         dbra    d1,0b
 
-        bra.w   99f                     /* Nothing more to do */
+        move.l  #0x58000000,(a0)        /* Write VRAM address 0x1800 */
+        move.w  #160,d1
+0:
+        move.l  d0,(a1)                 /* Erase four bytes */
+        dbra    d1,0b
+
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+
+        move.w  #0,0xA15120         /* done */
+
+        move.w  #0x2000,sr          /* enable ints */
+
+        bra     main_loop
 
 
-1:
+
+load_letterbox:
+        move.w  #0x2700,sr          /* disable ints */
+
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+        move.l  a2,-(sp)
+        move.l  a3,-(sp)
+        move.l  a4,-(sp)
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  d2,-(sp)
+        move.l  d3,-(sp)
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+
         /* Load patterns */
         bsr     decompress_lump
         lea     0xC00004,a0
@@ -1961,72 +2316,10 @@ load_letterbox:
         move.w  (a2)+,(a3)+             /* Save color to DRAM */
         dbra    d1,1b
 
-
-        move.l  #0x40000000,(a0)        /* Write VRAM address 0 */
-        lea     (letterbox_window_tiles + ((64-(224-VIEWPORT_HEIGHT))&0xF0)),a2
-        moveq   #(((224-VIEWPORT_HEIGHT)/16)-1),d2
-        move.w  #16,d0
-1:
-        moveq   #0,d1
-        move.b  register_12_state,d1    /* If H40, do another loop iteration */
-        andi.b  #1,d1
-        lsl.b   #2,d1
-        addq    #3,d1
-2:
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        suba.w  d0,a2
-        dbra    d1,2b
-        adda.w  d0,a2
-        dbra    d2,1b
-
-
-        |TODO: CHECK FOR H40; USE ADDRESS 0x07D0 INSTEAD IF TRUE
-8:
-        moveq   #0,d1
-        move.b  register_12_state,d1    /* If H40, do another loop iteration */
-
-        move.l  #(0x47000000 - (((224-VIEWPORT_HEIGHT)/16)<<22)),d0
-        btst.b  #0,d1
-        beq.s   9f
-        move.l  #(0x4E000000 - (((224-VIEWPORT_HEIGHT)/16)<<23)),d0
-9:
-        move.l  d0,(a0)        /* Write VRAM address 0x0600+ */
-        lea     letterbox_window_tiles,a2
-        move.w  #(((224-VIEWPORT_HEIGHT)/16)-1),d2
-        move.w  #16,d0
-1:
-        moveq   #0,d1
-        move.b  register_12_state,d1    /* If H40, do another loop iteration */
-        andi.b  #1,d1
-        lsl.b   #2,d1
-        addq    #3,d1
-2:
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        move.w  (a2)+,(a1)
-        suba.w  d0,a2
-        dbra    d1,2b
-        adda.w  d0,a2
-        dbra    d2,1b
-
-
-        /* Enable the window plane */
-        |move.w  #0x9203,(a0) /* reg 18 = W Pos V = top */
-
+        bsr.w   setup_letterbox
 
 99:
+        move.l  (sp)+,d3
         move.l  (sp)+,d2
         move.l  (sp)+,d1
         move.l  (sp)+,d0
@@ -2081,92 +2374,19 @@ load_md_sky:
 
         move.w  #0x8C00,d0
         or.b    (a2)+,d0
-        cmpi.b  #3,legacy_emulator      /* Check for Gens */
-        bne.s   0f
-        or.b    #0x0081,d0              /* Force Gens to use H40 */
+        cmpi.b  #0,upscaler_optimized   /* Check for upscaler optimization setting */
+        beq.s   0f
+        andi.b  #0x7E,d0                /* Force H32 */
 0:
         move.b  d0,register_12_state
         cmpi.b  #1,legacy_emulator      /* Check for a legacy emulator (not Ares) */
-        bgt.s   4f
+        bgt.w   4f
         move.w  #0x8F02,(a0)
-        lea     0xC00004,a0
-        lea     0xC00000,a1
 
-        move.l  #0x58000000,(a0)        /* Write VRAM address 0x1800 */
-
-        moveq   #0,d2
-        btst.b  #0,d0                   /* Which screen resolution will be used? */
-        bne.s   5f                      /* Branch if H40 */
-
-        /* Generate H32 left-edge sprites */
-        lea     h32_left_edge_sprites,a3
-.if VIEWPORT_HEIGHT==160
-        move.w  #13,d1
-        moveq   #7,d2                   /* Adjust letterbox sprite 'next' values by seven */
-.elseif VIEWPORT_HEIGHT==176
-        move.w  #15,d1
-        moveq   #8,d2                   /* Adjust letterbox sprite 'next' values by eight */
-.elseif VIEWPORT_HEIGHT==192
-        move.w  #15,d1
-        moveq   #8,d2                   /* Adjust letterbox sprite 'next' values by eight */
-.elseif VIEWPORT_HEIGHT==208
-        move.w  #17,d1
-        moveq   #9,d2                   /* Adjust letterbox sprite 'next' values by nine */
-.else
-        move.w  #17,d1
-        moveq   #9,d2                   /* Adjust letterbox sprite 'next' values by nine */
-.endif
-1:
-        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
-        dbra    d1,1b
-
-
-        /* H32: Create letterbox sprites in sprite attribute table */
-        lea     letterbox_sprites,a3
-        moveq   #1,d1
-3:
-        move.l  (a3)+,d0                /* Copy four bytes from the source */
-        subi.w  #0x400,d0               /* Reduce sprite width to 24 pixels */
-        add.b   d2,d0                   /* Adjust 'next' value */
-        move.l  d0,(a1)
-        move.l  (a3)+,d0                /* Copy four bytes from the source */
-        addi.l  #0x40008,d0             /* Increase tile number by 4; move sprite to the right 8 pixels */
-        move.l  d0,(a1)
-        dbra    d1,3b
-
-        moveq   #0,d1
-        move.w  #13,d1
-4:
-        move.l  (a3)+,d0                /* Copy two bytes from the source */
-        add.b   d2,d0                   /* Adjust 'next' value */
-        move.l  d0,(a1)
-        move.l  (a3)+,(a1)              /* Copy two bytes from the source */
-        dbra    d1,4b
-
-        move.l  #0x41000000,(a0)        /* Write VRAM address 0x100 */
-        move.l  #0x11111111,d2          /* Left-border sprite pixels */
-        move.w  #31,d1
-2:
-        move.l  d2,(a1)                 /* Create left-border tiles, or erase them */
-        dbra    d1,2b
-
-        bra.s   7f
-
-
-5:      /* H40: Create letterbox sprites in sprite attribute table */
-        lea     letterbox_sprites,a3
-        moveq   #0,d1
-        move.w  #19,d1
-6:
-        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
-        move.l  (a3)+,(a1)              /* Copy four bytes from the source */
-        dbra    d1,6b
-
-
-7:
         |move.w  d0,(a0) /* reg 12 */
         move.w  #0x8C00,d0
         move.b  register_12_state,d0
+4:
         move.w  d0,register_write_queue     /* Set register 12 during VBlank */
 
         move.w  #0x9000, d0
@@ -3521,13 +3741,13 @@ level_hblank:
         bset.b  #3,d0   /* Enable shadow/highlight */
         move.w  d0,(a0)
         move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
-        move.b  #(((224-VIEWPORT_HEIGHT)/2)-3),d1
+        move.b  hint_top_letterbox_interval,d1
         bra.s   7f
 1:
         bset.b  #3,d0   /* Enable shadow/highlight */
         move.w  d0,(a0)
         move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
-        move.b  #(VIEWPORT_HEIGHT-1),d1
+        move.b  hint_bottom_letterbox_interval,d1
         bra.s   7f
 2:
         /* This controls shadow/highlight for the sky */
@@ -4172,6 +4392,15 @@ need_ctrl_int:
 gamemode:
         dc.b    0
 
+hardware_optimized:
+        dc.b    0
+
+upscaler_optimized:
+        dc.b    0
+
+viewport_height:
+        dc.b    192
+
 register_12_state:
         dc.b    0
 
@@ -4303,6 +4532,10 @@ hint_1_interval:
         dc.b    0
 hint_2_interval:
         dc.b    0
+hint_top_letterbox_interval:
+        dc.b    0
+hint_bottom_letterbox_interval:
+        dc.b    0
         
         .align  2
 
@@ -4392,29 +4625,28 @@ letterbox_window_tiles:
         | y = Y position
 
 h32_left_edge_sprites:
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0301, 0xE00C, 0x0080
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0302, 0xE00C, 0x0080
+        dc.w    0x0080, 0x0301, 0xE00C, 0x0080
+        dc.w    0x0140, 0x0302, 0xE00C, 0x0080
 
-        dc.w    (0x00A0-((VIEWPORT_HEIGHT-160)/2)), 0x0303, 0xE008, 0x007B
-        dc.w    (0x00C0-((VIEWPORT_HEIGHT-160)/2)), 0x0304, 0xE008, 0x007B
-        dc.w    (0x00E0-((VIEWPORT_HEIGHT-160)/2)), 0x0305, 0xE008, 0x007B
-        dc.w    (0x0100-((VIEWPORT_HEIGHT-160)/2)), 0x0306, 0xE008, 0x007B
-        dc.w    (0x0120-((VIEWPORT_HEIGHT-160)/2)), 0x0307, 0xE008, 0x007B
+        dc.w    0x00A0, 0x0303, 0xE008, 0x007B
+        dc.w    0x00C0, 0x0304, 0xE008, 0x007B
+        dc.w    0x00E0, 0x0305, 0xE008, 0x007B
+        dc.w    0x0100, 0x0306, 0xE008, 0x007B
+        dc.w    0x0120, 0x0307, 0xE008, 0x007B
 
-.if VIEWPORT_HEIGHT==176
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0108, 0xE008, 0x007B
-.endif
-.if VIEWPORT_HEIGHT==192
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0308, 0xE008, 0x007B
-.endif
-.if VIEWPORT_HEIGHT==208
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0308, 0xE008, 0x007B
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0109, 0xE008, 0x007B
-.endif
-.if VIEWPORT_HEIGHT==224
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0308, 0xE008, 0x007B
-        dc.w    (0x0140-((VIEWPORT_HEIGHT-160)/2)), 0x0309, 0xE008, 0x007B
-.endif
+h32_left_edge_sprites_176:
+        dc.w    0x0140, 0x0108, 0xE008, 0x007B
+
+h32_left_edge_sprites_192:
+        dc.w    0x0140, 0x0308, 0xE008, 0x007B
+
+h32_left_edge_sprites_208:
+        dc.w    0x0140, 0x0308, 0xE008, 0x007B
+        dc.w    0x0140, 0x0109, 0xE008, 0x007B
+
+h32_left_edge_sprites_224:
+        |dc.w    0x0140, 0x0308, 0xE008, 0x007B
+        |dc.w    0x0140, 0x0309, 0xE008, 0x007B
 
         |dc.w    0x00A0, 0x0302, 0xE008, 0x007B
         |dc.w    0x00C0, 0x0303, 0xE008, 0x007B
@@ -4434,28 +4666,28 @@ h32_left_edge_sprites:
         |    - To make 8x32 sprites with new tiles that have an edge embedded.
 
 letterbox_sprites:
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F01, 0xE010, 0x0080
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F02, 0xE010, 0x0080
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F03, 0xE020, 0x00A0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F04, 0xE020, 0x00A0
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F05, 0xE010, 0x00C0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F06, 0xE010, 0x00C0
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F07, 0xE020, 0x00E0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F08, 0xE020, 0x00E0
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F09, 0xE010, 0x0100
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0A, 0xE010, 0x0100
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0B, 0xE020, 0x0120
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0C, 0xE020, 0x0120
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0D, 0xE010, 0x0140
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F0E, 0xE010, 0x0140
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F0F, 0xE020, 0x0160
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F10, 0xE020, 0x0160
+        dc.w    0x0080, 0x0F01, 0xE010, 0x0080
+        dc.w    0x0140, 0x0F02, 0xE010, 0x0080
+        dc.w    0x0080, 0x0F03, 0xE020, 0x00A0
+        dc.w    0x0140, 0x0F04, 0xE020, 0x00A0
+        dc.w    0x0080, 0x0F05, 0xE010, 0x00C0
+        dc.w    0x0140, 0x0F06, 0xE010, 0x00C0
+        dc.w    0x0080, 0x0F07, 0xE020, 0x00E0
+        dc.w    0x0140, 0x0F08, 0xE020, 0x00E0
+        dc.w    0x0080, 0x0F09, 0xE010, 0x0100
+        dc.w    0x0140, 0x0F0A, 0xE010, 0x0100
+        dc.w    0x0080, 0x0F0B, 0xE020, 0x0120
+        dc.w    0x0140, 0x0F0C, 0xE020, 0x0120
+        dc.w    0x0080, 0x0F0D, 0xE010, 0x0140
+        dc.w    0x0140, 0x0F0E, 0xE010, 0x0140
+        dc.w    0x0080, 0x0F0F, 0xE020, 0x0160
+        dc.w    0x0140, 0x0F10, 0xE020, 0x0160
 
 h40_letterbox_ext_sprites:
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F11, 0xE010, 0x0180
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F12, 0xE010, 0x0180
-        dc.w    (0x0080-((VIEWPORT_HEIGHT-160)/2)), 0x0F13, 0xE020, 0x01A0
-        dc.w    (0x0140+((VIEWPORT_HEIGHT-160)/2)), 0x0F14, 0xE020, 0x01A0
+        dc.w    0x0080, 0x0F11, 0xE010, 0x0180
+        dc.w    0x0140, 0x0F12, 0xE010, 0x0180
+        dc.w    0x0080, 0x0F13, 0xE020, 0x01A0
+        dc.w    0x0140, 0x0F14, 0xE020, 0x01A0
 
 
 |test_start:

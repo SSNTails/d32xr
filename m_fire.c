@@ -78,6 +78,7 @@ void I_StopMenuFire(void)
 */
 void I_DrawMenuFire(void)
 {
+	Mars_SetVideoMode(MARS_VDP_MODE_256, 0);
 	if (clearscreen > 0) {
 		I_ResetLineTable();
 		I_ClearFrameBuffer();
