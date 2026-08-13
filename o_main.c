@@ -569,16 +569,13 @@ void O_Control (player_t *player)
 				{
 					switch (itemno) {
 						case mi_anamorphic:
-							if (++anamorphicview > 1) {
-								anamorphicview = 1;
-							}
+							anamorphicview = 1;
 							cameraTargetDistance = CAM_DIST_ANAMORPHIC;
 							break;
 						case mi_hardware:
-							if (++hardwareOptimized> 1) {
+							if (!hardwareOptimized) {
 								hardwareOptimized = 1;
-							}
-							else {
+
 								//viewportHeight = 176;
 								R_SetViewportSize(h40_sky ? VIEWPORT_H40_OPTIMIZED : VIEWPORT_H32_OPTIMIZED);
 								Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
@@ -586,17 +583,14 @@ void O_Control (player_t *player)
 							}
 							break;
 						case mi_upscaler:
-							if (++upscalerOptimized> 1) {
+							if (!upscalerOptimized) {
 								upscalerOptimized = 1;
-							}
-							else {
+
 								Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
 								h32_adjust = false;
 								Mars_FlipFrameBuffers(true);
-								//Mars_SetVideoMode(MARS_VDP_MODE_256, IsLevel() ? (224-viewportHeight)>>1 : 0);
 								RemoveDistortionFilters();	// Normalize the line table to get rid of the three-pixel shift.
 								Mars_FlipFrameBuffers(true);
-								//Mars_SetVideoMode(MARS_VDP_MODE_256, IsLevel() ? (224-viewportHeight)>>1 : 0);
 								RemoveDistortionFilters();	// Normalize the line table to get rid of the three-pixel shift.
 							}
 							break;
@@ -607,34 +601,27 @@ void O_Control (player_t *player)
 				{
 					switch (itemno) {
 						case mi_anamorphic:
-							if (--anamorphicview < 0) {
-								anamorphicview = 0;
-							}
+							anamorphicview = 0;
 							cameraTargetDistance = CAM_DIST_NORMAL;
 							break;
 						case mi_hardware:
-							if (--hardwareOptimized < 0) {
+							if (hardwareOptimized) {
 								hardwareOptimized = 0;
-							}
-							else {
-								//viewportHeight = 192;
+
 								R_SetViewportSize(h40_sky ? VIEWPORT_H40 : VIEWPORT_H32);
 								Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
 								Mars_SetVideoMode(MARS_VDP_MODE_256, (224-viewportHeight)>>1);
 							}
 							break;
 						case mi_upscaler:
-							if (--upscalerOptimized < 0) {
+							if (upscalerOptimized) {
 								upscalerOptimized = 0;
-							}
-							else {
+
 								Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
 								h32_adjust = true;
 								Mars_FlipFrameBuffers(true);
-								//Mars_SetVideoMode(MARS_VDP_MODE_256, IsLevel() ? (224-viewportHeight)>>1 : 0);
 								RemoveDistortionFilters();	// Normalize the line table to get rid of the three-pixel shift.
 								Mars_FlipFrameBuffers(true);
-								//Mars_SetVideoMode(MARS_VDP_MODE_256, IsLevel() ? (224-viewportHeight)>>1 : 0);
 								RemoveDistortionFilters();	// Normalize the line table to get rid of the three-pixel shift.
 							}
 							break;
@@ -776,32 +763,14 @@ void O_Drawer (void)
 		D_snprintf(tmp, sizeof(tmp), "%dx%d", viewportWidth, viewportHeight);
 		I_Print8(menuitem[mi_resolution].x + 114, (unsigned)menuitem[mi_resolution].y/8 + 3, tmp);
 */
-		switch (anamorphicview) {
-			case 0:
-				V_DrawStringLeft(&menuFont, menuitem[mi_anamorphic].x + 150, menuitem[mi_anamorphic].y, "off");
-				break;
-			case 1:
-				V_DrawStringLeft(&menuFont, menuitem[mi_anamorphic].x + 150, menuitem[mi_anamorphic].y, "on");
-				break;
-		}
+		V_DrawStringLeft(&menuFont, menuitem[mi_anamorphic].x + 150, menuitem[mi_anamorphic].y,
+				anamorphicview ? "on" : "off");
 
-		switch (hardwareOptimized) {
-			case 0:
-				V_DrawStringLeft(&menuFont, menuitem[mi_hardware].x + 176, menuitem[mi_hardware].y, "off");
-				break;
-			case 1:
-				V_DrawStringLeft(&menuFont, menuitem[mi_hardware].x + 176, menuitem[mi_hardware].y, "on");
-				break;
-		}
+		V_DrawStringLeft(&menuFont, menuitem[mi_hardware].x + 176, menuitem[mi_hardware].y,
+				hardwareOptimized ? "on" : "off");
 
-		switch (upscalerOptimized) {
-			case 0:
-				V_DrawStringLeft(&menuFont, menuitem[mi_upscaler].x + 176, menuitem[mi_upscaler].y, "off");
-				break;
-			case 1:
-				V_DrawStringLeft(&menuFont, menuitem[mi_upscaler].x + 176, menuitem[mi_upscaler].y, "on");
-				break;
-		}
+		V_DrawStringLeft(&menuFont, menuitem[mi_upscaler].x + 176, menuitem[mi_upscaler].y,
+				upscalerOptimized ? "on" : "off");
 	}
 
 	if (screenpos == ms_help)
