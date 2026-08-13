@@ -331,6 +331,20 @@ static boolean PB_CheckPosition(pmovetest_t *mt)
       }
    }
 
+   xl = mt->testbbox[BOXLEFT  ] - bmaporgx - MAXRADIUS;
+   xh = mt->testbbox[BOXRIGHT ] - bmaporgx + MAXRADIUS;
+   yl = mt->testbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS;
+   yh = mt->testbbox[BOXTOP   ] - bmaporgy + MAXRADIUS;
+
+   if(xl < 0)
+      xl = 0;
+   if(yl < 0)
+      yl = 0;
+   if(xh < 0)
+      return true;
+   if(yh < 0)
+      return true;
+
    xl = (unsigned)xl >> MAPBLOCKSHIFT;
    xh = (unsigned)xh >> MAPBLOCKSHIFT;
    yl = (unsigned)yl >> MAPBLOCKSHIFT;
