@@ -158,8 +158,6 @@ boolean P_TryWalk (mobj_t *actor)
 	return true;
 }
 
-
-
 /*
 ================
 =
@@ -188,7 +186,6 @@ void P_NewChaseDir (mobj_t *actor)
 
 	if (P_AproxDistance(deltax, deltay) > 4096*FRACUNIT)
 	{
-//		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
 		actor->target = NULL;
 		return;
 	}
@@ -393,20 +390,7 @@ void A_Look (mobj_t *actor, int16_t var1, int16_t var2)
 	
 //seeyou:
 /* go into chase state */
-	if (ainfo->seesound)
-	{
-		int		sound;
-		
-		switch (ainfo->seesound)
-		{
-		default:
-			sound = ainfo->seesound;
-			break;
-		}
-
-		S_StartSound (actor, sound);
-	}
-
+	S_StartSound (actor, ainfo->seesound);
 	P_SetMobjState (actor, ainfo->seestate);
 }
 
