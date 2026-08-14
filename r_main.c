@@ -275,7 +275,7 @@ angle_t R_PointToAngle2 (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 VINT R_PointInSubsector2 (fixed_t x, fixed_t y)
 {
 	node_t	*node;
-	int		side, nodenum;
+	int		nodenum;
 	
 	if (!numnodes)				/* single subsector is a special case */
 		return 0;
@@ -285,10 +285,9 @@ VINT R_PointInSubsector2 (fixed_t x, fixed_t y)
 	do
 	{
 		node = &nodes[nodenum];
-		side = R_PointOnSide(x, y, node);
-		nodenum = node->children[side];
+		nodenum = node->children[R_PointOnSide(x, y, node)];
 	}
-	#ifdef MARS
+#ifdef MARS
 	while ( (int16_t)nodenum >= 0 );
 #else
 	while (! (nodenum & NF_SUBSECTOR) );

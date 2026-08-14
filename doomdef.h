@@ -1261,7 +1261,7 @@ VINT R_PointInSubsector2(fixed_t x, fixed_t y) ATTR_DATA_CACHE_ALIGN;
 /*---- */
 /*MISC */
 /*---- */
-int M_Random (void) ATTR_DATA_CACHE_ALIGN;
+int M_Random (void);
 int16_t M_RandomRange16(int16_t lower, int16_t upper);
 int P_Random (void) ATTR_DATA_CACHE_ALIGN;
 fixed_t P_RandomFixed (void);
