@@ -526,7 +526,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    }
    else
    {
-         segl->floorpicnum = (uint8_t)-1;
+         segl->floorpicnum = -1;
          segl->floor_offs = 0;
    }
 
@@ -535,7 +535,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
       segl->ceilpicnum = flattranslation[f_ceilingpic];
    }
    else
-      segl->ceilpicnum = (uint8_t)-1;
+      segl->ceilpicnum = -1;
 }
 
 //
