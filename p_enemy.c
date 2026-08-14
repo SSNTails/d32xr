@@ -431,6 +431,13 @@ void A_Chase (mobj_t *actor, int16_t var1, int16_t var2)
 	int		delta;
 	const mobjinfo_t* ainfo = &mobjinfo[actor->type];
 
+	if (actor->target)
+	{
+		if (D_abs(actor->target->x - actor->x) > 2048*FRACUNIT
+			|| D_abs(actor->target->y - actor->y) > 2048*FRACUNIT)
+			return;
+	}
+
 /* */
 /* modify target threshold */
 /* */
@@ -2041,12 +2048,11 @@ void A_FaceStabUnPain(mobj_t *actor, int16_t var1, int16_t var2)
 // var1 = unused
 // var2 = unused
 //
-void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
+void A_EggShield(mobj_t *actor)
 {
 	fixed_t blockdist;
 	fixed_t newx, newy;
 	fixed_t movex, movey;
-	angle_t angle;
 	ringmobj_t *shield = (ringmobj_t*)actor->momz;
 	const mobjinfo_t *aInfo = &mobjinfo[shield->type];
 
@@ -2099,7 +2105,7 @@ void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
 		if (D_abs((shield->x << FRACBITS) - player->mo->x) >= blockdist || D_abs((shield->y << FRACBITS) - player->mo->y) >= blockdist)
 			continue; // didn't hit it
 
-		angle = R_PointToAngle2(shield->x << FRACBITS, shield->y << FRACBITS, player->mo->x, player->mo->y) - actor->angle;
+		const angle_t angle = R_PointToAngle2(shield->x << FRACBITS, shield->y << FRACBITS, player->mo->x, player->mo->y) - actor->angle;
 
 		if (angle > ANG90 && angle < ANG270)
 			continue;
@@ -2111,7 +2117,7 @@ void A_EggShield(mobj_t *actor, int16_t var1, int16_t var2)
 	}
 }
 
-void A_EggShieldBroken(mobj_t *actor, int16_t var1, int16_t var2)
+void A_EggShieldBroken(mobj_t *actor)
 {
 	mobj_t *guard = actor;
 
@@ -2162,11 +2168,8 @@ void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
 		if (actor->flags2 & MF2_SPAWNEDJETS)
 			speed <<= 1;
 
-		if (speed
-		&& !P_TryMove(&tm, actor,
-			actor->x + P_ReturnThrustX(actor->angle, speed),
-			actor->y + P_ReturnThrustY(actor->angle, speed))
-		&& speed > 0) // can't be the same check as previous so that P_TryMove gets to happen.
+		if (speed > 0
+			&& !P_TryMove(&tm, actor, actor->x + P_ReturnThrustX(actor->angle, speed), actor->y + P_ReturnThrustY(actor->angle, speed)))
 		{
 			int32_t direction = UPPER8(actor->extradata);
 
@@ -2209,29 +2212,13 @@ void A_GuardChase(mobj_t *actor, int16_t var1, int16_t var2)
 
 		// chase towards player
 		if (--actor->movecount < 0 || !P_Move(actor, (actor->flags2 & MF2_SPAWNEDJETS) ? aInfo->speed * 2 : aInfo->speed))
-		{
 			P_NewChaseDir(actor);
-//			actor->movecount += 5; // Increase tics before change in direction allowed.
-		}
 	}
 
-	// Shields should think and move on their own.
-	// They are spawned immediately after the guard, so it will think
-	// next all by itself, no need to call it here.
-
+	// Update shield position
 	ringmobj_t *shield = (ringmobj_t*)actor->momz;
 	if (shield)
-		A_EggShield(actor, 0, 0);
-
-/*
-	// Now that we've moved, its time for our shield to move!
-	// Otherwise it'll never act as a proper overlay.
-	if (actor->tracer && actor->tracer->state
-	&& actor->tracer->state->action.acp1)
-	{
-		var1 = actor->tracer->state->var1, var2 = actor->tracer->state->var2;
-		actor->tracer->state->action.acp1(actor->tracer);
-	}*/
+		A_EggShield(actor);
 }
 
 void A_TurretPower(mobj_t *actor, int16_t var1, int16_t var2)

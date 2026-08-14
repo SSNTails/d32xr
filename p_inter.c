@@ -190,7 +190,7 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 	return true;
 }
 
-void A_EggShieldBroken(mobj_t *actor, int16_t var1, int16_t var2);
+void A_EggShieldBroken(mobj_t *actor);
 
 void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 {
@@ -266,7 +266,7 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 
 					if (shieldPtr == shield)
 					{
-						A_EggShieldBroken(guard, 0, 0);
+						A_EggShieldBroken(guard);
 						break;
 					}
 				}

@@ -161,8 +161,6 @@ void A_FaceStabHurl();
 void A_FaceStabMiss();
 void A_FaceStabUnPain();
 void A_GuardChase();
-void A_EggShield();
-void A_EggShieldBroken();
 void A_DetonChase();
 void A_TurretPower();
 void A_TurretFire();
@@ -283,8 +281,8 @@ STATE(SPR_SPSH,7,1,A_GuardChase,S_EGGGUARD_RUN3),  // S_EGGGUARD_RUN2
 STATE(SPR_SPSH,8,1,A_GuardChase,S_EGGGUARD_RUN4),  // S_EGGGUARD_RUN3
 STATE(SPR_SPSH,9,1,A_GuardChase,S_EGGGUARD_RUN1),  // S_EGGGUARD_RUN4
 
-STATE(SPR_ESHI,0,1,A_EggShield,S_EGGSHIELD),  // S_EGGSHIELD
-STATE(SPR_ESHI,0,TICRATE/2,A_EggShieldBroken,S_NULL), // S_EGGSHIELDBREAK
+STATE(SPR_ESHI,0,1,NULL,S_EGGSHIELD),  // S_EGGSHIELD
+STATE(SPR_ESHI,0,TICRATE/2,NULL,S_NULL), // S_EGGSHIELDBREAK
 
 // Deton
 STATE(SPR_DETN,0,TICRATE,A_Look,S_DETON1), // S_DETON1
