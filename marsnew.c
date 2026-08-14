@@ -618,7 +618,7 @@ void I_DebugScreen(void)
 {
 	int i;
 	int x = 200;
-	int line = 3;
+	int line = 1;
 	static char buf[19][16];
 
 #ifdef BENCHMARK
