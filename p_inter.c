@@ -595,7 +595,7 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 	if (source && source->player && (target->flags2 & MF2_ENEMY))
 	{
 		VINT score = 100;
-		mobj_t *scoremobj = P_SpawnMobj(target->x, target->y, target->z + (target->theight << (FRACBITS-1)), MT_SCORE);
+		mobj_t *scoremobj = P_SpawnMobj(target->x, target->y, target->z + (target->theight << FRACBITS >> 1), MT_SCORE);
 		statenum_t scoreState = mobjinfo[MT_SCORE].spawnstate;
 		player_t* player = &players[source->player - 1];
 
@@ -673,7 +673,7 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 		{
 			// Spawn a flicky
 			const mobjtype_t flickies[4] = { MT_FLICKY_01, MT_FLICKY_02, MT_FLICKY_03, MT_FLICKY_12 };
-			mobj_t *flicky = P_SpawnMobj(target->x, target->y, target->z + (target->theight << (FRACBITS-1)), flickies[P_Random() % 4]);
+			mobj_t *flicky = P_SpawnMobj(target->x, target->y, target->z + (target->theight << FRACBITS>> 1), flickies[P_Random() % 4]);
 			flicky->momz = 4*FRACUNIT;
 			flicky->target = player->mo;
 		}

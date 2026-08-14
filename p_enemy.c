@@ -752,7 +752,7 @@ void A_SkullAttack (mobj_t *actor, int16_t var1, int16_t var2)
 	dist = dist / SKULLSPEED;
 	if (dist < 1)
 		dist = 1;
-	actor->momz = (dest->z+(dest->theight<<(FRACBITS-1)) - actor->z) / dist;
+	actor->momz = (dest->z+(dest->theight<<FRACBITS>>1) - actor->z) / dist;
 
 	actor->momz = 0; // Horizontal only
 }
@@ -973,7 +973,7 @@ static void P_DoBossDefaultDeath(mobj_t *mo)
 	mo->movedir = 0;
 	mo->extradata = 2*TICRATE;
 	mo->flags2 |= MF2_BOSSFLEE;
-	mo->momz = P_MobjFlip(mo)*(1 << (FRACBITS-1));
+	mo->momz = P_MobjFlip(mo)*(1 << FRACBITS >> 1);
 }
 
 void A_BossDeath (mobj_t *mo, int16_t var1, int16_t var2)
@@ -1160,7 +1160,7 @@ void A_BubbleRise(mobj_t *actor, int16_t var1, int16_t var2)
 			(P_Random() & 1) ? FRACUNIT/2 : -FRACUNIT/2);
 
 	if (I_TO_SEC(subsectors[actor->isubsector].isector)->heightsec < 0
-		|| actor->z + (actor->theight << (FRACBITS-1)) > GetWatertopMo(actor))
+		|| actor->z + (actor->theight << FRACBITS >> 1) > GetWatertopMo(actor))
 		actor->latecall = LC_REMOVE_MOBJ;
 }
 
@@ -1317,12 +1317,12 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 		case 3:
 			x = actor->x + P_ReturnThrustX(actor->angle, 42*FRACUNIT);
 			y = actor->y + P_ReturnThrustY(actor->angle, 42*FRACUNIT);
-			z = actor->z + (actor->theight << (FRACBITS-1));
+			z = actor->z + (actor->theight << FRACBITS >> 1);
 			break;
 		default:
 			x = actor->x;
 			y = actor->y;
-			z = actor->z + (actor->theight << (FRACBITS-1));
+			z = actor->z + (actor->theight << FRACBITS >> 1);
 			break;
 	}
 
@@ -1332,7 +1332,7 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 		if (mobjinfo[var1].seesound)
 			S_StartSound(actor, mobjinfo[var1].seesound);
 
-		point = P_SpawnMobj(x + P_ReturnThrustX(actor->angle, mobjinfo[actor->type].radius), y + P_ReturnThrustY(actor->angle, mobjinfo[actor->type].radius), actor->z - (actor->theight << (FRACBITS-1)) / 2, MT_EGGMOBILE_TARGET);
+		point = P_SpawnMobj(x + P_ReturnThrustX(actor->angle, mobjinfo[actor->type].radius), y + P_ReturnThrustY(actor->angle, mobjinfo[actor->type].radius), actor->z - (actor->theight << FRACBITS >> 1) >> 1, MT_EGGMOBILE_TARGET);
 		point->angle = actor->angle;
 		point->reactiontime = dur+1;
 		point->target = actor->target;
@@ -1616,7 +1616,7 @@ void A_UnidusBall(mobj_t *actor, int16_t var1, int16_t var2)
 
 	if (actor->movecount)
 	{
-		if (P_AproxDistance(actor->momx, actor->momy) < (mobjinfo[actor->type].damage << (FRACBITS-1)))
+		if (P_AproxDistance(actor->momx, actor->momy) < (mobjinfo[actor->type].damage << FRACBITS >> 1))
 			P_ExplodeMissile(actor);
 		return;
 	}
@@ -1631,7 +1631,7 @@ void A_UnidusBall(mobj_t *actor, int16_t var1, int16_t var2)
 		const angle_t angle = actor->movedir + ANGLE_1 * (mobjinfo[actor->type].speed*(leveltime%360));
 		const uint16_t fa = angle>>ANGLETOFINESHIFT;
 
-		actor->z = actor->target->z + (actor->target->theight << (FRACBITS-1)) - (actor->theight << (FRACBITS-1));
+		actor->z = actor->target->z + (actor->target->theight << FRACBITS >> 1) - (actor->theight << FRACBITS >> 1);
 		P_SetThingPositionConditionally(actor, actor->target->x + FixedMul(finecosine(fa),actor->threshold),
 			actor->target->y + FixedMul(  finesine(fa),actor->threshold),
 			R_PointInSubsector2(actor->x, actor->y));
@@ -1663,11 +1663,11 @@ void A_BubbleSpawn(mobj_t *actor, int16_t var1, int16_t var2)
 		prandom = P_Random();
 
 		if (leveltime % (3*TICRATE) < 8)
-			P_SpawnMobj(actor->x, actor->y, actor->z + (actor->theight << (FRACBITS-1)), MT_EXTRALARGEBUBBLE);
+			P_SpawnMobj(actor->x, actor->y, actor->z + (actor->theight << FRACBITS >> 1), MT_EXTRALARGEBUBBLE);
 		else if (prandom > 128)
-			P_SpawnMobj(actor->x, actor->y, actor->z + (actor->theight << (FRACBITS-1)), MT_SMALLBUBBLE);
+			P_SpawnMobj(actor->x, actor->y, actor->z + (actor->theight << FRACBITS >> 1), MT_SMALLBUBBLE);
 		else if (prandom < 128 && prandom > 96)
-			P_SpawnMobj(actor->x, actor->y, actor->z + (actor->theight << (FRACBITS-1)), MT_MEDIUMBUBBLE);
+			P_SpawnMobj(actor->x, actor->y, actor->z + (actor->theight << FRACBITS >> 1), MT_MEDIUMBUBBLE);
 	}
 	else
 	{

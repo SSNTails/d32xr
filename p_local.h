@@ -160,8 +160,8 @@ void 	P_PreSpawnMobjs(int count, int staticcount, int ringcount, int scenerycoun
 mobj_t *P_SpawnMissile (mobj_t *source, mobj_t *dest, mobjtype_t type);
 
 void    P_AnimateScenery(int8_t numframes);
-void	P_RunMobjBase2 (void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
-void	P_RunMobjLate(void) ATTR_DATA_CACHE_ALIGN;
+void	P_RunMobjBase2 (void) ATTR_DATA_CACHE_ALIGN;
+void	P_RunMobjLate(void);
 
 void P_MobjCheckWater(mobj_t *mo);
 void L_SkullBash (mobj_t *mo);

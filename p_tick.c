@@ -150,29 +150,6 @@ void P_RunThinkers (void)
 
 /*============================================================================= */
 
-/* 
-=================== 
-= 
-= P_RunMobjBase  
-=
-= Run stuff that doesn't happen every tick
-=================== 
-*/ 
-
-void	P_RunMobjBase (void)
-{
-#ifdef JAGUAR
-	extern	int p_base_start;
-	 
-	DSPFunction (&p_base_start);
-#else
-
-	P_RunMobjBase2();
-#endif
-}
-
-/*============================================================================= */
-
 int playernum;
 
 void G_DoReborn (int playernum); 
@@ -379,7 +356,7 @@ int P_Ticker (void)
 		P_RunThinkers();
 
 //		start = frtc;
-		P_RunMobjBase();
+		P_RunMobjBase2();
 //		basetics = frtc - start;
 
 #ifndef SHOW_DISCLAIMER

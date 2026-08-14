@@ -95,7 +95,6 @@ fixed_t CeilingZAtPos(const sector_t *sec, fixed_t z, fixed_t height)
 static boolean PB_CheckThing(mobj_t *thing, pmovetest_t *mt)
 {
    fixed_t  blockdist;
-   int      delta;
    mobj_t  *mo;
 
    if(!(thing->flags & MF_SOLID))
@@ -104,16 +103,10 @@ static boolean PB_CheckThing(mobj_t *thing, pmovetest_t *mt)
    mo = mt->checkthing;
    blockdist = mobjinfo[thing->type].radius + mobjinfo[mo->type].radius;
 
-   delta = thing->x - mt->testx;
-   if(delta < 0)
-      delta = -delta;
-   if(delta >= blockdist)
+   if(D_abs(thing->x - mt->testx) >= blockdist)
       return true; // didn't hit it
 
-   delta = thing->y - mt->testy;
-   if(delta < 0)
-      delta = -delta;
-   if(delta >= blockdist)
+   if(D_abs(thing->y - mt->testy) >= blockdist)
       return true; // didn't hit it
 
    if(thing == mo)
@@ -477,11 +470,12 @@ void P_XYMovement(mobj_t *mo)
          // explode a missile?
          if(mo->flags2 & MF2_MISSILE)
          {
-            if(mt.ceilingline && mt.ceilingline->sidenum[1] >= 0 && LD_BACKSECTOR(mt.ceilingline)->ceilingpic == (uint8_t)-1)
+            // We don't care if things explode against the sky.
+/*            if(mt.ceilingline && mt.ceilingline->sidenum[1] >= 0 && LD_BACKSECTOR(mt.ceilingline)->ceilingpic == (uint8_t)-1)
             {
                mo->latecall = LC_REMOVE_MOBJ;
                return;
-            }
+            }*/
             mo->extradata = LPTR_TO_SPTR(mt.hitthing);
             mo->latecall = LC_MISSILE_HIT;
             return;
@@ -513,18 +507,14 @@ void P_ZMovement(mobj_t *mo)
 {
    if (mo->type == MT_EGGGUARD)
    {
+      // Egg Guard uses momz as a pointer to the shield,
+      // so we have to short circuit here.
       mo->z = mo->floorz;
       return;
    }
    
    mo->z += mo->momz;
-/*
-   if((mo->flags2 & MF2_FLOAT) && (mo->flags2 & MF2_ENEMY) && mo->target)
-   {
-      // float toward target if too close
-      P_FloatChange(mo);
-   }
-*/
+
    // clip movement
    if(mo->z <= mo->floorz)
    {
@@ -589,8 +579,7 @@ void P_ZMovement(mobj_t *mo)
    else if(!(mo->flags & MF_NOGRAVITY))
    {
       // apply gravity
-      if (SS_SECTOR(mo->isubsector)->heightsec >= 0
-         && GetWatertopMo(mo) > mo->z + (mo->theight << (FRACBITS-1)))
+      if (GetWatertopMo(mo) > mo->z + (mo->theight << FRACBITS >> 1))
          mo->momz -= GRAVITY/2/3; // Less gravity underwater.
       else
          mo->momz -= GRAVITY/2;
@@ -600,7 +589,7 @@ void P_ZMovement(mobj_t *mo)
    {
       mo->z = mo->ceilingz - (mo->theight << FRACBITS); // hit the ceiling
 
-      if (mo->type == MT_FLINGRING && false) // TODO: MF_VERTICALFLIP
+      if (mo->type == MT_FLINGRING)
       {
          mo->momz = -FixedMul(mo->momz, 55705); // FixedDiv(17*FRACUNIT, 20*FRACUNIT));
       }

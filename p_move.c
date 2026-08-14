@@ -43,7 +43,6 @@ boolean PIT_CheckThing(mobj_t *thing, pmovework_t *mw)
    fixed_t blockdist;
    int     delta;
    int     damage;
-   boolean solid;
    mobj_t  *tmthing = mw->tmthing;
 //   int     tmflags = mw->tmflags;
    const mobjinfo_t* thinfo = &mobjinfo[tmthing->type];
@@ -59,9 +58,7 @@ boolean PIT_CheckThing(mobj_t *thing, pmovework_t *mw)
    if (thing->flags & MF_RINGMOBJ)
    {
       ringmobj_t *ring = (ringmobj_t*)thing;
-      delta = (ring->x << FRACBITS) - mw->tmx;
-      if(delta < 0)
-         delta = -delta;
+      delta = D_abs((ring->x << FRACBITS) - mw->tmx);
       if(delta >= blockdist)
          return true; // didn't hit it
 
@@ -69,18 +66,14 @@ boolean PIT_CheckThing(mobj_t *thing, pmovework_t *mw)
    }
    else
    {
-      delta = thing->x - mw->tmx;
-      if(delta < 0)
-         delta = -delta;
+      delta = D_abs(thing->x - mw->tmx);
       if(delta >= blockdist)
          return true; // didn't hit it
 
       delta = thing->y - mw->tmy;
    }
 
-   if(delta < 0)
-      delta = -delta;
-   if(delta >= blockdist)
+   if(D_abs(delta) >= blockdist)
       return true; // didn't hit it
 
    if(thing == tmthing)
@@ -130,14 +123,12 @@ boolean PIT_CheckThing(mobj_t *thing, pmovework_t *mw)
    {
       P_TouchSpecialThing(thing,tmthing);
    }
-   if (thing->type == MT_PLAYER)
+   else if (thing->type == MT_PLAYER)
    {
       P_TouchSpecialThing(tmthing,thing);
    }
 
-   solid = (thing->flags & MF_SOLID) != 0;
-
-   return !solid;
+   return !(thing->flags & MF_SOLID);
 }
 
 //

@@ -99,7 +99,7 @@ void P_Attract(mobj_t *source, mobj_t *dest)
 	fixed_t dist, ndist, speedmul;
 	fixed_t tx = dest->x;
 	fixed_t ty = dest->y;
-	fixed_t tz = dest->z + (dest->theight << (FRACBITS-1)); // Aim for center
+	fixed_t tz = dest->z + (dest->theight << FRACBITS >> 1); // Aim for center
 
 	// change angle
 	source->angle = R_PointToAngle2(source->x, source->y, tx, ty);
@@ -825,7 +825,7 @@ fixed_t Mobj_GetHalfHeight(mobj_t *mo)
 	if (mo->flags & MF_RINGMOBJ)
 		return mobjinfo[mo->type].height >> 1;
 
-	return mo->theight << (FRACBITS-1);
+	return mo->theight << FRACBITS >> 1;
 }
 
 
