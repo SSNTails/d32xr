@@ -57,34 +57,14 @@ static void R_FinishWall(viswall_t* wc)
             fw_texture->data = R_CheckPixels(fw_texture->lumpnum);
     }
 
-    uint8_t floorpicnum = wc->floorpicnum;
-    uint8_t ceilingpicnum = wc->ceilingpicnum;
+    int floorpicnum = wc->floorpicnum;
+    int ceilingpicnum = wc->ceilpicnum;
 
-    if (flatpixels[floorpicnum] == NULL)
-    {
+    if (floorpicnum >= 0 && flatpixels[floorpicnum].data == NULL)
         flatpixels[floorpicnum].data = R_CheckPixels(firstflat + floorpicnum);
-        const flatsize_t *flatSize = GetFlatSize(floorpicnum);
-        flatpixels[floorpicnum].width = 1 << flatSize->width;
-        flatpixels[floorpicnum].height =1 << flatSize->height;
-    }
 
-    // is there sky at this wall?
-    if (ceilingpicnum == -1)
-    {
-        // cache skytexture if needed
-        //TODO: //DLG: skytexturep->data = R_CheckPixels(skytexturep->lumpnum);
-    }
-    else
-    {
-        // normal ceilingpic
-        if (flatpixels[ceilingpicnum] == NULL)
-        {
-            flatpixels[ceilingpicnum].data = R_CheckPixels(firstflat + ceilingpicnum);
-            const flatsize_t *flatSize = GetFlatSize(ceilingpicnum);
-            flatpixels[ceilingpicnum].width = 1 << flatSize->width;
-            flatpixels[ceilingpicnum].height = 1 << flatSize->height;
-        }
-    }
+    if (ceilingpicnum >= 0 && flatpixels[ceilingpicnum].data == NULL)
+        flatpixels[ceilingpicnum].data = R_CheckPixels(firstflat + ceilingpicnum);
 }
 #endif
 
