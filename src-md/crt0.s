@@ -1694,15 +1694,7 @@ set_gamemode:
         move.b  0xA15122,d0
 
         move.b  d0,gamemode
-        andi.b  #0x30,d0
-        cmpi.b  #0x10,d0
-        bne.s   88f
-10:
-        move.l  #level_hblank,0x70  /* Stay within RAM */
-        bra.s   99f
-88:
-        move.l  #title_hblank,0x70  /* Stay within RAM */
-99:
+
         move.w  #0,0xA15120         /* done */
         bra     main_loop
 
@@ -3710,7 +3702,122 @@ rst_ym2612:
 title_hblank:
         rte
 
-level_hblank:
+level_hblank_sync:
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        move.w  #0x8C00,d0
+        move.b  register_12_state,d1
+        move.b  d1,d0
+
+        move.w  #0x8A00,d1
+
+        bset.b  #3,d0   /* Enable shadow/highlight */
+        move.w  d0,(a0)
+        move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
+        move.b  hint_top_letterbox_interval,d1
+        move.w  d1,(a0) /* reg 10 = HINT = 0 */
+
+        move.l  #level_hblank_top_letterbox,0x70
+
+        bra.w   hblank_done
+
+level_hblank_top_letterbox:
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        move.w  #0x8C00,d0
+        move.b  register_12_state,d1
+        move.b  d1,d0
+
+        move.w  #0x8A00,d1
+
+        bset.b  #3,d0   /* Enable shadow/highlight */
+        move.w  d0,(a0)
+        move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
+        move.b  hint_bottom_letterbox_interval,d1
+        move.w  d1,(a0) /* reg 10 = HINT = 0 */
+
+        move.l  #level_hblank_main,0x70
+
+        bra.w   hblank_done
+
+level_hblank_main:
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        move.w  #0x8C00,d0
+        move.b  register_12_state,d1
+        move.b  d1,d0
+
+        move.w  #0x8A00,d1
+
+        /* This controls shadow/highlight for the sky */
+        move.w  d0,(a0)      /* reg 12 = sky configured settings for stage */
+        move.w  #0x9200,(a0) /* reg 18 = W Pos V = top */
+        move.b  #0xFF,d1
+        move.w  d1,(a0) /* reg 10 = HINT = 0 */
+
+        move.l  #level_hblank_bottom_letterbox,0x70
+
+        bra.w   hblank_done
+
+level_hblank_bottom_letterbox:
+        move.l  d0,-(sp)
+        move.l  d1,-(sp)
+        move.l  a0,-(sp)
+        move.l  a1,-(sp)
+
+        lea     0xC00004,a0
+        lea     0xC00000,a1
+
+        move.w  #0x8C00,d0
+        move.b  register_12_state,d1
+        move.b  d1,d0
+
+        move.w  #0x8A00,d1
+
+        bset.b  #3,d0   /* Enable shadow/highlight */
+        move.w  d0,(a0)
+        move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
+        move.b  #0,d1
+        move.w  d1,(a0) /* reg 10 = HINT = 0 */
+
+        move.l  #level_hblank_sync,0x70
+
+        bra.w   hblank_done
+
+hblank_done:
+        addi.b  #1,hint_count
+        cmpi.b  #4,hint_count
+        blo.s   0f
+        move.b  #0,hint_count
+0:
+        move.l  (sp)+,a1
+        move.l  (sp)+,a0
+        move.l  (sp)+,d1
+        move.l  (sp)+,d0
+        rte
+
+
+
+
+level_hblank_unused:
         |TODO: DELETE ME!!!
         move.l  d0,-(sp)
         move.l  d1,-(sp)
@@ -3721,49 +3828,6 @@ level_hblank:
         lea     0xC00000,a1
 
         move.l  #0x40000010,(a0)
-
-        move.w  #0x8C00,d0
-        move.b  register_12_state,d1
-        move.b  d1,d0
-
-        move.w  #0x8A00,d1
-        cmpi.b  #1,hint_count
-        beq.s   1f
-        cmpi.b  #2,hint_count
-        beq.s   2f
-        cmpi.b  #3,hint_count
-        beq.s   3f
-        cmpi.b  #4,hint_count
-        beq.s   4f
-        cmpi.b  #5,hint_count
-        beq.s   5f
-0:
-        bset.b  #3,d0   /* Enable shadow/highlight */
-        move.w  d0,(a0)
-        move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
-        move.b  hint_top_letterbox_interval,d1
-        bra.s   7f
-1:
-        bset.b  #3,d0   /* Enable shadow/highlight */
-        move.w  d0,(a0)
-        move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
-        move.b  hint_bottom_letterbox_interval,d1
-        bra.s   7f
-2:
-        /* This controls shadow/highlight for the sky */
-        move.w  d0,(a0)      /* reg 12 = sky configured settings for stage */
-        move.w  #0x9200,(a0) /* reg 18 = W Pos V = top */
-        move.b  #0xFF,d1
-        bra.s   7f
-3:
-        bset.b  #3,d0   /* Enable shadow/highlight */
-        move.w  d0,(a0)
-        move.w  #0x921C,(a0) /* reg 18 = W Pos V = top */
-        move.b  #0,d1
-        bra.s   7f
-
-
-
 4:
         move.b  #0,d1
         move.l  hint_1_scroll_y_positions,d0
@@ -4002,6 +4066,18 @@ vert_blank:
 
         move.w  #0x8A00,d0
         move.w  d0,(a0)             /* reg 10 = HINT = 0 */
+
+
+        move.b  gamemode,d0
+        andi.b  #0x30,d0
+        cmpi.b  #0x10,d0
+        bne.s   88f
+10:
+        move.l  #level_hblank_sync,0x70  /* Stay within RAM */
+        bra.s   99f
+88:
+        move.l  #title_hblank,0x70  /* Stay within RAM */
+99:
 
         tst.w   register_write_queue
         beq.s   10f
