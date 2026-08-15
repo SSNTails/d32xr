@@ -276,8 +276,8 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 		z = mo->z + pviewheight + camheight;
 
 	// Look at halfway between the camera and player. Is the ceiling lower? Then the camera should try to move down to fit under it
-	newsubsec = R_PointInSubsector2(((mo->x>>FRACBITS) + (thiscam->x>>FRACBITS))<< FRACBITS >> 1, ((mo->y>>FRACBITS) + (thiscam->y>>FRACBITS))<< FRACBITS >> 1);
-   const sector_t *newsec = SS_SECTOR(newsubsec);
+	newsubsec = R_PointInSubsector2(((mo->x>>FRACBITS) + (thiscam->x>>FRACBITS))<<(FRACBITS-1), ((mo->y>>FRACBITS) + (thiscam->y>>FRACBITS))<<(FRACBITS-1));
+    const sector_t *newsec = SS_SECTOR(newsubsec);
 
 	{
 		// camera fit?
