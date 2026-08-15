@@ -3467,7 +3467,7 @@ MF2_SHOOTABLE|MF2_ENEMY,	// flags2
 		0,              // speed
 		20*FRACUNIT,    // radius
 		16*FRACUNIT,    // height
-		20,    // mass
+		24,    // mass
 		0,              // damage
 		sfx_None,       // activesound
 		MF_SPECIAL|MF_STATIC|MF_RINGMOBJ, // flags

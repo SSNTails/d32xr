@@ -86,6 +86,8 @@ static boolean P_DoSpring(mobj_t *spring, player_t *player)
 
 		if (player->homingTimer > 0 && spring->type == MT_SPRINGSHELL)
 			player->justSprung = TICRATE / 4;
+		else if (spring->type == MT_YELLOWSPRING)
+			player->justSprung = TICRATE / 2;
 		else
 			player->justSprung = TICRATE;
 	}
