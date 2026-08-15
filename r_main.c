@@ -337,7 +337,7 @@ void R_SetViewportSize(int num)
 	centerY = viewportHeight >> 1;
 
 	centerXFrac = (160 >> 1) * FRACUNIT;
-	centerYFrac = (180 >> 1) * FRACUNIT;
+	centerYFrac = (viewportHeight >> 1) * FRACUNIT;
 
 	centerXViewportFrac = centerX * FRACUNIT;
 	centerYViewportFrac = centerY * FRACUNIT;

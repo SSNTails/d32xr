@@ -801,6 +801,10 @@ void I_Update(void)
 			scroll_x += (scroll_x >> 2);
 		}
 
+		if (!upscalerOptimized & !h40_sky) {
+			scroll_x -= 3;
+		}
+
 		Mars_ScrollMDSky(scroll_x, scroll_y_base, scroll_y_offset, scroll_y_pan);
 	}
 #endif
