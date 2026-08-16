@@ -342,11 +342,12 @@ void R_SetViewportSize(int num)
 	centerXViewportFrac = centerX * FRACUNIT;
 	centerYViewportFrac = centerY * FRACUNIT;
 
-	if (anamorphicview)
+	if (anamorphicview && IsLevel())
 	{
 		//stretch = ((FRACUNIT * 16 * height) / 180 * 28) / width;
 		//stretch = FRACUNIT * 1.333333f * 2;
 		stretch = 174763;
+		cameraTargetDistance = CAM_DIST_ANAMORPHIC;
 	}
 	else
 	{
@@ -356,6 +357,7 @@ void R_SetViewportSize(int num)
 		//stretch = ((FRACUNIT * 16 * 180) / 180 * 20) / 160;
 		//stretch = FRACUNIT * 1.000000f * 2;
 		stretch = 131072;
+		cameraTargetDistance = CAM_DIST_NORMAL;
 	}
 	//stretchX = stretch * centerX;
 	stretchX = stretch * (160 >> 1);
