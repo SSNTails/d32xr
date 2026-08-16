@@ -1739,7 +1739,7 @@ void Bezier_InitFollower(bezier_follower_t *f, bezier_path_t *path, fixed_t spee
 }
 
 // Advance the follower by its speed. Returns false when the path ends.
-boolean Bezier_UpdateFollower(bezier_follower_t *f, swinghang_t *sh)
+boolean Bezier_UpdateFollower(bezier_follower_t *f, mobj_t *mobj, boolean wrap)
 {
     fixed_t remaining;
     fixed_t x, y;
@@ -1753,27 +1753,30 @@ boolean Bezier_UpdateFollower(bezier_follower_t *f, swinghang_t *sh)
 	// Do some clamping
 	if (f->dist_travelled <= 0)
 	{
-		// snap to first point?
-		f->dist_travelled = 0;
-		f->active = false;
-
 		// Add an option to loop
-//		f->dist_travelled += f->path->total_length; // wrap
+		if (wrap)
+		{
+			f->dist_travelled += f->path->total_length; // wrap
+		}
+		else
+		{
+			// snap to first point?
+			f->active = false;
+			f->dist_travelled = 0;
+		}
 	}
     else if (f->dist_travelled >= f->path->total_length)
     {
-        // snap to final point
-        const bezier_processed_t *last = &f->path->segs[f->path->num_segs-1];
-		P_UnsetThingPosition((mobj_t*)sh->maceball);
-        sh->maceball->x = last->lut[BEZIER_LUT_SIZE-1].x;
-        sh->maceball->y = last->lut[BEZIER_LUT_SIZE-1].y;
-		P_SetThingPosition2((mobj_t*)sh->maceball, R_PointInSubsector2(sh->maceball->x, sh->maceball->y));
-        f->active = false;
-
-		// Add an option to loop
-//		f->dist_travelled -= f->path->total_length; // wrap
-
-        return false;
+		if (wrap)
+		{
+			f->dist_travelled -= f->path->total_length; // wrap
+		}
+		else
+		{
+			// snap to final point
+			f->active = false;
+			f->dist_travelled = f->path->total_length;
+		}
     }
 
     // find which segment we are on
@@ -1788,27 +1791,67 @@ boolean Bezier_UpdateFollower(bezier_follower_t *f, swinghang_t *sh)
 
     Bezier_PointAtDistance(&f->path->segs[f->current_seg], remaining, &x, &y);
 
-	P_UnsetThingPosition((mobj_t*)sh->maceball);
-    sh->maceball->x = x;
-    sh->maceball->y = y;
-	P_SetThingPosition2((mobj_t*)sh->maceball, R_PointInSubsector2(sh->maceball->x, sh->maceball->y));
+	P_UnsetThingPosition(mobj);
+	mobj->x = x;
+	mobj->y = y;
+	P_SetThingPosition2(mobj, R_PointInSubsector2(mobj->x, mobj->y));
 
-    return true;
+    return f->active;
 }
 
-void T_SwingHang(swinghang_t *sh)
+static void SetPlayerPositionFromSwing(swinghang_t *sh, player_t *player)
 {
-	boolean nearSomebody = false;
-/*
-	if (sh->done || leveltime < 10*TICRATE)
+	if (((sh->flags & SHF_ALLOWUP) && player->forwardmove > 0)
+		|| ((sh->flags & SHF_ALLOWDOWN) && player->forwardmove < 0))
+	{
+		sh->deltaZ += player->forwardmove >> (FRACBITS-3);
+	}
+
+	if (sh->deltaZ > sh->aboveDelta)
+		sh->deltaZ = sh->aboveDelta;
+	else if (sh->deltaZ < sh->belowDelta)
+		sh->deltaZ = sh->belowDelta;
+
+	/*
+	// This could also be processed as 'hit a wall'. What should we do then?
+	if (sh->z < (player->mo->floorz >> FRACBITS) + 64)
+		sh->z = (player->mo->floorz >> FRACBITS) + 64;
+	else if (sh->z > (player->mo->ceilingz >> FRACBITS) - 64)
+		sh->z = (player->mo->ceilingz >> FRACBITS) - 64;*/
+
+	vector3_t newPos;
+	newPos.x = sh->maceball->x;
+	newPos.y = sh->maceball->y;
+	newPos.z = sh->maceball->z;
+	newPos.z -= (mobjinfo[MT_PLAYER].height) + 8*FRACUNIT;
+
+	P_SetMobjState(player->mo, S_PLAY_HANG);
+
+	player->mo->momx = 0;//(newPos.x - player->mo->x);
+	player->mo->momy = 0;//(newPos.y - player->mo->y);
+	player->mo->momz = 0;//(newPos.z - player->mo->z) << 1;
+	P_UnsetThingPosition(player->mo);
+	player->mo->x = newPos.x;
+	player->mo->y = newPos.y;
+	player->mo->z = newPos.z;
+	P_SetThingPosition(player->mo);
+}
+
+void T_SwingBezier(swinghang_t *sh)
+{
+	if (!sh->bezier_follower.active)
 		return;
 
-	if (!Bezier_UpdateFollower(&sh->bezier_follower, sh))
+	if (!Bezier_UpdateFollower(&sh->bezier_follower, sh->maceball, sh->flags & SHF_LOOP))
 	{
-		sh->done = true;
 		CONS_Printf("Done!");
 		return;
 	}
+
+	sh->maceball->z = (sh->z + sh->deltaZ) << FRACBITS;
+
+	boolean controlsPressed = false;
+	player_t *player = NULL;
 
 	// Is a player attached?
 	for (int count = 0; count < MAXPLAYERS; count++)
@@ -1816,45 +1859,43 @@ void T_SwingHang(swinghang_t *sh)
 		if (!playeringame[count])
 			continue;
 
-		const player_t *player = &players[count];
+		player_t *plr = &players[count];
 
-		if ((player->pflags & PF_MACESPIN)
-			&& player->mo->target == (mobj_t*)sh->maceball)
+		if ((plr->pflags & PF_MACESPIN)
+			&& plr->mo->target == (mobj_t*)sh->maceball)
 		{
-			vector3_t newPos;
-			newPos.x = sh->maceball->x;
-			newPos.y = sh->maceball->y;
-
-			{
-				sh->z += player->forwardmove >> (FRACBITS-3);
-				sh->maceball->z += player->forwardmove >> 3;
-
-				if (sh->z < (player->mo->floorz >> FRACBITS) + 64)
-					sh->z = (player->mo->floorz >> FRACBITS) + 64;
-				else if (sh->z > (player->mo->ceilingz >> FRACBITS) - 64)
-					sh->z = (player->mo->ceilingz >> FRACBITS) - 64;
-
-				P_SetMobjState(player->mo, S_PLAY_HANG);
-				newPos.z = sh->maceball->z - (mobjinfo[MT_PLAYER].height * 2) + (8*FRACUNIT);
-			}
-
-			player->mo->momx = (newPos.x - player->mo->x) << 1;
-			player->mo->momy = (newPos.y - player->mo->y) << 1;
-			player->mo->momz = (newPos.z - player->mo->z) << 1;
-			P_UnsetThingPosition(player->mo);
-			player->mo->x = newPos.x;
-			player->mo->y = newPos.y;
-			player->mo->z = newPos.z + (mobjinfo[MT_PLAYER].height) - 16*FRACUNIT;
-			P_SetThingPosition(player->mo);
+			player = plr;
+			controlsPressed = player->forwardmove;
+			break;
 		}
 	}
 
-	return;
-*/
+	if (!controlsPressed)
+	{
+		if (sh->deltaZ > 0)
+			sh->deltaZ--;
+		else if (sh->deltaZ < 0)
+			sh->deltaZ++;
+	}
+
+	if (player)
+		SetPlayerPositionFromSwing(sh, player);
+}
+
+void T_SwingHang(swinghang_t *sh)
+{
+	boolean nearSomebody = false;
+
+	if (sh->bezierPath) // TODO: Set this to call on spawn, not here.
+	{
+		T_SwingBezier(sh);
+		return;
+	}
+
 	vector3_t rotatePoint;
 	rotatePoint.x = sh->x << FRACBITS;
 	rotatePoint.y = sh->y << FRACBITS;
-	rotatePoint.z = sh->z << FRACBITS;
+	rotatePoint.z = 0; // Will set z later
 
 	// Are you near a player? Otherwise don't bother
 	for (int i = 0; i < MAXPLAYERS; i++)
@@ -1874,8 +1915,8 @@ void T_SwingHang(swinghang_t *sh)
 	if (!nearSomebody)
 		return;
 
-	player_t *player = NULL;
 	boolean controlsPressed = false;
+	player_t *player = NULL;
 
 	// Is a player attached?
 	for (int count = 0; count < MAXPLAYERS; count++)
@@ -1885,41 +1926,21 @@ void T_SwingHang(swinghang_t *sh)
 
 		player_t *plr = &players[count];
 
-		if ((plr->pflags & PF_MACEHANG)
-			&& plr->mo->target == sh->maceball)
+		if ((plr->pflags & PF_MACESPIN)
+			&& plr->mo->target == (mobj_t*)sh->maceball)
 		{
 			player = plr;
 			controlsPressed = player->forwardmove;
-
-			if (((sh->flags & SHF_ALLOWUP) && player->forwardmove > 0)
-				|| ((sh->flags & SHF_ALLOWDOWN) && player->forwardmove < 0))
-			{
-				sh->z += player->forwardmove >> (FRACBITS-3);
-			}
-
-			if (sh->z > sh->originalZ + sh->aboveDelta)
-				sh->z = sh->originalZ + sh->aboveDelta;
-			else if (sh->z < sh->originalZ - sh->belowDelta)
-				sh->z = sh->originalZ - sh->belowDelta;
-
-			if (sh->z < (player->mo->floorz >> FRACBITS) + 64)
-				sh->z = (player->mo->floorz >> FRACBITS) + 64;
-			else if (sh->z > (player->mo->ceilingz >> FRACBITS) - 64)
-				sh->z = (player->mo->ceilingz >> FRACBITS) - 64;
+			break;
 		}
 	}
 
 	if (!controlsPressed)
 	{
-		if (sh->originalZ < sh->z)
-			sh->z--;
-		else if (sh->originalZ > sh->z)
-			sh->z++;
-
-		if (sh->originalZ < sh->z)
-			sh->z--;
-		else if (sh->originalZ > sh->z)
-			sh->z++;
+		if (sh->deltaZ > 0)
+			sh->deltaZ--;
+		else if (sh->deltaZ < 0)
+			sh->deltaZ++;
 	}
 
 	// Always update movedir to prevent desync. But do we really have to?
@@ -1948,28 +1969,11 @@ void T_SwingHang(swinghang_t *sh)
 	P_UnsetThingPosition((mobj_t*)sh->maceball);
 	sh->maceball->x = rotatePoint.x + (rotVec.x * dist);
 	sh->maceball->y = rotatePoint.y + (rotVec.y * dist);
-	sh->maceball->z = rotatePoint.z + (rotVec.z * dist);
-//	sm->maceball->z -= (mobjinfo[sm->maceball->type].height >> FRACBITS) >> 1;
+	sh->maceball->z = (sh->z + sh->deltaZ) << FRACBITS;
 	P_SetThingPosition2(sh->maceball, R_PointInSubsector2(sh->maceball->x, sh->maceball->y));
 
 	if (player)
-	{
-		vector3_t newPos;
-		newPos.x = sh->maceball->x;
-		newPos.y = sh->maceball->y;
-
-		P_SetMobjState(player->mo, S_PLAY_HANG);
-		newPos.z = sh->maceball->z - (mobjinfo[MT_PLAYER].height);
-
-		player->mo->momx = 0;//(newPos.x - player->mo->x);
-		player->mo->momy = 0;//(newPos.y - player->mo->y);
-		player->mo->momz = 0;//(newPos.z - player->mo->z);
-		P_UnsetThingPosition(player->mo);
-		player->mo->x = newPos.x;
-		player->mo->y = newPos.y;
-		player->mo->z = newPos.z;
-		P_SetThingPosition(player->mo);
-	}
+		SetPlayerPositionFromSwing(sh, player);
 }
 
 void P_AddSwingHang(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, VINT *args)
@@ -1988,8 +1992,9 @@ void P_AddSwingHang(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 		{ 256*2,0,  320*2,-64*2,  384*2,64*2,  448*2,0 }
 	};
 	sh->bezierPath = Bezier_CreatePath(raw, 2);
-	Bezier_InitFollower(&sh->bezier_follower, sh->bezierPath, 4*FRACUNIT);*/
-	sh->done = false;
+	Bezier_InitFollower(&sh->bezier_follower, sh->bezierPath, 4*FRACUNIT);
+	sh->bezier_follower.active = (sh->flags & SHF_LOOP);
+	*/
 
 	sh->length = D_abs(args[0]);
 	sh->mspeed = D_abs(args[3]);
@@ -2006,7 +2011,6 @@ void P_AddSwingHang(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 	sh->x = x >> FRACBITS;
 	sh->y = y >> FRACBITS;
 	sh->z = z >> FRACBITS;
-	sh->originalZ = sh->z;
 
 	sh->nv.x = axis->x;
 	sh->nv.y = axis->y;

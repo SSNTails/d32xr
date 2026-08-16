@@ -1631,21 +1631,21 @@ void T_SwingMace(swingmace_t *sm);
 
 typedef enum
 {
-	SHF_ALLOWUP = 1,
-	SHF_ALLOWDOWN = 2,
+	SHF_ALLOWUP = 1,    // Allow use of the UP dpad to move the swing upward
+	SHF_ALLOWDOWN = 2,  // Allow use of the DOWN dpad to move the swing downward
+	SHF_STARTACCEL = 4, // From stationary, accelerate instead of starting abruptly
+	SHF_ENDDECEL = 8,   // When reaching end, decelerate instead of stopping abruptly
+	SHF_ROTATING = 16,  // Swing that just constantly rotates
+	SHF_LOOP = 32,      // If a bezier swing, movement will loop constantly
 } shflags_e;
 
-/* ----------------------------------------------------------------
- * Configuration
- * ---------------------------------------------------------------- */
+//
+// Bezier stuff
+//
 #define BEZIER_LUT_SIZE     64      // samples per segment (higher = smoother)
 #define BEZIER_MAX_SEGMENTS 32      // hard limit for one path
 
-/* ----------------------------------------------------------------
- * Bezier structs
- * ---------------------------------------------------------------- */
-
-// One cubic Bezier segment (control points in map units, fixed_t)
+// One cubic Bezier segment (control points in map units to save space)
 typedef struct {
     int16_t x0, y0;     // start
     int16_t x1, y1;     // control 1
@@ -1674,7 +1674,7 @@ typedef struct {
     fixed_t             total_length;
 } bezier_path_t;
 
-// Runtime state attached to a mobj (or kept separately)
+// Runtime state
 typedef struct {
     bezier_path_t  *path;
     fixed_t         dist_travelled; // 0 .. path->total_length
@@ -1686,8 +1686,6 @@ typedef struct {
 typedef struct
 {
 	thinker_t thinker;
-//	bezier_path_t *bezierPath;
-//	bezier_follower_t bezier_follower;
 
 	mobj_t *maceball;
 	vector3b_t nv; // Normalized vector
@@ -1698,13 +1696,23 @@ typedef struct
 	int16_t mphase;
 	int16_t length; // In FRACUNITs
 	int16_t mspeed;
-	int16_t originalZ; // Return to this position
+	int16_t deltaZ; // Current offset from origin Z
 	int16_t  flags;
 
 	int16_t aboveDelta; // fracunits you can move above originalZ
 	int16_t belowDelta; // fracunits you can move below originalZ
 
-	boolean done;
+	// Does this swing follow a bezier path? (non-null if so)
+	bezier_path_t *bezierPath;
+	bezier_follower_t bezier_follower;
+
+	// Stuff for swings that are activated
+	int16_t startZ; // Swing will LERP between startZ/endZ
+	int16_t endZ;
+
+	// 0 to (FRACUNIT-1), sorry, you can't make the swing any faster!
+	int16_t accel; // Accelerates until the midpoint distance is reached
+	int16_t decel; // Begins to decelerate after the midpoint distance is passed
 } swinghang_t;
 
 void T_SwingHang(swinghang_t *sh);
