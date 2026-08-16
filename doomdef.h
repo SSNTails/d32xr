@@ -1513,7 +1513,7 @@ void PrintHex (int x, int y, unsigned num);
 void DrawPlaque (jagobj_t *pl);
 //void DrawTiledLetterbox2(int flat);
 //void DrawTiledLetterbox(void);
-//void DrawTiledBackground2(int flat);
+void DrawTiledBackground2(int flat);
 //void DrawTiledBackground(void);
 void DrawScrollingBanner(short ltzz_lump, int x, int y_shift);
 void DrawScrollingChevrons(short chev_lump, int x, int y_shift);

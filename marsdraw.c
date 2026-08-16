@@ -955,7 +955,7 @@ void ClearViewportOverdraw(void)
 =
 =============
 */
-/*
+
 void DrawTiledBackground2(int flat)
 {
 	int			y, yt;
@@ -1000,6 +1000,7 @@ void DrawTiledBackground2(int flat)
 	}
 }
 
+/*
 void DrawTiledBackground(void)
 {
 	if (gameinfo.borderFlat <= 0)
@@ -1010,6 +1011,7 @@ void DrawTiledBackground(void)
 	DrawTiledBackground2(gameinfo.borderFlat);
 }
 */
+
 void EraseBlock(int x, int y, int width, int height)
 {
 }

@@ -122,6 +122,9 @@ static VINT tileLump = -1;
 
 void IN_Start (void)
 {
+	Mars_ClearLetterBox();
+	Mars_SetVideoMode(MARS_VDP_MODE_256, 0);
+
 	intertype = int_spec;
 	tileLump = W_GetNumForName("SPECTILE");
 
@@ -368,7 +371,7 @@ void IN_Drawer (void)
 		I_SetPalette(dc_playpals); // Normal
 	}
 
-	//DrawTiledBackground2(tileLump);
+	DrawTiledBackground2(tileLump);
 
 	if (intertype == int_spec)
 	{

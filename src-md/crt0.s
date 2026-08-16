@@ -4069,7 +4069,7 @@ vert_blank:
 
 
         move.b  gamemode,d0
-        andi.b  #0x30,d0
+        andi.b  #0x10,d0
         cmpi.b  #0x10,d0
         bne.s   88f
 10:
