@@ -68,12 +68,12 @@ extern boolean sky_md_layer;
 static char seg_lock = 0;
 
 static void R_DrawTexture(int x, unsigned iscale, int colnum, fixed_t scale2, int floorclipx, int ceilingclipx, unsigned light, drawtex_t *tex, int miplevel) ATTR_DATA_CACHE_ALIGN;
-static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds) ATTR_DATA_CACHE_ALIGN;
+static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 static void R_SetupDrawTexture(drawtex_t *drawtex, texture_t *tex, fixed_t texturemid, fixed_t topheight, fixed_t bottomheight) ATTR_DATA_CACHE_ALIGN;
 
 static void R_LockSeg(void) ATTR_DATA_CACHE_ALIGN;
 static void R_UnlockSeg(void) ATTR_DATA_CACHE_ALIGN;
-void R_SegCommands(void) ATTR_DATA_CACHE_ALIGN;
+void R_SegCommands(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 
 //
 // Render a wall texture as columns

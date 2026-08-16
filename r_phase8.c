@@ -16,7 +16,7 @@ void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx) ATTR_DATA_CACHE_
 void R_DrawVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreenhalf) ATTR_DATA_CACHE_ALIGN;
 void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreenhalf, int16_t *walls) ATTR_DATA_CACHE_ALIGN;
 static void R_DrawSortedSprites(int *sortedsprites, int sprscreenhalf) ATTR_DATA_CACHE_ALIGN;
-void R_Sprites(void) ATTR_DATA_CACHE_ALIGN;
+void R_Sprites(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 
 // Seg with both AC_FOFSIDE and AC_MIDTEXTURE
 void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx)
