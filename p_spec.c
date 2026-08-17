@@ -1865,7 +1865,8 @@ void T_SwingBezier(swinghang_t *sh)
 			&& plr->mo->target == (mobj_t*)sh->maceball)
 		{
 			player = plr;
-			controlsPressed = player->forwardmove;
+			controlsPressed = ((sh->flags & SHF_ALLOWUP) && player->forwardmove > 0)
+				|| ((sh->flags & SHF_ALLOWDOWN) && player->forwardmove < 0);
 			break;
 		}
 	}
@@ -1930,7 +1931,8 @@ void T_SwingHang(swinghang_t *sh)
 			&& plr->mo->target == (mobj_t*)sh->maceball)
 		{
 			player = plr;
-			controlsPressed = player->forwardmove;
+			controlsPressed = ((sh->flags & SHF_ALLOWUP) && player->forwardmove > 0)
+				|| ((sh->flags & SHF_ALLOWDOWN) && player->forwardmove < 0);
 			break;
 		}
 	}
