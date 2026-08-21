@@ -799,6 +799,7 @@ typedef struct vissprite_s
 #define VPFLAGS_DIDSEG     2
 typedef struct visplane_s
 {
+	int			*link;
 	fixed_t		height;
 	VINT		minx, maxx;
 	VINT 		flatandlight;

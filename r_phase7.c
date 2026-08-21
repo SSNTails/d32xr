@@ -67,16 +67,20 @@ static char pl_lock = 0;
 static int pl_next = 0;
 #endif
 
-static int line_drawn[192];
-static int miplevel_precalc[192];
-static int mipsizeX_precalc[192];
-static int mipsizeY_precalc[192];
-static int light_precalc[192];
-static fixed_t xfrac_precalc[192];
-static fixed_t yfrac_precalc[192];
-static fixed_t xstep_precalc[192];
-static fixed_t ystep_precalc[192];
+typedef struct span_precalc_s {
+    int locked;
+    int* link;  // Points to the pre-split visplane.
+    int miplevel;
+    int mipsizeX;
+    int mipsizeY;
+    int light;
+    fixed_t xfrac;
+    fixed_t yfrac;
+    fixed_t xstep;
+    fixed_t ystep;
+} span_precalc_t;
 
+static span_precalc_t precalc[224]; // 224 to work with the title; may want to make this dynamic to save on memory.
 
 
 const int8_t wave_table[128] =
@@ -96,7 +100,15 @@ const int8_t wave_table[128] =
 //
 static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
 {
-    if (line_drawn[y] == 0) {
+    span_precalc_t *precalc_ptr = &precalc[y];
+
+    while (precalc_ptr->locked);
+    if (precalc_ptr->link == lpl->pl->link) {
+        precalc_ptr->link = 0;
+        //drawspancolor(y, x, x2, 0xFC);
+        drawspan(y, x, x2, precalc_ptr->light, precalc_ptr->xfrac, precalc_ptr->yfrac, precalc_ptr->xstep, precalc_ptr->ystep, lpl->ds_source[precalc_ptr->miplevel], precalc_ptr->mipsizeX, precalc_ptr->mipsizeY);
+    }
+    else {
         int remaining;
         fixed_t distance;
         fixed_t length, xfrac, yfrac, xstep, ystep;
@@ -232,20 +244,21 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
             }
         }
 
-        miplevel_precalc[y] = miplevel;
-        mipsizeX_precalc[y] = mipsizeX;
-        mipsizeY_precalc[y] = mipsizeY;
-        light_precalc[y] = light;
-        xfrac_precalc[y] = xfrac;
-        yfrac_precalc[y] = yfrac;
-        xstep_precalc[y] = xstep;
-        ystep_precalc[y] = ystep;
-    }
+        precalc_ptr->locked = 1;
+        precalc_ptr->miplevel = miplevel;
+        precalc_ptr->mipsizeX = mipsizeX;
+        precalc_ptr->mipsizeY = mipsizeY;
+        precalc_ptr->light = light;
+        precalc_ptr->xfrac = xfrac;
+        precalc_ptr->yfrac = yfrac;
+        precalc_ptr->xstep = xstep;
+        precalc_ptr->ystep = ystep;
 
-    drawspan(y, x, x2, light_precalc[y], xfrac_precalc[y], yfrac_precalc[y], xstep_precalc[y], ystep_precalc[y], lpl->ds_source[miplevel_precalc[y]], mipsizeX_precalc[y], mipsizeY_precalc[y]);
-    
-    if (line_drawn[y] != 0) {
-        line_drawn[y] = 0;
+        precalc_ptr->link = lpl->pl->link;
+
+        precalc_ptr->locked = 0;
+
+        drawspan(y, x, x2, light, xfrac, yfrac, xstep, ystep, lpl->ds_source[miplevel], mipsizeX, mipsizeY);
     }
 }
 
@@ -310,19 +323,36 @@ static void R_PlaneLoop(localplane_t *lpl)
 
         x2 = pl_x - 1;
 
-        // top diffs
-        while (t1 < t2 && t1 <= b1)
-        {
-            mapplane(lpl, t1, spanstart[t1], x2);
-            ++t1;
-        }
+        //if (x2 < 80) {
+            // top diffs
+            while (t1 < t2 && t1 <= b1)
+            {
+                mapplane(lpl, t1, spanstart[t1], x2);
+                ++t1;
+            }
 
-        // bottom diffs
-        while (b1 > b2 && b1 >= t1)
-        {
-            mapplane(lpl, b1, spanstart[b1], x2);
-            --b1;
-        }
+            // bottom diffs
+            while (b1 > b2 && b1 >= t1)
+            {
+                mapplane(lpl, b1, spanstart[b1], x2);
+                --b1;
+            }
+        //}
+        /*else {
+            // bottom diffs
+            while (b1 > b2 && b1 >= t1)
+            {
+                mapplane(lpl, b1, spanstart[b1], x2);
+                --b1;
+            }
+
+            // top diffs
+            while (t1 < t2 && t1 <= b1)
+            {
+                mapplane(lpl, t1, spanstart[t1], x2);
+                ++t1;
+            }
+        }*/
 
         if (pl_x == pl_stopx + 1)
             break;
@@ -605,6 +635,9 @@ static void Mars_R_SplitPlanes(void)
             newpl->offs = pl->offs;
             newpl->minx = start + 1;
             newpl->maxx = newstop;
+            newpl->link = (int*)pl;
+
+            pl->link = (int*)pl;
 
             numplanes++;
             if (numplanes >= MAXVISPLANES)
