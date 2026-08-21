@@ -1332,7 +1332,7 @@ void A_Boss1Laser(mobj_t *actor, int16_t var1, int16_t var2)
 		if (mobjinfo[var1].seesound)
 			S_StartSound(actor, mobjinfo[var1].seesound);
 
-		point = P_SpawnMobj(x + P_ReturnThrustX(actor->angle, mobjinfo[actor->type].radius), y + P_ReturnThrustY(actor->angle, mobjinfo[actor->type].radius), actor->z - (actor->theight << FRACBITS >> 1) >> 1, MT_EGGMOBILE_TARGET);
+		point = P_SpawnMobj(x + P_ReturnThrustX(actor->angle, mobjinfo[actor->type].radius), y + P_ReturnThrustY(actor->angle, mobjinfo[actor->type].radius), (actor->z - (actor->theight << FRACBITS >> 1)) >> 1, MT_EGGMOBILE_TARGET);
 		point->angle = actor->angle;
 		point->reactiontime = dur+1;
 		point->target = actor->target;

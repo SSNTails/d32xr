@@ -1801,17 +1801,6 @@ boolean Bezier_UpdateFollower(bezier_follower_t *f, mobj_t *mobj, boolean wrap)
 
 static void SetPlayerPositionFromSwing(swinghang_t *sh, player_t *player)
 {
-	if (((sh->flags & SHF_ALLOWUP) && player->forwardmove > 0)
-		|| ((sh->flags & SHF_ALLOWDOWN) && player->forwardmove < 0))
-	{
-		sh->deltaZ += player->forwardmove >> (FRACBITS-3);
-	}
-
-	if (sh->deltaZ > sh->aboveDelta)
-		sh->deltaZ = sh->aboveDelta;
-	else if (sh->deltaZ < sh->belowDelta)
-		sh->deltaZ = sh->belowDelta;
-
 	/*
 	// This could also be processed as 'hit a wall'. What should we do then?
 	if (sh->z < (player->mo->floorz >> FRACBITS) + 64)
@@ -1963,6 +1952,20 @@ void T_SwingHang(swinghang_t *sh)
 	rotationDir.z = (fixed_t)sh->rotation.z << 9;
 
 	vector4_t rotVec = FV3_RotateVector(&rotationDir, &axis, curPos);
+
+	if (player)
+	{
+		if (((sh->flags & SHF_ALLOWUP) && player->forwardmove > 0)
+			|| ((sh->flags & SHF_ALLOWDOWN) && player->forwardmove < 0))
+		{
+			sh->deltaZ += player->forwardmove >> (FRACBITS-3);
+		}
+	}
+
+	if (sh->deltaZ > sh->aboveDelta)
+		sh->deltaZ = sh->aboveDelta;
+	else if (sh->deltaZ < sh->belowDelta)
+		sh->deltaZ = sh->belowDelta;
 
 //	CONS_Printf("%d, %d, %d", rotVec.x, rotVec.y, rotVec.z);
 
