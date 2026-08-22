@@ -837,6 +837,24 @@ ATTR_DATA_CACHE_ALIGN
 #define COLUMN_CACHE_SIZE MAX_COLUMN_LENGTH
 #endif
 
+typedef struct span_precalc_s {
+    int locked;
+    int* link;  // Points to the pre-split visplane.
+    //int miplevel;
+    //int mipsizeX;
+    //int mipsizeY;
+    //int light;
+	fixed_t height;
+	fixed_t distance;
+    fixed_t xstep;
+    fixed_t ystep;
+	//int x1;
+	//int x2;
+} span_precalc_t;
+
+extern unsigned int test_precalc[20];
+extern span_precalc_t *precalc;
+
 typedef struct
 #ifdef MARS
 __attribute__((aligned(16)))

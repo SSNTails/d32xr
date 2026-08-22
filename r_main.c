@@ -480,6 +480,8 @@ D_printf ("Done\n");
 
 	R_SetDrawMode();
 
+	precalc = Z_Malloc(sizeof(span_precalc_t) * 224, PU_STATIC);
+
 	R_InitTexCache(&r_texcache);
 
 	testtex = &textures[R_TextureNumForName("GFZROCK")];

@@ -67,20 +67,9 @@ static char pl_lock = 0;
 static int pl_next = 0;
 #endif
 
-typedef struct span_precalc_s {
-    int locked;
-    int* link;  // Points to the pre-split visplane.
-    int miplevel;
-    int mipsizeX;
-    int mipsizeY;
-    int light;
-    fixed_t xfrac;
-    fixed_t yfrac;
-    fixed_t xstep;
-    fixed_t ystep;
-} span_precalc_t;
+span_precalc_t *precalc;
 
-static span_precalc_t precalc[224]; // 224 to work with the title; may want to make this dynamic to save on memory.
+unsigned int test_precalc[20];
 
 
 const int8_t wave_table[128] =
@@ -104,9 +93,166 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
 
     while (precalc_ptr->locked);
     if (precalc_ptr->link == lpl->pl->link) {
+        int remaining;
+        fixed_t distance;
+        fixed_t length, xfrac, yfrac, xstep, ystep;
+        angle_t angle;
+
+    #ifdef SIMPLELIGHT
+        const int light = lpl->lightmax;
+    #else
+        int light;
+        unsigned scale;
+    #endif
+
+        remaining = x2 - x + 1;
+
+        if (remaining <= 0)
+            return; // nothing to draw (shouldn't happen)
+
+        const int flatnum = lpl->pl->flatandlight&0xff;
+
+        unsigned miplevel, mipsizeX, mipsizeY;
+
+        if (precalc_ptr->height != lpl->height) {
+            distance = FixedMul(lpl->height, yslope[y]);
+
+    #if (MARS && !SIMPLELIGHT)
+        volatile int32_t t;
+        __asm volatile (
+            "mov #-128, r0\n\t"
+            "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+            "mov #0, %0\n\t"
+            "mov.l %2, @(16, r0) /* set high bits of the 64-bit dividend */ \n\t"
+            "mov.l %1, @(0, r0) /* set 32-bit divisor */ \n\t"
+            "mov #0, %0\n\t"
+            "mov.l %0, @(20, r0) /* set low  bits of the 64-bit dividend, start divide */\n\t"
+            : "=&r" (t) : "r" (distance), "r"(lpl->lightcoef) : "r0");
+    #endif
+
+            length = FixedMul(distance, distscale[x] << 1);
+
+            xstep = FixedMul(distance, lpl->basexscale);
+            ystep = FixedMul(distance, lpl->baseyscale);
+        }
+        else {
+            distance = precalc_ptr->distance;
+
+    #if (MARS && !SIMPLELIGHT)
+        volatile int32_t t;
+        __asm volatile (
+            "mov #-128, r0\n\t"
+            "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+            "mov #0, %0\n\t"
+            "mov.l %2, @(16, r0) /* set high bits of the 64-bit dividend */ \n\t"
+            "mov.l %1, @(0, r0) /* set 32-bit divisor */ \n\t"
+            "mov #0, %0\n\t"
+            "mov.l %0, @(20, r0) /* set low  bits of the 64-bit dividend, start divide */\n\t"
+            : "=&r" (t) : "r" (distance), "r"(lpl->lightcoef) : "r0");
+    #endif
+            length = FixedMul(distance, distscale[x] << 1);
+            xstep = precalc_ptr->xstep;
+            ystep = precalc_ptr->ystep;
+        }
+
+    #if MIPLEVELS > 1 && FLATMIPS
+        miplevel = (unsigned)distance / MIPSCALE;
+        if (miplevel > lpl->maxmip)
+            miplevel = lpl->maxmip;
+        mipsize = lpl->mipsize[miplevel];
+    #else
+        miplevel = 0;
+        mipsizeX = flatpixels[flatnum].width;
+        mipsizeY = flatpixels[flatnum].height;
+    #endif
+
+        angle = (lpl->angle + (xtoviewangle[x]<<FRACBITS)) >> ANGLETOFINESHIFT;
+
+        xfrac = FixedMul(finecosine(angle), length);
+        xfrac = lpl->x + xfrac - (lpl->xoff << FRACBITS);
+        yfrac = FixedMul(finesine(angle), length);
+        yfrac = lpl->y - yfrac + (lpl->yoff << FRACBITS);
+        yfrac *= mipsizeY;
+
+        if (lpl->sizeShift > 0)
+        {
+            yfrac <<= lpl->sizeShift;
+            ystep <<= lpl->sizeShift;
+        }
+        else if (lpl->sizeShift < 0)
+        {
+            yfrac >>= -lpl->sizeShift;
+            ystep >>= -lpl->sizeShift;
+        }
+
+    //    xfrac = FixedMul(xfrac, mipsizeX << FRACBITS);
+    //    yfrac = FixedMul(yfrac, mipsizeY << FRACBITS);
+
+    #if MIPLEVELS > 1 && FLATMIPS
+        if (miplevel > 0) {
+            unsigned m = miplevel;
+            do {
+                xfrac >>= 1, xstep >>= 1;
+                yfrac >>= 2, ystep >>= 2;
+            } while (--m);
+        }
+    #endif
+
+    #ifndef SIMPLELIGHT
+        if (lpl->lightcoef != 0)
+        {
+    #ifdef MARS
+            __asm volatile (
+                "mov #-128, r0\n\t"
+                "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
+                "mov.l @(20,r0), %0 /* get 32-bit quotient */ \n\t"
+                : "=r" (scale) : : "r0");
+    #else
+            scale = (lpl->lightcoef << SLOPEBITS) / distance;
+    #endif
+
+            light = scale;
+            light -= lpl->lightsub;
+            if (light < lpl->lightmin)
+                light = lpl->lightmin;
+            else if (light > lpl->lightmax)
+                light = lpl->lightmax;
+            light >>= FRACBITS;
+
+            // transform to hardware value
+            light = HWLIGHT(light);
+        }
+        else
+        {
+            light = lpl->lightmax;
+        }
+    #endif
+
+        if (lpl->flags & FLF_WAVY)
+        {
+            const int x_offset = 0;
+            const int y_offset = 56;
+            const int x_rate = leveltime << 1;
+            const int y_rate = x_rate + leveltime;
+            const int x_length = distance >> 15;
+            const int y_length = distance >> 15;
+
+            const int xfrac_inc = (wave_table[(x_offset + x_rate + x_length) & 127] << (FRACBITS-4));
+            const int yfrac_inc = (wave_table[(y_offset + y_rate + y_length) & 127] << (FRACBITS-0));
+
+            xfrac += xfrac_inc;
+            yfrac += yfrac_inc;
+
+            if (IsTitleScreen()) {
+                // More dramatic for the title screen.
+                xfrac += (xfrac_inc << 1);
+                yfrac += (yfrac_inc << 1);
+            }
+        }
+
         precalc_ptr->link = 0;
-        //drawspancolor(y, x, x2, 0xFC);
-        drawspan(y, x, x2, precalc_ptr->light, precalc_ptr->xfrac, precalc_ptr->yfrac, precalc_ptr->xstep, precalc_ptr->ystep, lpl->ds_source[precalc_ptr->miplevel], precalc_ptr->mipsizeX, precalc_ptr->mipsizeY);
+
+        drawspan(y, x, x2, light, xfrac, yfrac, xstep, ystep, lpl->ds_source[miplevel], mipsizeX, mipsizeY);
     }
     else {
         int remaining;
@@ -245,14 +391,16 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
         }
 
         precalc_ptr->locked = 1;
-        precalc_ptr->miplevel = miplevel;
-        precalc_ptr->mipsizeX = mipsizeX;
-        precalc_ptr->mipsizeY = mipsizeY;
-        precalc_ptr->light = light;
-        precalc_ptr->xfrac = xfrac;
-        precalc_ptr->yfrac = yfrac;
+        //precalc_ptr->miplevel = miplevel;
+        //precalc_ptr->mipsizeX = mipsizeX;
+        //precalc_ptr->mipsizeY = mipsizeY;
+        //precalc_ptr->light = light;
+        precalc_ptr->height = lpl->height;
+        precalc_ptr->distance = distance;
         precalc_ptr->xstep = xstep;
         precalc_ptr->ystep = ystep;
+        //precalc_ptr->x1 = x;
+        //precalc_ptr->x2 = x2;
 
         precalc_ptr->link = lpl->pl->link;
 
