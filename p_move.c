@@ -31,7 +31,6 @@
 
 boolean PIT_CheckThing(mobj_t* thing, pmovework_t *mw) ATTR_DATA_CACHE_ALIGN;
 static boolean PIT_CheckLine(line_t* ld, pmovework_t *mw) ATTR_DATA_CACHE_ALIGN;
-static boolean PM_CrossCheck(line_t* ld, pmovework_t *mw) ATTR_DATA_CACHE_ALIGN;
 boolean PM_CheckPosition(pmovework_t *mw) ATTR_DATA_CACHE_ALIGN;
 boolean P_TryMove2(ptrymove_t *tm, boolean checkposonly) ATTR_DATA_CACHE_ALIGN;
 
@@ -45,7 +44,6 @@ boolean PIT_CheckThing(mobj_t *thing, pmovework_t *mw)
    int     damage;
    mobj_t  *tmthing = mw->tmthing;
 //   int     tmflags = mw->tmflags;
-   const mobjinfo_t* thinfo = &mobjinfo[tmthing->type];
 
    if(!((thing->flags & (MF_SOLID|MF_SPECIAL)) || Mobj_HasFlags2(thing, MF2_SHOOTABLE)))
       return true;
@@ -53,7 +51,7 @@ boolean PIT_CheckThing(mobj_t *thing, pmovework_t *mw)
    if (thing->type == MT_PLAYER && Mobj_HasFlags2(tmthing, MF2_SHOOTABLE))
       return true;
 
-   blockdist = mobjinfo[thing->type].radius + thinfo->radius;
+   blockdist = mobjinfo[thing->type].radius + mw->tmthingRadius;
    
    if (thing->flags & MF_RINGMOBJ)
    {
@@ -113,6 +111,7 @@ boolean PIT_CheckThing(mobj_t *thing, pmovework_t *mw)
          return !(thing->flags & MF_SOLID); // didn't do any damage
 
       // damage/explode
+      const mobjinfo_t* thinfo = &mobjinfo[tmthing->type];
 		damage = ((P_Random()&7)+1)* thinfo->damage;
 		P_DamageMobj (thing, tmthing, tmthing->target, damage);
       return false; // don't traverse any more
@@ -134,7 +133,7 @@ boolean PIT_CheckThing(mobj_t *thing, pmovework_t *mw)
 //
 // Check if the thing intersects a linedef
 //
-boolean PM_BoxCrossLine(line_t *ld, pmovework_t *mw)
+boolean PM_BoxCrossLine(line_t *ld, fixed_t testbbox[4])
 {
    fixed_t x1, x2;
    fixed_t lx, ly;
@@ -145,23 +144,12 @@ boolean PM_BoxCrossLine(line_t *ld, pmovework_t *mw)
 
    P_LineBBox(ld, ldbbox);
 
-   if(mw->tmbbox[BOXRIGHT ] <= ldbbox[BOXLEFT  ] ||
-      mw->tmbbox[BOXLEFT  ] >= ldbbox[BOXRIGHT ] ||
-      mw->tmbbox[BOXTOP   ] <= ldbbox[BOXBOTTOM] ||
-      mw->tmbbox[BOXBOTTOM] >= ldbbox[BOXTOP   ])
+   if(testbbox[BOXRIGHT ] <= ldbbox[BOXLEFT  ] ||
+      testbbox[BOXLEFT  ] >= ldbbox[BOXRIGHT ] ||
+      testbbox[BOXTOP   ] <= ldbbox[BOXBOTTOM] ||
+      testbbox[BOXBOTTOM] >= ldbbox[BOXTOP   ])
    {
       return false; // bounding boxes don't intersect
-   }
-
-   if(ld->flags & ML_ST_POSITIVE)
-   {
-      x1 = mw->tmbbox[BOXLEFT ];
-      x2 = mw->tmbbox[BOXRIGHT];
-   }
-   else
-   {
-      x1 = mw->tmbbox[BOXRIGHT];
-      x2 = mw->tmbbox[BOXLEFT ];
    }
 
    lx  = vertexes[ld->v1].x << FRACBITS;
@@ -169,10 +157,21 @@ boolean PM_BoxCrossLine(line_t *ld, pmovework_t *mw)
    ldx = vertexes[ld->v2].x - vertexes[ld->v1].x;
    ldy = vertexes[ld->v2].y - vertexes[ld->v1].y;
 
+   if(ld->flags & ML_ST_POSITIVE)
+   {
+      x1 = testbbox[BOXLEFT ];
+      x2 = testbbox[BOXRIGHT];
+   }
+   else
+   {
+      x1 = testbbox[BOXRIGHT];
+      x2 = testbbox[BOXLEFT ];
+   }
+
    dx1 = (x1 - lx) >> FRACBITS;
-   dy1 = (mw->tmbbox[BOXTOP] - ly) >> FRACBITS;
+   dy1 = (testbbox[BOXTOP] - ly) >> FRACBITS;
    dx2 = (x2 - lx) >> FRACBITS;
-   dy2 = (mw->tmbbox[BOXBOTTOM] - ly) >> FRACBITS;
+   dy2 = (testbbox[BOXBOTTOM] - ly) >> FRACBITS;
 
    side1 = (ldy * dx1 < dy1 * ldx);
    side2 = (ldy * dx2 < dy2 * ldx);
@@ -189,9 +188,12 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
    sector_t *front, *back;
    mobj_t   *tmthing = mw->tmthing;
 
+   if(!PM_BoxCrossLine(ld, mw->tmbbox))
+      return true;
+
    // The moving thing's destination positoin will cross the given line.
    // If this should not be allowed, return false.
-   if(ld->sidenum[1] == -1)
+   if(ld->sidenum[1] < 0)
       return false; // one-sided line
 
    const uint16_t lineflags = ld->flags;
@@ -202,8 +204,8 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
    if(!(tmthing->flags2 & MF2_MISSILE) && !(tmthing->player || tmthing->type == MT_CAMERA) && (lineflags & ML_BLOCKMONSTERS))
       return false; // block monsters only
 
-   VINT ifront = LD_IFRONTSECTOR(ld);
-   VINT iback = LD_IBACKSECTOR(ld);
+   const VINT ifront = LD_IFRONTSECTOR(ld);
+   const VINT iback = LD_IBACKSECTOR(ld);
 
    front = I_TO_SEC(ifront);
    back = iback < 0 ? NULL : I_TO_SEC(iback);
@@ -286,7 +288,7 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
    // adjust floor/ceiling heights
    if(opentop < mw->tmceilingz)
       mw->tmceilingz = opentop;
-   if(openbottom >mw->tmfloorz)
+   if(openbottom > mw->tmfloorz)
       mw->tmfloorz = openbottom;
    if(lowfloor < mw->tmdropoffz)
       mw->tmdropoffz = lowfloor;
@@ -298,19 +300,6 @@ boolean PIT_CheckLine(line_t *ld, pmovework_t *mw)
          player->touching_sectorlist[player->num_touching_sectors++] = ifront;
       if (player->num_touching_sectors < MAX_TOUCHING_SECTORS && back)
          player->touching_sectorlist[player->num_touching_sectors++] = iback;
-   }
-   return true;
-}
-
-//
-// Check a single linedef in a blockmap cell.
-//
-static boolean PM_CrossCheck(line_t *ld, pmovework_t *mw)
-{
-   if(PM_BoxCrossLine(ld, mw))
-   {
-      if(!PIT_CheckLine(ld, mw))
-         return false;
    }
    return true;
 }
@@ -381,10 +370,10 @@ boolean PM_CheckPosition(pmovework_t *mw)
 
    mw->tmflags = tmthing->flags;
 
-   mw->tmbbox[BOXTOP   ] = mw->tmy + mobjinfo[tmthing->type].radius;
-   mw->tmbbox[BOXBOTTOM] = mw->tmy - mobjinfo[tmthing->type].radius;
-   mw->tmbbox[BOXRIGHT ] = mw->tmx + mobjinfo[tmthing->type].radius;
-   mw->tmbbox[BOXLEFT  ] = mw->tmx - mobjinfo[tmthing->type].radius;
+   mw->tmbbox[BOXTOP   ] = mw->tmy + mw->tmthingRadius;
+   mw->tmbbox[BOXBOTTOM] = mw->tmy - mw->tmthingRadius;
+   mw->tmbbox[BOXRIGHT ] = mw->tmx + mw->tmthingRadius;
+   mw->tmbbox[BOXLEFT  ] = mw->tmx - mw->tmthingRadius;
 
    mw->newsubsec = I_TO_SS(R_PointInSubsector2(mw->tmx, mw->tmy));
    mw->newsec = I_TO_SEC(mw->newsubsec->isector);
@@ -473,7 +462,7 @@ boolean PM_CheckPosition(pmovework_t *mw)
    {
       for(by = yl; by <= yh; by++)
       {
-         if(!P_BlockLinesIterator(bx, by, (blocklinesiter_t)PM_CrossCheck, mw))
+         if(!P_BlockLinesIterator(bx, by, (blocklinesiter_t)PIT_CheckLine, mw))
             return false;
       }
    }
@@ -494,6 +483,7 @@ boolean P_TryMove2(ptrymove_t *tm, boolean checkposonly)
    mw.tmx = tm->tmx;
    mw.tmy = tm->tmy;
    mw.tmthing = tm->tmthing;
+   mw.tmthingRadius = mobjinfo[mw.tmthing->type].radius;
 
    trymove2 = PM_CheckPosition(&mw);
 

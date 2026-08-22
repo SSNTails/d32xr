@@ -19,6 +19,7 @@ static boolean P_CameraTryMove2(ptrymove_t *tm, boolean checkposonly)
    mw.tmx = tm->tmx;
    mw.tmy = tm->tmy;
    mw.tmthing = tm->tmthing;
+   mw.tmthingRadius = mobjinfo[mw.tmthing->type].radius;
 
    trymove2 = PM_CheckPosition(&mw);
 

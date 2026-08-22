@@ -368,6 +368,7 @@ typedef struct
 {
 	// input
 	mobj_t *tmthing;
+	fixed_t tmthingRadius;
 	fixed_t  tmx, tmy;
 
 	fixed_t  tmfloorz;   // current floor z for P_TryMove2
@@ -396,7 +397,7 @@ typedef struct
 	fixed_t p3x, p3y, p4x, p4y; // p3, p4 are move endpoints
 } pslidework_t;
 
-boolean PM_BoxCrossLine(line_t *ld, pmovework_t *mw) ATTR_DATA_CACHE_ALIGN;
+boolean PM_BoxCrossLine(line_t *ld, fixed_t testbbox[4]) ATTR_DATA_CACHE_ALIGN;
 fixed_t P_CompletableFrac(pslidework_t *sw, fixed_t dx, fixed_t dy);
 
 #endif	/* __P_LOCAL__ */

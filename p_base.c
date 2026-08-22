@@ -36,6 +36,7 @@
 typedef struct
 {
    mobj_t      *checkthing, *hitthing;
+   fixed_t      checkthingRadius;
    fixed_t      testx, testy;
    fixed_t      testfloorz, testceilingz, testdropoffz;
    VINT         testsubsec;
@@ -101,7 +102,7 @@ static boolean PB_CheckThing(mobj_t *thing, pmovetest_t *mt)
       return true; // not blocking
 
    mo = mt->checkthing;
-   blockdist = mobjinfo[thing->type].radius + mobjinfo[mo->type].radius;
+   blockdist = mobjinfo[thing->type].radius + mt->checkthingRadius;
 
    if(D_abs(thing->x - mt->testx) >= blockdist)
       return true; // didn't hit it
@@ -266,10 +267,10 @@ static boolean PB_CheckPosition(pmovetest_t *mt)
    VINT *lvalidcount = validcount;
    mobj_t *mo = mt->checkthing;
 
-   mt->testbbox[BOXTOP   ] = mt->testy + mobjinfo[mo->type].radius;
-   mt->testbbox[BOXBOTTOM] = mt->testy - mobjinfo[mo->type].radius;
-   mt->testbbox[BOXRIGHT ] = mt->testx + mobjinfo[mo->type].radius;
-   mt->testbbox[BOXLEFT  ] = mt->testx - mobjinfo[mo->type].radius;
+   mt->testbbox[BOXTOP   ] = mt->testy + mt->checkthingRadius;
+   mt->testbbox[BOXBOTTOM] = mt->testy - mt->checkthingRadius;
+   mt->testbbox[BOXRIGHT ] = mt->testx + mt->checkthingRadius;
+   mt->testbbox[BOXLEFT  ] = mt->testx - mt->checkthingRadius;
 
    // the base floor / ceiling is from the subsector that contains the point.
    // Any contacted lines the step closer together will adjust them.
@@ -369,6 +370,7 @@ static boolean PB_TryMove(pmovetest_t *mt, mobj_t *mo, fixed_t tryx, fixed_t try
    mt->testx = tryx;
    mt->testy = tryy;
    mt->checkthing = mo; // store for PB_CheckThing
+   mt->checkthingRadius = mobjinfo[mo->type].radius;
 
    if(!PB_CheckPosition(mt))
       return false; // solid wall or thing
