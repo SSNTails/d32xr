@@ -45,7 +45,6 @@ typedef struct
 } pmovetest_t;
 
 static boolean PB_CheckThing(mobj_t* thing, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
-static boolean PB_BoxCrossLine(line_t* ld, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_CheckLine(line_t* ld, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_CrossCheck(line_t* ld, pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
 static boolean PB_CheckPosition(pmovetest_t *mt) ATTR_DATA_CACHE_ALIGN;
@@ -140,56 +139,6 @@ static boolean PB_CheckThing(mobj_t *thing, pmovetest_t *mt)
 }
 
 //
-// Test for a bounding box collision with a linedef.
-//
-static boolean PB_BoxCrossLine(line_t *ld, pmovetest_t *mt)
-{
-   fixed_t x1, x2;
-   fixed_t lx, ly;
-   fixed_t ldx, ldy;
-   fixed_t dx1, dy1, dx2, dy2;
-   boolean side1, side2;
-   fixed_t ldbbox[4];
-
-   P_LineBBox(ld, ldbbox);
-
-   // entirely outside bounding box of line?
-   if(mt->testbbox[BOXRIGHT ] <= ldbbox[BOXLEFT  ] ||
-      mt->testbbox[BOXLEFT  ] >= ldbbox[BOXRIGHT ] ||
-      mt->testbbox[BOXTOP   ] <= ldbbox[BOXBOTTOM] ||
-      mt->testbbox[BOXBOTTOM] >= ldbbox[BOXTOP   ])
-   {
-      return false;
-   }
-
-   if(ld->flags & ML_ST_POSITIVE)
-   {
-      x1 = mt->testbbox[BOXLEFT ];
-      x2 = mt->testbbox[BOXRIGHT];
-   }
-   else
-   {
-      x1 = mt->testbbox[BOXRIGHT];
-      x2 = mt->testbbox[BOXLEFT ];
-   }
-
-   lx  = vertexes[ld->v1].x << FRACBITS;
-   ly  = vertexes[ld->v1].y << FRACBITS;
-   ldx = (vertexes[ld->v2].x - vertexes[ld->v1].x);
-   ldy = (vertexes[ld->v2].y - vertexes[ld->v1].y);
-
-   dx1 = (x1 - lx) >> FRACBITS;
-   dy1 = (mt->testbbox[BOXTOP] - ly) >> FRACBITS;
-   dx2 = (x2 - lx) >> FRACBITS;
-   dy2 = (mt->testbbox[BOXBOTTOM] - ly) >> FRACBITS;
-
-   side1 = (ldy * dx1 < dy1 * ldx);
-   side2 = (ldy * dx2 < dy2 * ldx);
-
-   return (side1 != side2);
-}
-
-//
 // Adjusts testfloorz and testceilingz as lines are contacted.
 //
 static boolean PB_CheckLine(line_t *ld, pmovetest_t *mt)
@@ -199,7 +148,7 @@ static boolean PB_CheckLine(line_t *ld, pmovetest_t *mt)
 
    // The moving thing's destination position will cross the given line.
    // if this should not be allowed, return false.
-   if(ld->sidenum[1] == -1)
+   if(ld->sidenum[1] < 0)
       return false; // one-sided line
 
    if (ld->flags & ML_BLOCKING)
@@ -250,7 +199,7 @@ static boolean PB_CheckLine(line_t *ld, pmovetest_t *mt)
 //
 static boolean PB_CrossCheck(line_t *ld, pmovetest_t *mt)
 {
-   if(PB_BoxCrossLine(ld, mt))
+   if(PM_BoxCrossLine(ld, mt))
    {
       if(!PB_CheckLine(ld, mt))
          return false;

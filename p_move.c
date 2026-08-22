@@ -318,6 +318,7 @@ void P_PlayerCheckForStillPickups(mobj_t *mobj)
 	mw.tmx = mobj->x;
 	mw.tmy = mobj->y;
 	mw.tmthing = mobj;
+   mw.tmthingRadius = mobjinfo[MT_PLAYER].radius;
 
 	mw.tmbbox[BOXTOP   ] = mw.tmy + mobjinfo[MT_PLAYER].radius;
 	mw.tmbbox[BOXBOTTOM] = mw.tmy - mobjinfo[MT_PLAYER].radius;

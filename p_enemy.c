@@ -1186,12 +1186,17 @@ boolean P_RailThinker(mobj_t *mobj)
 	fixed_t x, y, z;
 	x = mobj->x, y = mobj->y, z = mobj->z;
 
+	P_UnsetThingPosition(mobj);
+	mobj->x += mobj->momx;
+	mobj->y += mobj->momy;
+	P_SetThingPosition(mobj);
+/*
 	if (mobj->momx || mobj->momy)
 	{
 		P_XYMovement(mobj);
 		if (mobj->target == NULL)
 			return true; // was removed
-	}
+	}*/
 
 	if (mobj->momz)
 	{
