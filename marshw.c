@@ -679,8 +679,8 @@ void Mars_DetectInputDevices(void)
 #else
 					button_cheat = XE_BT_E1;
 #endif
-					button_menu_next = XE_BT_B;
-					button_menu_back = XE_BT_A;
+					button_menu_next = XE_BT_A;
+					button_menu_back = XE_BT_B;
 				}
 				else {
 					// Standard 3/6 button controller found.
