@@ -4323,6 +4323,8 @@ get_xe1ap_input_done:
 | get_port: returns ID bits of controller pointed to by a0 in d0
 get_port:
         move.b  (a0),d0
+        cmp.b   #0x6F,d0
+        beq.s   0f                       /* XE-1AP found */
         move.b  #0x00,(a0)
         moveq   #12,d1
         and.b   d0,d1
@@ -4347,9 +4349,10 @@ get_port:
 
         move.w  #0xF000,d0               /* no pad in port */
         cmpi.b  #0x0D,d2
-        bne.b   0f
-        moveq   #0,d0                    /* pad in port */
+        bne.b   1f
 0:
+        moveq   #0,d0                    /* pad in port */
+1:
         rts
 
 | Check ports - sets controller word to 0xF001 if mouse, or 0 if not.
