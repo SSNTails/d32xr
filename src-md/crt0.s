@@ -4323,9 +4323,9 @@ get_xe1ap_input_done:
 | get_port: returns ID bits of controller pointed to by a0 in d0
 get_port:
         move.b  (a0),d0
+        move.b  #0x00,(a0)
         cmp.b   #0x6F,d0
         beq.s   0f                       /* XE-1AP found */
-        move.b  #0x00,(a0)
         moveq   #12,d1
         and.b   d0,d1
         sne     d2
