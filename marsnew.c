@@ -110,7 +110,7 @@ int Mars_ConvGamepadButtons(int ctrl, int analog_data)
 	if (ctrl & SEGA_CTRL_MODE)
 		newc |= BT_MODE;
 
-	if ((ctrl & 0xF000) == SEGA_CTRL_ANALOG)
+	if ((ctrl & 0xF000) == SEGA_CTRL_ANALOG && !IsDemo())
 	{
 		int8_t stick_x = analog_data >> 16;
 		int8_t stick_y = (analog_data >> 8) & 0xFF;
@@ -177,7 +177,9 @@ int Mars_ConvGamepadButtons(int ctrl, int analog_data)
 			newc |= BT_ACTION_CAMRIGHT;
 	}
 
-	newc |= (ctrl & 0xF000);	// Keep the controller type.
+	if (!IsDemo()) {
+		newc |= (ctrl & 0xF000);	// Keep the controller type.
+	}
 
 	return newc;
 }
@@ -456,7 +458,9 @@ static int I_ReadControls_(int port, btnstate_t* startbtn)
 	val_analog = Mars_ReadControllerAnalog(port);
 
 	ctrl = 0;
-	ctrl |= Mars_HandleStartHeld(&val, SEGA_CTRL_START, startbtn);
+	if ((val & 0xF000) != SEGA_CTRL_ANALOG) {
+		ctrl |= Mars_HandleStartHeld(&val, SEGA_CTRL_START, startbtn);
+	}
 	ctrl |= Mars_ConvGamepadButtons(val, val_analog);
 	return ctrl;
 }

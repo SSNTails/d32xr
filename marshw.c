@@ -655,12 +655,32 @@ void Mars_DetectInputDevices(void)
 		while (MARS_SYS_COMM0 != ctrl_wait);
 		int val = MARS_SYS_COMM2;
 
+		if (IsDemo()) {
+			val |= 0xF000;
+			if ((previous_buttons[i] & 0xF000) != 0xF000) {
+				// Standard 3/6 button controller mapping for demos.
+				button_spin = BT_B;
+				button_accelerate = BT_Y;
+				button_decelerate = 0;
+				button_pan_left = BT_X;
+				button_pan_right = BT_Z;
+				button_start = BT_START;
+				button_mode = BT_MODE;
+				button_menu_next = BT_B;
+				button_menu_back = BT_A;
+				button_jump = BT_A | BT_C;
+				button_cheat = 0;
+			}
+		}
+
 		next_buttons_pressed[i] = 0;
 		next_buttons_released[i] = 0;
 
-		if (val == 0xF000) {
+		if ((val & 0xF000) == 0xF000) {
 			// No controller found.
 			previous_buttons[i] = 0xF000;
+			next_buttons_pressed[i] = 0xF000;
+			next_buttons_released[i] = 0xF000;
 		}
 		else {
 			if ((val & 0xF000) != (previous_buttons[i] & 0xF000)) {
@@ -711,17 +731,23 @@ void Mars_DetectInputDevices(void)
 		ctrl_wait++;
 
 		// Read analog values
+		// TODO: It's silly to have to read these for non-analog controllers.
 		while (MARS_SYS_COMM0 != ctrl_wait);
-		val = MARS_SYS_COMM2;	// XXXX xxxx
-		analog[i] = val << 16;
+		int analog_val = (MARS_SYS_COMM2 << 16);	// XXXX xxxx
 		MARS_SYS_COMM0 = ++ctrl_wait;
 		ctrl_wait++;
 
 		while (MARS_SYS_COMM0 != ctrl_wait);
-		val = MARS_SYS_COMM2;	// YYYY yyyy TTTT tttt
-		analog[i] |= val;
+		analog_val |= MARS_SYS_COMM2;		// YYYY yyyy TTTT tttt
 		MARS_SYS_COMM0 = ++ctrl_wait;
 		ctrl_wait++;
+
+		if ((val & 0xF000) == SEGA_CTRL_ANALOG) {
+			analog[i] = analog_val;
+		}
+		else {
+			analog[i] = 0;
+		}
 	}
 
 	/* swap controller 1 and 2 around if the former isn't present */
