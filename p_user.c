@@ -2024,6 +2024,8 @@ void P_PlayerThink(player_t *player)
 	if (player->pflags & PF_CHANGESECTOR)
 		P_ChangeSectorPlayer(player);
 
+	P_PlayerInSpecialSector(player);
+
 	ticphase = 20;
 	P_PlayerMobjThink(player->mo);
 
@@ -2051,8 +2053,6 @@ void P_PlayerThink(player_t *player)
 		P_MoveChaseCamera(player, &camera);
 
 	player->onconveyor = 0;
-
-	P_PlayerInSpecialSector(player);
 
 	ticphase = 23;
 	ticphase = 24;
