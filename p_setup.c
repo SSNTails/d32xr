@@ -423,9 +423,20 @@ static void P_SetupMace(mapthing_t *mthing)
 			args[11] |= SHF_ALLOWUP;
 		if (line->flags & ML_DONTPEGBOTTOM)
 			args[11] |= SHF_ALLOWDOWN;
+		if (line->flags & ML_CULLING)
+			args[11] |= SHF_BEZIER;
+		if (line->flags & ML_NOCLIMB)
+			args[11] |= SHF_STARTINREVERSE;
+		if (line->flags & ML_UNDERWATERONLY)
+			args[11] |= SHF_SINEWAVE;
+		if (line->flags & ML_CULL_MIDTEXTURE)
+			args[11] |= SHF_REVERSE;
+		if (line->flags & ML_MIDTEXTUREBLOCK)
+			args[11] |= SHF_LOOP;
 
 		args[12] = ((int16_t)frontsector->lightlevel) << 3;
 		args[13] = ((int16_t)backsector->lightlevel) << 3;
+		args[14] = (int16_t)tag;
 
 		P_AddSwingHang(mthing, &axis, &rotation, args);
 	}

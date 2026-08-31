@@ -1637,12 +1637,17 @@ typedef enum
 	SHF_ENDDECEL = 8,   // When reaching end, decelerate instead of stopping abruptly
 	SHF_ROTATING = 16,  // Swing that just constantly rotates
 	SHF_LOOP = 32,      // If a bezier swing, movement will loop constantly
+	SHF_BEZIER = 64,    // This swing follows a bezier path
+	SHF_REVERSE = 128,    // This swing is reversed (for bezier swings)
+	SHF_SINEWAVE = 256,    // This swing follows a sine wave path
+	SHF_STARTINREVERSE = 512,  // This swing starts at the end of the path instead of the beginning
+	SHF_SYNC = 1024,  // This swing is synchronized to the leveltime
 } shflags_e;
 
 //
 // Bezier stuff
 //
-#define BEZIER_LUT_SIZE     64      // samples per segment (higher = smoother)
+#define BEZIER_LUT_SIZE     16      // samples per segment (higher = smoother)
 #define BEZIER_MAX_SEGMENTS 32      // hard limit for one path
 
 // One cubic Bezier segment (control points in map units to save space)
@@ -1679,8 +1684,15 @@ typedef struct {
     bezier_path_t  *path;
     fixed_t         dist_travelled; // 0 .. path->total_length
     int             current_seg;    // which segment we are on
+
+	// sine-mode stuff
+	int16_t duration_tics;
+	int16_t elapsed_tics;
+
     fixed_t         speed;          // distance per call (fixed_t)
-    boolean         active;
+	int          start_tic; // value of leveltime when it starts moving (if synchronized)
+    VINT         active;
+	VINT         reverse;
 } bezier_follower_t;
 
 typedef struct
@@ -1713,6 +1725,8 @@ typedef struct
 	// 0 to (FRACUNIT-1), sorry, you can't make the swing any faster!
 	int16_t accel; // Accelerates until the midpoint distance is reached
 	int16_t decel; // Begins to decelerate after the midpoint distance is passed
+
+	int16_t tag; // debugging
 } swinghang_t;
 
 void T_SwingHang(swinghang_t *sh);

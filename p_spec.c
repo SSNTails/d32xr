@@ -1543,6 +1543,40 @@ void P_PreallocateSwings(int numSwings)
  * Constant-speed Bezier path following (16.16 fixed-point)
  * ================================================================ */
 
+ typedef struct
+ {
+	int16_t id;
+	int16_t numSegments;
+	int16_t startAddr;
+ } bezier_header_t;
+
+ typedef struct
+ {
+	int16_t numPaths;
+ } bezier_lump_t;
+
+ bezier_segment_t *GetPathFromLump(bezier_lump_t *lump, int16_t id, int16_t *outSegments)
+ {
+	int16_t *lumpS = (int16_t*)lump;
+	lumpS++;
+
+	bezier_header_t *headers = (bezier_header_t*)lumpS;
+
+	for (int i = 0; i < lump->numPaths; i++)
+	{
+		if (headers[i].id == id)
+		{
+			if (outSegments)
+				*outSegments = headers[i].numSegments;
+
+			return (bezier_segment_t*)((byte*)lump + headers[i].startAddr);
+		}
+	}
+
+	I_Error("Bezier path %d not found in lump", id);
+	return NULL;
+ }
+
 typedef struct
 {
 	fixed_t x0, y0; // start
@@ -1739,45 +1773,152 @@ void Bezier_InitFollower(bezier_follower_t *f, bezier_path_t *path, fixed_t spee
 }
 
 // Advance the follower by its speed. Returns false when the path ends.
-boolean Bezier_UpdateFollower(bezier_follower_t *f, mobj_t *mobj, boolean wrap)
+boolean Bezier_UpdateFollower(bezier_follower_t *f, mobj_t *mobj, VINT flags)
 {
     fixed_t remaining;
     fixed_t x, y;
+	int elapsed;
 
     if (!f->active || !f->path)
-        return false;
-
-	// Apply speed (negative is also supported for backwards)
-    f->dist_travelled += f->speed;
-
-	// Do some clamping
-	if (f->dist_travelled <= 0)
 	{
-		// Add an option to loop
-		if (wrap)
-		{
-			f->dist_travelled += f->path->total_length; // wrap
-		}
-		else
-		{
-			// snap to first point?
-			f->active = false;
-			f->dist_travelled = 0;
-		}
+        return false;
 	}
-    else if (f->dist_travelled >= f->path->total_length)
-    {
-		if (wrap)
+
+	elapsed = leveltime - f->start_tic;
+
+	if (flags & SHF_SINEWAVE)
+	{
+		if (flags & SHF_REVERSE)
 		{
-			f->dist_travelled -= f->path->total_length; // wrap
+			/* Ping-pong: full round-trip period = 2 * duration */
+			int period = f->duration_tics * 2;
+			if (period > 0)
+			{
+				int phase = elapsed % period;
+				if (phase < 0)
+					phase += period;
+
+				/* Generate a triangular 0 → 1 → 0 wave */
+				if (phase <= f->duration_tics)
+				{
+					/* Going forward */
+					elapsed = phase;                    /* 0 … duration */
+					f->speed = D_abs(f->speed);         /* positive */
+				}
+				else
+				{
+					/* Coming back */
+					elapsed = period - phase;           /* duration … 0 */
+					f->speed = -D_abs(f->speed);        /* negative */
+				}
+			}
+		}
+		else if (flags & SHF_LOOP)
+		{
+			if (f->duration_tics > 0)
+			{
+				elapsed %= f->duration_tics;
+				if (elapsed < 0)
+					elapsed += f->duration_tics;
+			}
 		}
 		else
 		{
-			// snap to final point
-			f->active = false;
-			f->dist_travelled = f->path->total_length;
+			/* Once – clamp and possibly deactivate */
+			if (elapsed >= f->duration_tics)
+			{
+				elapsed = f->duration_tics;
+				f->dist_travelled = f->path->total_length;
+				f->active = false;
+			}
+			else if (elapsed <= 0)
+			{
+				elapsed = 0;
+				f->dist_travelled = 0;
+				f->active = false;
+			}
 		}
-    }
+
+		/* Store for debugging / queries */
+		f->elapsed_tics = elapsed;
+
+		/* u ∈ [0 … 1] */
+		fixed_t u = FixedDiv(elapsed << FRACBITS,
+								f->duration_tics << FRACBITS);
+
+		if (u < 0)        u = 0;
+		if (u > FRACUNIT) u = FRACUNIT;
+
+		/* BAM angle = u * π */
+		angle_t bam = (angle_t)FixedMul(u, ANG180);
+		int fine = bam >> ANGLETOFINESHIFT;
+		fixed_t cos_term = finecosine(fine);
+
+		/* Raised-cosine: s = L/2 * (1 - cos(π u)) */
+		f->dist_travelled = FixedMul(f->path->total_length >> 1,
+										FRACUNIT - cos_term);
+
+		/* Mirror when travelling backwards */
+//		if (f->speed < 0)
+//			f->dist_travelled = f->path->total_length - f->dist_travelled;
+	}
+	else
+	{
+		/* -------------------------------------------------
+         * Constant-speed traversal
+         * ------------------------------------------------- */
+
+        /* Absolute distance from global time */
+        f->dist_travelled = FixedMul(f->speed, (fixed_t)elapsed << FRACBITS);
+
+        /* Optional: if the motion should not always start at distance 0,
+           store a start_dist in the follower and do:
+           f->dist_travelled = f->start_dist + FixedMul(...)
+        */
+
+        if (f->dist_travelled <= 0)
+        {
+            if (flags & SHF_REVERSE)
+            {
+                f->speed = -f->speed;
+                /* Re-base the timer so the motion stays continuous */
+                f->start_tic = leveltime;
+                f->dist_travelled = 0;
+            }
+            else if (flags & SHF_LOOP)
+            {
+                /* Keep the fractional part after wrapping */
+                if (f->path->total_length > 0)
+                    f->dist_travelled %= f->path->total_length;
+                if (f->dist_travelled < 0)
+                    f->dist_travelled += f->path->total_length;
+            }
+            else
+            {
+                f->active = false;
+                f->dist_travelled = 0;
+            }
+        }
+        else if (f->dist_travelled >= f->path->total_length)
+        {
+            if (flags & SHF_REVERSE)
+            {
+                f->speed = -f->speed;
+                f->start_tic = leveltime;
+                f->dist_travelled = f->path->total_length;
+            }
+            else if (flags & SHF_LOOP)
+            {
+                if (f->path->total_length > 0)
+                    f->dist_travelled %= f->path->total_length;
+            }
+            else
+            {
+                f->active = false;
+                f->dist_travelled = f->path->total_length;
+            }
+        }
+	}
 
     // find which segment we are on
     remaining = f->dist_travelled;
@@ -1831,9 +1972,28 @@ void T_SwingBezier(swinghang_t *sh)
 	if (!sh->bezier_follower.active)
 		return;
 
-	if (!Bezier_UpdateFollower(&sh->bezier_follower, sh->maceball, sh->flags & SHF_LOOP))
+	// Are you near a player? Otherwise don't bother
+	boolean nearSomebody = false;
+	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		CONS_Printf("Done!");
+		if (!playeringame[i])
+			continue;
+
+		const mobj_t *playermo = players[i].mo;
+
+		if (D_abs(sh->maceball->x - playermo->x) > 2048*FRACUNIT
+			|| D_abs(sh->maceball->y - playermo->y) > 2048*FRACUNIT)
+			continue;
+
+		nearSomebody = true;
+	}
+
+	if (!nearSomebody)
+		return;
+
+	if (!Bezier_UpdateFollower(&sh->bezier_follower, sh->maceball, sh->flags))
+	{
+//		CONS_Printf("Done!");
 		return;
 	}
 
@@ -1868,6 +2028,29 @@ void T_SwingBezier(swinghang_t *sh)
 			sh->deltaZ++;
 	}
 
+	boolean pressing = false;
+
+	if (player)
+	{
+		if (((sh->flags & SHF_ALLOWUP) && player->forwardmove > 0)
+			|| ((sh->flags & SHF_ALLOWDOWN) && player->forwardmove < 0))
+		{
+			pressing = true;
+			sh->deltaZ += player->forwardmove >> (FRACBITS-3);
+
+			if (player->forwardmove > 0 && sh->maceball->state >= S_HOOK1 && sh->maceball->state <= S_HOOK2)
+				P_SetMobjState(sh->maceball, S_HOOK3);
+		}
+	}
+
+	if (!pressing && sh->maceball->state >= S_HOOK3 && sh->maceball->state <= S_HOOK4)
+		P_SetMobjState(sh->maceball, S_HOOK1);
+
+	if (sh->deltaZ > sh->aboveDelta)
+		sh->deltaZ = sh->aboveDelta;
+	else if (sh->deltaZ < sh->belowDelta)
+		sh->deltaZ = sh->belowDelta;
+
 	if (player)
 		SetPlayerPositionFromSwing(sh, player);
 }
@@ -1875,12 +2058,6 @@ void T_SwingBezier(swinghang_t *sh)
 void T_SwingHang(swinghang_t *sh)
 {
 	boolean nearSomebody = false;
-
-	if (sh->bezierPath) // TODO: Set this to call on spawn, not here.
-	{
-		T_SwingBezier(sh);
-		return;
-	}
 
 	vector3_t rotatePoint;
 	rotatePoint.x = sh->x << FRACBITS;
@@ -1932,6 +2109,14 @@ void T_SwingHang(swinghang_t *sh)
 			sh->deltaZ--;
 		else if (sh->deltaZ < 0)
 			sh->deltaZ++;
+
+		if (sh->maceball->state >= S_HOOK3 && sh->maceball->state <= S_HOOK4)
+			P_SetMobjState(sh->maceball, S_HOOK1);
+	}
+	else
+	{
+		if (player && player->forwardmove > 0 && sh->maceball->state >= S_HOOK1 && sh->maceball->state <= S_HOOK2)
+			P_SetMobjState(sh->maceball, S_HOOK3);
 	}
 
 	// Always update movedir to prevent desync. But do we really have to?
@@ -1985,22 +2170,13 @@ void P_AddSwingHang(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 {
 	swinghang_t *sh = cursorSwing;
 	cursorSwing++;
+
 	sh->thinker.function = T_SwingHang;
 	P_AddThinker(&sh->thinker);
 
 	sh->flags = args[11];
 	sh->aboveDelta = args[12];
 	sh->belowDelta = args[13];
-/*
-	bezier_segment_t raw[2] = {
-		{ 0,0,  64*2,128*2,  192*2,128*2,  256*2,0 },
-		{ 256*2,0,  320*2,-64*2,  384*2,64*2,  448*2,0 }
-	};
-	sh->bezierPath = Bezier_CreatePath(raw, 2);
-	Bezier_InitFollower(&sh->bezier_follower, sh->bezierPath, 4*FRACUNIT);
-	sh->bezier_follower.active = (sh->flags & SHF_LOOP);
-	*/
-
 	sh->length = D_abs(args[0]);
 	sh->mspeed = D_abs(args[3]);
 	sh->mphase = args[10];
@@ -2017,15 +2193,44 @@ void P_AddSwingHang(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 	sh->y = y >> FRACBITS;
 	sh->z = z >> FRACBITS;
 
-	sh->nv.x = axis->x;
-	sh->nv.y = axis->y;
-	sh->nv.z = axis->z;
-	sh->rotation.x = rotation->x;
-	sh->rotation.y = rotation->y;
-	sh->rotation.z = rotation->z;
-
 	// We don't get fancy here. We just need one object.
 	sh->maceball = P_SpawnMobj(x, y, z, MT_HOOK);
+
+	if (args[8] & TMM_SWING)
+	{
+		sh->thinker.function = T_SwingBezier;
+		//sh->flags |= SHF_SYNC; // DOES NOT WORK
+		// Find the curve, load it in
+		char lumpName[9];
+		D_snprintf(lumpName, sizeof(lumpName), "MAP%02dC", gamemapinfo.mapNumber);
+		int lumpNum = W_GetNumForName(lumpName);
+		if (lumpNum >= 0)
+		{
+			bezier_lump_t *lump = (bezier_lump_t*)W_POINTLUMPNUM(lumpNum);
+			int16_t numSegments;
+			bezier_segment_t *segment = GetPathFromLump(lump, args[14], &numSegments);
+			sh->bezierPath = Bezier_CreatePath(segment, numSegments);
+			Bezier_InitFollower(&sh->bezier_follower, sh->bezierPath, (sh->flags & SHF_STARTINREVERSE) ? sh->mspeed : -sh->mspeed);
+
+			sh->bezier_follower.duration_tics = (int16_t)axis->x * TICRATE;
+			sh->bezier_follower.elapsed_tics = (int16_t)axis->y * TICRATE;
+			sh->bezier_follower.start_tic = leveltime;
+
+			sh->bezier_follower.active = (sh->flags & SHF_LOOP);
+			sh->tag = args[14];
+		}
+		else
+			I_Error("Lump not found: %s", lumpName);
+	}
+	else
+	{
+		sh->nv.x = axis->x;
+		sh->nv.y = axis->y;
+		sh->nv.z = axis->z;
+		sh->rotation.x = rotation->x;
+		sh->rotation.y = rotation->y;
+		sh->rotation.z = rotation->z;
+	}
 }
 
 // TODO:
