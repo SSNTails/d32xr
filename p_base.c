@@ -199,7 +199,7 @@ static boolean PB_CheckLine(line_t *ld, pmovetest_t *mt)
 //
 static boolean PB_CrossCheck(line_t *ld, pmovetest_t *mt)
 {
-   if(PM_BoxCrossLine(ld, mt))
+   if(PM_BoxCrossLine(ld, mt->testbbox))
    {
       if(!PB_CheckLine(ld, mt))
          return false;
