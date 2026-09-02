@@ -144,7 +144,8 @@ $(TARGET).32x: $(TARGET).elf
 	$(OBJC) -O binary $< temp2.bin
 	$(DD) if=temp2.bin of=temp.bin bs=256 conv=sync
 	rm -f temp3.bin
-	cat temp.bin $(WAD) >>temp3.bin
+	cp temp.bin temp3.bin
+	/workspaces/d32xr/wadapp temp3.bin $(WAD)
 	$(DD) if=temp3.bin of=$@ bs=512K conv=sync
 	rm -f temp.bin temp2.bin temp3.bin
 	/workspaces/d32xr/romhdrfx -d $(TARGET).32x
