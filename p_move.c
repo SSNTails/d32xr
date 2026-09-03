@@ -367,7 +367,7 @@ boolean PM_CheckPosition(pmovework_t *mw)
 {
    int xl, xh, yl, yh, bx, by;
    mobj_t *tmthing = mw->tmthing;
-   VINT *lvalidcount = validcount;
+   int8_t *lvalidcount = validcount;
 
    mw->tmflags = tmthing->flags;
 
