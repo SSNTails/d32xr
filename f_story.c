@@ -16,7 +16,7 @@ typedef struct
     int16_t width, height;
 } rect_t;
 
-typedef struct
+typedef struct storyscene_s
 {
     const char *text;
     const int16_t textLength;
@@ -26,17 +26,16 @@ typedef struct
     const rect_t textBox; // Bounding box to print text inside
 
     int16_t postTextDelay; // Number of tics to wait after printing all text before transitioning to the next scene
+	int16_t id; // This is like RTTI, identifies which scene it is
 
-    //void (*tic)(storyscene_t *self);
-    //void (*draw)(storyscene_t *self);
-
+    void (*tic)(struct storyscene_s *self);
+    void (*draw)(struct storyscene_s *self);
 } storyscene_t;
 
 void DrawText(storyscene_t *scene)
 {
     // Handles drawing the text, including how much of it to draw
 }
-
 
 void START_Story (void)
 {
