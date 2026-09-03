@@ -9,6 +9,7 @@ fixed_t test_x_zoom = 0;
 fixed_t test_y_zoom = 0;
 fixed_t test_x_pos = 0;
 fixed_t test_y_pos = 0;
+int currentScene = 0;
 
 typedef struct
 {
@@ -19,22 +20,103 @@ typedef struct
 typedef struct storyscene_s
 {
     const char *text;
-    const int16_t textLength;
-    const int16_t textPos; // Position in the string of how far along the text has been printed
-    const int16_t textCharDelayTics; // Number of tics to wait before incrementing textPos
+    int16_t textPos; // Position in the string of how far along the text has been printed
+    int16_t textCharDelayTics; // Number of tics to wait before incrementing textPos
     int16_t textCharDelayCounter; // Decrement this. When it hits zero, textPos++
-    const rect_t textBox; // Bounding box to print text inside
-
     int16_t postTextDelay; // Number of tics to wait after printing all text before transitioning to the next scene
-	int16_t id; // This is like RTTI, identifies which scene it is
+    rect_t textBox; // Bounding box to print text inside
 
+	void (*init)(struct storyscene_s *self);
     void (*tic)(struct storyscene_s *self);
     void (*draw)(struct storyscene_s *self);
+	void (*stop)(struct storyscene_s *self);
 } storyscene_t;
+
+typedef struct
+{
+	storyscene_t scene;
+	VINT picLump;
+	VINT picSatellite;
+	VINT satX, satY;
+} scene_1_t;
+
+#define NUMSCENES 12
+storyscene_t *introScenes[NUMSCENES];
+
+void NextScene()
+{
+	currentScene++;
+	if (currentScene >= NUMSCENES) // We're done. How to signal?
+		currentScene = currentScene-1;
+
+	// A transition or something?
+}
+
+void TIC_Text(storyscene_t *scene)
+{
+	// If not at the end of the string, run the char counter
+	if (scene->text[scene->textPos] != '\0')
+	{
+		scene->textCharDelayCounter--;
+		if (scene->textCharDelayCounter <= 0)
+		{
+			scene->textCharDelayCounter = scene->textCharDelayTics;
+			scene->textPos++;
+		}
+	}
+	else // We're at the end
+	{
+		if (scene->postTextDelay > 0)
+			scene->postTextDelay--;
+
+		if (scene->postTextDelay <= 0)
+			NextScene();
+	}
+}
 
 void DrawText(storyscene_t *scene)
 {
-    // Handles drawing the text, including how much of it to draw
+    // Common function to handle drawing the text, including how much of it to draw
+}
+
+void Scene_1_Init(scene_1_t *scene)
+{
+}
+
+void Scene_1_Tick(scene_1_t *scene)
+{
+
+}
+
+void Scene_1_Draw(scene_1_t *scene)
+{
+
+}
+
+void Scene_1_Stop(scene_1_t *scene)
+{
+
+}
+
+void BuildScenes()
+{
+	int i = 0;
+
+	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
+	scene1->picLump = W_GetNumForName("INTRO1");
+	scene1->picSatellite = W_GetNumForName("I1_SAT");
+	scene1->scene.text = "Two months had passed since Dr. Eggman\ntried to take over the world with his\nRing Satellite.";
+	scene1->scene.textCharDelayTics = scene1->scene.textCharDelayCounter = 2;
+	scene1->scene.postTextDelay = 2*TICRATE;
+	scene1->scene.textBox.x = 32;
+	scene1->scene.textBox.y = 128 + 16;
+	scene1->scene.textBox.width = 320 - 32 - 32;
+	scene1->scene.textBox.height = 224 - 16 - scene1->scene.textBox.y;
+	scene1->scene.init = (void(*)(storyscene_t *))Scene_1_Init;
+	scene1->scene.tic = (void(*)(storyscene_t *))Scene_1_Tick;
+	scene1->scene.draw = (void(*)(storyscene_t *))Scene_1_Draw;
+	scene1->scene.stop = (void(*)(storyscene_t *))Scene_1_Stop;
+	introScenes[i++] = (storyscene_t*)scene1;
 }
 
 void START_Story (void)
@@ -62,6 +144,9 @@ void START_Story (void)
 	}
 
 	effects_flags = EFFECTS_COPPER_ENABLED;
+
+	BuildScenes();
+	currentScene = 0;
 }
 
 int TIC_Story (void)
@@ -140,6 +225,8 @@ int TIC_Story (void)
 		test_y_zoom = 0xFFFFFF;
 	}
 
+	introScenes[currentScene]->tic(introScenes[currentScene]);
+
 	return exit;
 }
 
@@ -181,6 +268,8 @@ void DRAW_Story (void)
 			I_FrameBuffer()
 		);
 	}
+
+	introScenes[currentScene]->draw(introScenes[currentScene]);
 }
 
 void STOP_Story (void)
@@ -196,6 +285,9 @@ void STOP_Story (void)
 		Mars_SetVideoMode(MARS_VDP_MODE_256, 0);
 		clearscreen--;
 	}
+
+	for (int i = 0; i < NUMSCENES; i++)
+		Z_Free(introScenes[currentScene]);
 
 	DoubleBufferSetup();	// Clear frame buffers to black.
 
