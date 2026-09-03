@@ -3,7 +3,6 @@
 #include "marshw.h"
 #include "r_local.h"
 
-static jagobj_t *tf = NULL;
 boolean test_always_zoom = false;
 fixed_t test_x_zoom = 0;
 fixed_t test_y_zoom = 0;
@@ -39,6 +38,12 @@ typedef struct
 	VINT picSatellite;
 	VINT satX, satY;
 } scene_1_t;
+
+typedef struct
+{
+	storyscene_t scene;
+	VINT picLump;
+} scene_2_t;
 
 #define NUMSCENES 12
 storyscene_t *introScenes[NUMSCENES];
@@ -81,21 +86,50 @@ void DrawText(storyscene_t *scene)
 
 void Scene_1_Init(scene_1_t *scene)
 {
+	// Cache any graphics, etc.
 }
 
 void Scene_1_Tick(scene_1_t *scene)
 {
+	TIC_Text(&scene->scene);
 
+	if (screenCount & 1)
+		scene->satX += 1;
 }
 
 void Scene_1_Draw(scene_1_t *scene)
 {
+	// Draw background
+	// Draw satellite drifting overtop
 
+	DrawText(&scene->scene);
 }
 
 void Scene_1_Stop(scene_1_t *scene)
 {
+	// Free any resources
+}
 
+void Scene_2_Init(scene_1_t *scene)
+{
+	// Cache any graphics, etc.
+}
+
+void Scene_2_Tick(scene_1_t *scene)
+{
+	TIC_Text(&scene->scene);
+}
+
+void Scene_2_Draw(scene_1_t *scene)
+{
+	// Draw background?
+
+	DrawText(&scene->scene);
+}
+
+void Scene_2_Stop(scene_1_t *scene)
+{
+	// Free any resources
 }
 
 void BuildScenes()
@@ -103,8 +137,8 @@ void BuildScenes()
 	int i = 0;
 
 	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
-	scene1->picLump = W_GetNumForName("INTRO1");
-	scene1->picSatellite = W_GetNumForName("I1_SAT");
+	scene1->picLump = W_GetNumForName("PLANET");
+	scene1->picSatellite = W_GetNumForName("SATELLIT");
 	scene1->scene.text = "Two months had passed since Dr. Eggman\ntried to take over the world with his\nRing Satellite.";
 	scene1->scene.textCharDelayTics = scene1->scene.textCharDelayCounter = 2;
 	scene1->scene.postTextDelay = 2*TICRATE;
@@ -117,6 +151,21 @@ void BuildScenes()
 	scene1->scene.draw = (void(*)(storyscene_t *))Scene_1_Draw;
 	scene1->scene.stop = (void(*)(storyscene_t *))Scene_1_Stop;
 	introScenes[i++] = (storyscene_t*)scene1;
+
+	scene_2_t *scene2 = Z_Calloc(sizeof(*scene2), PU_STATIC);
+	scene2->picLump = W_GetNumForName("RSBG");
+	scene2->scene.text = "As it was about to drain the rings\naway from the planet, Sonic burst into\nthe control room and for what he thought\nwould be the last time, defeated\nDr.Eggman.";
+	scene2->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 2;
+	scene2->scene.postTextDelay = 2*TICRATE;
+	scene2->scene.textBox.x = 32;
+	scene2->scene.textBox.y = 128 + 16;
+	scene2->scene.textBox.width = 320 - 32 - 32;
+	scene2->scene.textBox.height = 224 - 16 - scene2->scene.textBox.y;
+	scene2->scene.init = (void(*)(storyscene_t *))Scene_2_Init;
+	scene2->scene.tic = (void(*)(storyscene_t *))Scene_2_Tick;
+	scene2->scene.draw = (void(*)(storyscene_t *))Scene_2_Draw;
+	scene2->scene.stop = (void(*)(storyscene_t *))Scene_2_Stop;
+	introScenes[i++] = (storyscene_t*)scene2;
 }
 
 void START_Story (void)
@@ -132,8 +181,6 @@ void START_Story (void)
 	I_SetPalette(dc_playpals);
 
 	R_InitColormap();
-
-	tf = W_CacheLumpName("TF128", PU_STATIC);
 
 	clearscreen = 2;
 
@@ -246,7 +293,7 @@ void DRAW_Story (void)
 	// Implement drawing code here.
 	if (!test_always_zoom && (test_x_zoom == 0 && test_y_zoom == 0)) {
 		// Use the faster function for drawing 15bpp when using 1:1 scaling.
-		DrawJagobj3_15bpp(
+/*		DrawJagobj3_15bpp(
 			tf,
 			((320-128)/2) + (test_x_pos >> 16),
 			((204-128)/2) + (test_y_pos >> 16),
@@ -256,17 +303,17 @@ void DRAW_Story (void)
 			tf->height,
 			320,
 			I_FrameBuffer()
-		);
+		);*/
 	}
 	else {
-		DrawScaledJagobj_15bpp(
+/*		DrawScaledJagobj_15bpp(
 			tf,
 			((320-128)/2) + (test_x_pos >> 16),
 			((204-128)/2) + (test_y_pos >> 16),
 			FRACUNIT + test_x_zoom,
 			FRACUNIT + test_y_zoom,
 			I_FrameBuffer()
-		);
+		);*/
 	}
 
 	introScenes[currentScene]->draw(introScenes[currentScene]);
@@ -291,5 +338,5 @@ void STOP_Story (void)
 
 	DoubleBufferSetup();	// Clear frame buffers to black.
 
-	Z_Free(tf);
+//	Z_Free(tf);
 }
