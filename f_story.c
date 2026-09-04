@@ -34,6 +34,7 @@ typedef struct storyscene_s
 typedef struct
 {
 	storyscene_t scene;
+	jagobj_t *background;
 	VINT picLump;
 	VINT picSatellite;
 	VINT satX, satY;
@@ -45,7 +46,8 @@ typedef struct
 	VINT picLump;
 } scene_2_t;
 
-#define NUMSCENES 12
+//#define NUMSCENES 12
+#define NUMSCENES	2
 storyscene_t *introScenes[NUMSCENES];
 
 void NextScene()
@@ -87,6 +89,7 @@ void DrawText(storyscene_t *scene)
 void Scene_1_Init(scene_1_t *scene)
 {
 	// Cache any graphics, etc.
+	scene->background = W_CacheLumpNum(scene->picLump, PU_STATIC);
 }
 
 void Scene_1_Tick(scene_1_t *scene)
@@ -100,6 +103,18 @@ void Scene_1_Tick(scene_1_t *scene)
 void Scene_1_Draw(scene_1_t *scene)
 {
 	// Draw background
+	DrawJagobj3_15bpp(
+		scene->background,
+		((320-128)/2) + (test_x_pos >> 16),
+		((204-128)/2) + (test_y_pos >> 16),
+		0,
+		0,
+		scene->background->width,
+		scene->background->height,
+		320,
+		I_FrameBuffer()
+	);
+
 	// Draw satellite drifting overtop
 
 	DrawText(&scene->scene);
@@ -108,6 +123,7 @@ void Scene_1_Draw(scene_1_t *scene)
 void Scene_1_Stop(scene_1_t *scene)
 {
 	// Free any resources
+	Z_Free(scene->background);
 }
 
 void Scene_2_Init(scene_1_t *scene)
@@ -274,6 +290,10 @@ int TIC_Story (void)
 
 	introScenes[currentScene]->tic(introScenes[currentScene]);
 
+	if (screenCount > 120) {
+		exit = ga_startnew;
+	}
+
 	return exit;
 }
 
@@ -333,10 +353,9 @@ void STOP_Story (void)
 		clearscreen--;
 	}
 
-	for (int i = 0; i < NUMSCENES; i++)
-		Z_Free(introScenes[currentScene]);
+	for (int i = 0; i < NUMSCENES; i++) {
+		Z_Free(introScenes[i]);
+	}
 
 	DoubleBufferSetup();	// Clear frame buffers to black.
-
-//	Z_Free(tf);
 }

@@ -1812,6 +1812,7 @@ D_printf ("DM_Main\n");
 	char demo_name[6] = { 'D', 'E', 'M', 'O', '0', '\0' };
 	int exit = ga_titleexpired;
 
+	// Play the story sequence
 	//SetStory();
 	//exit = MiniLoop (START_Story, STOP_Story, TIC_Story, DRAW_Story, UpdateBuffer);
 
