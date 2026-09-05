@@ -105,8 +105,8 @@ void Scene_1_Draw(scene_1_t *scene)
 	// Draw background
 	DrawJagobj3_15bpp(
 		scene->background,
-		((320-128)/2) + (test_x_pos >> 16),
-		((204-128)/2) + (test_y_pos >> 16),
+		0,
+		0,
 		0,
 		0,
 		scene->background->width,
@@ -210,6 +210,7 @@ void START_Story (void)
 
 	BuildScenes();
 	currentScene = 0;
+	introScenes[currentScene]->init(introScenes[currentScene]);
 }
 
 int TIC_Story (void)

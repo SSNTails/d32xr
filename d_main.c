@@ -1813,8 +1813,8 @@ D_printf ("DM_Main\n");
 	int exit = ga_titleexpired;
 
 	// Play the story sequence
-	//SetStory();
-	//exit = MiniLoop (START_Story, STOP_Story, TIC_Story, DRAW_Story, UpdateBuffer);
+	SetStory();
+	exit = MiniLoop (START_Story, STOP_Story, TIC_Story, DRAW_Story, UpdateBuffer);
 
 	if (!gameinfo.noAttractDemo) {
 		do {
