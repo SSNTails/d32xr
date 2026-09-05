@@ -35,9 +35,11 @@ typedef struct
 {
 	storyscene_t scene;
 	jagobj_t *background;
+	jagobj_t *satellite;
 	VINT picLump;
 	VINT picSatellite;
 	VINT satX, satY;
+	VINT satCounter;
 } scene_1_t;
 
 typedef struct
@@ -90,14 +92,24 @@ void Scene_1_Init(scene_1_t *scene)
 {
 	// Cache any graphics, etc.
 	scene->background = W_CacheLumpNum(scene->picLump, PU_STATIC);
+	scene->satellite = W_CacheLumpNum(scene->picSatellite, PU_STATIC);
+	scene->satCounter = 4;
+	scene->satX = 144;
+	scene->satY = 24;
 }
 
 void Scene_1_Tick(scene_1_t *scene)
 {
 	TIC_Text(&scene->scene);
 
-	if (screenCount & 1)
-		scene->satX += 1;
+	if (--scene->satCounter <= 0)
+	{
+		scene->satX++;
+		scene->satCounter = 4;
+	}
+
+	if (scene->satX > 288)
+		scene->satX = 288;
 }
 
 void Scene_1_Draw(scene_1_t *scene)
@@ -116,6 +128,17 @@ void Scene_1_Draw(scene_1_t *scene)
 	);
 
 	// Draw satellite drifting overtop
+	DrawJagobj3_15bpp(
+		scene->satellite,
+		scene->satX,
+		scene->satY,
+		0,
+		0,
+		scene->satellite->width,
+		scene->satellite->height,
+		320,
+		I_FrameBuffer()
+	);
 
 	DrawText(&scene->scene);
 }
@@ -124,6 +147,7 @@ void Scene_1_Stop(scene_1_t *scene)
 {
 	// Free any resources
 	Z_Free(scene->background);
+	Z_Free(scene->satellite);
 }
 
 void Scene_2_Init(scene_1_t *scene)
