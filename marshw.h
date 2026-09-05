@@ -55,6 +55,8 @@ void Mars_SetBrightness(int16_t brightness);
 int Mars_BackBuffer(void);
 void Mars_SetPalette(const uint8_t *palette);
 
+extern volatile uint16_t bgm_sync_command;
+
 extern volatile uint8_t legacy_emulator;
 
 extern volatile unsigned int mars_hblank_count_peak;

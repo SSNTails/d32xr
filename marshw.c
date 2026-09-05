@@ -39,6 +39,8 @@ static volatile uint16_t previous_buttons[MARS_MAX_CONTROLLERS];
 
 static volatile int analog[MARS_MAX_CONTROLLERS];
 
+volatile uint16_t bgm_sync_command = 0;
+
 volatile uint8_t legacy_emulator = 0;
 
 volatile unsigned int rle_border_size = 0;

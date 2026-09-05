@@ -870,10 +870,25 @@ pri_cmd_irq:
         mov     r0,r5                   /* pass in the drum sample volume from COMM14 */
         mov.b   @(15,r1),r0
         mov     r0,r6                   /* pass in the drum sample panning from COMM15 */
+        mov     #0xFF,r1
+        cmp/eq  r1,r4
+        bt      bgm_command
+
+play_drum_sample:
         mov.l   S_StartDrumId,r1
         jsr     @r1                     /* call S_StartDrumId() */
         nop
+        bra     50f
 
+bgm_command:
+        mov.l   pci_bgm_sync_command,r1
+        mov     #0xFF,r4
+        shll8   r5
+        and     r4,r6
+        or      r6,r5
+        mov.w   r5,@r1
+
+50:
         ! restore registers
         lds.l   @r15+,macl
         lds.l   @r15+,mach
@@ -1036,6 +1051,8 @@ pci_cmd_resp:
         .word   0xA55A
 pci_cmd_exit:
         .word   0xFFFE
+pci_bgm_sync_command:
+        .long   _bgm_sync_command
 
 !-----------------------------------------------------------------------
 ! Primary PWM IRQ handler
