@@ -91,8 +91,8 @@ void DrawText(storyscene_t *scene)
 void Scene_1_Init(scene_1_t *scene)
 {
 	// Cache any graphics, etc.
-	scene->background = W_CacheLumpNum(scene->picLump, PU_STATIC);
-	scene->satellite = W_CacheLumpNum(scene->picSatellite, PU_STATIC);
+	scene->background = W_CacheLumpNum(scene->picLump, PU_LEVEL);
+	scene->satellite = W_CacheLumpNum(scene->picSatellite, PU_LEVEL);
 	scene->satCounter = 4;
 	scene->satX = 144;
 	scene->satY = 24;
@@ -377,6 +377,8 @@ void STOP_Story (void)
 		Mars_SetVideoMode(MARS_VDP_MODE_256, 0);
 		clearscreen--;
 	}
+
+	introScenes[currentScene]->stop(introScenes[currentScene]);
 
 	for (int i = 0; i < NUMSCENES; i++) {
 		Z_Free(introScenes[i]);
