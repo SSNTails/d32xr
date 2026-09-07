@@ -20,6 +20,7 @@ enum
   cdtrack_drowning = -8,
   cdtrack_gameover = -9,
   cdtrack_emerald = -10,
+  cdtrack_story = -11
 };
 
 /*

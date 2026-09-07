@@ -153,6 +153,7 @@ void Scene_1_Stop(scene_1_t *scene)
 void Scene_2_Init(scene_1_t *scene)
 {
 	// Cache any graphics, etc.
+	scene->background = W_CacheLumpNum(scene->picLump, PU_LEVEL);
 }
 
 void Scene_2_Tick(scene_1_t *scene)
@@ -162,7 +163,18 @@ void Scene_2_Tick(scene_1_t *scene)
 
 void Scene_2_Draw(scene_1_t *scene)
 {
-	// Draw background?
+	// Draw background
+	DrawJagobj3_15bpp(
+		scene->background,
+		0,
+		0,
+		0,
+		0,
+		scene->background->width,
+		scene->background->height,
+		320,
+		I_FrameBuffer()
+	);
 
 	DrawText(&scene->scene);
 }
@@ -170,7 +182,148 @@ void Scene_2_Draw(scene_1_t *scene)
 void Scene_2_Stop(scene_1_t *scene)
 {
 	// Free any resources
+	Z_Free(scene->background);
 }
+
+const char *intro1text =
+"Two months had passed since Dr. Eggman\n"
+"tried to take over the world using his\n"
+"Ring Satellite.";
+
+const char *intro2text =
+"As it was about to drain the rings\n"
+"away from the planet, Sonic burst into\n"
+"the control room and for what he thought\n"
+"would be the last time,\xB4 defeated\n"
+"Dr. Eggman.";
+
+const char *intro3text =
+"What Sonic, Tails, and Knuckles had\n"
+"not anticipated was that Eggman would\n"
+"return,\xB8 bringing an all new threat.";
+
+const char *intro4text =
+"\xA8""About every five years, a strange asteroid\n"
+"hovers around the planet.\xBF It suddenly\n"
+"appears from nowhere, circles around, and\n"
+"\xB6- just as mysteriously as it arrives -\xB6\n"
+"vanishes after only one week.\xBF\n"
+"No one knows why it appears, or how.";
+
+const char *intro5text = 
+"\xA7\"Curses!\"\xA9\xBA Eggman yelled. \xA7\"That hedgehog\n"
+"and his ridiculous friends will pay\n"
+"dearly for this!\"\xA9\xC8 Just then his scanner\n"
+"blipped as the Black Rock made its\n"
+"appearance from nowhere.\xBF Eggman looked at\n"
+"the screen, and just shrugged it off.";
+
+const char *intro6text =
+"It was hours later\n"
+"that he had an\n"
+"idea. \xBF\xA7\"The Black\n"
+"Rock has a large\n"
+"amount of energy\n"
+"within it\xAC...\xA7\xBF\n"
+"If I can somehow\n"
+"harness this,\xB8 I\n"
+"can turn it into\n"
+"the ultimate\n"
+"battle station\xAC...\xA7\xBF\n"
+"And every last\n"
+"person will be\n"
+"begging for mercy,\xB8\xA8\n"
+"including Sonic!\"";
+
+const char *intro7text =
+"\xA8\nBefore beginning his scheme,\n"
+"Eggman decided to give Sonic\n"
+"a reunion party...";
+
+const char *intro8text =
+"\xA5\"PRE-""\xB6""PARING-""\xB6""TO-""\xB4""FIRE-\xB6IN-""\xB6""15-""\xB6""SECONDS!\"\xA8\xB8\n"
+"his targeting system crackled\n"
+"robotically down the com-link. \xBF\xA7\"Good!\"\xA8\xB8\n"
+"Eggman sat back in his eggmobile and\n"
+"began to count down as he saw the\n"
+"Greenflower mountain on the monitor.";
+
+const char *intro9text =
+"\xA5\"10...\xD2""9...\xD2""8...\"\xA8\xD2\n"
+"Meanwhile, Sonic was tearing across the\n"
+"zones. Everything became a blur as he\n"
+"ran up slopes, skimmed over water,\n"
+"and catapulted himself off rocks with\n"
+"his phenomenal speed.";
+
+const char *intro10text =
+"\xA5\"6...\xD2""5...\xD2""4...\"\xA8\xD2\n"
+"Sonic knew he was getting closer to the\n"
+"zone, and pushed himself harder.\xB4 Finally,\n"
+"the mountain appeared on the horizon.\xD2\xD2\n"
+"\xA5\"3...\xD2""2...\xD2""1...\xD2""Zero.\"";
+
+const char *intro11text =
+"Greenflower Mountain was no more.\xC4\n"
+"Sonic was now staring down a massive\n"
+"visage of Eggman looking back at him.\n"
+"The natural beauty of the zone\n"
+"had been obliterated.";
+
+const char *intro12text =
+"\xA7\"You're not\n"
+"quite as gone\n"
+"as we thought,\n"
+"huh?\xBF Are you\n"
+"going to tell\n"
+"us your plan as\n"
+"usual or will I\n"
+"\xA8\xB4'have to work\n"
+"it out'\xA7 or\n"
+"something?\"\xD2\xD2";
+
+const char *intro13text =
+"\"We'll see\xAA...\xA7\xBF let's give you a quick warm\n"
+"up, Sonic!\xA6\xC4 JETTYSYNS!\xA7\xBD Open fire!\"";
+
+const char *intro14text =
+"Eggman took this\n"
+"as his cue and\n"
+"blasted off,\n"
+"leaving Sonic\n"
+"and Tails behind.\xB6\n"
+"Tails looked at\n"
+"the once-perfect\n"
+"mountainside\n"
+"with a grim face\n"
+"and sighed.\xC6\n"
+"\xA7\"Now\xB6 what do we\n"
+"do?\",\xA9 he asked.";
+
+const char *intro15text =
+"\xA7\"Easy!\xBF We go\n"
+"find Eggman\n"
+"and stop his\n"
+"latest\n"
+"insane plan.\xBF\n"
+"Just like\n"
+"we've always\n"
+"done,\xBA right?\xD2\n\n"
+"\xAE...\xA9\xD2\n\n"
+"\"Tails, what\n"
+"\xAA*ARE*\xA9 you\n"
+"doing?\"";
+
+const char *intro16text =
+"\xA8\"I'm just finding what mission obje\xAC\xB1...\xBF\n"
+"\xA6""a-\xB8""ha!\xBF Here it is!\xA8\xBF This will only give us\n"
+"the robot's primary objective.\xBF It says\xAC\xB1...\"\n"
+"\xD2\xA3\x83"
+"* LOCATE  AND  RETRIEVE:  CHAOS  EMERALDS *"
+"\xBF\n"
+"*  CLOSEST  LOCATION:  GREENFLOWER  ZONE  *"
+"\x80\n\xA9\xD2\xD2"
+"\"All right, then\xAF... \xD2\xD2\xA7let's go!\"";
 
 void BuildScenes()
 {
@@ -179,7 +332,7 @@ void BuildScenes()
 	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
 	scene1->picLump = W_GetNumForName("PLANET");
 	scene1->picSatellite = W_GetNumForName("SATELLIT");
-	scene1->scene.text = "Two months had passed since Dr. Eggman\ntried to take over the world with his\nRing Satellite.";
+	scene1->scene.text = intro1text;
 	scene1->scene.textCharDelayTics = scene1->scene.textCharDelayCounter = 2;
 	scene1->scene.postTextDelay = 2*TICRATE;
 	scene1->scene.textBox.x = 32;
@@ -194,7 +347,7 @@ void BuildScenes()
 
 	scene_2_t *scene2 = Z_Calloc(sizeof(*scene2), PU_STATIC);
 	scene2->picLump = W_GetNumForName("RSBG");
-	scene2->scene.text = "As it was about to drain the rings\naway from the planet, Sonic burst into\nthe control room and for what he thought\nwould be the last time, defeated\nDr.Eggman.";
+	scene2->scene.text = intro2text;
 	scene2->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 2;
 	scene2->scene.postTextDelay = 2*TICRATE;
 	scene2->scene.textBox.x = 32;
@@ -235,6 +388,8 @@ void START_Story (void)
 	BuildScenes();
 	currentScene = 0;
 	introScenes[currentScene]->init(introScenes[currentScene]);
+
+	S_StartSong(W_CheckNumForName("VGM_STOR"), false, cdtrack_story);
 }
 
 int TIC_Story (void)
