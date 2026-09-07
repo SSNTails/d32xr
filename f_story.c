@@ -521,6 +521,8 @@ void DRAW_Story (void)
 
 void STOP_Story (void)
 {
+	S_StopSong();
+	
 	// Sync frames.
 	while (frame_sync == mars_vblank_count);
 	frame_sync = mars_vblank_count;
