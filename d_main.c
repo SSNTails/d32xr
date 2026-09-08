@@ -1812,10 +1812,6 @@ D_printf ("DM_Main\n");
 	char demo_name[6] = { 'D', 'E', 'M', 'O', '0', '\0' };
 	int exit = ga_titleexpired;
 
-	// Play the story sequence
-	SetStory();
-	exit = MiniLoop (START_Story, STOP_Story, TIC_Story, DRAW_Story, UpdateBuffer);
-
 	if (!gameinfo.noAttractDemo) {
 		do {
 			// Title intro
@@ -1837,6 +1833,12 @@ D_printf ("DM_Main\n");
 					// Level selection screen
 					SetLevelSelect();
 					exit = MiniLoop (START_LevelSelect, STOP_LevelSelect, TIC_LevelSelect, DRAW_LevelSelect, UpdateBuffer);
+
+					if (startmap == 1) {
+						// Play the story sequence
+						SetStory();
+						exit = MiniLoop (START_Story, STOP_Story, TIC_Story, DRAW_Story, UpdateBuffer);
+					}
 
 					// Start a new game
 					G_InitNew(startmap, starttype, startsplitscreen);

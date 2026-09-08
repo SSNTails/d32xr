@@ -8,6 +8,7 @@ fixed_t test_x_zoom = 0;
 fixed_t test_y_zoom = 0;
 fixed_t test_x_pos = 0;
 fixed_t test_y_pos = 0;
+int currentPhase = 0;
 int currentScene = 0;
 
 typedef struct
@@ -45,20 +46,33 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
+	jagobj_t *background;
 	VINT picLump;
-} scene_2_t;
+} scene_2_t, scene_3_t;
 
 //#define NUMSCENES 12
-#define NUMSCENES	2
+#define NUMSCENES	3
 storyscene_t *introScenes[NUMSCENES];
 
 void NextScene()
 {
+	introScenes[currentScene]->stop(introScenes[currentScene]);
+
 	currentScene++;
-	if (currentScene >= NUMSCENES) // We're done. How to signal?
-		currentScene = currentScene-1;
+	//if (currentScene >= NUMSCENES) // We're done. How to signal?
+	//	currentScene = currentScene-1;
+
+	if (currentScene < NUMSCENES) {
+		currentPhase = 0;
+		introScenes[currentScene]->init(introScenes[currentScene]);
+	}
 
 	// A transition or something?
+}
+
+void NextPhase()
+{
+	currentPhase++;
 }
 
 void TIC_Text(storyscene_t *scene)
@@ -73,14 +87,14 @@ void TIC_Text(storyscene_t *scene)
 			scene->textPos++;
 		}
 	}
-	else // We're at the end
+	/*else // We're at the end
 	{
 		if (scene->postTextDelay > 0)
 			scene->postTextDelay--;
 
 		if (scene->postTextDelay <= 0)
 			NextScene();
-	}
+	}*/
 }
 
 void DrawText(storyscene_t *scene)
@@ -146,22 +160,22 @@ void Scene_1_Draw(scene_1_t *scene)
 void Scene_1_Stop(scene_1_t *scene)
 {
 	// Free any resources
-	Z_Free(scene->background);
 	Z_Free(scene->satellite);
+	Z_Free(scene->background);
 }
 
-void Scene_2_Init(scene_1_t *scene)
+void Scene_2_Init(scene_2_t *scene)
 {
 	// Cache any graphics, etc.
 	scene->background = W_CacheLumpNum(scene->picLump, PU_LEVEL);
 }
 
-void Scene_2_Tick(scene_1_t *scene)
+void Scene_2_Tick(scene_2_t *scene)
 {
 	TIC_Text(&scene->scene);
 }
 
-void Scene_2_Draw(scene_1_t *scene)
+void Scene_2_Draw(scene_2_t *scene)
 {
 	// Draw background
 	DrawJagobj3_15bpp(
@@ -179,7 +193,42 @@ void Scene_2_Draw(scene_1_t *scene)
 	DrawText(&scene->scene);
 }
 
-void Scene_2_Stop(scene_1_t *scene)
+void Scene_2_Stop(scene_2_t *scene)
+{
+	// Free any resources
+	Z_Free(scene->background);
+}
+
+void Scene_3_Init(scene_3_t *scene)
+{
+	// Cache any graphics, etc.
+	scene->background = W_CacheLumpNum(scene->picLump, PU_LEVEL);
+}
+
+void Scene_3_Tick(scene_3_t *scene)
+{
+	TIC_Text(&scene->scene);
+}
+
+void Scene_3_Draw(scene_3_t *scene)
+{
+	// Draw background
+	DrawJagobj3_15bpp(
+		scene->background,
+		0,
+		0,
+		0,
+		0,
+		scene->background->width,
+		scene->background->height,
+		320,
+		I_FrameBuffer()
+	);
+
+	DrawText(&scene->scene);
+}
+
+void Scene_3_Stop(scene_3_t *scene)
 {
 	// Free any resources
 	Z_Free(scene->background);
@@ -359,6 +408,21 @@ void BuildScenes()
 	scene2->scene.draw = (void(*)(storyscene_t *))Scene_2_Draw;
 	scene2->scene.stop = (void(*)(storyscene_t *))Scene_2_Stop;
 	introScenes[i++] = (storyscene_t*)scene2;
+
+	scene_3_t *scene3 = Z_Calloc(sizeof(*scene3), PU_STATIC);
+	scene3->picLump = W_GetNumForName("PLANET2");
+	scene3->scene.text = intro3text;
+	scene3->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 2;
+	scene3->scene.postTextDelay = 2*TICRATE;
+	scene3->scene.textBox.x = 32;
+	scene3->scene.textBox.y = 128 + 16;
+	scene3->scene.textBox.width = 320 - 32 - 32;
+	scene3->scene.textBox.height = 224 - 16 - scene3->scene.textBox.y;
+	scene3->scene.init = (void(*)(storyscene_t *))Scene_3_Init;
+	scene3->scene.tic = (void(*)(storyscene_t *))Scene_3_Tick;
+	scene3->scene.draw = (void(*)(storyscene_t *))Scene_3_Draw;
+	scene3->scene.stop = (void(*)(storyscene_t *))Scene_3_Stop;
+	introScenes[i++] = (storyscene_t*)scene3;
 }
 
 void START_Story (void)
@@ -468,10 +532,25 @@ int TIC_Story (void)
 		test_y_zoom = 0xFFFFFF;
 	}
 
-	introScenes[currentScene]->tic(introScenes[currentScene]);
+	if (bgm_sync_command != 0) {
+		//currentPhase = (bgm_sync_command & 7);
+		//currentScene = ((bgm_sync_command >> 3) & 0x1F);
 
-	if (screenCount > 120) {
+		if (bgm_sync_command & 7) {
+			NextPhase();
+		}
+		else {
+			NextScene();
+		}
+
+		bgm_sync_command = 0;
+	}
+
+	if (currentScene >= NUMSCENES) {
 		exit = ga_startnew;
+	}
+	else {
+		introScenes[currentScene]->tic(introScenes[currentScene]);
 	}
 
 	return exit;
@@ -479,6 +558,10 @@ int TIC_Story (void)
 
 void DRAW_Story (void)
 {
+	if (currentScene >= NUMSCENES) {
+		return;
+	}
+
 	// Sync frames.
 	while (frame_sync == mars_vblank_count);
 	frame_sync = mars_vblank_count;
@@ -535,7 +618,7 @@ void STOP_Story (void)
 		clearscreen--;
 	}
 
-	introScenes[currentScene]->stop(introScenes[currentScene]);
+	//introScenes[currentScene]->stop(introScenes[currentScene]);
 
 	for (int i = 0; i < NUMSCENES; i++) {
 		Z_Free(introScenes[i]);
