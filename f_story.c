@@ -8,6 +8,10 @@ fixed_t test_x_zoom = 0;
 fixed_t test_y_zoom = 0;
 fixed_t test_x_pos = 0;
 fixed_t test_y_pos = 0;
+
+boolean transitionInProgress = false;
+boolean transitionDirection = 0;
+int8_t transitionCount = 0;
 int currentPhase = 0;
 int currentScene = 0;
 
@@ -19,6 +23,8 @@ typedef struct
 
 typedef struct storyscene_s
 {
+	VINT picLump;
+	jagobj_t *background;
     const char *text;
     int16_t textPos; // Position in the string of how far along the text has been printed
     int16_t textCharDelayTics; // Number of tics to wait before incrementing textPos
@@ -35,9 +41,7 @@ typedef struct storyscene_s
 typedef struct
 {
 	storyscene_t scene;
-	jagobj_t *background;
 	jagobj_t *satellite;
-	VINT picLump;
 	VINT picSatellite;
 	VINT satX, satY;
 	VINT satCounter;
@@ -46,13 +50,86 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
-	jagobj_t *background;
-	VINT picLump;
 } scene_2_t, scene_3_t;
 
 //#define NUMSCENES 12
 #define NUMSCENES	3
 storyscene_t *introScenes[NUMSCENES];
+
+
+void DebugControls()
+{
+	if ((ticrealbuttons & BT_ACTION_MODE) && !(oldticrealbuttons & BT_ACTION_MODE)) {
+		test_always_zoom ^= true;
+	}
+
+	if (ticrealbuttons & BT_ACTION_START) {
+		test_always_zoom = false;
+		test_x_pos = 0;
+		test_y_pos = 0;
+		test_x_zoom = 0;
+		test_y_zoom = 0;
+	}
+
+	if (ticrealanalogx == 0 && ticrealanalogy == 0) {
+		if (ticrealbuttons & BT_ACTION_UP) {
+			test_y_pos -= 0x40000;
+		}
+		else if (ticrealbuttons & BT_ACTION_DOWN) {
+			test_y_pos += 0x40000;
+		}
+
+		if (ticrealbuttons & BT_ACTION_LEFT) {
+			test_x_pos -= 0x40000;
+		}
+		else if (ticrealbuttons & BT_ACTION_RIGHT) {
+			test_x_pos += 0x40000;
+		}
+	}
+	else {
+		if (D_abs(ticrealanalogx) > 0x1F || (D_abs(ticrealanalogy) > 0x1F && D_abs(ticrealanalogx) > 0x0F)) {
+			test_x_pos += (ticrealanalogx << 10);
+		}
+
+		if (D_abs(ticrealanalogy) > 0x1F || (D_abs(ticrealanalogx) > 0x1F && D_abs(ticrealanalogy) > 0x0F)) {
+			test_y_pos += (ticrealanalogy << 10);
+		}
+	}
+
+	if (ticrealanalogt == 0) {
+		if (ticrealbuttons & BT_ACTION_CAMLEFT) {
+			test_x_zoom -= 0x1800;
+			test_y_zoom -= 0x1800;
+		}
+		else if (ticrealbuttons & BT_ACTION_CAMRIGHT) {
+			test_x_zoom += 0x1800;
+			test_y_zoom += 0x1800;
+		}
+	}
+	else if (ticrealanalogt > 0x1F) {
+		test_x_zoom += ((ticrealanalogt-0x1F) << 6);
+		test_y_zoom += ((ticrealanalogt-0x1F) << 6);
+	}
+	else if (ticrealanalogt < -0x1F) {
+		test_x_zoom += ((ticrealanalogt+0x1F) << 6);
+		test_y_zoom += ((ticrealanalogt+0x1F) << 6);
+	}
+
+	if (test_x_zoom < -0xFE00) {
+		test_x_zoom = -0xFE00;
+	}
+	else if (test_x_zoom > 0xFFFFFF) {
+		test_x_zoom = 0xFFFFFF;
+	}
+
+	if (test_y_zoom < -0xFE00) {
+		test_y_zoom = -0xFE00;
+	}
+	else if (test_y_zoom > 0xFFFFFF) {
+		test_y_zoom = 0xFFFFFF;
+	}
+}
+
 
 void NextScene()
 {
@@ -68,6 +145,7 @@ void NextScene()
 	}
 
 	// A transition or something?
+	StartTransition();
 }
 
 void NextPhase()
@@ -102,10 +180,103 @@ void DrawText(storyscene_t *scene)
     // Common function to handle drawing the text, including how much of it to draw
 }
 
+void StartTransition() {
+	transitionCount = 8;
+	transitionDirection = 0;
+	transitionInProgress = true;
+}
+
+void RunTransition() {
+	if (transitionDirection == 0) {
+		if (transitionCount >= 0) {
+			TransitionOut();
+			if (transitionCount == -1) {
+				transitionDirection = 1;
+			}
+		}
+	}
+	else if (transitionCount < 8) {
+		TransitionIn();
+		if (transitionCount == 8) {
+			transitionInProgress = false;
+		}
+	}
+}
+
+void TransitionOut() {
+	transitionCount--;
+
+	pixel_t *framebuffer;
+
+	if (transitionCount >= 0) {
+		framebuffer = I_FrameBuffer() + (transitionCount * 320);
+
+		for (int section = transitionCount; section < 204; section += 8) {
+			for (int x=0; x < 320; x += 4) {
+				*framebuffer++ = 0;
+				*framebuffer++ = 0;
+				*framebuffer++ = 0;
+				*framebuffer++ = 0;
+			}
+			framebuffer += (7 * 320);
+		}
+	}
+
+	if (transitionCount < 7) {
+		framebuffer = I_FrameBuffer() + ((transitionCount+1) * 320);
+
+		for (int section = transitionCount+1; section < 204; section += 8) {
+			for (int x=0; x < 320; x += 4) {
+				*framebuffer++ = 0;
+				*framebuffer++ = 0;
+				*framebuffer++ = 0;
+				*framebuffer++ = 0;
+			}
+			framebuffer += (7 * 320);
+		}
+	}
+}
+
+void TransitionIn() {
+	transitionCount++;
+
+	jagobj_t *background = introScenes[currentScene]->background;
+
+	for (int section = transitionCount; section < background->height; section += 8) {
+		DrawJagobj3_15bpp(
+			background,
+			0,
+			section,
+			0,
+			section,
+			background->width,
+			1,
+			320,
+			I_FrameBuffer()
+		);
+	}
+
+	if (transitionCount > 0) {
+		for (int section = transitionCount-1; section < background->height; section += 8) {
+			DrawJagobj3_15bpp(
+				background,
+				0,
+				section,
+				0,
+				section,
+				background->width,
+				1,
+				320,
+				I_FrameBuffer()
+			);
+		}
+	}
+}
+
 void Scene_1_Init(scene_1_t *scene)
 {
 	// Cache any graphics, etc.
-	scene->background = W_CacheLumpNum(scene->picLump, PU_LEVEL);
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->satellite = W_CacheLumpNum(scene->picSatellite, PU_LEVEL);
 	scene->satCounter = 4;
 	scene->satX = 144;
@@ -130,13 +301,13 @@ void Scene_1_Draw(scene_1_t *scene)
 {
 	// Draw background
 	DrawJagobj3_15bpp(
-		scene->background,
+		scene->scene.background,
 		0,
 		0,
 		0,
 		0,
-		scene->background->width,
-		scene->background->height,
+		scene->scene.background->width,
+		scene->scene.background->height,
 		320,
 		I_FrameBuffer()
 	);
@@ -161,13 +332,13 @@ void Scene_1_Stop(scene_1_t *scene)
 {
 	// Free any resources
 	Z_Free(scene->satellite);
-	Z_Free(scene->background);
+	Z_Free(scene->scene.background);
 }
 
 void Scene_2_Init(scene_2_t *scene)
 {
 	// Cache any graphics, etc.
-	scene->background = W_CacheLumpNum(scene->picLump, PU_LEVEL);
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 }
 
 void Scene_2_Tick(scene_2_t *scene)
@@ -179,30 +350,31 @@ void Scene_2_Draw(scene_2_t *scene)
 {
 	// Draw background
 	DrawJagobj3_15bpp(
-		scene->background,
+		scene->scene.background,
 		0,
 		0,
 		0,
 		0,
-		scene->background->width,
-		scene->background->height,
+		scene->scene.background->width,
+		scene->scene.background->height,
 		320,
 		I_FrameBuffer()
 	);
 
 	DrawText(&scene->scene);
+
 }
 
 void Scene_2_Stop(scene_2_t *scene)
 {
 	// Free any resources
-	Z_Free(scene->background);
+	Z_Free(scene->scene.background);
 }
 
 void Scene_3_Init(scene_3_t *scene)
 {
 	// Cache any graphics, etc.
-	scene->background = W_CacheLumpNum(scene->picLump, PU_LEVEL);
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 }
 
 void Scene_3_Tick(scene_3_t *scene)
@@ -214,13 +386,13 @@ void Scene_3_Draw(scene_3_t *scene)
 {
 	// Draw background
 	DrawJagobj3_15bpp(
-		scene->background,
+		scene->scene.background,
 		0,
 		0,
 		0,
 		0,
-		scene->background->width,
-		scene->background->height,
+		scene->scene.background->width,
+		scene->scene.background->height,
 		320,
 		I_FrameBuffer()
 	);
@@ -231,7 +403,7 @@ void Scene_3_Draw(scene_3_t *scene)
 void Scene_3_Stop(scene_3_t *scene)
 {
 	// Free any resources
-	Z_Free(scene->background);
+	Z_Free(scene->scene.background);
 }
 
 const char *intro1text =
@@ -379,7 +551,7 @@ void BuildScenes()
 	int i = 0;
 
 	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
-	scene1->picLump = W_GetNumForName("PLANET");
+	scene1->scene.picLump = W_GetNumForName("PLANET");
 	scene1->picSatellite = W_GetNumForName("SATELLIT");
 	scene1->scene.text = intro1text;
 	scene1->scene.textCharDelayTics = scene1->scene.textCharDelayCounter = 2;
@@ -395,7 +567,7 @@ void BuildScenes()
 	introScenes[i++] = (storyscene_t*)scene1;
 
 	scene_2_t *scene2 = Z_Calloc(sizeof(*scene2), PU_STATIC);
-	scene2->picLump = W_GetNumForName("RSBG");
+	scene2->scene.picLump = W_GetNumForName("RSBG");
 	scene2->scene.text = intro2text;
 	scene2->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 2;
 	scene2->scene.postTextDelay = 2*TICRATE;
@@ -410,7 +582,7 @@ void BuildScenes()
 	introScenes[i++] = (storyscene_t*)scene2;
 
 	scene_3_t *scene3 = Z_Calloc(sizeof(*scene3), PU_STATIC);
-	scene3->picLump = W_GetNumForName("PLANET2");
+	scene3->scene.picLump = W_GetNumForName("PLANET2");
 	scene3->scene.text = intro3text;
 	scene3->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 2;
 	scene3->scene.postTextDelay = 2*TICRATE;
@@ -453,6 +625,8 @@ void START_Story (void)
 	currentScene = 0;
 	introScenes[currentScene]->init(introScenes[currentScene]);
 
+	StartTransition();
+
 	S_StartSong(W_CheckNumForName("VGM_STOR"), false, cdtrack_story);
 }
 
@@ -462,75 +636,7 @@ int TIC_Story (void)
 
 	screenCount++;
 
-	if ((ticrealbuttons & BT_ACTION_MODE) && !(oldticrealbuttons & BT_ACTION_MODE)) {
-		test_always_zoom ^= true;
-	}
-
-	if (ticrealbuttons & BT_ACTION_START) {
-		test_always_zoom = false;
-		test_x_pos = 0;
-		test_y_pos = 0;
-		test_x_zoom = 0;
-		test_y_zoom = 0;
-	}
-
-	if (ticrealanalogx == 0 && ticrealanalogy == 0) {
-		if (ticrealbuttons & BT_ACTION_UP) {
-			test_y_pos -= 0x40000;
-		}
-		else if (ticrealbuttons & BT_ACTION_DOWN) {
-			test_y_pos += 0x40000;
-		}
-
-		if (ticrealbuttons & BT_ACTION_LEFT) {
-			test_x_pos -= 0x40000;
-		}
-		else if (ticrealbuttons & BT_ACTION_RIGHT) {
-			test_x_pos += 0x40000;
-		}
-	}
-	else {
-		if (D_abs(ticrealanalogx) > 0x1F || (D_abs(ticrealanalogy) > 0x1F && D_abs(ticrealanalogx) > 0x0F)) {
-			test_x_pos += (ticrealanalogx << 10);
-		}
-
-		if (D_abs(ticrealanalogy) > 0x1F || (D_abs(ticrealanalogx) > 0x1F && D_abs(ticrealanalogy) > 0x0F)) {
-			test_y_pos += (ticrealanalogy << 10);
-		}
-	}
-
-	if (ticrealanalogt == 0) {
-		if (ticrealbuttons & BT_ACTION_CAMLEFT) {
-			test_x_zoom -= 0x1800;
-			test_y_zoom -= 0x1800;
-		}
-		else if (ticrealbuttons & BT_ACTION_CAMRIGHT) {
-			test_x_zoom += 0x1800;
-			test_y_zoom += 0x1800;
-		}
-	}
-	else if (ticrealanalogt > 0x1F) {
-		test_x_zoom += ((ticrealanalogt-0x1F) << 6);
-		test_y_zoom += ((ticrealanalogt-0x1F) << 6);
-	}
-	else if (ticrealanalogt < -0x1F) {
-		test_x_zoom += ((ticrealanalogt+0x1F) << 6);
-		test_y_zoom += ((ticrealanalogt+0x1F) << 6);
-	}
-
-	if (test_x_zoom < -0xFE00) {
-		test_x_zoom = -0xFE00;
-	}
-	else if (test_x_zoom > 0xFFFFFF) {
-		test_x_zoom = 0xFFFFFF;
-	}
-
-	if (test_y_zoom < -0xFE00) {
-		test_y_zoom = -0xFE00;
-	}
-	else if (test_y_zoom > 0xFFFFFF) {
-		test_y_zoom = 0xFFFFFF;
-	}
+	//DebugControls();
 
 	if (bgm_sync_command != 0) {
 		//currentPhase = (bgm_sync_command & 7);
@@ -573,33 +679,12 @@ void DRAW_Story (void)
 		clearscreen--;
 	}
 
-	// Implement drawing code here.
-	if (!test_always_zoom && (test_x_zoom == 0 && test_y_zoom == 0)) {
-		// Use the faster function for drawing 15bpp when using 1:1 scaling.
-/*		DrawJagobj3_15bpp(
-			tf,
-			((320-128)/2) + (test_x_pos >> 16),
-			((204-128)/2) + (test_y_pos >> 16),
-			0,
-			0,
-			tf->width,
-			tf->height,
-			320,
-			I_FrameBuffer()
-		);*/
+	if (transitionInProgress) {
+		RunTransition();
 	}
 	else {
-/*		DrawScaledJagobj_15bpp(
-			tf,
-			((320-128)/2) + (test_x_pos >> 16),
-			((204-128)/2) + (test_y_pos >> 16),
-			FRACUNIT + test_x_zoom,
-			FRACUNIT + test_y_zoom,
-			I_FrameBuffer()
-		);*/
+		introScenes[currentScene]->draw(introScenes[currentScene]);
 	}
-
-	introScenes[currentScene]->draw(introScenes[currentScene]);
 }
 
 void STOP_Story (void)
