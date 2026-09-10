@@ -54,10 +54,10 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
-} scene_2_t, scene_3_t;
+} scene_2_t, scene_3_t, scene_4_t, scene_5_t;
 
 //#define NUMSCENES 12
-#define NUMSCENES	3
+#define NUMSCENES	5
 storyscene_t *introScenes[NUMSCENES];
 
 
@@ -438,6 +438,80 @@ void Scene_3_Stop(scene_3_t *scene)
 	Z_Free(scene->scene.background);
 }
 
+void Scene_4_Init(scene_4_t *scene)
+{
+	// Cache any graphics, etc.
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+}
+
+void Scene_4_Tick(scene_4_t *scene)
+{
+	TIC_Text(&scene->scene);
+}
+
+void Scene_4_Draw(scene_4_t *scene)
+{
+	if (sceneFrameCount <= 2) {
+		// Draw background
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			0,
+			0,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			I_FrameBuffer()
+		);
+	}
+
+	DrawText(&scene->scene);
+}
+
+void Scene_4_Stop(scene_4_t *scene)
+{
+	// Free any resources
+	Z_Free(scene->scene.background);
+}
+
+void Scene_5_Init(scene_5_t *scene)
+{
+	// Cache any graphics, etc.
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+}
+
+void Scene_5_Tick(scene_5_t *scene)
+{
+	TIC_Text(&scene->scene);
+}
+
+void Scene_5_Draw(scene_5_t *scene)
+{
+	if (sceneFrameCount <= 2) {
+		// Draw background
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			0,
+			0,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			I_FrameBuffer()
+		);
+	}
+
+	DrawText(&scene->scene);
+}
+
+void Scene_5_Stop(scene_5_t *scene)
+{
+	// Free any resources
+	Z_Free(scene->scene.background);
+}
+
 const char *intro1text =
 "Two months had passed since Dr. Eggman\n"
 "tried to take over the world using his\n"
@@ -619,7 +693,7 @@ void BuildScenes()
 	scene3->scene.transitionOutHeight = 204;
 	scene3->scene.picLump = W_GetNumForName("PLANET2");
 	scene3->scene.text = intro3text;
-	scene3->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 2;
+	scene3->scene.textCharDelayTics = scene3->scene.textCharDelayCounter = 2;
 	scene3->scene.postTextDelay = 2*TICRATE;
 	scene3->scene.textBox.x = 32;
 	scene3->scene.textBox.y = 128 + 16;
@@ -630,6 +704,38 @@ void BuildScenes()
 	scene3->scene.draw = (void(*)(storyscene_t *))Scene_3_Draw;
 	scene3->scene.stop = (void(*)(storyscene_t *))Scene_3_Stop;
 	introScenes[i++] = (storyscene_t*)scene3;
+
+	scene_4_t *scene4 = Z_Calloc(sizeof(*scene4), PU_STATIC);
+	scene4->scene.transitionOutHeight = 204;
+	scene4->scene.picLump = W_GetNumForName("PLANET");	//TODO: Change me!
+	scene4->scene.text = intro4text;
+	scene4->scene.textCharDelayTics = scene4->scene.textCharDelayCounter = 2;
+	scene4->scene.postTextDelay = 2*TICRATE;
+	scene4->scene.textBox.x = 32;
+	scene4->scene.textBox.y = 128 + 16;
+	scene4->scene.textBox.width = 320 - 32 - 32;
+	scene4->scene.textBox.height = 224 - 16 - scene4->scene.textBox.y;
+	scene4->scene.init = (void(*)(storyscene_t *))Scene_4_Init;
+	scene4->scene.tic = (void(*)(storyscene_t *))Scene_4_Tick;
+	scene4->scene.draw = (void(*)(storyscene_t *))Scene_4_Draw;
+	scene4->scene.stop = (void(*)(storyscene_t *))Scene_4_Stop;
+	introScenes[i++] = (storyscene_t*)scene4;
+
+	scene_5_t *scene5 = Z_Calloc(sizeof(*scene5), PU_STATIC);
+	scene5->scene.transitionOutHeight = 204;
+	scene5->scene.picLump = W_GetNumForName("EGGMAD");
+	scene5->scene.text = intro5text;
+	scene5->scene.textCharDelayTics = scene5->scene.textCharDelayCounter = 2;
+	scene5->scene.postTextDelay = 2*TICRATE;
+	scene5->scene.textBox.x = 32;
+	scene5->scene.textBox.y = 128 + 16;
+	scene5->scene.textBox.width = 320 - 32 - 32;
+	scene5->scene.textBox.height = 224 - 16 - scene5->scene.textBox.y;
+	scene5->scene.init = (void(*)(storyscene_t *))Scene_5_Init;
+	scene5->scene.tic = (void(*)(storyscene_t *))Scene_5_Tick;
+	scene5->scene.draw = (void(*)(storyscene_t *))Scene_5_Draw;
+	scene5->scene.stop = (void(*)(storyscene_t *))Scene_5_Stop;
+	introScenes[i++] = (storyscene_t*)scene5;
 }
 
 void START_Story (void)
