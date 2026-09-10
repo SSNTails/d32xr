@@ -61,6 +61,7 @@ typedef struct
 storyscene_t *introScenes[NUMSCENES];
 
 
+/*
 void DebugControls()
 {
 	if ((ticrealbuttons & BT_ACTION_MODE) && !(oldticrealbuttons & BT_ACTION_MODE)) {
@@ -133,6 +134,7 @@ void DebugControls()
 		test_y_zoom = 0xFFFFFF;
 	}
 }
+*/
 
 
 void NextScene()
@@ -189,7 +191,7 @@ void DrawText(storyscene_t *scene)
     // Common function to handle drawing the text, including how much of it to draw
 }
 
-void StartTransition(int size) {
+void StartTransition() {
 	transitionCount = 8;
 	transitionDirection = 0;
 	transitionInProgress = true;
@@ -658,7 +660,7 @@ void START_Story (void)
 	currentScene = 0;
 	introScenes[currentScene]->init(introScenes[currentScene]);
 
-	StartTransition(204);
+	StartTransition();
 
 	S_StartSong(W_CheckNumForName("VGM_STOR"), false, cdtrack_story);
 }
@@ -673,10 +675,17 @@ int TIC_Story (void)
 
 	//DebugControls();
 
+	// Command format:
+	// 0000000x sssssppp
+	// x - 1 for new command; 0 otherwise
+	// s - Scene number (0-31)
+	// p - Phase number (0-7)
+
 	if (bgm_sync_command != 0) {
 		//currentPhase = (bgm_sync_command & 7);
 		//currentScene = ((bgm_sync_command >> 3) & 0x1F);
 
+		// If phase is 0, we're starting a new scene; otherwise, we're starting a new phase.
 		if (bgm_sync_command & 7) {
 			NextPhase();
 		}
@@ -687,7 +696,8 @@ int TIC_Story (void)
 		bgm_sync_command = 0;
 	}
 
-	if (currentScene >= NUMSCENES) {
+	//TODO: Why don't these button press checks work??
+	if ((ticrealbuttons & BT_ACTION_START && !(oldticrealbuttons & BT_ACTION_START)) || currentScene >= NUMSCENES) {
 		exit = ga_startnew;
 	}
 	else {
