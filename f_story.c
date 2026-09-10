@@ -15,6 +15,9 @@ int8_t transitionCount = 0;
 int currentPhase = 0;
 int currentScene = 0;
 
+short sceneFrameCount = 0;
+short phaseFrameCount = 0;
+
 typedef struct
 {
     int16_t x, y;
@@ -23,6 +26,7 @@ typedef struct
 
 typedef struct storyscene_s
 {
+	VINT transitionOutHeight;
 	VINT picLump;
 	jagobj_t *background;
     const char *text;
@@ -144,6 +148,9 @@ void NextScene()
 		introScenes[currentScene]->init(introScenes[currentScene]);
 	}
 
+	sceneFrameCount = 0;
+	phaseFrameCount = 0;
+
 	// A transition or something?
 	StartTransition();
 }
@@ -151,6 +158,8 @@ void NextScene()
 void NextPhase()
 {
 	currentPhase++;
+
+	phaseFrameCount = 0;
 }
 
 void TIC_Text(storyscene_t *scene)
@@ -180,7 +189,7 @@ void DrawText(storyscene_t *scene)
     // Common function to handle drawing the text, including how much of it to draw
 }
 
-void StartTransition() {
+void StartTransition(int size) {
 	transitionCount = 8;
 	transitionDirection = 0;
 	transitionInProgress = true;
@@ -206,12 +215,13 @@ void RunTransition() {
 void TransitionOut() {
 	transitionCount--;
 
+	int transitionOutHeight = introScenes[currentScene]->transitionOutHeight;
 	pixel_t *framebuffer;
 
 	if (transitionCount >= 0) {
 		framebuffer = I_FrameBuffer() + (transitionCount * 320);
 
-		for (int section = transitionCount; section < 204; section += 8) {
+		for (int section = transitionCount; section < transitionOutHeight; section += 8) {
 			for (int x=0; x < 320; x += 4) {
 				*framebuffer++ = 0;
 				*framebuffer++ = 0;
@@ -225,7 +235,7 @@ void TransitionOut() {
 	if (transitionCount < 7) {
 		framebuffer = I_FrameBuffer() + ((transitionCount+1) * 320);
 
-		for (int section = transitionCount+1; section < 204; section += 8) {
+		for (int section = transitionCount+1; section < transitionOutHeight; section += 8) {
 			for (int x=0; x < 320; x += 4) {
 				*framebuffer++ = 0;
 				*framebuffer++ = 0;
@@ -299,18 +309,34 @@ void Scene_1_Tick(scene_1_t *scene)
 
 void Scene_1_Draw(scene_1_t *scene)
 {
-	// Draw background
-	DrawJagobj3_15bpp(
-		scene->scene.background,
-		0,
-		0,
-		0,
-		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
-		320,
-		I_FrameBuffer()
-	);
+	if (sceneFrameCount <= 2) {
+		// Draw background
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			0,
+			0,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			I_FrameBuffer()
+		);
+	}
+	else {
+		// Draw background fragment
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->satX-2, // Position two frame ago
+			scene->satY,
+			scene->satX-2,
+			scene->satY,
+			scene->satellite->width,
+			scene->satellite->height,
+			320,
+			I_FrameBuffer()
+		);
+	}
 
 	// Draw satellite drifting overtop
 	DrawJagobj3_15bpp(
@@ -348,18 +374,20 @@ void Scene_2_Tick(scene_2_t *scene)
 
 void Scene_2_Draw(scene_2_t *scene)
 {
-	// Draw background
-	DrawJagobj3_15bpp(
-		scene->scene.background,
-		0,
-		0,
-		0,
-		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
-		320,
-		I_FrameBuffer()
-	);
+	if (sceneFrameCount <= 2) {
+		// Draw background
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			0,
+			0,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			I_FrameBuffer()
+		);
+	}
 
 	DrawText(&scene->scene);
 
@@ -384,18 +412,20 @@ void Scene_3_Tick(scene_3_t *scene)
 
 void Scene_3_Draw(scene_3_t *scene)
 {
-	// Draw background
-	DrawJagobj3_15bpp(
-		scene->scene.background,
-		0,
-		0,
-		0,
-		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
-		320,
-		I_FrameBuffer()
-	);
+	if (sceneFrameCount <= 2) {
+		// Draw background
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			0,
+			0,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			I_FrameBuffer()
+		);
+	}
 
 	DrawText(&scene->scene);
 }
@@ -551,6 +581,7 @@ void BuildScenes()
 	int i = 0;
 
 	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
+	scene1->scene.transitionOutHeight = 204;
 	scene1->scene.picLump = W_GetNumForName("PLANET");
 	scene1->picSatellite = W_GetNumForName("SATELLIT");
 	scene1->scene.text = intro1text;
@@ -567,6 +598,7 @@ void BuildScenes()
 	introScenes[i++] = (storyscene_t*)scene1;
 
 	scene_2_t *scene2 = Z_Calloc(sizeof(*scene2), PU_STATIC);
+	scene2->scene.transitionOutHeight = 204;
 	scene2->scene.picLump = W_GetNumForName("RSBG");
 	scene2->scene.text = intro2text;
 	scene2->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 2;
@@ -582,6 +614,7 @@ void BuildScenes()
 	introScenes[i++] = (storyscene_t*)scene2;
 
 	scene_3_t *scene3 = Z_Calloc(sizeof(*scene3), PU_STATIC);
+	scene3->scene.transitionOutHeight = 204;
 	scene3->scene.picLump = W_GetNumForName("PLANET2");
 	scene3->scene.text = intro3text;
 	scene3->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 2;
@@ -625,7 +658,7 @@ void START_Story (void)
 	currentScene = 0;
 	introScenes[currentScene]->init(introScenes[currentScene]);
 
-	StartTransition();
+	StartTransition(204);
 
 	S_StartSong(W_CheckNumForName("VGM_STOR"), false, cdtrack_story);
 }
@@ -635,6 +668,8 @@ int TIC_Story (void)
 	int exit = ga_nothing;
 
 	screenCount++;
+	sceneFrameCount++;
+	phaseFrameCount++;
 
 	//DebugControls();
 
