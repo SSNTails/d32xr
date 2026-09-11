@@ -56,7 +56,14 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
-} scene_2_t, scene_3_t, scene_4_t, scene_5_t;
+	jagobj_t *radar;
+	VINT picRadar;
+} scene_5_t;
+
+typedef struct
+{
+	storyscene_t scene;
+} scene_2_t, scene_3_t, scene_4_t;
 
 //#define NUMSCENES 12
 #define NUMSCENES	5
@@ -494,6 +501,7 @@ void Scene_5_Init(scene_5_t *scene)
 {
 	// Cache any graphics, etc.
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	//scene->radar = W_CacheLumpNum(scene->picRadar, PU_LEVEL);
 }
 
 void Scene_5_Tick(scene_5_t *scene)
@@ -503,19 +511,73 @@ void Scene_5_Tick(scene_5_t *scene)
 
 void Scene_5_Draw(scene_5_t *scene)
 {
-	if (sceneFrameCount <= 2) {
-		// Draw background
-		DrawJagobj3_15bpp(
-			scene->scene.background,
-			0,
-			0,
-			0,
-			0,
-			scene->scene.background->width,
-			scene->scene.background->height,
-			320,
-			I_FrameBuffer()
-		);
+	uint8_t displacement[] = { 2, 1, 3, 0 };
+
+	if (sceneFrameCount < 26) {
+		if (sceneFrameCount <= 2 || sceneFrameCount >= 24) {
+			// Draw background
+			DrawJagobj3_15bpp(
+				scene->scene.background,
+				0,
+				0,
+				0,
+				0,
+				scene->scene.background->width,
+				scene->scene.background->height,
+				320,
+				I_FrameBuffer()
+			);
+		}
+		else {
+			// Draw background shaking
+			int verticalShift = displacement[(int)(sceneFrameCount & 3)];
+			int bottomEdge = scene->scene.background->height - displacement[(int)(sceneFrameCount & 3)];
+
+			DrawJagobj3_15bpp(
+				scene->scene.background,
+				0,
+				0,
+				0,
+				verticalShift,
+				scene->scene.background->width,
+				bottomEdge,
+				320,
+				I_FrameBuffer()
+			);
+			
+			pixel_t *framebuffer = I_FrameBuffer() + (bottomEdge * 320);
+
+			for (int i = 0; i < verticalShift; i++) {
+				for (int x=0; x < 320; x += 4) {
+					*framebuffer++ = 0;
+					*framebuffer++ = 0;
+					*framebuffer++ = 0;
+					*framebuffer++ = 0;
+				}
+			}
+		}
+	}
+	else if (currentPhase == 1) {
+		if (phaseFrameCount <= 2) {
+			if (scene->scene.background != NULL) {
+				Z_Free(scene->scene.background);
+				scene->scene.background = NULL;
+
+				scene->radar = W_CacheLumpNum(scene->picRadar, PU_LEVEL);
+			}
+			// Draw background
+			DrawJagobj3_15bpp(
+				scene->radar,
+				160 - (scene->radar->width >> 1),
+				128 - scene->radar->height,
+				0,
+				0,
+				scene->radar->width,
+				scene->radar->height,
+				320,
+				I_FrameBuffer()
+			);
+		}
 	}
 
 	DrawText(&scene->scene);
@@ -524,7 +586,8 @@ void Scene_5_Draw(scene_5_t *scene)
 void Scene_5_Stop(scene_5_t *scene)
 {
 	// Free any resources
-	Z_Free(scene->scene.background);
+	Z_Free(scene->radar);
+	//Z_Free(scene->scene.background);
 }
 
 const char *intro1text =
@@ -739,6 +802,7 @@ void BuildScenes()
 	scene_5_t *scene5 = Z_Calloc(sizeof(*scene5), PU_STATIC);
 	scene5->scene.transitionOutHeight = 204;
 	scene5->scene.picLump = W_GetNumForName("EGGMAD");
+	scene5->picRadar = W_GetNumForName("RADARBG");
 	scene5->scene.text = intro5text;
 	scene5->scene.textCharDelayTics = scene5->scene.textCharDelayCounter = 2;
 	scene5->scene.postTextDelay = 2*TICRATE;

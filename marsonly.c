@@ -3,6 +3,7 @@
 #include "doomdef.h"
 #include "r_local.h"
 #include "mars.h"
+#include "marshw.h"
 
 void ReadEEProm (void);
 
@@ -254,7 +255,18 @@ void I_Error (char *error, ...)
 	D_vsnprintf(errormessage, sizeof(errormessage), error, ap);
 	va_end(ap);
 
+	// Store the error in raw ASCII format in both frame buffers in case the graphics aren't readable.
+	byte *dram_error = (byte*)(I_FrameBuffer() + ((0x20000 - 512 - 4096) >> 1)); // Last 4KB of DRAM
+	for (int fb=0; fb < 2; fb++) {
+		for (int i=0; i < 4096; i++) {
+			dram_error[i] = errormessage[i];
+		}
+		Mars_FlipFrameBuffers(true);
+	}
+
 	h40_sky = 1;	// Get rid of the three-pixel shift.
+
+	Mars_SetVideoMode(MARS_VDP_MODE_256, 0);
 
 	I_ClearFrameBuffer();
 	RemoveDistortionFilters();

@@ -59,6 +59,8 @@ extern volatile uint16_t bgm_sync_command;
 
 extern volatile uint8_t legacy_emulator;
 
+extern volatile unsigned int rle_border_size;
+
 extern volatile unsigned int mars_hblank_count_peak;
 extern volatile unsigned mars_vblank_count;
 extern unsigned mars_frtc2msec_frac;
