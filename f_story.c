@@ -1,3 +1,4 @@
+#include "doomdef.h"
 #include "f_story.h"
 #include "v_font.h"
 #include "marshw.h"
@@ -47,8 +48,9 @@ typedef struct
 	storyscene_t scene;
 	jagobj_t *satellite;
 	VINT picSatellite;
-	VINT satX, satY;
-	VINT satCounter;
+	fixed_t satX, satY, satZ;
+	VINT prevSatX[2], prevSatY[2];
+	fixed_t prevSatZ[2];
 } scene_1_t;
 
 typedef struct
@@ -290,23 +292,25 @@ void Scene_1_Init(scene_1_t *scene)
 	// Cache any graphics, etc.
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->satellite = W_CacheLumpNum(scene->picSatellite, PU_LEVEL);
-	scene->satCounter = 4;
-	scene->satX = 144;
-	scene->satY = 24;
+	scene->satX = (24<<16);
+	scene->satY = (32<<16);
+	scene->satZ = (1<<16) + (1<<15);
+
+	scene->prevSatX[0] = 0;
+	scene->prevSatX[1] = 0;
+	scene->prevSatY[0] = 0;
+	scene->prevSatY[1] = 0;
+	scene->prevSatZ[0] = 0;
+	scene->prevSatZ[1] = 0;
 }
 
 void Scene_1_Tick(scene_1_t *scene)
 {
 	TIC_Text(&scene->scene);
 
-	if (--scene->satCounter <= 0)
-	{
-		scene->satX++;
-		scene->satCounter = 4;
-	}
-
-	if (scene->satX > 288)
-		scene->satX = 288;
+	scene->satX += (finesine(2048 - (sceneFrameCount<<1)) >> 2);
+	scene->satY -= (finesine(2048 - (sceneFrameCount<<2)) >> 5);
+	scene->satZ -= 96 - (sceneFrameCount >> 4) - (sceneFrameCount >> 5);
 }
 
 void Scene_1_Draw(scene_1_t *scene)
@@ -327,31 +331,42 @@ void Scene_1_Draw(scene_1_t *scene)
 	}
 	else {
 		// Draw background fragment
-		DrawJagobj3_15bpp(
-			scene->scene.background,
-			scene->satX-2, // Position two frame ago
-			scene->satY,
-			scene->satX-2,
-			scene->satY,
-			scene->satellite->width,
-			scene->satellite->height,
-			320,
-			I_FrameBuffer()
-		);
+		if (scene->prevSatZ[1] != 0) {
+			int width = (int)FixedMul((fixed_t)(scene->satellite->width << FRACBITS), scene->prevSatZ[1]) >> FRACBITS;
+			int height = (int)FixedMul((fixed_t)(scene->satellite->height << FRACBITS), scene->prevSatZ[1]) >> FRACBITS;
+
+			DrawJagobj3_15bpp(
+				scene->scene.background,
+				scene->prevSatX[1],
+				scene->prevSatY[1],
+				scene->prevSatX[1],
+				scene->prevSatY[1],
+				width,
+				height,
+				320,
+				I_FrameBuffer()
+			);
+		}
 	}
 
 	// Draw satellite drifting overtop
-	DrawJagobj3_15bpp(
+	DrawScaledJagobj_15bpp(
 		scene->satellite,
-		scene->satX,
-		scene->satY,
-		0,
-		0,
-		scene->satellite->width,
-		scene->satellite->height,
-		320,
+		(scene->satX >> 16) & 0x1FF,
+		(scene->satY >> 16) & 0xFF,
+		scene->satZ,
+		scene->satZ,
 		I_FrameBuffer()
 	);
+
+	// Keep track of the previous two satellite positions for clearing it on new frames.
+	scene->prevSatX[1] = scene->prevSatX[0];
+	scene->prevSatY[1] = scene->prevSatY[0];
+	scene->prevSatZ[1] = scene->prevSatZ[0];
+
+	scene->prevSatX[0] = (scene->satX >> 16) & 0x1FF;
+	scene->prevSatY[0] = (scene->satY >> 16) & 0xFF;
+	scene->prevSatZ[0] = scene->satZ;
 
 	DrawText(&scene->scene);
 }
