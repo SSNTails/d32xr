@@ -363,6 +363,7 @@ void Scene_1_Draw(scene_1_t *scene)
 		(scene->satY >> 16) & 0xFF,
 		scene->satZ,
 		scene->satZ,
+		true,
 		I_FrameBuffer()
 	);
 
@@ -565,11 +566,15 @@ void Scene_5_Draw(scene_5_t *scene)
 
 				scene->radar = W_CacheLumpNum(scene->picRadar, PU_LEVEL);
 			}
-			// Draw background
+
+			// Draw radar screen
+			int radarX = 160 - (scene->radar->width >> 1);
+			int radarY = 128 - scene->radar->height;
+
 			DrawJagobj3_15bpp(
 				scene->radar,
-				160 - (scene->radar->width >> 1),
-				128 - scene->radar->height,
+				radarX,
+				radarY,
 				0,
 				0,
 				scene->radar->width,
@@ -577,6 +582,35 @@ void Scene_5_Draw(scene_5_t *scene)
 				320,
 				I_FrameBuffer()
 			);
+			
+			// Clear the area around the radar screen
+			pixel_t *framebuffer = I_FrameBuffer();
+
+			for (int i = 0; i < radarY; i++) {
+				// Top
+				for (int x=0; x < 320; x += 4) {
+					*framebuffer++ = 0;
+					*framebuffer++ = 0;
+					*framebuffer++ = 0;
+					*framebuffer++ = 0;
+				}
+			}
+
+			for (int i = 0; i < scene->radar->height; i++) {
+				// Left side
+				for (int x=0; x < radarX; x += 2) {
+					*framebuffer++ = 0;
+					*framebuffer++ = 0;
+				}
+
+				framebuffer += scene->radar->width;
+
+				// Right side
+				for (int x=0; x < radarX; x += 2) {
+					*framebuffer++ = 0;
+					*framebuffer++ = 0;
+				}
+			}
 		}
 	}
 

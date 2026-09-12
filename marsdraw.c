@@ -1123,7 +1123,7 @@ void DrawScaledJagobj(jagobj_t* jo, int x, int y,
 }
 
 void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y, 
-	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb)
+	fixed_t ratio_w, fixed_t ratio_h, boolean masked, pixel_t *fb)
 {
 	int		srcx, srcy;
 	int		width, height;
@@ -1188,25 +1188,53 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 	uint16_t* source2 = source;
 	uint16_t* source3 = source;
 
-	for (; total_scaled_h; total_scaled_h--)
-	{
-		for (int n = total_scaled_w; n > 0; n--)
+	if (masked) {
+		for (; total_scaled_h; total_scaled_h--)
 		{
-			*dest2++ = *source2;
+			for (int n = total_scaled_w; n > 0; n--)
+			{
+				// Don't draw pixels not marked high-priority.
+				if (*source2 & 0x8000) {
+					*dest2 = *source2;
+				}
+				dest2++;
 
-			inc_x += ratio_w;
-			source2 += (inc_x >> 16);
-			inc_x &= 0xFFFF;
+				inc_x += ratio_w;
+				source2 += (inc_x >> 16);
+				inc_x &= 0xFFFF;
+			}
+
+			dest2 += (320 - total_scaled_w);
+
+			inc_y += ratio_h;
+			source3 += ((width) * (inc_y >> 16));
+			source2 = source3;
+			inc_y &= 0xFFFF;
+
+			inc_x = 0;
 		}
+	}
+	else {
+		for (; total_scaled_h; total_scaled_h--)
+		{
+			for (int n = total_scaled_w; n > 0; n--)
+			{
+				*dest2++ = *source2;
 
-		dest2 += (320 - total_scaled_w);
+				inc_x += ratio_w;
+				source2 += (inc_x >> 16);
+				inc_x &= 0xFFFF;
+			}
 
-		inc_y += ratio_h;
-		source3 += ((width) * (inc_y >> 16));
-		source2 = source3;
-		inc_y &= 0xFFFF;
+			dest2 += (320 - total_scaled_w);
 
-		inc_x = 0;
+			inc_y += ratio_h;
+			source3 += ((width) * (inc_y >> 16));
+			source2 = source3;
+			inc_y &= 0xFFFF;
+
+			inc_x = 0;
+		}
 	}
 }
 
