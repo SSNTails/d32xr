@@ -927,7 +927,6 @@ int TIC_Story (void)
 		bgm_sync_command = 0;
 	}
 
-	//TODO: Why don't these button press checks work??
 	if ((ticrealbuttons & BT_ACTION_START && !(oldticrealbuttons & BT_ACTION_START)) || currentScene >= NUMSCENES) {
 		exit = ga_startnew;
 	}

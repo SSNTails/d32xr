@@ -19,8 +19,6 @@ extern fixed_t stretchX;
 
 #define	BASEYCENTER			100
 
-#define	WINDOWHEIGHT		(viewportHeight-SBARHEIGHT)
-
 #define	MINZ				(FRACUNIT*4)
 
 #define	FIELDOFVIEW			2048   /* fineangles in the SCREENWIDTH wide window */

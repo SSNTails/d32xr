@@ -4069,8 +4069,8 @@ vert_blank:
 
 
         move.b  gamemode,d0
-        andi.b  #0x10,d0
-        cmpi.b  #0x10,d0
+        andi.b  #0x20,d0
+        cmpi.b  #0x20,d0
         bne.s   88f
 10:
         move.l  #level_hblank_sync,0x70  /* Stay within RAM */

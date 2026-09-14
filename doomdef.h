@@ -612,17 +612,17 @@ extern	byte			gamemode;
 
 typedef enum
 {
-	LevelType_Normal = 0x10,
-	LevelType_SpecialStage = 0x11,
-	LevelType_NiGHTS = 0x12,
-	LevelType_Final = 0x13,
+	LevelType_Normal = 0x20,
+	LevelType_SpecialStage = 0x21,
+	LevelType_NiGHTS = 0x22,
+	LevelType_Final = 0x23,
 } leveltype_t;
 
 typedef enum
 {
 	DemoMode_None = 0x00,
-	DemoMode_Playback = 0x08,
-	DemoMode_Recording = 0x0C,
+	DemoMode_Playback = 0x10,
+	DemoMode_Recording = 0x18,
 } demomodetype_t;
 
 typedef enum
@@ -650,24 +650,23 @@ typedef enum
 #define GAMEMODE_SPECIALSTAGEINTERMISSION	0x07
 #define GAMEMODE_STORY						0x08
 
-#define GAMEMODE_LEVEL_ACTIVE				0x10
-#define GAMEMODE_LEVEL						0x30
-#define GAMEMODE_LEVEL_TYPE					0x33
+#define GAMEMODE_LEVEL						0x20
+#define GAMEMODE_LEVEL_TYPE					0x23
 
-#define GAMEMODE_DEMO						0x08
-#define GAMEMODE_DEMO_MODETYPE				0x0C
+#define GAMEMODE_DEMO						0x10
+#define GAMEMODE_DEMO_MODETYPE				0x18
 
 #define GAMEMODE_TRANSITION					0x80
 #define GAMEMODE_TRANSITION_TYPE			0xC0
 
 
-#define LEVELTYPE_NORMAL					0x10
-#define LEVELTYPE_SPECIALSTAGE				0x11
-#define LEVELTYPE_NIGHTS					0x12
-#define LEVELTYPE_FINAL						0x13
+#define LEVELTYPE_NORMAL					0x20
+#define LEVELTYPE_SPECIALSTAGE				0x21
+#define LEVELTYPE_NIGHTS					0x22
+#define LEVELTYPE_FINAL						0x23
 
-#define DEMOMODE_PLAYBACK					0x08
-#define DEMOMODE_RECORDING					0x0C
+#define DEMOMODE_PLAYBACK					0x10
+#define DEMOMODE_RECORDING					0x18
 
 #define TRANSITIONTYPE_ENTERING				0x80
 #define TRANSITIONTYPE_LEAVING				0xC0
@@ -713,7 +712,7 @@ static inline void SetStory()
 
 // Level
 static inline boolean IsLevel()
-	{ return (gamemode & GAMEMODE_LEVEL) == GAMEMODE_LEVEL_ACTIVE; }
+	{ return (gamemode & GAMEMODE_LEVEL) == GAMEMODE_LEVEL; }
 static inline boolean IsLevelType(leveltype_t type)
 	{ return (gamemode & GAMEMODE_LEVEL_TYPE) == type; }
 
@@ -746,8 +745,6 @@ extern uint8_t      cheats_enabled;
 #define CHEAT_GAMEMODE_SELECT	0x02
 
 
-
-#define	SBARHEIGHT	0			/* status bar height at bottom of screen */
 
 typedef enum
 {
