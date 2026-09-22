@@ -37,7 +37,11 @@ typedef struct storyscene_s
     int16_t textCharDelayTics; // Number of tics to wait before incrementing textPos
     int16_t textCharDelayCounter; // Decrement this. When it hits zero, textPos++
     int16_t postTextDelay; // Number of tics to wait after printing all text before transitioning to the next scene
+	int16_t preTextDelay; // Number of tics to wait before beginning text printing
     rect_t textBox; // Bounding box to print text inside
+	int16_t curTextPosX;
+	int16_t curTextPosY;
+	int16_t drawText; // Flag to indicate that the text should be drawn this frame
 
 	void (*init)(struct storyscene_s *self);
     void (*tic)(struct storyscene_s *self);
@@ -176,6 +180,12 @@ void NextPhase()
 
 void TIC_Text(storyscene_t *scene)
 {
+	if (scene->preTextDelay > 0)
+	{
+		scene->preTextDelay--;
+		return;
+	}
+
 	// If not at the end of the string, run the char counter
 	if (scene->text[scene->textPos] != '\0')
 	{
@@ -183,7 +193,31 @@ void TIC_Text(storyscene_t *scene)
 		if (scene->textCharDelayCounter <= 0)
 		{
 			scene->textCharDelayCounter = scene->textCharDelayTics;
+
+			char c = scene->text[scene->textPos];
+			if (c == 0x20) // Space
+				scene->curTextPosX += menuFont.spaceWidthSize;
+			else if (c == '\n') // Newline
+			{
+				scene->curTextPosX = 0;
+				scene->curTextPosY += menuFont.verticalOffset;
+			}
+			else if (c >= menuFont.minChar && c <= menuFont.maxChar)
+			{
+				if (menuFont.fixedWidth)
+					scene->curTextPosX += menuFont.fixedWidthSize;
+				else
+				{
+					jagobj_t *charObj = menuFont.charCache[c - menuFont.lumpStartChar];
+					if (charObj != NULL)
+						scene->curTextPosX += charObj->width;
+					else
+						scene->curTextPosX += menuFont.fixedWidthSize;
+				}
+			}
+
 			scene->textPos++;
+			scene->drawText = true;
 		}
 	}
 	/*else // We're at the end
@@ -199,6 +233,17 @@ void TIC_Text(storyscene_t *scene)
 void DrawText(storyscene_t *scene)
 {
     // Common function to handle drawing the text, including how much of it to draw
+	char c = scene->text[scene->textPos];
+
+	if (c == '\0')
+		return;
+
+	// Constantly draw the last character in the string.
+	if (scene->drawText)
+	{
+		V_DrawChar(&menuFont, scene->textBox.x + scene->curTextPosX, scene->textBox.y + scene->curTextPosY, c);
+		scene->drawText = false;
+	}
 }
 
 void StartTransition() {
@@ -785,7 +830,8 @@ void BuildScenes()
 	scene1->scene.picLump = W_GetNumForName("PLANET");
 	scene1->picSatellite = W_GetNumForName("SATELLIT");
 	scene1->scene.text = intro1text;
-	scene1->scene.textCharDelayTics = scene1->scene.textCharDelayCounter = 2;
+	scene1->scene.textCharDelayTics = scene1->scene.textCharDelayCounter = 5;
+	scene1->scene.preTextDelay = TICRATE;
 	scene1->scene.postTextDelay = 2*TICRATE;
 	scene1->scene.textBox.x = 32;
 	scene1->scene.textBox.y = 128 + 16;
@@ -801,7 +847,8 @@ void BuildScenes()
 	scene2->scene.transitionOutHeight = 204;
 	scene2->scene.picLump = W_GetNumForName("RSBG");
 	scene2->scene.text = intro2text;
-	scene2->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 2;
+	scene2->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 5;
+	scene2->scene.preTextDelay = TICRATE;
 	scene2->scene.postTextDelay = 2*TICRATE;
 	scene2->scene.textBox.x = 32;
 	scene2->scene.textBox.y = 128 + 16;
@@ -817,7 +864,8 @@ void BuildScenes()
 	scene3->scene.transitionOutHeight = 204;
 	scene3->scene.picLump = W_GetNumForName("PLANET2");
 	scene3->scene.text = intro3text;
-	scene3->scene.textCharDelayTics = scene3->scene.textCharDelayCounter = 2;
+	scene3->scene.textCharDelayTics = scene3->scene.textCharDelayCounter = 5;
+	scene3->scene.preTextDelay = TICRATE;
 	scene3->scene.postTextDelay = 2*TICRATE;
 	scene3->scene.textBox.x = 32;
 	scene3->scene.textBox.y = 128 + 16;
@@ -833,7 +881,8 @@ void BuildScenes()
 	scene4->scene.transitionOutHeight = 204;
 	scene4->scene.picLump = W_GetNumForName("PLANET");	//TODO: Change me!
 	scene4->scene.text = intro4text;
-	scene4->scene.textCharDelayTics = scene4->scene.textCharDelayCounter = 2;
+	scene4->scene.textCharDelayTics = scene4->scene.textCharDelayCounter = 5;
+	scene4->scene.preTextDelay = TICRATE;
 	scene4->scene.postTextDelay = 2*TICRATE;
 	scene4->scene.textBox.x = 32;
 	scene4->scene.textBox.y = 128 + 16;
@@ -850,7 +899,8 @@ void BuildScenes()
 	scene5->scene.picLump = W_GetNumForName("EGGMAD");
 	scene5->picRadar = W_GetNumForName("RADARBG");
 	scene5->scene.text = intro5text;
-	scene5->scene.textCharDelayTics = scene5->scene.textCharDelayCounter = 2;
+	scene5->scene.textCharDelayTics = scene5->scene.textCharDelayCounter = 5;
+	scene5->scene.preTextDelay = TICRATE;
 	scene5->scene.postTextDelay = 2*TICRATE;
 	scene5->scene.textBox.x = 32;
 	scene5->scene.textBox.y = 128 + 16;

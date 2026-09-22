@@ -105,6 +105,63 @@ int V_GetStringWidth(const font_t *font, const char *string)
     return width;
 }
 
+int V_DrawChar(const font_t *font, int x, int y, char c)
+{
+    if (c == 0x20) // Space
+        x += font->spaceWidthSize;
+    else if (c >= font->minChar && c <= font->maxChar)
+    {
+        if (font->fixedWidth)
+        {
+            int charnum = (c - font->lumpStartChar);
+            if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
+                DrawJagobj(font->charCache[charnum], x, y);
+            }
+            else {
+                DrawJagobjLump(font->lumpStart + charnum, x, y, NULL, NULL);
+            }
+            
+            x += font->fixedWidthSize;
+        }
+        else
+        {
+            int charnum = (c - font->lumpStartChar);
+            if (font->charCache != NULL && font->charCacheLength > charnum && font->charCache[charnum] != NULL) {
+                DrawJagobj(font->charCache[charnum], x, y);
+
+                x += font->charCache[charnum]->width;
+            }
+            else {
+                int lumpnum = font->lumpStart + charnum;
+                byte *lump = W_POINTLUMPNUM(lumpnum);
+                jagobj_t *jo;
+
+                if (!(lumpinfo[lumpnum].name[0] & 0x80))
+                {
+                    jo = (jagobj_t*)lump;
+                    DrawJagobj(jo, x, y + font->verticalOffset - jo->height);
+                }
+                else
+                {
+                    // Can draw compressed characters
+                    LZSTATE gfx_lz;
+                    uint8_t lz_buf[32];
+                    LzSetup(&gfx_lz, lump, lz_buf, 32);
+                    if (LzReadPartial(&gfx_lz, 16) == 16)
+                    {
+                        jo = (jagobj_t*)gfx_lz.output;
+                        DrawJagobjLump(lumpnum, x, y + font->verticalOffset - jo->height, NULL, NULL);
+                    }
+                }
+
+                x += jo->width;
+            }
+        }
+    }
+
+    return x;
+}
+
 int V_DrawStringLeftWithColormap(const font_t *font, int x, int y, const char *string, int colormap)
 {
 	int i,c;
