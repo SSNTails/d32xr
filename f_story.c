@@ -833,7 +833,7 @@ void BuildScenes()
 	scene1->scene.textCharDelayTics = scene1->scene.textCharDelayCounter = 5;
 	scene1->scene.preTextDelay = TICRATE;
 	scene1->scene.postTextDelay = 2*TICRATE;
-	scene1->scene.textBox.x = 32;
+	scene1->scene.textBox.x = 16;
 	scene1->scene.textBox.y = 128 + 16;
 	scene1->scene.textBox.width = 320 - 32 - 32;
 	scene1->scene.textBox.height = 224 - 16 - scene1->scene.textBox.y;
@@ -850,7 +850,7 @@ void BuildScenes()
 	scene2->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 5;
 	scene2->scene.preTextDelay = TICRATE;
 	scene2->scene.postTextDelay = 2*TICRATE;
-	scene2->scene.textBox.x = 32;
+	scene2->scene.textBox.x = 16;
 	scene2->scene.textBox.y = 128 + 16;
 	scene2->scene.textBox.width = 320 - 32 - 32;
 	scene2->scene.textBox.height = 224 - 16 - scene2->scene.textBox.y;
@@ -867,7 +867,7 @@ void BuildScenes()
 	scene3->scene.textCharDelayTics = scene3->scene.textCharDelayCounter = 5;
 	scene3->scene.preTextDelay = TICRATE;
 	scene3->scene.postTextDelay = 2*TICRATE;
-	scene3->scene.textBox.x = 32;
+	scene3->scene.textBox.x = 16;
 	scene3->scene.textBox.y = 128 + 16;
 	scene3->scene.textBox.width = 320 - 32 - 32;
 	scene3->scene.textBox.height = 224 - 16 - scene3->scene.textBox.y;
@@ -884,7 +884,7 @@ void BuildScenes()
 	scene4->scene.textCharDelayTics = scene4->scene.textCharDelayCounter = 5;
 	scene4->scene.preTextDelay = TICRATE;
 	scene4->scene.postTextDelay = 2*TICRATE;
-	scene4->scene.textBox.x = 32;
+	scene4->scene.textBox.x = 16;
 	scene4->scene.textBox.y = 128 + 16;
 	scene4->scene.textBox.width = 320 - 32 - 32;
 	scene4->scene.textBox.height = 224 - 16 - scene4->scene.textBox.y;
@@ -902,7 +902,7 @@ void BuildScenes()
 	scene5->scene.textCharDelayTics = scene5->scene.textCharDelayCounter = 5;
 	scene5->scene.preTextDelay = TICRATE;
 	scene5->scene.postTextDelay = 2*TICRATE;
-	scene5->scene.textBox.x = 32;
+	scene5->scene.textBox.x = 16;
 	scene5->scene.textBox.y = 128 + 16;
 	scene5->scene.textBox.width = 320 - 32 - 32;
 	scene5->scene.textBox.height = 224 - 16 - scene5->scene.textBox.y;
