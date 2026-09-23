@@ -351,7 +351,7 @@ void Scene_1_Init(scene_1_t *scene)
 	scene->satellite = W_CacheLumpNum(scene->picSatellite, PU_LEVEL);
 	scene->satX = (24<<16);
 	scene->satY = (32<<16);
-	scene->satZ = (1<<16) + (1<<15);
+	scene->satZ = (1<<16);
 
 	scene->prevSatX[0] = 0;
 	scene->prevSatX[1] = 0;

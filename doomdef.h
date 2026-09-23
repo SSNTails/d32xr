@@ -1454,6 +1454,10 @@ void DrawScaledJagobj (jagobj_t* jo, int x, int y,
 	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb);
 void DrawScaledJagobj_15bpp (jagobj_t* jo, int x, int y, 
 	fixed_t ratio_w, fixed_t ratio_h, boolean masked, pixel_t *fb);
+void DrawScaledJagobj_15bpp_Bilinear (jagobj_t* jo, int x, int y,
+	fixed_t ratio_w, fixed_t ratio_h, boolean masked, pixel_t *fb);
+void DrawScaledJagobj_15bpp_HorizontalBilinear (jagobj_t* jo, int x, int y,
+	fixed_t ratio_w, fixed_t ratio_h, boolean masked, pixel_t *fb);
 void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h,
 	const int canvas_width, pixel_t *fb);

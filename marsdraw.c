@@ -1238,6 +1238,298 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 	}
 }
 
+static unsigned BilinearChannel4(unsigned sample00, unsigned sample10,
+	unsigned sample01, unsigned sample11, unsigned frac_x, unsigned frac_y)
+{
+	unsigned top = (sample00 * (16 - frac_x) + sample10 * frac_x + 8) >> 4;
+	unsigned bottom = (sample01 * (16 - frac_x) + sample11 * frac_x + 8) >> 4;
+
+	return (top * (16 - frac_y) + bottom * frac_y + 8) >> 4;
+}
+
+static uint16_t BilinearPixel4(uint16_t sample00, uint16_t sample10,
+	uint16_t sample01, uint16_t sample11, unsigned frac_x, unsigned frac_y,
+	boolean masked)
+{
+	unsigned red = BilinearChannel4((sample00 >> 10) & 31, (sample10 >> 10) & 31,
+		(sample01 >> 10) & 31, (sample11 >> 10) & 31, frac_x, frac_y);
+	unsigned green = BilinearChannel4((sample00 >> 5) & 31, (sample10 >> 5) & 31,
+		(sample01 >> 5) & 31, (sample11 >> 5) & 31, frac_x, frac_y);
+	unsigned blue = BilinearChannel4(sample00 & 31, sample10 & 31,
+		sample01 & 31, sample11 & 31, frac_x, frac_y);
+
+	return (uint16_t)((masked ? 0x8000 : 0) | (red << 10) |
+		(green << 5) | blue);
+}
+
+static uint16_t HorizontalBilinearPixel4(uint16_t sample0, uint16_t sample1,
+	unsigned frac_x, boolean masked)
+{
+	return BilinearPixel4(sample0, sample1, sample0, sample1,
+		frac_x, 0, masked);
+}
+
+static boolean BilinearPixel4WithoutColorKey(uint16_t sample00, uint16_t sample10,
+	uint16_t sample01, uint16_t sample11, unsigned frac_x, unsigned frac_y,
+	boolean masked, uint16_t *result)
+{
+	unsigned weight00 = (16 - frac_x) * (16 - frac_y);
+	unsigned weight10 = frac_x * (16 - frac_y);
+	unsigned weight01 = (16 - frac_x) * frac_y;
+	unsigned weight11 = frac_x * frac_y;
+	unsigned total_weight = 0;
+	unsigned red = 0;
+	unsigned green = 0;
+	unsigned blue = 0;
+
+	if ((sample00 & 0x7FFF) != 0x7FE0) {
+		total_weight += weight00;
+		red += ((sample00 >> 10) & 31) * weight00;
+		green += ((sample00 >> 5) & 31) * weight00;
+		blue += (sample00 & 31) * weight00;
+	}
+	if ((sample10 & 0x7FFF) != 0x7FE0) {
+		total_weight += weight10;
+		red += ((sample10 >> 10) & 31) * weight10;
+		green += ((sample10 >> 5) & 31) * weight10;
+		blue += (sample10 & 31) * weight10;
+	}
+	if ((sample01 & 0x7FFF) != 0x7FE0) {
+		total_weight += weight01;
+		red += ((sample01 >> 10) & 31) * weight01;
+		green += ((sample01 >> 5) & 31) * weight01;
+		blue += (sample01 & 31) * weight01;
+	}
+	if ((sample11 & 0x7FFF) != 0x7FE0) {
+		total_weight += weight11;
+		red += ((sample11 >> 10) & 31) * weight11;
+		green += ((sample11 >> 5) & 31) * weight11;
+		blue += (sample11 & 31) * weight11;
+	}
+
+	if (total_weight == 0)
+		return false;
+
+	*result = (uint16_t)((masked ? 0x8000 : 0) |
+		(((red + (total_weight >> 1)) / total_weight) << 10) |
+		(((green + (total_weight >> 1)) / total_weight) << 5) |
+		((blue + (total_weight >> 1)) / total_weight));
+	return true;
+}
+
+void DrawScaledJagobj_15bpp_Bilinear(jagobj_t* jo, int x, int y,
+	fixed_t ratio_w, fixed_t ratio_h, boolean masked, pixel_t *fb)
+{
+	int width = BIGSHORT(jo->width);
+	int height = BIGSHORT(jo->height);
+	int srcx = 0;
+	int srcy = 0;
+	fixed_t total_scaled_w;
+	fixed_t total_scaled_h;
+	fixed_t inc_y;
+	uint16_t *dest;
+	uint16_t source_x[320];
+	uint16_t next_x[320];
+	uint8_t frac_x[320];
+
+	if (width < 1 || height < 1)
+		return;
+
+	if (x < 0) {
+		total_scaled_w = FixedMul(((width + x) << 16), ratio_w) >> 16;
+		srcx = -x;
+		x = 0;
+	} else {
+		total_scaled_w = FixedMul((width << 16), ratio_w) >> 16;
+	}
+
+	if (x + total_scaled_w > 320)
+		total_scaled_w = 320 - x;
+	if (total_scaled_w <= 0)
+		return;
+
+	if (y < 0) {
+		total_scaled_h = FixedMul(((height + y) << 16), ratio_h) >> 16;
+		srcy = -y;
+		y = 0;
+	} else {
+		total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
+	}
+
+	if (y + total_scaled_h > 204)
+		total_scaled_h = 204 - y;
+	if (total_scaled_h <= 0)
+		return;
+
+	ratio_w = FixedDiv(FRACUNIT, ratio_w);
+	ratio_h = FixedDiv(FRACUNIT, ratio_h);
+
+	{
+		fixed_t inc_x = 0;
+
+		for (int output_x = 0; output_x < total_scaled_w; output_x++) {
+			int sample_x = srcx + (inc_x >> 16);
+			int sample_next_x = sample_x + 1;
+
+			if (sample_x >= width)
+				sample_x = width - 1;
+			if (sample_next_x >= width)
+				sample_next_x = width - 1;
+			source_x[output_x] = sample_x;
+			next_x[output_x] = sample_next_x;
+			frac_x[output_x] = (inc_x >> 12) & 15;
+			inc_x += ratio_w;
+		}
+	}
+
+	inc_y = 0;
+	dest = (uint16_t*)((byte*)fb + (y * (320 << 1)) + (x << 1));
+
+	for (int output_y = 0; output_y < total_scaled_h; output_y++) {
+		int source_y = srcy + (inc_y >> 16);
+		int next_y = source_y + 1;
+		unsigned frac_y = (inc_y >> 12) & 15;
+		uint16_t *row0;
+		uint16_t *row1;
+
+		if (source_y >= height)
+			source_y = height - 1;
+		if (next_y >= height)
+			next_y = height - 1;
+		row0 = (uint16_t*)jo->data + source_y * width;
+		row1 = (uint16_t*)jo->data + next_y * width;
+
+		for (int output_x = 0; output_x < total_scaled_w; output_x++) {
+			uint16_t sample00 = row0[source_x[output_x]];
+			uint16_t sample10 = row0[next_x[output_x]];
+
+			if (!masked || (sample00 & 0x8000)) {
+				if (frac_y == 0) {
+					if ((sample00 & 0x7FFF) == 0x7FE0 ||
+						(sample10 & 0x7FFF) == 0x7FE0) {
+						BilinearPixel4WithoutColorKey(sample00, sample10,
+							sample00, sample10, frac_x[output_x], 0, masked, dest);
+					} else {
+						*dest = HorizontalBilinearPixel4(sample00, sample10,
+							frac_x[output_x], masked);
+					}
+				} else {
+					uint16_t sample01 = row1[source_x[output_x]];
+					uint16_t sample11 = row1[next_x[output_x]];
+
+					if ((sample00 & 0x7FFF) == 0x7FE0 ||
+						(sample10 & 0x7FFF) == 0x7FE0 ||
+						(sample01 & 0x7FFF) == 0x7FE0 ||
+						(sample11 & 0x7FFF) == 0x7FE0) {
+						BilinearPixel4WithoutColorKey(sample00, sample10, sample01,
+							sample11, frac_x[output_x], frac_y, masked, dest);
+					} else {
+						*dest = BilinearPixel4(sample00, sample10, sample01,
+							sample11, frac_x[output_x], frac_y, masked);
+					}
+				}
+			}
+			dest++;
+		}
+
+		dest += 320 - total_scaled_w;
+		inc_y += ratio_h;
+	}
+}
+
+static uint16_t HorizontalBilinearPixel(uint16_t sample0, uint16_t sample1,
+	fixed_t frac_x, boolean masked)
+{
+	return HorizontalBilinearPixel4(sample0, sample1,
+		(frac_x >> 12) & 15, masked);
+}
+
+void DrawScaledJagobj_15bpp_HorizontalBilinear(jagobj_t* jo, int x, int y,
+	fixed_t ratio_w, fixed_t ratio_h, boolean masked, pixel_t *fb)
+{
+	int width = BIGSHORT(jo->width);
+	int height = BIGSHORT(jo->height);
+	int srcx = 0;
+	int srcy = 0;
+	fixed_t total_scaled_w;
+	fixed_t total_scaled_h;
+	fixed_t inc_x;
+	fixed_t inc_y;
+	uint16_t *dest;
+
+	if (width < 1 || height < 1)
+		return;
+
+	if (x < 0) {
+		total_scaled_w = FixedMul(((width + x) << 16), ratio_w) >> 16;
+		srcx = -x;
+		x = 0;
+	} else {
+		total_scaled_w = FixedMul((width << 16), ratio_w) >> 16;
+	}
+	if (x + total_scaled_w > 320)
+		total_scaled_w = 320 - x;
+	if (total_scaled_w <= 0)
+		return;
+
+	if (y < 0) {
+		total_scaled_h = FixedMul(((height + y) << 16), ratio_h) >> 16;
+		srcy = -y;
+		y = 0;
+	} else {
+		total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
+	}
+	if (y + total_scaled_h > 204)
+		total_scaled_h = 204 - y;
+	if (total_scaled_h <= 0)
+		return;
+
+	ratio_w = FixedDiv(FRACUNIT, ratio_w);
+	ratio_h = FixedDiv(FRACUNIT, ratio_h);
+	inc_y = 0;
+	dest = (uint16_t*)((byte*)fb + (y * (320 << 1)) + (x << 1));
+
+	for (int output_y = 0; output_y < total_scaled_h; output_y++) {
+		int source_y = srcy + (inc_y >> 16);
+		uint16_t *row;
+
+		if (source_y >= height)
+			source_y = height - 1;
+		row = (uint16_t*)jo->data + source_y * width;
+		inc_x = 0;
+
+		for (int output_x = 0; output_x < total_scaled_w; output_x++) {
+			int source_x = srcx + (inc_x >> 16);
+			int next_x = source_x + 1;
+			fixed_t frac_x = inc_x & 0xFFFF;
+			uint16_t sample0;
+			uint16_t sample1;
+
+			if (source_x >= width)
+				source_x = width - 1;
+			if (next_x >= width)
+				next_x = width - 1;
+			sample0 = row[source_x];
+			sample1 = row[next_x];
+
+			if (!masked || (sample0 & 0x8000)) {
+				if ((sample0 & 0x7FFF) == 0x7FE0 ||
+					(sample1 & 0x7FFF) == 0x7FE0) {
+					BilinearPixel4WithoutColorKey(sample0, sample1, sample0,
+						sample1, (frac_x >> 12) & 15, 0, masked, dest);
+				} else {
+					*dest = HorizontalBilinearPixel(sample0, sample1, frac_x, masked);
+				}
+			}
+			dest++;
+			inc_x += ratio_w;
+		}
+
+		dest += 320 - total_scaled_w;
+		inc_y += ratio_h;
+	}
+}
+
 //TODO: Remove these -- src_x, src_y, src_w, src_h, canvas_width
 void DrawRotatedJagobj_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h, angle_t angle,
