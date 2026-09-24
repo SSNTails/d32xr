@@ -32,7 +32,7 @@
 #include "st_main.h"
 
 #define CLIPRADIUS 23
-#define ON_SIDE_EPSILON 0x400
+#define ON_SIDE_EPSILON 0x200
 
 enum
 {
@@ -413,8 +413,7 @@ void P_SlideMove(pslidemove_t *sm)
    for(i = 0; i < 3; i++)
    {
       frac = P_CompletableFrac(&sw, dx, dy);
-      if(frac != FRACUNIT)
-         frac -= 0x1000;
+
       if(frac < 0)
          frac = 0;
 
