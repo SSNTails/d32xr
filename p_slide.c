@@ -32,6 +32,7 @@
 #include "st_main.h"
 
 #define CLIPRADIUS 23
+#define ON_SIDE_EPSILON 0x400
 
 enum
 {
@@ -54,9 +55,9 @@ fixed_t dx, dy, dist;
    dy = FixedMul(dy, sw->nvy);
    dist = dx + dy;
 
-   if(dist > FRACUNIT)
+   if(dist > ON_SIDE_EPSILON)
       return SIDE_FRONT;
-   else if(dist < -FRACUNIT)
+   else if(dist < -ON_SIDE_EPSILON)
       return SIDE_BACK;
    else
       return SIDE_ON;
@@ -265,13 +266,33 @@ findfrac:
 
    dx = sw->p2.x - sw->p1.x;
    dy = sw->p2.y - sw->p1.y;
-   fineangle = ( dy == 0 ) ? (( dx < 0 ) ? ANG180 : 0 ) :
-               ( dx == 0 ) ? (( dy < 0 ) ? ANG270 : ANG90 ) :
-               R_PointToAngle2(0, 0, dx, dy);
-   fineangle >>= ANGLETOFINESHIFT;
+   fineangle = ( dy == 0 ) ? (( dx < 0 ) ? 2 : 0 ) :
+               ( dx == 0 ) ? (( dy < 0 ) ? 3 : 1 ) :
+               4;
 
-   sw->nvx = finesine(fineangle);
-   sw->nvy = -finecosine(fineangle);
+   switch (fineangle) {
+      case 0:
+         sw->nvx = 0;
+         sw->nvy = -FRACUNIT;
+         break;
+      case 1:
+         sw->nvx = FRACUNIT;
+         sw->nvy = 0;
+         break;
+      case 2:
+         sw->nvx = 0;
+         sw->nvy = FRACUNIT;
+         break;
+      case 3:
+         sw->nvx = -FRACUNIT;
+         sw->nvy = 0;
+         break;
+      default:
+         fineangle = R_PointToAngle2(0, 0, dx, dy) >> ANGLETOFINESHIFT;
+         sw->nvx = finesine(fineangle);
+         sw->nvy = -finecosine(fineangle);
+         break;
+   }
    
    side1 = SL_PointOnSide(sw, sw->slidex, sw->slidey);
    switch(side1)
