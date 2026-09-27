@@ -183,6 +183,9 @@ void TIC_Text(storyscene_t *scene)
 	if (scene->preTextDelay > 0)
 	{
 		scene->preTextDelay--;
+		if (scene->preTextDelay <= 0)
+			scene->drawText = 2; // Start drawing text
+
 		return;
 	}
 
@@ -217,7 +220,7 @@ void TIC_Text(storyscene_t *scene)
 			}
 
 			scene->textPos++;
-			scene->drawText = true;
+			scene->drawText = 2;
 		}
 	}
 	/*else // We're at the end
@@ -239,10 +242,10 @@ void DrawText(storyscene_t *scene)
 		return;
 
 	// Constantly draw the last character in the string.
-	if (scene->drawText)
+	if (scene->drawText > 0)
 	{
-		V_DrawChar(&menuFont, scene->textBox.x + scene->curTextPosX, scene->textBox.y + scene->curTextPosY, c);
-		scene->drawText = false;
+		V_DrawChar_15bpp(&menuFont, scene->textBox.x + scene->curTextPosX, scene->textBox.y + scene->curTextPosY, c);
+		scene->drawText--;
 	}
 }
 
@@ -351,7 +354,7 @@ void Scene_1_Init(scene_1_t *scene)
 	scene->satellite = W_CacheLumpNum(scene->picSatellite, PU_LEVEL);
 	scene->satX = (24<<16);
 	scene->satY = (32<<16);
-	scene->satZ = (1<<16) + (1<<15);
+	scene->satZ = (1<<16);
 
 	scene->prevSatX[0] = 0;
 	scene->prevSatX[1] = 0;

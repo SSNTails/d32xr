@@ -1238,6 +1238,107 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 	}
 }
 
+static inline uint16_t Blend15bppComponent(uint16_t source, uint16_t dest,
+	unsigned blend_shift)
+{
+	return (source + ((dest << blend_shift) - dest)) >> blend_shift;
+}
+
+void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
+	fixed_t ratio_w, fixed_t ratio_h, unsigned blend_shift,
+	boolean masked, pixel_t *fb)
+{
+	int srcx, srcy;
+	int width, height;
+	fixed_t total_scaled_w, total_scaled_h;
+	fixed_t inc_x, inc_y;
+	uint16_t *dest, *source;
+
+	if (blend_shift > 5)
+		blend_shift = 5;
+
+	width = BIGSHORT(jo->width);
+	height = BIGSHORT(jo->height);
+
+	srcx = 0;
+	srcy = 0;
+
+	if (width < 1 || height < 1)
+		return;
+
+	if (x < 0) {
+		total_scaled_w = FixedMul(((width + x) << 16), ratio_w) >> 16;
+		srcx = (-x) << 1;
+		x = 0;
+	}
+	else {
+		total_scaled_w = FixedMul((width << 16), ratio_w) >> 16;
+	}
+
+	if (x + total_scaled_w > 320)
+		total_scaled_w = 320 - x;
+	if (total_scaled_w <= 0)
+		return;
+
+	if (y < 0) {
+		total_scaled_h = FixedMul(((height + y) << 16), ratio_h) >> 16;
+		srcy = -y;
+		y = 0;
+	}
+	else {
+		total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
+	}
+
+	if (y + total_scaled_h > 204)
+		total_scaled_h = 204 - y;
+	if (total_scaled_h <= 0)
+		return;
+
+	ratio_w = FixedDiv(FRACUNIT, ratio_w);
+	ratio_h = FixedDiv(FRACUNIT, ratio_h);
+
+	inc_x = 0;
+	inc_y = 0;
+
+	dest = (uint16_t*)((byte*)fb + (y * (320 << 1)) + (x << 1));
+	source = (uint16_t*)(jo->data + srcx + ((srcy * width) << 1));
+
+	uint16_t *dest2 = dest;
+	uint16_t *source2 = source;
+	uint16_t *source3 = source;
+
+	for (; total_scaled_h; total_scaled_h--) {
+		for (int n = total_scaled_w; n > 0; n--) {
+			uint16_t source_pixel = *source2;
+			if (!masked || (source_pixel & 0x8000)) {
+				uint16_t dest_pixel = *dest2;
+				uint16_t red = Blend15bppComponent((source_pixel >> 10) & 0x1F,
+					(dest_pixel >> 10) & 0x1F, blend_shift);
+				uint16_t green = Blend15bppComponent((source_pixel >> 5) & 0x1F,
+					(dest_pixel >> 5) & 0x1F, blend_shift);
+				uint16_t blue = Blend15bppComponent(source_pixel & 0x1F,
+					dest_pixel & 0x1F, blend_shift);
+				*dest2 = (source_pixel & 0x8000) | (red << 10) |
+					(green << 5) | blue;
+			}
+			dest2++;
+
+			inc_x += ratio_w;
+			source2 += (inc_x >> 16);
+			inc_x &= 0xFFFF;
+		}
+
+		dest2 += (320 - total_scaled_w);
+
+		inc_y += ratio_h;
+		source3 += width * (inc_y >> 16);
+		source2 = source3;
+		inc_y &= 0xFFFF;
+
+		inc_x = 0;
+	}
+}
+
 //TODO: Remove these -- src_x, src_y, src_w, src_h, canvas_width
 void DrawRotatedJagobj_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h, angle_t angle,
