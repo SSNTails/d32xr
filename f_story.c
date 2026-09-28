@@ -940,6 +940,8 @@ void START_Story (void)
 
 	effects_flags = EFFECTS_COPPER_ENABLED;
 
+	I_SetBankPageExplicit(7, 12, true);
+
 	BuildScenes();
 	currentScene = 0;
 	introScenes[currentScene]->init(introScenes[currentScene]);
@@ -1036,6 +1038,9 @@ void STOP_Story (void)
 	for (int i = 0; i < NUMSCENES; i++) {
 		Z_Free(introScenes[i]);
 	}
+
+	I_SetBankPageExplicit(6, 6, false);
+	I_SetBankPageExplicit(7, 7, true);
 
 	DoubleBufferSetup();	// Clear frame buffers to black.
 }
