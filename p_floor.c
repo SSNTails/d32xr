@@ -641,7 +641,7 @@ void T_Crumble(floormove_t *floor)
 		floor->delayTimer--;
 		if (floor->delayTimer < TICRATE && !quake.time)
 		{
-			quake.time = 2*TICRATE;
+			quake.time = TICRATE;
 			quake.intensity = 12;
 		}
 		else if (floor->delayTimer == 0)
@@ -663,33 +663,32 @@ void T_Crumble(floormove_t *floor)
 	if (res == pastdest)
 	{
 		floor->sector->fofsec = -1;
+		floor->controlSector->specialdata = NULL;
 		P_RemoveThinker(&floor->thinker);
 	}
 }
 
-int EV_DoCrumble(sector_t *fofsec, sector_t *targetsec, player_t *player, int delayMod)
+int EV_DoCrumble(sector_t *fofsec, sector_t *targetsec, player_t *player, int delayMod, floor_e floortype)
 {
-	if (!fofsec->specialdata)
-	{
-		floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
-		P_AddThinker (&floor->thinker);
-		fofsec->specialdata = LPTR_TO_SPTR_NN(floor);
-		floor->thinker.function = T_Crumble;
-		floor->controlSector = fofsec;
-		floor->crush = true;
-		floor->dontChangeSector = false;
-		floor->texture = (uint8_t)-1;
-		floor->sector = targetsec;
-		floor->delayTimer = floor->delay = TICRATE + delayMod;
-		floor->sourceline = fofsec->specline;
-		floor->speed = 0;
-		floor->tag = player ? (player - players)+1 : 0;
-		floor->direction = -1; // down
-		floor->floordestheight = targetsec->floorheight >> FRACBITS; // Reached bottom of target sector floor
-		floor->floorwasheight = fofsec->floorheight >> FRACBITS; // Starting height of floor
-		floor->ceilDiff = (fofsec->ceilingheight - fofsec->floorheight) >> FRACBITS; // Difference between ceiling and floor
-		return 1;
-	}
+	floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
+	P_AddThinker (&floor->thinker);
+	floor->type = floortype;
+	fofsec->specialdata = LPTR_TO_SPTR_NN(floor);
+	floor->thinker.function = T_Crumble;
+	floor->controlSector = fofsec;
+	floor->crush = true;
+	floor->dontChangeSector = false;
+	floor->texture = (uint8_t)-1;
+	floor->sector = targetsec;
+	floor->delayTimer = floor->delay = TICRATE + delayMod;
+	floor->sourceline = fofsec->specline;
+	floor->speed = 0;
+	floor->tag = player ? (player - players)+1 : 0;
+	floor->direction = -1; // down
+	floor->floordestheight = targetsec->floorheight >> FRACBITS; // Reached bottom of target sector floor
+	floor->floorwasheight = fofsec->floorheight >> FRACBITS; // Starting height of floor
+	floor->ceilDiff = (fofsec->ceilingheight - fofsec->floorheight) >> FRACBITS; // Difference between ceiling and floor
 
-	return 0;
+	targetsec->flags &= ~SF_CRUMBLE; // For recurring ones, this will need to be changed.
+	return 1;
 }

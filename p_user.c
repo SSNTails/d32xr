@@ -204,17 +204,20 @@ static void P_InnerCheckTouchingSectorSpecials(player_t *player, sector_t *secto
 				// Find sectors with tags 41, 60, and 92
 				sector_t *targetsec = I_TO_SEC(P_FindSectorWithTag(41, -1));
 				if (targetsec)
-					EV_DoCrumble(I_TO_SEC(targetsec->fofsec), targetsec, player, P_Random() & 7);
+					EV_DoCrumble(I_TO_SEC(targetsec->fofsec), targetsec, player, P_Random() & 7, cez2Crumble);
 				targetsec = I_TO_SEC(P_FindSectorWithTag(60, -1));
 				if (targetsec)
-					EV_DoCrumble(I_TO_SEC(targetsec->fofsec), targetsec, NULL, P_Random() & 7);
+					EV_DoCrumble(I_TO_SEC(targetsec->fofsec), targetsec, NULL, P_Random() & 7, cez2Crumble);
 				targetsec = I_TO_SEC(P_FindSectorWithTag(92, -1));
 				if (targetsec)
-					EV_DoCrumble(I_TO_SEC(targetsec->fofsec), targetsec, NULL, P_Random() & 7);
+					EV_DoCrumble(I_TO_SEC(targetsec->fofsec), targetsec, NULL, P_Random() & 7, cez2Crumble);
+			}
+			else
+			{
+				CONS_Printf("Crumble! %d", leveltime);
+				EV_DoCrumble(I_TO_SEC(sector->fofsec), sector, player, 0, crumbleNoRespawn);
 			}
 		}
-//		else // Standard one
-//			EV_StartCrumble(fofsec, sector, player, 0);
 	}
 }
 
