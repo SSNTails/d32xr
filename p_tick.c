@@ -207,7 +207,14 @@ void P_Weather()
 				else if (count == 5) {
 					// Re-enable shadow to return the sky back to normal (i.e. dark).
 					Mars_SetShadowHighlight(true);
-					S_StartSoundId(sfx_litng1);
+					if (gamemapinfo.mapNumber == 11)
+					{
+						// Is the player in a sky sector?
+						if (SS_SECTOR(players[0].mo->isubsector)->ceilingpic == 0xff)
+							S_StartSoundId(sfx_litng1);
+					}
+					else
+						S_StartSoundId(sfx_litng1);
 				}
 			}
 			else //if (proximity == 0)
@@ -219,7 +226,14 @@ void P_Weather()
 				if (count == 1) {
 					// Enable shadow in case it wasn't already enabled previously.
 					Mars_SetShadowHighlight(true);
-					S_StartSoundId(sfx_litng2);
+					if (gamemapinfo.mapNumber == 11)
+					{
+						// Is the player in a sky sector?
+						if (SS_SECTOR(players[0].mo->isubsector)->ceilingpic == 0xff)
+							S_StartSoundId(sfx_litng2);
+					}
+					else
+						S_StartSoundId(sfx_litng2);
 				}
 			}
 
