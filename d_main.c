@@ -675,8 +675,8 @@ static jagobj_t *arrowr_pic = NULL;
 static jagobj_t *chevblk_pic = NULL;
 
 #ifdef SHOW_DISCLAIMER
-	#define SELECTABLE_MAP_COUNT	7
-	const int8_t selectable_maps[SELECTABLE_MAP_COUNT] = {0, 1, 2, 3, 4, 5, 6};
+	#define SELECTABLE_MAP_COUNT	10
+	const int8_t selectable_maps[SELECTABLE_MAP_COUNT] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 #else
 	#define SELECTABLE_MAP_COUNT	gamemapcount
 #endif
