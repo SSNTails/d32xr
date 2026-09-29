@@ -1626,6 +1626,8 @@ typedef struct
 	int8_t msublinks; // # of links from the inside to subtract
 	int8_t sound;
 	int8_t flags;
+
+	boolean nolinks;
 } swingmace_t;
 
 void T_SwingMace(swingmace_t *sm);
@@ -1643,6 +1645,7 @@ typedef enum
 	SHF_SINEWAVE = 256,    // This swing follows a sine wave path
 	SHF_STARTINREVERSE = 512,  // This swing starts at the end of the path instead of the beginning
 	SHF_SYNC = 1024,  // This swing is synchronized to the leveltime
+	SHF_NOLINKS = 2048, // This swing does not have any links
 } shflags_e;
 
 //

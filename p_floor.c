@@ -631,3 +631,65 @@ int EV_DoFloor(line_t *line,floor_e floortype)
 {
 	return EV_DoFloorTag(line, floortype, P_GetLineTag(line));
 }
+
+void T_Crumble(floormove_t *floor)
+{
+	result_e	res = ok;
+
+	if (floor->delayTimer)
+	{
+		floor->delayTimer--;
+		if (floor->delayTimer < TICRATE && !quake.time)
+		{
+			quake.time = 2*TICRATE;
+			quake.intensity = 12;
+		}
+		else if (floor->delayTimer == 0)
+		{
+			if (floor->tag > 0)
+				S_StartSound(players[floor->tag-1].mo, sfx_s3k_59);
+		}
+		return;
+	}
+
+	floor->speed += GRAVITY/2;
+
+	res = T_MovePlane(floor->controlSector,floor->speed,
+			floor->floordestheight << FRACBITS, !floor->dontChangeSector, 0, floor->direction);
+
+	res = T_MovePlane(floor->controlSector,floor->speed,
+		(floor->floordestheight << FRACBITS) + (floor->ceilDiff << FRACBITS), !floor->dontChangeSector, 1, floor->direction);
+
+	if (res == pastdest)
+	{
+		floor->sector->fofsec = -1;
+		P_RemoveThinker(&floor->thinker);
+	}
+}
+
+int EV_DoCrumble(sector_t *fofsec, sector_t *targetsec, player_t *player, int delayMod)
+{
+	if (!fofsec->specialdata)
+	{
+		floormove_t *floor = Z_Calloc (sizeof(*floor), PU_LEVSPEC);
+		P_AddThinker (&floor->thinker);
+		fofsec->specialdata = LPTR_TO_SPTR_NN(floor);
+		floor->thinker.function = T_Crumble;
+		floor->controlSector = fofsec;
+		floor->crush = true;
+		floor->dontChangeSector = false;
+		floor->texture = (uint8_t)-1;
+		floor->sector = targetsec;
+		floor->delayTimer = floor->delay = TICRATE + delayMod;
+		floor->sourceline = fofsec->specline;
+		floor->speed = 0;
+		floor->tag = player ? (player - players)+1 : 0;
+		floor->direction = -1; // down
+		floor->floordestheight = targetsec->floorheight >> FRACBITS; // Reached bottom of target sector floor
+		floor->floorwasheight = fofsec->floorheight >> FRACBITS; // Starting height of floor
+		floor->ceilDiff = (fofsec->ceilingheight - fofsec->floorheight) >> FRACBITS; // Difference between ceiling and floor
+		return 1;
+	}
+
+	return 0;
+}

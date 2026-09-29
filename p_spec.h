@@ -349,6 +349,8 @@ typedef enum
 result_e	T_MovePlane(sector_t *sector,fixed_t speed,
 			fixed_t dest,boolean changeSector,int floorOrCeiling,int direction);
 
+int EV_DoCrumble(sector_t *fofsec, sector_t *targetsec, player_t *player, int delayMod);
+
 int		EV_DoFloor(line_t *line,floor_e floortype);
 int		EV_DoFloorTag(line_t *line,floor_e floortype, uint8_t tag);
 void	T_MoveFloor(floormove_t *floor);

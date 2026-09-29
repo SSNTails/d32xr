@@ -192,6 +192,30 @@ static void P_InnerCheckTouchingSectorSpecials(player_t *player, sector_t *secto
 		ceiling->sfxOnFinish = sfx_doorc2;
 		ceiling->sector->specialdata = LPTR_TO_SPTR_NN(ceiling);
 	}
+	else if (sector->fofsec >= 0 && (sector->flags & SF_CRUMBLE))
+	{
+		sector_t *fofsec = I_TO_SEC(sector->fofsec);
+
+		if (!fofsec->specialdata && player->mo->z == fofsec->ceilingheight)
+		{
+			if (gamemapinfo.mapNumber == 11 && fofsec->tag == 96)
+			{
+				// Castle Eggman 2 intro
+				// Find sectors with tags 41, 60, and 92
+				sector_t *targetsec = I_TO_SEC(P_FindSectorWithTag(41, -1));
+				if (targetsec)
+					EV_DoCrumble(I_TO_SEC(targetsec->fofsec), targetsec, player, P_Random() & 7);
+				targetsec = I_TO_SEC(P_FindSectorWithTag(60, -1));
+				if (targetsec)
+					EV_DoCrumble(I_TO_SEC(targetsec->fofsec), targetsec, NULL, P_Random() & 7);
+				targetsec = I_TO_SEC(P_FindSectorWithTag(92, -1));
+				if (targetsec)
+					EV_DoCrumble(I_TO_SEC(targetsec->fofsec), targetsec, NULL, P_Random() & 7);
+			}
+		}
+//		else // Standard one
+//			EV_StartCrumble(fofsec, sector, player, 0);
+	}
 }
 
 static void P_CheckTouchingSectorSpecials(player_t *player)

@@ -1407,6 +1407,9 @@ void P_SSNMaceRotate(swingmace_t *sm)
 	int16_t mnumchain = sm->macechain.numchain;
 	fixed_t dist = sm->macechain.interval * msublinks;
 
+	if (sm->nolinks)
+		dist += sm->macechain.interval;
+
 	ringmobj_t *link = sm->macechain.chain;
 	fixed_t distAccum = dist;
 	if (sm->flags & TMM_MACELINKS)
@@ -2041,7 +2044,7 @@ void T_SwingBezier(swinghang_t *sh)
 			|| ((sh->flags & SHF_ALLOWDOWN) && player->forwardmove < 0))
 		{
 			pressing = true;
-			sh->deltaZ += player->forwardmove >> (FRACBITS-3);
+			sh->deltaZ += player->forwardmove >> (FRACBITS-2);
 
 			if (player->forwardmove > 0 && sh->maceball->state >= S_HOOK1 && sh->maceball->state <= S_HOOK2)
 				P_SetMobjState(sh->maceball, S_HOOK3);
@@ -2148,7 +2151,7 @@ void T_SwingHang(swinghang_t *sh)
 		if (((sh->flags & SHF_ALLOWUP) && player->forwardmove > 0)
 			|| ((sh->flags & SHF_ALLOWDOWN) && player->forwardmove < 0))
 		{
-			sh->deltaZ += player->forwardmove >> (FRACBITS-3);
+			sh->deltaZ += player->forwardmove >> (FRACBITS-2);
 		}
 	}
 
@@ -2252,7 +2255,7 @@ void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 	P_AddThinker(&sm->thinker);
 
 	// 1:1 style
-	sm->mlength = D_abs(args[0]);
+	sm->mlength = mlength;
 
 	// Remove one link near the mace part when it's double size, it's excessive.
 	if (args[8] & TMM_DOUBLESIZE)
@@ -2264,8 +2267,12 @@ void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 	sm->mphase = args[10];
 	//sm->mnumnospokes = args[6];
 	sm->msublinks = args[7]; // chain links to remove from the inside
+
 	if (sm->msublinks > sm->mlength)
+	{
 		sm->msublinks = sm->mlength;
+		sm->nolinks = true;
+	}
 
 	//sm->mminlength = D_max(0, D_min(mlength - 1, args[7]));
 	//sm->tag = point->angle;
@@ -2327,10 +2334,6 @@ void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 	}
 
 	sm->sound = (mchainlike ? 0 : 1);
-//	VINT radiusfactor = 1;
-//	VINT widthfactor = 2;
-
-//	VINT mmaxlength = mlength;
 
 	fixed_t dist = mobjinfo[chainlink].radius;
 	sm->macechain.interval = (dist >> FRACBITS) << 1;
@@ -2349,22 +2352,25 @@ void P_AddMaceChain(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 	sm->macechain.numchain = 0;
 	boolean first = true;
 	VINT count = 0;
-	while (count < mlength)
+	if (!sm->nolinks)
 	{
-		const fixed_t distAccum = dist + ((sm->macechain.interval << FRACBITS) * count);
-
-		const fixed_t spawnX = x + FixedMul(distAccum, sm->nv.x);
-		const fixed_t spawnY = y + FixedMul(distAccum, sm->nv.y);
-		const fixed_t spawnZ = (z - (mobjinfo[chainlink].height >> 2)) + FixedMul(distAccum, sm->nv.z);
-
-		ringmobj_t *link = (ringmobj_t*)P_SpawnMobj(spawnX, spawnY, spawnZ, chainlink);
-		if (first)
+		while (count < mlength)
 		{
-			first = false;
-			sm->macechain.chain = link;
+			const fixed_t distAccum = dist + ((sm->macechain.interval << FRACBITS) * count);
+
+			const fixed_t spawnX = x + FixedMul(distAccum, sm->nv.x);
+			const fixed_t spawnY = y + FixedMul(distAccum, sm->nv.y);
+			const fixed_t spawnZ = (z - (mobjinfo[chainlink].height >> 2)) + FixedMul(distAccum, sm->nv.z);
+
+			ringmobj_t *link = (ringmobj_t*)P_SpawnMobj(spawnX, spawnY, spawnZ, chainlink);
+			if (first)
+			{
+				first = false;
+				sm->macechain.chain = link;
+			}
+			sm->macechain.numchain++;
+			count++;
 		}
-		sm->macechain.numchain++;
-		count++;
 	}
 
 	if (args[8] & TMM_DOUBLESIZE)
@@ -2473,10 +2479,10 @@ void P_SpawnSpecials (void)
 				I_TO_SEC(s)->fofsec = sec;
 				I_TO_SEC(sec)->specline = i;
 
-			// A sector that has FOF collision, but for rendering it will swap the floor/ceiling
-			// heights depending on the camera height.
-			// Should that be the halfheight of the control sector?
-			// Or maybe even configurable somehow, by using the control sector's texture offset value...
+				// A sector that has FOF collision, but for rendering it will swap the floor/ceiling
+				// heights depending on the camera height.
+				// Should that be the halfheight of the control sector?
+				// Or maybe even configurable somehow, by using the control sector's texture offset value...
 				if (lines[i].flags & ML_BLOCKMONSTERS)
 					I_TO_SEC(s)->flags |= SF_FOF_SWAPHEIGHTS;
 			}
@@ -2533,6 +2539,13 @@ void P_SpawnSpecials (void)
 				I_TO_SEC(s)->flags |= SF_CRUMBLE;
 				I_TO_SEC(s)->flags |= SF_FLOATBOB;
 				I_TO_SEC(sec)->specline = i;
+
+				// A sector that has FOF collision, but for rendering it will swap the floor/ceiling
+				// heights depending on the camera height.
+				// Should that be the halfheight of the control sector?
+				// Or maybe even configurable somehow, by using the control sector's texture offset value...
+				if (lines[i].flags & ML_BLOCKMONSTERS)
+					I_TO_SEC(s)->flags |= SF_FOF_SWAPHEIGHTS;
 			}
 			break;
 		}
