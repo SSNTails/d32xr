@@ -214,7 +214,6 @@ static void P_InnerCheckTouchingSectorSpecials(player_t *player, sector_t *secto
 			}
 			else
 			{
-				CONS_Printf("Crumble! %d", leveltime);
 				EV_DoCrumble(I_TO_SEC(sector->fofsec), sector, player, 0, crumbleNoRespawn);
 			}
 		}
