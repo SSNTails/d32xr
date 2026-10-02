@@ -1877,11 +1877,11 @@ boolean Bezier_UpdateFollower(bezier_follower_t *f, mobj_t *mobj, VINT flags)
          * ------------------------------------------------- */
 
         /* Absolute distance from global time */
-        f->dist_travelled = FixedMul(f->speed, (fixed_t)elapsed << FRACBITS);
+        f->dist_travelled = FixedMul(f->speed<<FRACBITS, (fixed_t)elapsed << FRACBITS);
 
         /* Optional: if the motion should not always start at distance 0,
            store a start_dist in the follower and do:
-           f->dist_travelled = f->start_dist + FixedMul(...)
+           f->dist_travelled = f->start_dist + FixedMul()
         */
 
         if (f->dist_travelled <= 0)
@@ -2031,8 +2031,9 @@ void T_SwingBezier(swinghang_t *sh)
 	if (!controlsPressed)
 	{
 		if (sh->deltaZ > 0)
-			sh->deltaZ--;
-		else if (sh->deltaZ < 0)
+			sh->deltaZ -= 2;
+		
+		if (sh->deltaZ < 0)
 			sh->deltaZ++;
 	}
 
@@ -2114,8 +2115,8 @@ void T_SwingHang(swinghang_t *sh)
 	if (!controlsPressed)
 	{
 		if (sh->deltaZ > 0)
-			sh->deltaZ--;
-		else if (sh->deltaZ < 0)
+			sh->deltaZ -= 2;
+		if (sh->deltaZ < 0)
 			sh->deltaZ++;
 
 		if (sh->maceball->state >= S_HOOK3 && sh->maceball->state <= S_HOOK4)
@@ -2218,7 +2219,8 @@ void P_AddSwingHang(mapthing_t *point, vector3b_t *axis, vector3b_t *rotation, V
 			int16_t numSegments;
 			bezier_segment_t *segment = GetPathFromLump(lump, args[14], &numSegments);
 			sh->bezierPath = Bezier_CreatePath(segment, numSegments);
-			Bezier_InitFollower(&sh->bezier_follower, sh->bezierPath, (sh->flags & SHF_STARTINREVERSE) ? sh->mspeed : -sh->mspeed);
+//			sh->flags &= ~SHF_STARTINREVERSE;
+			Bezier_InitFollower(&sh->bezier_follower, sh->bezierPath, (sh->flags & SHF_STARTINREVERSE) ? -sh->mspeed : sh->mspeed);
 
 			sh->bezier_follower.duration_tics = (int16_t)axis->x * TICRATE;
 			sh->bezier_follower.elapsed_tics = (int16_t)axis->y * TICRATE;
