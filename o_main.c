@@ -659,16 +659,16 @@ void O_DrawHelp (VINT yPos)
 	V_DrawStringCenterWithColormap(&menuFont, 160, yPos - 20, "v0.2a DEMO", YELLOWTEXTCOLORMAP);
 
 	V_DrawStringRight(&menuFont, 160-8, yPos, "JUMP ");
-	V_DrawStringLeft(&menuFont, 160, yPos, "= B");
+	V_DrawStringLeft(&menuFont, 160, yPos, "= C");
 	V_DrawStringRight(&menuFont, 160-8, yPos + (12*1), "SPIN ");
-	V_DrawStringLeft(&menuFont, 160, yPos + (12*1), "= A or C");
+	V_DrawStringLeft(&menuFont, 160, yPos + (12*1), "= A or B");
 	V_DrawStringRight(&menuFont, 160-8, yPos + (12*2), "GAS PEDAL ");
 	V_DrawStringLeft(&menuFont, 160, yPos + (12*2), "= Y");
 	V_DrawStringRight(&menuFont, 160-8, yPos + (12*3), "MOVE CAMERA ");
 	V_DrawStringLeft(&menuFont, 160, yPos + (12*3), "= X and Z");
 
 	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5), "OPTIMIZED FOR NTSC SYSTEMS AND", YELLOWTEXTCOLORMAP);
-	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5) + 8, "PICODRIVE 2.04 & JGENESIS 0.10", YELLOWTEXTCOLORMAP);
+	V_DrawStringCenterWithColormap(&menuFont, 160, yPos + (12*5) + 8, "PICODRIVE 2.06 & JGENESIS 0.14", YELLOWTEXTCOLORMAP);
 
 	V_DrawStringCenter(&menuFont, 160, yPos + 80, "ssntails.srb2.org/srb32x");
 }

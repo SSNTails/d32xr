@@ -1262,8 +1262,8 @@ void DRAW_Compatibility (void)
 	};
 
 	const char *emulators[2] = {
-		"* Jgenesis 0.10.0",
-		"* PicoDrive 2.04",
+		"* Jgenesis 0.14.0",
+		"* PicoDrive 2.06",
 	};
 
 	const uint8_t compatibility_color[6] = { 0x70, 0xBC, 0x49, 0x36, 0x47, 0x23 };
