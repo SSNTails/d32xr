@@ -123,7 +123,7 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     xstep = FixedMul(distance, lpl->basexscale);
     ystep = FixedMul(distance, lpl->baseyscale);
 
-    const int flatnum = lpl->pl->flatandlight&0xff;
+    const int flatnum = lpl->pl->key.parts.flat;
 
 #if MIPLEVELS > 1 && FLATMIPS
     miplevel = (unsigned)distance / MIPSCALE;
@@ -407,7 +407,7 @@ static void R_DrawPlanes2(int isFOF)
         if (pl->minx > pl->maxx)
             continue;
 
-        const int flatnum = pl->flatandlight&0xff;
+        const int flatnum = pl->key.parts.flat;
 
         if (flatpixels[flatnum].flags & FLF_ROTATE)
         {
@@ -421,8 +421,8 @@ static void R_DrawPlanes2(int isFOF)
             lpl.angle = vd.viewangle + ANG90;
             lpl.basexscale = basexscale2;
             lpl.baseyscale = baseyscale2;
-            lpl.xoff = LOWER8(pl->offs);
-            lpl.yoff = UPPER8(pl->offs);
+            lpl.xoff = LOWER8(pl->key.parts.offs);
+            lpl.yoff = UPPER8(pl->key.parts.offs);
         }
         else
         {
@@ -436,8 +436,8 @@ static void R_DrawPlanes2(int isFOF)
             lpl.angle = vd.viewangle;
             lpl.basexscale = basexscale;
             lpl.baseyscale = baseyscale;
-            lpl.xoff = UPPER8(pl->offs);
-            lpl.yoff = LOWER8(pl->offs);
+            lpl.xoff = UPPER8(pl->key.parts.offs);
+            lpl.yoff = LOWER8(pl->key.parts.offs);
         }
 
         lpl.flags = flatpixels[flatnum].flags;
@@ -484,10 +484,10 @@ static void R_DrawPlanes2(int isFOF)
         else
         {
 #ifdef SIMPLELIGHT
-            light = ((unsigned)pl->flatandlight>>8);
-            lpl.lightmax = HWLIGHT((unsigned)((light) & 0xff));
+            light = pl->key.parts.light;
+            lpl.lightmax = HWLIGHT(light);
 #else
-            light = ((unsigned)pl->flatandlight>>8);
+            light = pl->key.parts.light;
             lpl.lightmax = (light) & 0xff;
 
 #ifdef MARS
@@ -574,9 +574,8 @@ static void Mars_R_SplitPlanes(void)
             newpl = vd.lastvisplane++;
             newpl->open = pl->open;
             newpl->height = pl->height;
-            newpl->flatandlight = pl->flatandlight;
+            newpl->key.compare = pl->key.compare;
             newpl->flags = pl->flags;
-            newpl->offs = pl->offs;
             newpl->minx = start + 1;
             newpl->maxx = newstop;
 
@@ -609,7 +608,7 @@ static void Mars_R_SortPlanes(void)
         }
         // to minimize pipeline stalls, the larger planes must be drawn first, hence length negation
         key = (63 - key) << 8;
-        key |= (pl->flatandlight & 0xFF);
+        key |= (pl->key.parts.flat);
         sortbuf[i + 0] = key;
         sortbuf[i + 1] = ++numplanes;
         i += 2;
@@ -685,4 +684,3 @@ void R_DrawPlanes(void)
 }
 
 // EOF
-

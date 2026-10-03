@@ -1654,7 +1654,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 #endif
 
 	vd.visplanes = visplanes_;
-	vd.visplanes[0].flatandlight = 0;
+	vd.visplanes[0].key.compare = 0;
 
 	tempbuf = (unsigned short *)I_WorkBuffer();
 
@@ -1746,8 +1746,10 @@ void Mars_Sec_R_Setup(void)
 // Check for a matching visplane in the visplanes array, or set up a new one
 // if no compatible match can be found.
 //
-#define R_PlaneHash(height, lightlevel) \
-	((((unsigned)(height) >> 8) + (lightlevel>>16)) ^ (lightlevel&0xffff)) & (NUM_VISPLANES_BUCKETS - 1)
+#define R_PlaneHash(height, key) \
+	((int)(((((uint32_t)(height) >> 8) + ((uint32_t)(key) >> 16)) \
+		^ ((uint32_t)(key) & 0xffffu)) \
+		& (NUM_VISPLANES_BUCKETS - 1)))
 
 void R_MarkOpenPlane(visplane_t* pl)
 {
@@ -1777,12 +1779,10 @@ void R_InitClipBounds(uint32_t *clipbounds)
 }
 
 visplane_t* R_FindPlane(fixed_t height, 
-	VINT flatandlight, int start, int stop, uint16_t offs)
+	uint32_t compare, int start, int stop)
 {
 	visplane_t *check, *tail, *next;
-	int hash = R_PlaneHash(height, flatandlight);
-
-	const uint32_t flatandlightandoffs = (flatandlight << 16) + offs;
+	int hash = R_PlaneHash(height, compare);
 
 	tail = vd.visplanes_hash[hash];
 	for (check = tail; check; check = next)
@@ -1790,7 +1790,7 @@ visplane_t* R_FindPlane(fixed_t height,
 		next = check->next;
 
 		if (height == check->height // same plane as before?
-			&& flatandlightandoffs == *(uint32_t*)&check->flatandlight)
+			&& compare == check->key.compare)
 		{
 			if (MARKEDOPEN(check->open[start]))
 			{
@@ -1812,11 +1812,10 @@ visplane_t* R_FindPlane(fixed_t height,
 	++vd.lastvisplane;
 
 	check->height = height;
-	check->flatandlight = flatandlight;
 	check->minx = start;
 	check->maxx = stop;
 	check->flags = 0;
-	check->offs = offs;
+	check->key.compare = compare;
 
 	R_MarkOpenPlane(check);
 
@@ -1827,11 +1826,10 @@ visplane_t* R_FindPlane(fixed_t height,
 }
 
 visplane_t* R_FindPlaneFOF(fixed_t height, 
-	VINT flatandlight, int start, int stop, uint16_t offs)
+	uint32_t compare, int start, int stop)
 {
 	visplane_t *check, *tail, *next;
-	int hash = R_PlaneHash(height, flatandlight);
-	const uint32_t flatandlightandoffs = (flatandlight << 16) + offs;
+	int hash = R_PlaneHash(height, compare);
 
 	tail = vd.visplanes_hash[hash];
 	for (check = tail; check; check = next)
@@ -1840,7 +1838,7 @@ visplane_t* R_FindPlaneFOF(fixed_t height,
 
 		if ((check->flags & VPFLAGS_ISFOF)
 			&& height == check->height // same plane as before?
-			&& flatandlightandoffs == *(uint32_t*)&check->flatandlight)
+			&& compare == check->key.compare)
 		{
 			// NOTE: Not checking MARKEDOPEN here probably causes some problems.
 			// We just don't know what yet.
@@ -1864,11 +1862,10 @@ visplane_t* R_FindPlaneFOF(fixed_t height,
 	++vd.lastvisplane;
 
 	check->height = height;
-	check->flatandlight = flatandlight;
 	check->minx = start;
 	check->maxx = stop;
 	check->flags = VPFLAGS_ISFOF;
-	check->offs = offs;
+	check->key.compare = compare;
 
 	R_MarkOpenPlane(check);
 
