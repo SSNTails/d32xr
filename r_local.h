@@ -795,12 +795,22 @@ typedef struct vissprite_s
 
 #define VPFLAGS_ISFOF      1
 #define VPFLAGS_DIDSEG     2
+typedef union visplane_key_u
+{
+	struct {
+		uint8_t flat;
+		uint8_t light;
+		uint16_t offs;
+	} parts;
+	uint32_t compare;
+} visplane_key_t;
+
 typedef struct visplane_s
 {
 	fixed_t		height;
 	VINT		minx, maxx;
-	VINT 		flatandlight;
-	uint16_t    offs;
+	visplane_key_t key;
+	
 	VINT        flags;
 	struct visplane_s	*next;
 	unsigned short		*open/*[SCREENWIDTH+2]*/;		/* top<<8 | bottom */ /* leave pads for [minx-1]/[maxx+1] */
@@ -814,12 +824,12 @@ void R_MarkOpenPlane(visplane_t* pl)
 ATTR_DATA_CACHE_ALIGN
 ;
 
-visplane_t *R_FindPlaneFOF(fixed_t height, VINT flatandlight,
-	int start, int stop, uint16_t offs)
+visplane_t *R_FindPlaneFOF(fixed_t height, uint32_t compare,
+	int start, int stop)
 ATTR_DATA_CACHE_ALIGN
 ;
-visplane_t *R_FindPlane(fixed_t height, VINT flatandlight,
-	int start, int stop, uint16_t offs)
+visplane_t *R_FindPlane(fixed_t height, uint32_t compare,
+	int start, int stop)
 ATTR_DATA_CACHE_ALIGN
 ;
 
