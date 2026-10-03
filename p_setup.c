@@ -901,7 +901,10 @@ D_printf ("P_SetupLevel(%i)\n",lumpnum);
 #ifndef BAREBONESMAP
 	P_SpawnSpecials ();
 #endif
-	P_LoadThings (lumpnum+ML_THINGS);
+	if (gamemapinfo.mapNumber == 11)
+		P_LoadThings (W_GetNumForName("MAP11T"));
+	else
+		P_LoadThings (lumpnum+ML_THINGS);
 
 	ST_InitEveryLevel ();
 	
