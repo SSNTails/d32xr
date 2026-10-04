@@ -1339,8 +1339,130 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 	}
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, 
+							angle_t angle_deg, boolean masked, pixel_t *fb) {
+//void rotate_image(int width, int height, int dest_x, int dest_y, angle_t angle_deg,
+//                  const unsigned char *src, unsigned char *dst) {
+	int width = jo->width;
+	int height = jo->height;
+
+	pixel_t *src = (pixel_t *)jo->data;
+
+    fixed_t sin_a;
+    fixed_t cos_a;
+    fixed_t tan_a;
+
+	if (angle_deg > ANG270) {
+		cos_a = finecosine(0-angle_deg);
+		sin_a = finesine(0-angle_deg);
+		tan_a = finetangent(0-angle_deg);
+	}
+	else if (angle_deg > ANG180) {
+		sin_a = finecosine(ANG270-angle_deg);
+		cos_a = finesine(ANG270-angle_deg);
+		tan_a = finetangent(angle_deg-ANG180);
+	}
+	else if (angle_deg > ANG90) {
+		cos_a = finecosine(ANG180-angle_deg);
+		sin_a = finesine(ANG180-angle_deg);
+		tan_a = finetangent(angle_deg-ANG90);
+	}
+	else {
+		cos_a = finecosine(angle_deg);
+		sin_a = finesine(angle_deg);
+		tan_a = finetangent(angle_deg);
+	}
+
+    const fixed_t x_center = (fixed_t)width >> 1;
+    const fixed_t y_center = (fixed_t)height >> 1;
+
+    const fixed_t adj_w = (width * cos_a);
+    const fixed_t opp_w = (width * sin_a);
+    const fixed_t adj_h = (height * cos_a);
+    const fixed_t opp_h = (height * sin_a);
+
+    const fixed_t canvas_width = adj_w + opp_h;
+    const fixed_t canvas_height = adj_h + opp_w;
+
+    const fixed_t canvas_x_center = canvas_width >> 1;
+    const fixed_t canvas_y_center = canvas_height >> 1;
+
+    const fixed_t opening_width = adj_w - opp_h;
+    const fixed_t opening_height = adj_h - opp_w;
+
+    const fixed_t vertical_breakpoint = ((canvas_height - opening_height) >> 1);
+
+	const fixed_t tan_a_recip = (1/tan_a);
+    for (int y = 0; y < (canvas_height>>16); y++) {
+		int start_x;
+		int start_y;
+		if (y >= vertical_breakpoint) {
+			start_x = (FixedMul(((y<<16) - vertical_breakpoint), sin_a) + (FRACUNIT>>1)) >> 16;
+			start_y = (FixedMul(((y<<16) - vertical_breakpoint), tan_a) + (FRACUNIT>>1)) >> 16;
+		}
+		else {
+			start_x = (FixedMul((vertical_breakpoint - (y<<16)), cos_a) + (FRACUNIT>>1)) >> 16;
+			start_y = (FixedMul((vertical_breakpoint - (y<<16)), tan_a_recip) + (FRACUNIT>>1)) >> 16;
+		}
+
+		fixed_t srx_x_bias = FixedMul(((y<<16) - canvas_y_center), sin_a) - x_center;
+		fixed_t src_y_bias = FixedMul(((y<<16) - canvas_y_center), cos_a) + y_center;
+        for (int x = start_x; x < (canvas_width>>15); x++) {
+            fixed_t src_x = FixedMul(((x<<16) - canvas_x_center), cos_a) - srx_x_bias; // + 0.5;
+            fixed_t src_y = FixedMul(((x<<16) - canvas_x_center), sin_a) + src_y_bias; // 0+0.5; 90; 180+0.5; 270
+
+            int ix = (int)(src_x >> 16);
+            int iy = (int)(src_y >> 16);
+
+            if (ix >= 0 && ix < width && iy >= 0 && iy < height) {
+				if (angle_deg > ANG270) {
+					fb[(((int)(canvas_height>>16)-(y + dest_y)) * 320) + (x + dest_x)] = src[((height-1)-iy) * width + ix];
+				}
+				else if (angle_deg > ANG180) {
+					fb[((y + dest_y) * 320) + (x + dest_x)] = src[((height-1)-iy) * width + ((width-1)-ix)];
+				}
+				else if (angle_deg > ANG90) {
+					fb[(((int)(canvas_height>>16)-(y + dest_y)) * 320) + (x + dest_x)] = src[iy * width + ((width-1)-ix)];
+				}
+				else {
+					fb[((y + dest_y) * 320) + (x + dest_x)] = src[iy * width + ix];
+				}
+            }
+            else {
+                //fb[((y) * 320) + (x)] = '.'; // fill with default color
+			}
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 //TODO: Remove these -- src_x, src_y, src_w, src_h, canvas_width
-void DrawRotatedJagobj_15bpp(jagobj_t* jo, int x, int y, 
+/*void DrawRotatedJagobj_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h, angle_t angle,
 	const int canvas_width, pixel_t *fb)
 {
@@ -1441,7 +1563,28 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int x, int y,
 			dest2 += canvas_inc;
 		}
 	}
-}
+}*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void DrawMaskedGraphicLump(int lumpnum, int x, int y)
 {

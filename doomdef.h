@@ -1458,6 +1458,8 @@ void DrawScaledJagobj_15bpp (jagobj_t* jo, int x, int y,
 void DrawScaledJagobj_15bppBlend (jagobj_t* jo, int x, int y,
 	fixed_t ratio_w, fixed_t ratio_h, unsigned blend_shift,
 	boolean masked, pixel_t *fb);
+void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, 
+	angle_t angle_deg, boolean masked, pixel_t *fb);
 void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h,
 	const int canvas_width, pixel_t *fb);
