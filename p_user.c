@@ -336,6 +336,8 @@ void P_PlayerRingBurst(player_t *player, int damage)
 	int i;
 	uint8_t num_rings = player->health - 1;
 
+	player->lossCount = 0; // Disable quicker fading rings for now.
+
 	if (num_rings > 32) // Cap # of rings at 32
 		num_rings = 32;
 

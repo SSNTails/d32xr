@@ -56,7 +56,7 @@ void P_TouchStarPost(mobj_t *starpost, player_t *player)
 
 boolean P_CanPickupItem(player_t *player)
 {
-	if (player->powers[pw_flashing] > (FLASHINGTICS/4)*3 && player->powers[pw_flashing] <= FLASHINGTICS)
+	if (player->powers[pw_flashing] > (FLASHINGTICS>>3)*7 && player->powers[pw_flashing] <= FLASHINGTICS)
 		return false;
 
 	return true;
