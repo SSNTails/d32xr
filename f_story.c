@@ -746,28 +746,24 @@ void Scene_6_Draw(scene_6_t *scene)
 
 	int metalY = scene->metalY + (finesine(sceneFrameCount<<5) >> 15);
 
-	DrawJagobj3_15bpp(
+	DrawScaledJagobj_15bpp(
 		scene->metal,
 		scene->metalX,
 		metalY,
-		0,
-		0,
-		scene->metal->width,
-		scene->metal->height,
-		320,
+		FRACUNIT,
+		FRACUNIT,
+		true,
 		I_FrameBuffer()
 	);
 
 	jagobj_t *stache = (scene->talking && (scene->stacheCounter & 1)) ? scene->stache[1] : scene->stache[0];
-	DrawJagobj3_15bpp(
+	DrawScaledJagobj_15bpp(
 		stache,
 		55,
 		70,
-		0,
-		0,
-		stache->width,
-		stache->height,
-		320,
+		FRACUNIT,
+		FRACUNIT,
+		true,
 		I_FrameBuffer()
 	);
 
@@ -1029,7 +1025,7 @@ void BuildScenes()
 	scene6->scene.textBox.width = 320 - 184 - 32;
 	scene6->scene.textBox.height = 200 - 64;
 	scene6->metalX = 27 - 10;
-	scene6->metalY = 63 - 25;
+	scene6->metalY = 64 - 25;
 	scene6->scene.init = (void(*)(storyscene_t *))Scene_6_Init;
 	scene6->scene.tic = (void(*)(storyscene_t *))Scene_6_Tick;
 	scene6->scene.draw = (void(*)(storyscene_t *))Scene_6_Draw;
