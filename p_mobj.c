@@ -222,7 +222,7 @@ boolean P_SetMobjState (mobj_t *mobj, statenum_t state)
 
 		st = &states[state];
 		mobj->state = state;
-		mobj->tics = st->tics;
+		mobj->tics = (int8_t)st->tics;
 
 		if (st->action)		/* call action functions when the state is set */
 			st->action(mobj, st->var1, st->var2);
