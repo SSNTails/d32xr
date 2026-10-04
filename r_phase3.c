@@ -217,7 +217,6 @@ static void R_PrepRing(ringmobj_t *thing, const VINT isector, const int scenery)
    fixed_t xscale;
    spritedef_t   *sprdef;
    spriteframe_t *sprframe;
-   VINT         *sprlump;
    patch_t      *patch;
    vissprite_t  *vis;
    VINT          lump;

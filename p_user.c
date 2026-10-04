@@ -421,7 +421,6 @@ void P_PlayerMove(mobj_t *mo)
 	if (P_TryMove(&tm, mo, sm.slidex, sm.slidey))
 		return;
 
-stairstep:
 	if (momx > MAXMOVE)
 		momx = MAXMOVE;
 	if (momx < -MAXMOVE)

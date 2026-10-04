@@ -188,7 +188,7 @@ fixed_t FV3_Dot(const vector3_t *a_1, const vector3_t *a_2)
 	return (FixedMul(a_1->x, a_2->x) + FixedMul(a_1->y, a_2->y) + FixedMul(a_1->z, a_2->z));
 }
 
-vector4_t FV3_RotateVector(const vector3_t *rotationDir, const vector3_t *axis, int16_t fineangles)
+vector3_t FV3_RotateVector(const vector3_t *rotationDir, const vector3_t *axis, int16_t fineangles)
 {
 	const fixed_t ux = FixedMul(axis->x, rotationDir->x);
 	const fixed_t uy = FixedMul(axis->x, rotationDir->y);
@@ -202,7 +202,7 @@ vector4_t FV3_RotateVector(const vector3_t *rotationDir, const vector3_t *axis, 
 	fixed_t sa = finesine(fineangles);
 	fixed_t ca = finecosine(fineangles);
 
-	vector4_t rotVec;
+	vector3_t rotVec;
 	rotVec.x = FixedMul(axis->x,(ux+vy+wz))
 				+ FixedMul((FixedMul(rotationDir->x,(FixedMul(axis->y,axis->y)+FixedMul(axis->z,axis->z)))-FixedMul(axis->x,(vy+wz))), ca)
 				+ FixedMul((-wy+vz),sa);
@@ -212,6 +212,45 @@ vector4_t FV3_RotateVector(const vector3_t *rotationDir, const vector3_t *axis, 
 	rotVec.z = FixedMul(axis->z,(ux+vy+wz))
 				+ FixedMul((FixedMul(rotationDir->z,(FixedMul(axis->x,axis->x)+FixedMul(axis->y,axis->y)))-FixedMul(axis->z,(ux+vy))), ca)
 				+ FixedMul((-vx+uy),sa);
+
+	return rotVec;
+}
+
+vector3_t FV3_RotateVectorXY(const vector3_t *rotationDir, int16_t fineangles)
+{
+	const fixed_t sa = finesine(fineangles);
+	const fixed_t ca = finecosine(fineangles);
+
+	vector3_t rotVec;
+	rotVec.x = FixedMul(rotationDir->x, ca) - FixedMul(rotationDir->y, sa);
+	rotVec.y = FixedMul(rotationDir->x, sa) + FixedMul(rotationDir->y, ca);
+	rotVec.z = rotationDir->z;
+
+	return rotVec;
+}
+
+vector3_t FV3_RotateVectorXZ(const vector3_t *rotationDir, int16_t fineangles)
+{
+	const fixed_t sa = finesine(fineangles);
+	const fixed_t ca = finecosine(fineangles);
+
+	vector3_t rotVec;
+	rotVec.x = FixedMul(rotationDir->x, ca) + FixedMul(rotationDir->z, sa);
+	rotVec.y = rotationDir->y;
+	rotVec.z = FixedMul(rotationDir->z, ca) - FixedMul(rotationDir->x, sa);
+
+	return rotVec;
+}
+
+vector3_t FV3_RotateVectorYZ(const vector3_t *rotationDir, int16_t fineangles)
+{
+	const fixed_t sa = finesine(fineangles);
+	const fixed_t ca = finecosine(fineangles);
+
+	vector3_t rotVec;
+	rotVec.x = rotationDir->x;
+	rotVec.y = FixedMul(rotationDir->y, ca) - FixedMul(rotationDir->z, sa);
+	rotVec.z = FixedMul(rotationDir->y, sa) + FixedMul(rotationDir->z, ca);
 
 	return rotVec;
 }
