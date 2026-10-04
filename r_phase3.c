@@ -24,7 +24,6 @@ static void R_PrepMobj(mobj_t *thing)
    angle_t      ang;
    patch_t      *patch;
    vissprite_t  *vis;
-   VINT         *sprlump;
    VINT          lump;
    VINT        flip;
    const VINT doubleWide = (thing->flags2 & MF2_NARROWGFX) ? 2 : 1; // Sprites have half the horizontal resolution (like scenery)
@@ -66,11 +65,14 @@ static void R_PrepMobj(mobj_t *thing)
 
    sprframe = &spriteframes[sprdef->firstframe + (frame & FF_FRAMEMASK)];
 
-   sprlump = &spritelumps[sprframe->lump];
-
-   lump = sprlump[0];
+   lump = sprframe->lump;
+   if (lump == -1)
+      return;
+   
    if(!(lump & SL_SINGLESIDED))
    {
+      VINT *sprlump = &spritelumps[sprframe->lump];
+
       // select proper rotation depending on player's view point
       ang  = R_PointToAngle2(vd.viewx, vd.viewy, thing->x, thing->y);
       lump = sprlump[(ang - thing->angle + (unsigned int)(ANG45 / 2)*9) >> 29];
@@ -87,8 +89,8 @@ static void R_PrepMobj(mobj_t *thing)
    {
 #ifndef SHOW_DISCLAIMER
       // Carmack had a frame validity check in here, so it must be important.
-      CONS_Printf("R_PrepMobj: %d, %d, %d, %d\n %d, %d, %d, %d, %d\n%d", thing->type, thing->state, lump, flip,
-         sprlump[0], sprframe->lump, frame, thing->angle, ang,
+      CONS_Printf("R_PrepMobj: %d, %d, %d, %d\n %d, %d, %d, %d\n%d", thing->type, thing->state, lump, flip,
+         sprframe->lump, frame, thing->angle, ang,
          sprdef->firstframe);
 #endif
 
@@ -261,13 +263,17 @@ static void R_PrepRing(ringmobj_t *thing, const VINT isector, const int scenery)
    sprdef = &sprites[state->sprite];
 
    sprframe = &spriteframes[sprdef->firstframe + (thingframe & FF_FRAMEMASK)];
-   sprlump = &spritelumps[sprframe->lump];
 
+   lump = sprframe->lump;
+   if (lump == -1)
+      return;
+   
    // sprite has a single view for all rotations
    flip = (thingframe & FF_FLIPPED) ? -1 : 1;
-   lump = sprlump[0];
    if(!(lump & SL_SINGLESIDED))
    {
+      VINT *sprlump = &spritelumps[sprframe->lump];
+      
       // select proper rotation depending on player's view point
       angle_t ang  = R_PointToAngle2(vd.viewx, vd.viewy, x << FRACBITS, y << FRACBITS);
       lump = sprlump[(ang - (thing->pad << ANGLETOFINESHIFT) + (unsigned int)(ANG45 / 2)*9) >> 29];
@@ -275,7 +281,7 @@ static void R_PrepRing(ringmobj_t *thing, const VINT isector, const int scenery)
       if (lump & SL_FLIPPED)
          flip = -1;
    }
-   // else // sprite has a single view for all rotations
+//   else // sprite has a single view for all rotations
 
    lump &= SL_LUMPMASK;
 
