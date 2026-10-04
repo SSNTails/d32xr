@@ -42,6 +42,7 @@ typedef struct storyscene_s
 	int16_t curTextPosX;
 	int16_t curTextPosY;
 	int16_t drawText; // Flag to indicate that the text should be drawn this frame
+	int sceneTime;
 
 	void (*init)(struct storyscene_s *self);
     void (*tic)(struct storyscene_s *self);
@@ -68,10 +69,21 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
+	jagobj_t *flicker[3];
+	jagobj_t *stache[2];
+	jagobj_t *metal;
+	fixed_t metalX, metalY;
+	boolean talking;
+	int stacheCounter;
+} scene_6_t;
+
+typedef struct
+{
+	storyscene_t scene;
 } scene_2_t, scene_3_t, scene_4_t;
 
 //#define NUMSCENES 12
-#define NUMSCENES	5
+#define NUMSCENES	6
 storyscene_t *introScenes[NUMSCENES];
 
 
@@ -684,6 +696,96 @@ void Scene_5_Stop(scene_5_t *scene)
 	Z_Free(scene->scene.background);
 }
 
+void Scene_6_Init(scene_6_t *scene)
+{
+	// Cache any graphics, etc.
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
+
+	scene->flicker[0] = W_CacheLumpName("THKFLIK1", PU_LEVEL);
+	scene->flicker[1] = W_CacheLumpName("THKFLIK2", PU_LEVEL);
+	scene->flicker[2] = W_CacheLumpName("THKFLIK3", PU_LEVEL);
+	scene->stache[0] = W_CacheLumpName("THKTALK1", PU_LEVEL);
+	scene->stache[1] = W_CacheLumpName("THKTALK2", PU_LEVEL);
+	scene->metal = W_CacheLumpName("THKMETAL", PU_LEVEL);
+}
+
+void Scene_6_Tick(scene_6_t *scene)
+{
+	int16_t lastTextPos = scene->scene.textPos;
+	TIC_Text(&scene->scene);
+
+	if (scene->scene.textPos != lastTextPos)
+	{
+		if (scene->scene.text[scene->scene.textPos] == '\xA7')
+		{
+			scene->talking = !scene->talking;
+			scene->stacheCounter = 0;
+		}
+	}
+
+	scene->scene.sceneTime++;
+	if ((sceneFrameCount & 7) == 0)
+		scene->stacheCounter++;
+}
+
+void Scene_6_Draw(scene_6_t *scene)
+{
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		I_FrameBuffer()
+	);
+
+	int metalY = scene->metalY + (finesine(sceneFrameCount<<5) >> 15);
+
+	DrawJagobj3_15bpp(
+		scene->metal,
+		scene->metalX,
+		metalY,
+		0,
+		0,
+		scene->metal->width,
+		scene->metal->height,
+		320,
+		I_FrameBuffer()
+	);
+
+	jagobj_t *stache = (scene->talking && (scene->stacheCounter & 1)) ? scene->stache[1] : scene->stache[0];
+	DrawJagobj3_15bpp(
+		stache,
+		55,
+		70,
+		0,
+		0,
+		stache->width,
+		stache->height,
+		320,
+		I_FrameBuffer()
+	);
+
+	DrawText(&scene->scene);
+}
+
+void Scene_6_Stop(scene_6_t *scene)
+{
+	// Free any resources
+	Z_Free(scene->scene.background);
+	Z_Free(scene->flicker[0]);
+	Z_Free(scene->flicker[1]);
+	Z_Free(scene->flicker[2]);
+	Z_Free(scene->stache[0]);
+	Z_Free(scene->stache[1]);
+	Z_Free(scene->metal);
+}
+
 const char *intro1text =
 "Two months had passed since Dr. Eggman\n"
 "tried to take over the world using his\n"
@@ -710,29 +812,29 @@ const char *intro4text =
 "No one knows why it appears, or how.";
 
 const char *intro5text = 
-"\xA7\"Curses!\"\xA9\xBA Eggman yelled. \xA7\"That hedgehog\n"
+"\"Curses!\" Eggman yelled. \"That hedgehog\n"
 "and his ridiculous friends will pay\n"
-"dearly for this!\"\xA9\xC8 Just then his scanner\n"
+"dearly for this!\"\xC8 Just then his scanner\n"
 "blipped as the Black Rock made its\n"
-"appearance from nowhere.\xBF Eggman looked at\n"
+"appearance from nowhere. Eggman looked at\n"
 "the screen, and just shrugged it off.";
 
 const char *intro6text =
 "It was hours later\n"
 "that he had an\n"
-"idea. \xBF\xA7\"The Black\n"
+"idea. \xA7\"The Black\n"
 "Rock has a large\n"
 "amount of energy\n"
-"within it\xAC...\xA7\xBF\n"
+"within it\xA7...\xA7\n"
 "If I can somehow\n"
-"harness this,\xB8 I\n"
+"harness this\xA7, \xA7I\n"
 "can turn it into\n"
 "the ultimate\n"
-"battle station\xAC...\xA7\xBF\n"
+"battle station\xA7...\xA7\n"
 "And every last\n"
 "person will be\n"
-"begging for mercy,\xB8\xA8\n"
-"including Sonic!\"";
+"begging for mercy,\n"
+"including Sonic!\"\xA7";
 
 const char *intro7text =
 "\xA8\nBefore beginning his scheme,\n"
@@ -914,6 +1016,25 @@ void BuildScenes()
 	scene5->scene.draw = (void(*)(storyscene_t *))Scene_5_Draw;
 	scene5->scene.stop = (void(*)(storyscene_t *))Scene_5_Stop;
 	introScenes[i++] = (storyscene_t*)scene5;
+
+	scene_6_t *scene6 = Z_Calloc(sizeof(*scene6), PU_STATIC);
+	scene6->scene.transitionOutHeight = 204;
+	scene6->scene.picLump = W_GetNumForName("THINKBG");
+	scene6->scene.text = intro6text;
+	scene6->scene.textCharDelayTics = scene6->scene.textCharDelayCounter = 5;
+	scene6->scene.preTextDelay = TICRATE;
+	scene6->scene.postTextDelay = 2*TICRATE;
+	scene6->scene.textBox.x = 184;
+	scene6->scene.textBox.y = 32;
+	scene6->scene.textBox.width = 320 - 184 - 32;
+	scene6->scene.textBox.height = 200 - 64;
+	scene6->metalX = 27 - 10;
+	scene6->metalY = 63 - 25;
+	scene6->scene.init = (void(*)(storyscene_t *))Scene_6_Init;
+	scene6->scene.tic = (void(*)(storyscene_t *))Scene_6_Tick;
+	scene6->scene.draw = (void(*)(storyscene_t *))Scene_6_Draw;
+	scene6->scene.stop = (void(*)(storyscene_t *))Scene_6_Stop;
+	introScenes[i++] = (storyscene_t*)scene6;
 }
 
 void START_Story (void)
