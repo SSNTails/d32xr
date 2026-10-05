@@ -526,7 +526,7 @@ void P_LoadThings (int lump)
 					break;
 				case 1:
 					numthingsreal++;
-					if (mt->type == 118)
+					if (mt->type == 118) // MT_FACESTABBER
 						numthingsreal++; // Jet fume
 					else if (mt->type == 119) // MT_EGGGUARD
 						numringthings++;
