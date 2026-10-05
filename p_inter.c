@@ -223,6 +223,37 @@ void P_TouchSpecialThing (mobj_t *special, mobj_t *toucher)
 			P_DoSpring(&temp, player);
 			return;
 		}
+		else if (special->type >= MT_RING_BOX
+		 && special->type <= MT_1UP_BOX)
+		{
+			if ((player->pflags & PF_JUMPED) || (player->pflags & PF_SPINNING))
+			{
+				if (((player->pflags & PF_VERTICALFLIP) && toucher->momz > 0)
+					|| (!(player->pflags & PF_VERTICALFLIP) && toucher->momz < 0))
+				{
+					toucher->momz = -toucher->momz;
+				}
+
+				P_DamageMobj(special, toucher, toucher, 1);
+
+				// For some reason this has to be duplicated here. Annoying.
+				if (player && (player->pflags & PF_THOKKED) && player->homingTimer > 0)
+				{
+					player->mo->target = NULL;
+					player->mo->momx >>= 1;
+					player->mo->momy >>= 1;
+					player->mo->momz >>= 1;
+					player->homingTimer = 0;
+					player->pflags &= ~PF_THOKKED;
+					player->pflags &= ~PF_ELEMENTALBOUNCE;
+
+					if (player->mo->momz < 8*FRACUNIT)
+						player->mo->momz = 8*FRACUNIT;
+				}
+			}
+
+			return;
+		}
 		else if (special->type == MT_EGGSHIELD)
 		{
 			ringmobj_t *shield = (ringmobj_t*)special;
@@ -576,13 +607,6 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 			P_SetObjectMomZ(target, FRACUNIT/8, false);
 	}
 
-	if (source && source->player)
-	{
-		// Monitors need to know who killed them
-		// TODO: Not multiplayer compatible. I don't care right now
-//		target->target = source;
-	}
-
 	if (target->player && (players[target->player-1].pflags & PF_DROWNED))
 	{
 		P_SetMobjState(target, targinfo->xdeathstate);
@@ -768,13 +792,44 @@ static void P_ShieldDamage(player_t *player, mobj_t *inflictor, mobj_t *source, 
 	S_StartSound(player->mo, mobjinfo[player->mo->type].deathsound);
 }
 
+void A_MonitorPop(ringmobj_t *actor, mobjtype_t iconType)
+{
+	// Spawn the "pop" explosion.
+	mobj_t *pop = P_SpawnMobj(actor->x << FRACBITS, actor->y << FRACBITS, (actor->z + (mobjinfo[actor->type].height>>2)) << FRACBITS, MT_EXPLODE);
+	if (mobjinfo[actor->type].deathsound)
+		S_StartSound(pop, mobjinfo[actor->type].deathsound);
+
+	actor->type = MT_BUSTED_BOX;
+	// de-solidify
+	actor->flags &= ~MF_SOLID;
+	actor->flags &= ~MF_SPECIAL;
+	actor->flags |= MF_NOCLIP;
+
+	if (iconType == 0)
+	{
+//		CONS_Printf("A_MonitorPop(): 'damage' field missing powerup item definition.\n");
+		return;
+	}
+
+	mobj_t *newmobj = P_SpawnMobj(actor->x << FRACBITS, actor->y << FRACBITS, (actor->z << FRACBITS) + 13*FRACUNIT, iconType);
+	newmobj->target = players[0].mo; // TODO: Not multiplayer compatible, but don't care right now
+}
+
 void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 {
 	player_t	*player;
 	const mobjinfo_t* targinfo = &mobjinfo[target->type];
 
 	if (target->flags & MF_RINGMOBJ)
+	{
+		if (target->type >= MT_RING_BOX
+		 	&& target->type <= MT_1UP_BOX)
+		{
+			mobjtype_t iconType = mobjinfo[target->type].damage;
+			A_MonitorPop((ringmobj_t*)target, iconType);
+		}
 		return;
+	}
 
 	if ( !(target->flags2 & MF2_SHOOTABLE) )
 		return;						/* shouldn't happen... */

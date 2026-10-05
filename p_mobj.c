@@ -276,7 +276,7 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		if (info->flags & MF_NOBLOCKMAP) // It's scenery
 		{
 			if (numscenerymobjs >= scenerymobjcount)
-				I_Error("No more slots available for a scenery mobj.");
+				I_Error("No more slots for a scenery mobj. (%d)", type);
 				
 			scenerymobj_t *scenerymobj = &scenerymobjlist[numscenerymobjs];
 			scenerymobj->type = type;
@@ -327,7 +327,7 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		else // It's a ring
 		{
 			if (numringmobjs >= ringmobjcount)
-				I_Error("No more slots available for a ring mobj.");
+				I_Error("No more slots for a ring mobj. (%d)", type);
 
 			ringmobj_t *ringmobj = &ringmobjlist[numringmobjs];
 			ringmobj->type = type;

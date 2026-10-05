@@ -1028,35 +1028,6 @@ void A_FishJump(mobj_t *mo, int16_t var1, int16_t var2)
 		P_SetMobjState(mo, mobjinfo[mo->type].meleestate);
 }
 
-void A_MonitorPop(mobj_t *actor, int16_t var1, int16_t var2)
-{
-	mobjtype_t iconItem = 0;
-	mobj_t *newmobj;
-
-	// Spawn the "pop" explosion.
-	if (mobjinfo[actor->type].deathsound)
-		S_StartSound(actor, mobjinfo[actor->type].deathsound);
-	P_SpawnMobj(actor->x, actor->y, actor->z + (actor->theight << FRACBITS)/4, MT_EXPLODE);
-
-	// We're dead now. De-solidify.
-	actor->health = 0;
-	actor->flags &= ~MF_SOLID;
-	actor->flags2 &= ~MF2_SHOOTABLE;
-	actor->flags |= MF_NOCLIP;
-
-	iconItem = mobjinfo[actor->type].damage;
-
-	if (iconItem == 0)
-	{
-//		CONS_Printf("A_MonitorPop(): 'damage' field missing powerup item definition.\n");
-		return;
-	}
-
-	newmobj = P_SpawnMobj(actor->x, actor->y, actor->z + 13*FRACUNIT, iconItem);
-	newmobj->target = players[0].mo; // TODO: Not multiplayer compatible, but don't care right now
-	//actor->target; // transfer the target
-}
-
 // Having one function for all box awarding cuts down ROM size
 void A_AwardBox(mobj_t *actor, int16_t var1, int16_t var2)
 {
