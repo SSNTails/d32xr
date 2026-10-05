@@ -213,7 +213,7 @@ static boolean PB_CrossCheck(line_t *ld, pmovetest_t *mt)
 static boolean PB_CheckPosition(pmovetest_t *mt)
 {
    int xl, xh, yl, yh, bx, by;
-   VINT *lvalidcount = validcount;
+   int8_t *lvalidcount = validcount;
    mobj_t *mo = mt->checkthing;
 
    mt->testbbox[BOXTOP   ] = mt->testy + mt->checkthingRadius;
