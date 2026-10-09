@@ -570,7 +570,7 @@ static int R_SetupSkyGradient(const char *name, int copper_lump, int table_bank)
 	// Retrieve lump for drawing the sky gradient.
 	uint8_t *sky_gradient_ptr;
 
-	effects_flags &= (~EFFECTS_COPPER_ENABLED);
+	//effects_flags &= (~EFFECTS_COPPER_ENABLED);
 
 	if (copper_source_table[table_bank]) {
 		Z_Free(copper_source_table[table_bank]);
