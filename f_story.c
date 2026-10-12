@@ -848,16 +848,16 @@ void Scene_9_Tick(scene_9_t *scene)
 		return;
 	}
 
-	if (scene->sonicScale > FRACUNIT)
-	{
-//		I_Error("it's at fracunit");
-		return;
-	}
-
 	scene->auraScale += 1 << 12;
 	scene->sonicScale = scene->auraScale;
 
-
+	if (scene->sonicScale > FRACUNIT)
+	{
+		scene->sonicScale = FRACUNIT;
+		scene->auraScale = FRACUNIT;
+//		I_Error("it's at fracunit");
+		return;
+	}
 }
 
 void Scene_9_Draw(scene_9_t *scene)
@@ -892,11 +892,15 @@ void Scene_9_Draw(scene_9_t *scene)
 
 	if (scene->zoomCurIndex >= 14)
 	{
+		coord_t sonicPos;
+		sonicPos.x = 234;
+		sonicPos.y = 110;
+
 		// Spring OUT!
 		DrawScaledJagobj_15bppBlendWithOrigin(
-			scene->aura, 234, 110, 93, 92, scene->auraScale, scene->auraScale, 1, true, I_FrameBuffer());
+			scene->aura, sonicPos.x + 38, sonicPos.y + 12, 93, 92, scene->auraScale, scene->auraScale, 1, true, I_FrameBuffer());
 		DrawScaledJagobj_15bppBlendWithOrigin(
-			scene->sonic, 234, 110, 74, 126, scene->sonicScale, scene->sonicScale, 0, true, I_FrameBuffer());
+			scene->sonic, sonicPos.x, sonicPos.y, 64, 126, scene->sonicScale, scene->sonicScale, 0, true, I_FrameBuffer());
 	}
 }
 
