@@ -1513,26 +1513,38 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
 
 			if (ix < 0) {	//TODO: TESTING! REMOVE ME!
 #ifdef ROTATION_DEBUG
-				fb[((y + dest_y) * 320) + (x + dest_x)] = 0x001F; // fill with red
+				//fb[((y + dest_y) * 320) + (x + dest_x)] = 0x001F; // fill with red
 #endif
 			}
             else if (ix >= 0 && ix < width && iy >= 0 && iy < height) {
 				if (angle_deg > (ANG270>>19)) {
-					fb[(((int)((canvas_height>>16)-y) + dest_y) * 320) + (x + dest_x)] = src[((height-1)-iy) * width + ix];
+					int source_pixel = src[((height-1)-iy) * width + ix];
+					if (!masked || (source_pixel & 0x8000)) {
+						fb[(((int)((canvas_height>>16)-y) + dest_y) * 320) + (x + dest_x)] = source_pixel;
+					}
 				}
 				else if (angle_deg > (ANG180>>19)) {
-					fb[((y + dest_y) * 320) + (x + dest_x)] = src[((height-1)-iy) * width + ((width-1)-ix)];
+					int source_pixel = src[((height-1)-iy) * width + ((width-1)-ix)];
+					if (!masked || (source_pixel & 0x8000)) {
+						fb[((y + dest_y) * 320) + (x + dest_x)] = source_pixel;
+					}
 				}
 				else if (angle_deg > (ANG90>>19)) {
-					fb[(((int)((canvas_height>>16)-y) + dest_y) * 320) + (x + dest_x)] = src[iy * width + ((width-1)-ix)];
+					int source_pixel = src[iy * width + ((width-1)-ix)];
+					if (!masked || (source_pixel & 0x8000)) {
+						fb[(((int)((canvas_height>>16)-y) + dest_y) * 320) + (x + dest_x)] = source_pixel;
+					}
 				}
 				else {
-					fb[((y + dest_y) * 320) + (x + dest_x)] = src[iy * width + ix];
+					int source_pixel = src[iy * width + ix];
+					if (!masked || (source_pixel & 0x8000)) {
+						fb[((y + dest_y) * 320) + (x + dest_x)] = source_pixel;
+					}
 				}
             }
             else {	//TODO: TESTING! REMOVE ME!
 #ifdef ROTATION_DEBUG
-                fb[((y + dest_y) * 320) + (x + dest_x)] = 0xFFFF; // fill with white
+                //fb[((y + dest_y) * 320) + (x + dest_x)] = 0xFFFF; // fill with white
 #endif
 			}
 #ifdef ROTATION_DEBUG

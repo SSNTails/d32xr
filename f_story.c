@@ -422,9 +422,9 @@ void Scene_1_Draw(scene_1_t *scene)
 
 	DrawRotatedJagobj_15bpp(
 		scene->satellite,
-		64,
-		32,
-		(angle_t)(((sceneFrameCount * ANGLE_1 * 4) >> 18) & 0xFFFFFF00),
+		0, //64,
+		0, //32,
+		(angle_t)(((sceneFrameCount * ANGLE_1 * 2) >> 18) & 0x00001F80),
 		//(angle_t)((ANG90 + (ANG45/2)) >> 19),
 		true,
 		I_FrameBuffer()
