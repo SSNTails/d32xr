@@ -21,6 +21,11 @@ short phaseFrameCount = 0;
 
 typedef struct
 {
+	int16_t x, y;
+} coord_t;
+
+typedef struct
+{
     int16_t x, y;
     int16_t width, height;
 } rect_t;
@@ -80,10 +85,27 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
+	jagobj_t *sonic;
+	jagobj_t *aura;
+	jagobj_t *zoom[14];
+	coord_t zoomCoords[14];
+	int16_t zoomStartDelay;
+	int16_t zoomChangeInterval;
+	int16_t zoomCurIndex;
+	int16_t sonicCounter;
+	int16_t auraCounter;
+	fixed_t sonicScale;
+	fixed_t auraScale;
+} scene_9_t;
+
+
+typedef struct
+{
+	storyscene_t scene;
 } scene_2_t, scene_3_t, scene_4_t;
 
 //#define NUMSCENES 12
-#define NUMSCENES	6
+#define NUMSCENES	2
 storyscene_t *introScenes[NUMSCENES];
 
 
@@ -782,6 +804,112 @@ void Scene_6_Stop(scene_6_t *scene)
 	Z_Free(scene->metal);
 }
 
+void Scene_9_Init(scene_9_t *scene)
+{
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
+
+	scene->sonic = W_CacheLumpName("SPRSONIC", PU_LEVEL);
+	scene->aura = W_CacheLumpName("SPRAURA", PU_LEVEL);
+
+	for (int i = 1; i <= 14; i++)
+	{
+		char ln[12];
+		D_snprintf(ln, 10, "SPRZ%02d", i);
+		scene->zoom[i - 1] = W_CacheLumpName(ln, PU_LEVEL);
+	}
+
+	scene->zoomStartDelay = 2*TICRATE;
+	scene->zoomChangeInterval = 4;
+	scene->sonicScale = 0;
+	scene->auraScale = 0;
+}
+
+void Scene_9_Tick(scene_9_t *scene)
+{
+	if (scene->zoomStartDelay)
+	{
+		scene->zoomStartDelay--;
+		return;
+	}
+
+	if (scene->zoomCurIndex < 14)
+	{
+		if (scene->zoomChangeInterval)
+		{
+			if (--scene->zoomChangeInterval <= 0)
+			{
+				scene->zoomChangeInterval = 2;
+				scene->zoomCurIndex++;
+			}
+		}
+
+		return;
+	}
+
+	if (scene->sonicScale > FRACUNIT)
+	{
+//		I_Error("it's at fracunit");
+		return;
+	}
+
+	scene->auraScale += 1 << 12;
+	scene->sonicScale = scene->auraScale;
+
+
+}
+
+void Scene_9_Draw(scene_9_t *scene)
+{
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		I_FrameBuffer()
+	);
+
+	if (scene->zoomStartDelay <= 0 && scene->zoomCurIndex < 14)
+	{
+		const int drawX = 182;
+		const int drawY = 62;
+
+		DrawScaledJagobj_15bpp(
+			scene->zoom[scene->zoomCurIndex],
+			drawX + scene->zoomCoords[scene->zoomCurIndex].x,
+			drawY + scene->zoomCoords[scene->zoomCurIndex].y,
+			FRACUNIT,
+			FRACUNIT,
+			true,
+			I_FrameBuffer()
+		);
+	}
+
+	if (scene->zoomCurIndex >= 14)
+	{
+		// Spring OUT!
+		DrawScaledJagobj_15bppBlendWithOrigin(
+			scene->aura, 234, 110, 93, 92, scene->auraScale, scene->auraScale, 1, true, I_FrameBuffer());
+		DrawScaledJagobj_15bppBlendWithOrigin(
+			scene->sonic, 234, 110, 74, 126, scene->sonicScale, scene->sonicScale, 0, true, I_FrameBuffer());
+	}
+}
+
+void Scene_9_Stop(scene_9_t *scene)
+{
+	Z_Free(scene->scene.background);
+	Z_Free(scene->sonic);
+	Z_Free(scene->aura);
+
+	for (int i = 1; i <= 14; i++)
+		Z_Free(scene->zoom[i - 1]);
+}
+
 const char *intro1text =
 "Two months had passed since Dr. Eggman\n"
 "tried to take over the world using his\n"
@@ -943,7 +1071,7 @@ void BuildScenes()
 	scene1->scene.draw = (void(*)(storyscene_t *))Scene_1_Draw;
 	scene1->scene.stop = (void(*)(storyscene_t *))Scene_1_Stop;
 	introScenes[i++] = (storyscene_t*)scene1;
-
+/*
 	scene_2_t *scene2 = Z_Calloc(sizeof(*scene2), PU_STATIC);
 	scene2->scene.transitionOutHeight = 204;
 	scene2->scene.picLump = W_GetNumForName("RSBG");
@@ -1031,6 +1159,51 @@ void BuildScenes()
 	scene6->scene.draw = (void(*)(storyscene_t *))Scene_6_Draw;
 	scene6->scene.stop = (void(*)(storyscene_t *))Scene_6_Stop;
 	introScenes[i++] = (storyscene_t*)scene6;
+*/
+	scene_9_t *scene9 = Z_Calloc(sizeof(*scene9), PU_STATIC);
+	scene9->scene.transitionOutHeight = 204;
+	scene9->scene.picLump = W_GetNumForName("SPRINGBG");
+	scene9->scene.text = intro9text;
+	scene9->scene.textCharDelayTics = scene9->scene.textCharDelayCounter = 5;
+	scene9->scene.preTextDelay = TICRATE;
+	scene9->scene.postTextDelay = 2*TICRATE;
+	scene9->scene.textBox.x = 16;
+	scene9->scene.textBox.y = 128 + 16;
+	scene9->scene.textBox.width = 320 - 32 - 32;
+	scene9->scene.textBox.height = 224 - 16 - scene9->scene.textBox.y;
+	scene9->scene.init = (void(*)(storyscene_t *))Scene_9_Init;
+	scene9->scene.tic = (void(*)(storyscene_t *))Scene_9_Tick;
+	scene9->scene.draw = (void(*)(storyscene_t *))Scene_9_Draw;
+	scene9->scene.stop = (void(*)(storyscene_t *))Scene_9_Stop;
+	scene9->zoomCoords[0].x = 128;
+	scene9->zoomCoords[0].y = 19;
+	scene9->zoomCoords[1].x = 118;
+	scene9->zoomCoords[1].y = 11;
+	scene9->zoomCoords[2].x = 118;
+	scene9->zoomCoords[2].y = 11;
+	scene9->zoomCoords[3].x = 65;
+	scene9->zoomCoords[3].y = 3;
+	scene9->zoomCoords[4].x = 59;
+	scene9->zoomCoords[4].y = 2;
+	scene9->zoomCoords[5].x = 11;
+	scene9->zoomCoords[5].y = 0;
+	scene9->zoomCoords[6].x = 3;
+	scene9->zoomCoords[6].y = 0;
+	scene9->zoomCoords[7].x = 0;
+	scene9->zoomCoords[7].y = 1;
+	scene9->zoomCoords[8].x = 0;
+	scene9->zoomCoords[8].y = 12;
+	scene9->zoomCoords[9].x = 9;
+	scene9->zoomCoords[9].y = 16;
+	scene9->zoomCoords[10].x = 24;
+	scene9->zoomCoords[10].y = 16;
+	scene9->zoomCoords[11].x = 48;
+	scene9->zoomCoords[11].y = 17;
+	scene9->zoomCoords[12].x = 50;
+	scene9->zoomCoords[12].y = 24;
+	scene9->zoomCoords[13].x = 50;
+	scene9->zoomCoords[13].y = 40;
+	introScenes[i++] = (storyscene_t*)scene9;
 }
 
 void START_Story (void)

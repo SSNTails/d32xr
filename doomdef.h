@@ -1461,6 +1461,10 @@ void DrawScaledJagobj_15bpp (jagobj_t* jo, int x, int y,
 void DrawScaledJagobj_15bppBlend (jagobj_t* jo, int x, int y,
 	fixed_t ratio_w, fixed_t ratio_h, unsigned blend_shift,
 	boolean masked, pixel_t *fb);
+/* x and y mark the screen position of the source origin. */
+void DrawScaledJagobj_15bppBlendWithOrigin (jagobj_t* jo, int x, int y,
+	int origin_x, int origin_y, fixed_t ratio_w, fixed_t ratio_h,
+	unsigned blend_shift, boolean masked, pixel_t *fb);
 void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h,
 	const int canvas_width, pixel_t *fb);

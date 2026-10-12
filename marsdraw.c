@@ -1339,6 +1339,16 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 	}
 }
 
+void DrawScaledJagobj_15bppBlendWithOrigin(jagobj_t* jo, int x, int y,
+	int origin_x, int origin_y, fixed_t ratio_w, fixed_t ratio_h,
+	unsigned blend_shift, boolean masked, pixel_t *fb)
+{
+	x -= FixedMul(origin_x * FRACUNIT, ratio_w) >> 16;
+	y -= FixedMul(origin_y * FRACUNIT, ratio_h) >> 16;
+	DrawScaledJagobj_15bppBlend(jo, x, y, ratio_w, ratio_h,
+		blend_shift, masked, fb);
+}
+
 //TODO: Remove these -- src_x, src_y, src_w, src_h, canvas_width
 void DrawRotatedJagobj_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h, angle_t angle,
