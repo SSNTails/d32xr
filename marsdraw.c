@@ -1352,7 +1352,7 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 
 
 
-#define ROTATION_DEBUG
+//#define ROTATION_DEBUG
 void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, 
 							angle_t angle_deg, boolean masked, pixel_t *fb) {
 //void rotate_image(int width, int height, int dest_x, int dest_y, angle_t angle_deg,
@@ -1372,24 +1372,24 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
     fixed_t tan_a;
 
 	if (angle_deg > (ANG270>>19)) {
-		cos_a = finecosine((ANG180>>18)-angle_deg);
-		sin_a = finesine((ANG180>>18)-angle_deg);
-		tan_a = finetangent((ANG180>>18)-angle_deg);
+		cos_a = finecosine((angle_t)(ANG180>>18)-angle_deg);
+		sin_a = finesine((angle_t)(ANG180>>18)-angle_deg);
+		tan_a = finetangent((angle_t)(ANG180>>18)-angle_deg);
 	}
 	else if (angle_deg > (ANG180>>19)) {
-		sin_a = finecosine((ANG270>>19)-angle_deg);
-		cos_a = finesine((ANG270>>19)-angle_deg);
-		tan_a = finetangent(angle_deg-(ANG180>>19));
+		sin_a = finecosine((angle_t)(ANG270>>19)-angle_deg);
+		cos_a = finesine((angle_t)(ANG270>>19)-angle_deg);
+		tan_a = finetangent(angle_deg-(angle_t)(ANG180>>19));
 	}
 	else if (angle_deg > (ANG90>>19)) {
-		cos_a = finecosine((ANG180>>19)-angle_deg);
-		sin_a = finesine((ANG180>>19)-angle_deg);
-		tan_a = finetangent(angle_deg-(ANG90>>19));
+		cos_a = finecosine((angle_t)(ANG180>>19)-angle_deg);
+		sin_a = finesine((angle_t)(ANG180>>19)-angle_deg);
+		tan_a = finetangent(angle_deg);
 	}
 	else {
 		cos_a = finecosine(angle_deg);
 		sin_a = finesine(angle_deg);
-		tan_a = finetangent(angle_deg);
+		tan_a = (65536 - finetangent(angle_deg)) + 65536;
 	}
 
 	/*if (sin_a < 0) {
@@ -1424,7 +1424,7 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
 #ifdef ROTATION_DEBUG
 	int *dram_debug = (int*)(I_FrameBuffer() + ((0x20000 - 512 - 4096) >> 1)); // Last 4KB of DRAM
 
-	dram_debug[32] = 0;
+	int first = 1;
 
 	dram_debug[0x00] = width;
 	dram_debug[0x01] = height;
@@ -1458,7 +1458,7 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
     for (int y = 0; y < (canvas_height>>16); y++) {
 		int start_x;
 		int start_y;
-		if (y >= vertical_breakpoint) {
+		if ((y<<16) >= vertical_breakpoint) {
 			start_x = (FixedMul(((y<<16) - vertical_breakpoint), sin_a) + (FRACUNIT>>1)) >> 16;
 			start_y = (FixedMul(((y<<16) - vertical_breakpoint), tan_a) + (FRACUNIT>>1)) >> 16;
 		}
@@ -1470,26 +1470,42 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
 		fixed_t src_x_bias = FixedMul(((y<<16) - canvas_y_center), sin_a) - x_center;
 		fixed_t src_y_bias = FixedMul(((y<<16) - canvas_y_center), cos_a) + y_center;
 
-#ifdef ROTATION_DEBUG
-		dram_debug[0x20] = start_x;
-		dram_debug[0x21] = start_y;
-		dram_debug[0x24] = src_x_bias;
-		dram_debug[0x25] = src_y_bias;
-#endif
-        for (int x = start_x; x < (canvas_width>>16); x++) {
-#ifdef ROTATION_DEBUG
-			dram_debug[32] = 0;
-#endif
+        for (int x = start_x; (x<<16) < canvas_width; x++) {
             fixed_t src_x = FixedMul(((x<<16) - canvas_x_center), cos_a) - src_x_bias; // + 0.5;
             fixed_t src_y = FixedMul(((x<<16) - canvas_x_center), sin_a) + src_y_bias; // 0+0.5; 90; 180+0.5; 270
 
 #ifdef ROTATION_DEBUG
-			dram_debug[0x26] = src_x;
-			dram_debug[0x27] = src_y;
-			dram_debug[0x28] = x;
-			dram_debug[0x29] = y;
+			if (first) {
+				first = 0;
+				dram_debug[0x20] = start_x;
+				dram_debug[0x21] = start_y;
+				dram_debug[0x24] = src_x_bias;
+				dram_debug[0x25] = src_y_bias;
+				dram_debug[0x26] = src_x;
+				dram_debug[0x27] = src_y;
+				dram_debug[0x28] = x;
+				dram_debug[0x29] = y;
 
-			dram_debug[32] = 0xFFFFFFFF;
+				dram_debug[0x40] = x;
+				dram_debug[0x41] = canvas_x_center;
+				dram_debug[0x42] = cos_a;
+				dram_debug[0x43] = src_x_bias;
+
+				dram_debug[0x44] = (x << 16);
+				dram_debug[0x45] = (x << 16) - canvas_x_center;
+				dram_debug[0x46] = FixedMul(((x<<16) - canvas_x_center), cos_a);
+				dram_debug[0x47] = FixedMul(((x<<16) - canvas_x_center), cos_a) - src_x_bias;
+
+				dram_debug[0x50] = x;
+				dram_debug[0x51] = canvas_x_center;
+				dram_debug[0x52] = sin_a;
+				dram_debug[0x53] = src_y_bias;
+
+				dram_debug[0x54] = (x << 16);
+				dram_debug[0x55] = (x << 16) - canvas_x_center;
+				dram_debug[0x56] = FixedMul(((x<<16) - canvas_x_center), sin_a);
+				dram_debug[0x57] = FixedMul(((x<<16) - canvas_x_center), sin_a) + src_y_bias;
+			}
 #endif
 
             int ix = (int)(src_x >> 16);
@@ -1501,14 +1517,14 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
 #endif
 			}
             else if (ix >= 0 && ix < width && iy >= 0 && iy < height) {
-				if (angle_deg > ANG270) {
-					fb[(((int)(canvas_height>>16)-(y + dest_y)) * 320) + (x + dest_x)] = src[((height-1)-iy) * width + ix];
+				if (angle_deg > (ANG270>>19)) {
+					fb[(((int)((canvas_height>>16)-y) + dest_y) * 320) + (x + dest_x)] = src[((height-1)-iy) * width + ix];
 				}
-				else if (angle_deg > ANG180) {
+				else if (angle_deg > (ANG180>>19)) {
 					fb[((y + dest_y) * 320) + (x + dest_x)] = src[((height-1)-iy) * width + ((width-1)-ix)];
 				}
-				else if (angle_deg > ANG90) {
-					fb[(((int)(canvas_height>>16)-(y + dest_y)) * 320) + (x + dest_x)] = src[iy * width + ((width-1)-ix)];
+				else if (angle_deg > (ANG90>>19)) {
+					fb[(((int)((canvas_height>>16)-y) + dest_y) * 320) + (x + dest_x)] = src[iy * width + ((width-1)-ix)];
 				}
 				else {
 					fb[((y + dest_y) * 320) + (x + dest_x)] = src[iy * width + ix];
@@ -1520,11 +1536,11 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
 #endif
 			}
 #ifdef ROTATION_DEBUG
-			x--; //TODO: TESTING! REMOVE ME!
+			//x--; //TODO: TESTING! REMOVE ME!
 #endif
         }
 #ifdef ROTATION_DEBUG
-		y--; //TODO: TESTING! REMOVE ME!
+		//y--; //TODO: TESTING! REMOVE ME!
 #endif
     }
 }
