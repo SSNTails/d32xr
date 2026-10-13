@@ -420,15 +420,31 @@ void Scene_1_Draw(scene_1_t *scene)
 		I_FrameBuffer()
 	);*/
 
-	DrawRotatedJagobj_15bpp(
-		scene->satellite,
-		0, //64,
-		0, //32,
-		(angle_t)(((sceneFrameCount * ANGLE_1 * 2) >> 18) & 0x00001F80),
-		//(angle_t)((ANG90 + (ANG45/2)) >> 19),
-		true,
-		I_FrameBuffer()
-	);
+	if (sceneFrameCount > 2) {
+		// Draw background
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width/2,
+			scene->scene.background->height,
+			320,
+			I_FrameBuffer()
+		);
+		DrawRotatedJagobj_15bpp(
+			scene->satellite,
+			80, //64,
+			80, //32,
+			16,
+			16,
+			(angle_t)(((sceneFrameCount * ANGLE_1) >> 18) & 0x00001F80),
+			//(angle_t)((ANG90 + (ANG45/2)) >> 19),
+			true,
+			I_FrameBuffer()
+		);
+	}
 
 	// Keep track of the previous two satellite positions for clearing it on new frames.
 	scene->prevSatX[1] = scene->prevSatX[0];

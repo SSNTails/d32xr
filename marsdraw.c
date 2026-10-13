@@ -1353,16 +1353,19 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 
 
 //#define ROTATION_DEBUG
-void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, 
+void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, int origin_x, int origin_y,
 							angle_t angle_deg, boolean masked, pixel_t *fb) {
 //void rotate_image(int width, int height, int dest_x, int dest_y, angle_t angle_deg,
 //                  const unsigned char *src, unsigned char *dst) {
 	int width = jo->width;
 	int height = jo->height;
 
+	width >>= 1; // TESTING
+	height >>= 1; // TESTING
+
 #ifdef ROTATION_DEBUG
-	width = 12;
-	height = 16;
+	width = 24;
+	height = 32;
 #endif
 
 	pixel_t *src = (pixel_t *)jo->data;
@@ -1410,16 +1413,32 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
     const fixed_t adj_h = (height * cos_a);
     const fixed_t opp_h = (height * sin_a);
 
-    const fixed_t canvas_width = adj_w + opp_h;
-    const fixed_t canvas_height = adj_h + opp_w;
+    const fixed_t canvas_width = (adj_w + opp_h);
+    const fixed_t canvas_height = (adj_h + opp_w);
 
-    const fixed_t canvas_x_center = canvas_width >> 1;
-    const fixed_t canvas_y_center = canvas_height >> 1;
+    const fixed_t canvas_x_center = (canvas_width >> 1);
+    const fixed_t canvas_y_center = (canvas_height >> 1);
 
     const fixed_t opening_width = adj_w - opp_h;
     const fixed_t opening_height = adj_h - opp_w;
 
+	const fixed_t horizontal_breakpoint = ((canvas_width - opening_width) >> 1);
     const fixed_t vertical_breakpoint = ((canvas_height - opening_height) >> 1);
+
+	if (angle_deg > (ANG270>>19)) {
+		dest_x -= (horizontal_breakpoint >> 16);
+	}
+	else if (angle_deg > (ANG180>>19)) {
+		dest_x -= (canvas_width >> 16);
+		dest_y -= ((vertical_breakpoint + opening_height) >> 16);
+	}
+	else if (angle_deg > (ANG90>>19)) {
+		dest_x -= ((horizontal_breakpoint + opening_width) >> 16);
+		dest_y -= (canvas_height >> 16);
+	}
+	else {
+		dest_y -= (vertical_breakpoint >> 16);
+	}
 
 #ifdef ROTATION_DEBUG
 	int *dram_debug = (int*)(I_FrameBuffer() + ((0x20000 - 512 - 4096) >> 1)); // Last 4KB of DRAM
@@ -1513,30 +1532,34 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
 
 			if (ix < 0) {	//TODO: TESTING! REMOVE ME!
 #ifdef ROTATION_DEBUG
-				//fb[((y + dest_y) * 320) + (x + dest_x)] = 0x001F; // fill with red
+				fb[((y + dest_y) * 320) + (x + dest_x)] = 0x801F; // fill with red
 #endif
 			}
             else if (ix >= 0 && ix < width && iy >= 0 && iy < height) {
 				if (angle_deg > (ANG270>>19)) {
 					int source_pixel = src[((height-1)-iy) * width + ix];
+					//int source_pixel = 0x83E0;
 					if (!masked || (source_pixel & 0x8000)) {
 						fb[(((int)((canvas_height>>16)-y) + dest_y) * 320) + (x + dest_x)] = source_pixel;
 					}
 				}
 				else if (angle_deg > (ANG180>>19)) {
 					int source_pixel = src[((height-1)-iy) * width + ((width-1)-ix)];
+					//int source_pixel = 0x83E0;
 					if (!masked || (source_pixel & 0x8000)) {
 						fb[((y + dest_y) * 320) + (x + dest_x)] = source_pixel;
 					}
 				}
 				else if (angle_deg > (ANG90>>19)) {
 					int source_pixel = src[iy * width + ((width-1)-ix)];
+					//int source_pixel = 0x83E0;
 					if (!masked || (source_pixel & 0x8000)) {
 						fb[(((int)((canvas_height>>16)-y) + dest_y) * 320) + (x + dest_x)] = source_pixel;
 					}
 				}
 				else {
 					int source_pixel = src[iy * width + ix];
+					//int source_pixel = 0x83E0;
 					if (!masked || (source_pixel & 0x8000)) {
 						fb[((y + dest_y) * 320) + (x + dest_x)] = source_pixel;
 					}
@@ -1544,7 +1567,7 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
             }
             else {	//TODO: TESTING! REMOVE ME!
 #ifdef ROTATION_DEBUG
-                //fb[((y + dest_y) * 320) + (x + dest_x)] = 0xFFFF; // fill with white
+                fb[((y + dest_y) * 320) + (x + dest_x)] = 0xFFFF; // fill with white
 #endif
 			}
 #ifdef ROTATION_DEBUG
