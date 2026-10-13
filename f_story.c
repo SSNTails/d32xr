@@ -849,6 +849,9 @@ void Scene_9_Tick(scene_9_t *scene)
 			{
 				scene->zoomChangeInterval = 2;
 				scene->zoomCurIndex++;
+
+				if (scene->zoomCurIndex >= 14)
+					S_StartSound(NULL, sfx_s3k_b1);
 			}
 		}
 
@@ -896,9 +899,9 @@ void Scene_9_Tick(scene_9_t *scene)
 	}
 	else if (scene->sonicStep == 3)
 	{
-		scene->sonicScale += 1 << 13;
+		scene->sonicScale += 10 << 10;
 		scene->sonicPosX -= 8 << 16; 
-		scene->sonicPosY += 6 << 15;
+		scene->sonicPosY += 5 << 15;
 		scene->sonicCounter++;
 
 		if (scene->sonicCounter > 10)
