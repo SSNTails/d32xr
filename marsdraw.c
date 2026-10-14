@@ -1341,27 +1341,14 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 //#define ROTATION_DEBUG
 void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, int origin_x, int origin_y,
 							angle_t angle_deg, boolean masked, pixel_t *fb) {
-//void rotate_image(int width, int height, int dest_x, int dest_y, angle_t angle_deg,
-//                  const unsigned char *src, unsigned char *dst) {
 	int width = jo->width;
 	int height = jo->height;
 
-	width >>= 1; // TESTING
-	height >>= 1; // TESTING
+	//width >>= 1; // TESTING
+	//height >>= 1; // TESTING
 
 #ifdef ROTATION_DEBUG
 	width = 24;
@@ -1394,16 +1381,6 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, int origin_x,
 		sin_a = finesine(angle_deg);
 		tan_a = (65536 - finetangent(angle_deg)) + 65536;
 	}
-
-	/*if (sin_a < 0) {
-		sin_a = -sin_a;
-	}
-	if (cos_a < 0) {
-		cos_a = -cos_a;
-	}
-	if (tan_a < 0) {
-		tan_a = -tan_a;
-	}*/
 
     const fixed_t x_center = (fixed_t)(width << 15);
     const fixed_t y_center = (fixed_t)(height << 15);
@@ -1579,140 +1556,6 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, int origin_x,
 #endif
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-//TODO: Remove these -- src_x, src_y, src_w, src_h, canvas_width
-/*void DrawRotatedJagobj_15bpp(jagobj_t* jo, int x, int y, 
-	int src_x, int src_y, int src_w, int src_h, angle_t angle,
-	const int canvas_width, pixel_t *fb)
-{
-	int		srcx, srcy;
-	int		width, height, depth, flags, index;
-	int		total_w, total_h;
-	int		rowsize, inc;
-	uint16_t	*dest, *source;
-
-	rowsize = BIGSHORT(jo->width);
-	width = BIGSHORT(jo->width);
-	height = BIGSHORT(jo->height);
-	depth = BIGSHORT(jo->depth);
-	flags = BIGSHORT(jo->flags);
-	index = BIGSHORT(jo->index);
-
-	if (src_w > 0)
-		width = src_w;
-	else if (src_w < 0)
-		width += src_w;
-
-	if (src_h > 0)
-		height = src_h;
-	else if (src_h < 0)
-		height += src_h;
-
-	srcx = 0;
-	srcy = 0;
-
-	total_w = width;
-	total_h = height;
-
-	if (x < 0)
-	{
-		total_w += x;
-		srcx = -x;
-		x = 0;
-	}
-	srcx += src_x;
-
-	if (y < 0)
-	{
-		srcy = -y;
-		total_h += y;
-		y = 0;
-	}
-	srcy += src_y;
-
-	if (x + total_w > canvas_width)
-		total_w = canvas_width - x;
-	if (y + total_h > 204)
-		total_h = 204 - y;
-	inc = rowsize - total_w;
-
-	if (total_w <= 0 || total_h <= 0) {
-		return;
-	}
-
-//	hw = width >> 1;
-
-	if (depth == 2)
-	{
-		inc >>= 1;
-		srcx >>= 1;
-		rowsize >>= 1;
-		index = (index << 1) + (flags & 2 ? 1 : 0);
-	}
-
-	// Find the pixel coordinate where all four quadrants meet.
-	fixed_t opp1 = finesine(angle);
-	fixed_t adj1 = finecosine(angle);
-	fixed_t opp2 = opp1 * opp1;
-	fixed_t adj2 = adj1 >> 1;
-	fixed_t centerX = width - opp2;
-	fixed_t centerY = height - adj2;
-
-	dest = (uint16_t*)((byte*)fb + ((y * canvas_width + x) << 1));
-	source = (uint16_t*)(jo->data + (((srcx + centerX) + ((srcy + centerY) * rowsize)) << 1));
-
-	//if ((x & 1) == 0 && (width & 1) == 0 && (rowsize & 1) == 0)
-	{
-		pixel_t* dest2 = (pixel_t*)dest;
-		pixel_t* source2 = (pixel_t*)source;
-		int canvas_inc = (canvas_width - total_w); //((canvas_width >> 1) - hw) << 1;
-
-		for (; total_h; total_h--)
-		{
-			int n = ((total_w + 3) >> 2);
-			switch (total_w & 3)
-			{
-			case 0: do { *dest2++ = *source2++;
-			case 3:      *dest2++ = *source2++;
-			case 2:      *dest2++ = *source2++;
-			case 1:      *dest2++ = *source2++;
-			} while (--n > 0);
-			}
-			source2 += inc;
-			dest2 += canvas_inc;
-		}
-	}
-}*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

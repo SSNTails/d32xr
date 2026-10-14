@@ -391,7 +391,7 @@ void Scene_1_Draw(scene_1_t *scene)
 	}
 	else {
 		// Draw background fragment
-		/*if (scene->prevSatZ[1] != 0) {
+		if (scene->prevSatZ[1] != 0) {
 			int width = (int)FixedMul((fixed_t)(scene->satellite->width << FRACBITS), scene->prevSatZ[1]) >> FRACBITS;
 			int height = (int)FixedMul((fixed_t)(scene->satellite->height << FRACBITS), scene->prevSatZ[1]) >> FRACBITS;
 
@@ -406,11 +406,11 @@ void Scene_1_Draw(scene_1_t *scene)
 				320,
 				I_FrameBuffer()
 			);
-		}*/
+		}
 	}
 
 	// Draw satellite drifting overtop
-	/*DrawScaledJagobj_15bpp(
+	DrawScaledJagobj_15bpp(
 		scene->satellite,
 		(scene->satX >> 16) & 0x1FF,
 		(scene->satY >> 16) & 0xFF,
@@ -418,9 +418,10 @@ void Scene_1_Draw(scene_1_t *scene)
 		scene->satZ,
 		true,
 		I_FrameBuffer()
-	);*/
+	);
 
-	if (sceneFrameCount > 2) {
+	//TODO: TESTING!
+	/*if (sceneFrameCount > 2) {
 		// Draw background
 		DrawJagobj3_15bpp(
 			scene->scene.background,
@@ -436,7 +437,7 @@ void Scene_1_Draw(scene_1_t *scene)
 		DrawRotatedJagobj_15bpp(
 			scene->satellite,
 			80, //64,
-			80, //32,
+			140, //32,
 			16,
 			16,
 			(angle_t)(((sceneFrameCount * ANGLE_1) >> 18) & 0x00001F80),
@@ -444,7 +445,7 @@ void Scene_1_Draw(scene_1_t *scene)
 			true,
 			I_FrameBuffer()
 		);
-	}
+	}*/
 
 	// Keep track of the previous two satellite positions for clearing it on new frames.
 	scene->prevSatX[1] = scene->prevSatX[0];
