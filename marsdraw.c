@@ -1342,8 +1342,8 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 
 
 //#define ROTATION_DEBUG
-void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, int origin_x, int origin_y,
-							angle_t angle_deg, boolean masked, pixel_t *fb) {
+void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle_deg,
+							boolean center_origin, boolean masked, pixel_t *fb) {
 	int width = jo->width;
 	int height = jo->height;
 
@@ -1415,6 +1415,11 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, int origin_x,
 	}
 	else {
 		dest_y -= (vertical_breakpoint >> 16);
+	}
+
+	if (center_origin) {
+		dest_x -= ((canvas_width >> 1) >> 16);
+		dest_y -= ((canvas_height >> 1) >> 16);
 	}
 
 #ifdef ROTATION_DEBUG

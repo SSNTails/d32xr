@@ -63,6 +63,8 @@ typedef struct
 {
 	storyscene_t scene;
 	VINT picRadar;
+	jagobj_t *sweep;
+	VINT picSweep;
 } scene_5_t;
 
 typedef struct
@@ -654,6 +656,8 @@ void Scene_5_Draw(scene_5_t *scene)
 				scene->scene.backgroundX = 160 - (scene->scene.background->width >> 1);
 				scene->scene.backgroundY = 128 - scene->scene.background->height;
 
+				scene->sweep = W_CacheLumpNum(scene->picSweep, PU_LEVEL);
+
 				StartTransition();
 			}
 			else {
@@ -699,6 +703,70 @@ void Scene_5_Draw(scene_5_t *scene)
 					I_FrameBuffer()
 				);
 			}
+		}
+		else {
+			angle_t sweepAngle = 0x1FFF - (((phaseFrameCount << 6) + (phaseFrameCount << 5)) & 0x1FFF);
+			// Draw radar sweep
+			DrawRotatedJagobj_15bpp(
+				scene->sweep,
+				scene->scene.backgroundX + (scene->scene.background->width >> 1) - 1,
+				scene->scene.backgroundY + (scene->scene.background->height >> 1),
+				sweepAngle,
+				false,
+				true,
+				I_FrameBuffer()
+			);
+
+			// Draw radar screen overlay
+			int overlayWidth = scene->scene.background->width;
+			int overlayHeight = scene->scene.background->height;
+			int srcX = 0;
+			int srcY = 0;
+
+			if (sweepAngle < 0x800) {
+				overlayWidth >>= 1;
+				srcX = overlayWidth;
+
+				if (sweepAngle == 0) {
+					overlayHeight >>= 1;
+					srcY = overlayHeight;
+				}
+			}
+			else if (sweepAngle < 0x1000) {
+				overlayHeight >>= 1;
+
+				if (sweepAngle == 0x800) {
+					overlayWidth >>= 1;
+					srcX = overlayWidth;
+				}
+			}
+			else if (sweepAngle < 0x1800) {
+				overlayWidth >>= 1;
+
+				if (sweepAngle == 0x1000) {
+					overlayHeight >>= 1;
+				}
+			}
+			else /*if (sweepAngle < 0x2000)*/ {
+				overlayHeight >>= 1;
+				srcY = overlayHeight;
+
+				if (sweepAngle == 0x1800) {
+					overlayWidth >>= 1;
+				}
+			}
+
+			/*DrawJagobj3_15bpp(
+				scene->scene.background,
+				scene->scene.backgroundX + srcX,
+				scene->scene.backgroundY + srcY,
+				srcX,
+				srcY,
+				overlayWidth,
+				overlayHeight,
+				320,
+				I_FrameBuffer()
+			);*/
 		}
 	}
 
@@ -928,6 +996,7 @@ void BuildScenes()
 	scene5->scene.transitionOutHeight = 204;
 	scene5->scene.picLump = W_GetNumForName("EGGMAD");
 	scene5->picRadar = W_GetNumForName("RADARBG");
+	scene5->picSweep = W_GetNumForName("RSWEEP");
 	scene5->scene.text = intro5text;
 	scene5->scene.textCharDelayTics = scene5->scene.textCharDelayCounter = 5;
 	scene5->scene.preTextDelay = TICRATE;
