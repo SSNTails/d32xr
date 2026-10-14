@@ -108,7 +108,7 @@ typedef struct
 } scene_2_t, scene_3_t, scene_4_t;
 
 //#define NUMSCENES 12
-#define NUMSCENES	2
+#define NUMSCENES	7
 storyscene_t *introScenes[NUMSCENES];
 
 
@@ -1132,7 +1132,7 @@ void BuildScenes()
 	scene1->scene.draw = (void(*)(storyscene_t *))Scene_1_Draw;
 	scene1->scene.stop = (void(*)(storyscene_t *))Scene_1_Stop;
 	introScenes[i++] = (storyscene_t*)scene1;
-/*
+
 	scene_2_t *scene2 = Z_Calloc(sizeof(*scene2), PU_STATIC);
 	scene2->scene.transitionOutHeight = 204;
 	scene2->scene.picLump = W_GetNumForName("RSBG");
@@ -1220,7 +1220,7 @@ void BuildScenes()
 	scene6->scene.draw = (void(*)(storyscene_t *))Scene_6_Draw;
 	scene6->scene.stop = (void(*)(storyscene_t *))Scene_6_Stop;
 	introScenes[i++] = (storyscene_t*)scene6;
-*/
+
 	scene_9_t *scene9 = Z_Calloc(sizeof(*scene9), PU_STATIC);
 	scene9->scene.transitionOutHeight = 204;
 	scene9->scene.picLump = W_GetNumForName("SPRINGBG");
