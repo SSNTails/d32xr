@@ -857,6 +857,7 @@ void Scene_6_Draw(scene_6_t *scene)
 		scene->scene.background->width,
 		scene->scene.background->height,
 		320,
+		false,
 		I_FrameBuffer()
 	);
 
@@ -1011,6 +1012,7 @@ void Scene_9_Draw(scene_9_t *scene)
 		scene->scene.background->width,
 		scene->scene.background->height,
 		320,
+		false,
 		I_FrameBuffer()
 	);
 
