@@ -1347,9 +1347,6 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle
 	int width = jo->width;
 	int height = jo->height;
 
-	//width >>= 1; // TESTING
-	//height >>= 1; // TESTING
-
 #ifdef ROTATION_DEBUG
 	width = 24;
 	height = 32;
@@ -1547,11 +1544,12 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle
 					}
 				}
             }
-            else {	//TODO: TESTING! REMOVE ME!
 #ifdef ROTATION_DEBUG
+            else {	//TODO: TESTING! REMOVE ME!
                 fb[((y + dest_y) * 320) + (x + dest_x)] = 0xFFFF; // fill with white
-#endif
 			}
+#endif
+
 #ifdef ROTATION_DEBUG
 			//x--; //TODO: TESTING! REMOVE ME!
 #endif
