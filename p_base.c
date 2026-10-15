@@ -813,10 +813,10 @@ static void P_Boss4Thinker(mobj_t *mobj)
             if (node->function == T_SwingMace)
             {
                swingmace_t *sm = (swingmace_t*)node;
-               vector3_t axis;
+/*               vector3_t axis;
                axis.x = (fixed_t)sm->nv.x << 9;
                axis.y = (fixed_t)sm->nv.y << 9;
-               axis.z = (fixed_t)sm->nv.z << 9;
+               axis.z = (fixed_t)sm->nv.z << 9;*/
                vector3_t rotVec;
                rotVec.x = (fixed_t)sm->rotation.x << 9;
                rotVec.y = (fixed_t)sm->rotation.y << 9;
@@ -826,7 +826,7 @@ static void P_Boss4Thinker(mobj_t *mobj)
                sm->macechain.y = mobj->y >> FRACBITS;
                sm->macechain.z = mobj->z >> FRACBITS;
 
-               fixed_t zDiff = (mobj->z - 1024*FRACUNIT) >> FRACBITS;
+               int16_t zDiff = (mobj->z - 1024*FRACUNIT) >> FRACBITS;
 
                if (sm->rotation.x < 0) // Chain 1
                {
@@ -834,7 +834,7 @@ static void P_Boss4Thinker(mobj_t *mobj)
                   rotVec.y = 0;
                   rotVec.z = 0;
 
-                  vector4_t result = FV3_RotateVector(&rotVec, &axis, zDiff);
+                  vector3_t result = FV3_RotateVectorXY(&rotVec, zDiff);
 
                   sm->rotation.x = result.x >> 9;
                   sm->rotation.z = result.y >> 9;
@@ -846,7 +846,7 @@ static void P_Boss4Thinker(mobj_t *mobj)
                   rotVec.y = 0;
                   rotVec.z = 0;
 
-                  vector4_t result = FV3_RotateVector(&rotVec, &axis, -zDiff);
+                  vector3_t result = FV3_RotateVectorXY(&rotVec, -zDiff);
 
                   sm->rotation.x = result.x >> 9;
                   sm->rotation.z = result.y >> 9;

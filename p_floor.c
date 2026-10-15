@@ -663,7 +663,7 @@ void T_Crumble(floormove_t *floor)
 	if (res == pastdest)
 	{
 		floor->sector->fofsec = -1;
-		floor->controlSector->specialdata = NULL;
+		floor->controlSector->specialdata = (SPTR)0;
 		P_RemoveThinker(&floor->thinker);
 	}
 }

@@ -1399,7 +1399,15 @@ void P_SSNMaceRotate(swingmace_t *sm)
 	rotationDir.y = (fixed_t)sm->rotation.y << 9;
 	rotationDir.z = (fixed_t)sm->rotation.z << 9;
 
-	vector4_t rotVec = FV3_RotateVector(&rotationDir, &axis, curPos);
+	vector3_t rotVec;
+	if (sm->nv.x == 0 && sm->nv.y == 0)
+		rotVec = FV3_RotateVectorXY(&rotationDir, sm->nv.z >= 0 ? curPos : -curPos);
+	else if (sm->nv.x == 0 && sm->nv.z == 0)
+		rotVec = FV3_RotateVectorXZ(&rotationDir, sm->nv.y >= 0 ? curPos : -curPos);
+	else if (sm->nv.y == 0 && sm->nv.z == 0)
+		rotVec = FV3_RotateVectorYZ(&rotationDir, sm->nv.x >= 0 ? curPos : -curPos);
+	else // Full 3D rotation required
+		rotVec = FV3_RotateVector(&rotationDir, &axis, curPos);
 
 //	CONS_Printf("%d, %d, %d", rotVec.x, rotVec.y, rotVec.z);
 
@@ -2132,20 +2140,20 @@ void T_SwingHang(swinghang_t *sh)
 	// Can't this be calculated from leveltime? Why yes, yes it can...
 	int16_t curPos = (sh->mspeed * (leveltime + sh->mphase)) & FINEMASK;
 
-	vector3_t axis;
+//	vector3_t axis;
 	vector3_t rotationDir;
 
 //		CONS_Printf("a: %d, %d, %d; r: %d, %d, %d", sm->nv.x, sm->nv.y, sm->nv.z, sm->rotation.x, sm->rotation.y, sm->rotation.z);
 
 	// int8_t to fixed_t
-	axis.x = (fixed_t)sh->nv.x << 9;
+/*	axis.x = (fixed_t)sh->nv.x << 9;
 	axis.y = (fixed_t)sh->nv.y << 9;
-	axis.z = (fixed_t)sh->nv.z << 9;
+	axis.z = (fixed_t)sh->nv.z << 9;*/
 	rotationDir.x = (fixed_t)sh->rotation.x << 9;
 	rotationDir.y = (fixed_t)sh->rotation.y << 9;
 	rotationDir.z = (fixed_t)sh->rotation.z << 9;
 
-	vector4_t rotVec = FV3_RotateVector(&rotationDir, &axis, curPos);
+	vector3_t rotVec = FV3_RotateVectorXY(&rotationDir, curPos);
 
 	if (player)
 	{

@@ -336,6 +336,8 @@ void P_PlayerRingBurst(player_t *player, int damage)
 	int i;
 	uint8_t num_rings = player->health - 1;
 
+	player->lossCount = 0; // Disable quicker fading rings for now.
+
 	if (num_rings > 32) // Cap # of rings at 32
 		num_rings = 32;
 
@@ -421,7 +423,6 @@ void P_PlayerMove(mobj_t *mo)
 	if (P_TryMove(&tm, mo, sm.slidex, sm.slidey))
 		return;
 
-stairstep:
 	if (momx > MAXMOVE)
 		momx = MAXMOVE;
 	if (momx < -MAXMOVE)
@@ -1137,7 +1138,8 @@ boolean PIT_LookForTarget(mobj_t *thing, homingFinder_t *hf)
 	else if (thing->flags & MF_RINGMOBJ)
 	{
 		if (thing->type == MT_BIGGRABCHAIN || thing->type == MT_SMALLGRABCHAIN
-			|| (thing->type >= MT_YELLOWSPRING && thing->type <= MT_REDHORIZ))
+			|| (thing->type >= MT_YELLOWSPRING && thing->type <= MT_REDHORIZ)
+			|| (thing->type >= MT_RING_BOX && thing->type <= MT_1UP_BOX))
 		{
 			ringmobj_t *macePoint = (ringmobj_t*)thing;
 
@@ -1761,8 +1763,17 @@ void P_MovePlayer(player_t *player)
 	if ((player->pflags & PF_THOKKED) && player->homingTimer > 0)
 	{
 		if (player->mo->target)
-		{
-			if (!(player->mo->target->flags & MF_RINGMOBJ) && player->mo->target->health <= 0)
+		{			
+			if (player->mo->target->flags & MF_RINGMOBJ)
+			{
+				if ((player->mo->target->type >= MT_RING_BOX
+					&& player->mo->target->type <= MT_1UP_BOX) && !(player->mo->target->flags & MF_SPECIAL))
+				{
+				}
+				else
+					P_HomingAttack(player->mo, player->mo->target);
+			}
+			else if (player->mo->target->health <= 0)
 			{
 				player->mo->target = NULL;
 				player->mo->momx >>= 1;

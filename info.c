@@ -137,7 +137,6 @@ void A_Pain();
 void A_BossScream();
 void A_BossDeath();
 void A_FishJump();
-void A_MonitorPop();
 void A_AwardBox();
 void A_FlickyCheck();
 void A_FlickyFly();
@@ -495,17 +494,26 @@ STATE(SPR_DUST,1,4,NULL,S_SPINDUST3), // S_SPINDUST2
 STATE(SPR_DUST,2,2,NULL,S_SPINDUST4), // S_SPINDUST3
 STATE(SPR_DUST,3,2,NULL,S_NULL), // S_SPINDUST4
 STATE(SPR_MSTV,0,2,NULL,S_SPAWNSTATE), // S_BOX_FLICKER
-STATE(SPR_MSTV,0,4,A_MonitorPop,S_BOX_POP2), // S_BOX_POP1
+STATE(SPR_MSTV,0,4,NULL,S_BOX_POP2), // S_BOX_POP1 // TODO: Unused
 STATE(SPR_MSTV,1,-1,NULL,S_NULL), // S_BOX_POP2
-STATE(SPR_TVRI,0,4,NULL,S_BOX_FLICKER), // S_RING_BOX
-STATE(SPR_TVAT,0,4,NULL,S_BOX_FLICKER), // S_ATTRACT_BOX
-STATE(SPR_TVFO,0,4,NULL,S_BOX_FLICKER), // S_FORCE_BOX
-STATE(SPR_TVAR,0,4,NULL,S_BOX_FLICKER), // S_ARMAGEDDON_BOX
-STATE(SPR_TVWW,0,4,NULL,S_BOX_FLICKER), // S_WHIRLWIND_BOX
-STATE(SPR_TVEL,0,4,NULL,S_BOX_FLICKER), // S_ELEMENTAL_BOX
-STATE(SPR_TVSS,0,4,NULL,S_BOX_FLICKER), // S_SNEAKERS_BOX
-STATE(SPR_TVIV,0,4,NULL,S_BOX_FLICKER), // S_INVULN_BOX
-STATE(SPR_TV1U,0,4,NULL,S_BOX_FLICKER), // S_1UP_BOX
+STATE(SPR_TVRI,0,4,NULL,S_RING_BOX_FLICKER), // S_RING_BOX
+STATE(SPR_MSTV,0,2,NULL,S_RING_BOX), // S_RING_BOX_FLICKER
+STATE(SPR_TVAT,0,4,NULL,S_ATTRACT_BOX_FLICKER), // S_ATTRACT_BOX
+STATE(SPR_MSTV,0,2,NULL,S_ATTRACT_BOX), // S_ATTRACT_BOX_FLICKER
+STATE(SPR_TVFO,0,4,NULL,S_FORCE_BOX_FLICKER), // S_FORCE_BOX
+STATE(SPR_MSTV,0,2,NULL,S_FORCE_BOX), // S_FORCE_BOX_FLICKER
+STATE(SPR_TVAR,0,4,NULL,S_ARMAGEDDON_BOX_FLICKER), // S_ARMAGEDDON_BOX
+STATE(SPR_MSTV,0,2,NULL,S_ARMAGEDDON_BOX), // S_ARMAGEDDON_BOX_FLICKER
+STATE(SPR_TVWW,0,4,NULL,S_WHIRLWIND_BOX_FLICKER), // S_WHIRLWIND_BOX
+STATE(SPR_MSTV,0,2,NULL,S_WHIRLWIND_BOX), // S_WHIRLWIND_BOX_FLICKER
+STATE(SPR_TVEL,0,4,NULL,S_ELEMENTAL_BOX_FLICKER), // S_ELEMENTAL_BOX
+STATE(SPR_MSTV,0,2,NULL,S_ELEMENTAL_BOX), // S_ELEMENTAL_BOX_FLICKER
+STATE(SPR_TVSS,0,4,NULL,S_SNEAKERS_BOX_FLICKER), // S_SNEAKERS_BOX
+STATE(SPR_MSTV,0,2,NULL,S_SNEAKERS_BOX), // S_SNEAKERS_BOX_FLICKER
+STATE(SPR_TVIV,0,4,NULL,S_INVULN_BOX_FLICKER), // S_INVULN_BOX
+STATE(SPR_MSTV,0,2,NULL,S_INVULN_BOX), // S_INVULN_BOX_FLICKER
+STATE(SPR_TV1U,0,4,NULL,S_1UP_BOX_FLICKER), // S_1UP_BOX
+STATE(SPR_MSTV,0,2,NULL,S_1UP_BOX), // S_1UP_BOX_FLICKER
 
 STATE(SPR_TVRI,2,16,NULL,S_RING_ICON2), // S_RING_ICON1
 STATE(SPR_TVRI,2,16,A_AwardBox,S_NULL), // S_RING_ICON2
@@ -913,7 +921,7 @@ MF2_SHOOTABLE, // flags2
 		100,            // mass
 		MT_RING_ICON,   // damage
 		sfx_None,       // activesound
-		MF_SOLID|MF_STATIC, // flags
+		MF_SOLID|MF_RINGMOBJ|MF_SPECIAL, // flags
 		MF2_SHOOTABLE, // flags2
 	},
 	{           // MT_ATTRACT_BOX
@@ -938,7 +946,7 @@ MF2_SHOOTABLE, // flags2
 		100,            // mass
 		MT_ATTRACT_ICON,// damage
 		sfx_None,       // activesound
-		MF_SOLID|MF_STATIC, // flags
+		MF_SOLID|MF_RINGMOBJ|MF_SPECIAL, // flags
 		MF2_SHOOTABLE, // flags2
 	},
 
@@ -964,7 +972,7 @@ MF2_SHOOTABLE, // flags2
 		100,            // mass
 		MT_FORCE_ICON,  // damage
 		sfx_None,       // activesound
-		MF_SOLID|MF_STATIC, // flags
+		MF_SOLID|MF_RINGMOBJ|MF_SPECIAL, // flags
 		MF2_SHOOTABLE, // flags2
 	},
 
@@ -990,7 +998,7 @@ MF2_SHOOTABLE, // flags2
 		100,            // mass
 		MT_ARMAGEDDON_ICON, // damage
 		sfx_None,       // activesound
-		MF_SOLID|MF_STATIC, // flags
+		MF_SOLID|MF_RINGMOBJ|MF_SPECIAL, // flags
 		MF2_SHOOTABLE, // flags2
 	},
 
@@ -1016,7 +1024,7 @@ MF2_SHOOTABLE, // flags2
 		100,            // mass
 		MT_WHIRLWIND_ICON, // damage
 		sfx_None,       // activesound
-		MF_SOLID|MF_STATIC, // flags
+		MF_SOLID|MF_RINGMOBJ|MF_SPECIAL, // flags
 		MF2_SHOOTABLE, // flags2
 	},
 
@@ -1042,7 +1050,7 @@ MF2_SHOOTABLE, // flags2
 		100,            // mass
 		MT_ELEMENTAL_ICON, // damage
 		sfx_None,       // activesound
-		MF_SOLID|MF_STATIC, // flags
+		MF_SOLID|MF_RINGMOBJ|MF_SPECIAL, // flags
 		MF2_SHOOTABLE, // flags2
 	},
 
@@ -1068,7 +1076,7 @@ MF2_SHOOTABLE, // flags2
 		100,            // mass
 		MT_SNEAKERS_ICON, // damage
 		sfx_None,       // activesound
-		MF_SOLID|MF_STATIC, // flags
+		MF_SOLID|MF_RINGMOBJ|MF_SPECIAL, // flags
 		MF2_SHOOTABLE, // flags2
 	},
 
@@ -1094,7 +1102,7 @@ MF2_SHOOTABLE, // flags2
 		100,            // mass
 		MT_INVULN_ICON, // damage
 		sfx_None,       // activesound
-		MF_SOLID|MF_STATIC, // flags
+		MF_SOLID|MF_RINGMOBJ|MF_SPECIAL, // flags
 		MF2_SHOOTABLE, // flags2
 	},
 	{           // MT_1UP_BOX
@@ -1119,7 +1127,32 @@ MF2_SHOOTABLE, // flags2
 		100,            // mass
 		MT_1UP_ICON,    // damage
 		sfx_None,       // activesound
-		MF_SOLID|MF_STATIC, // flags
+		MF_SOLID|MF_RINGMOBJ|MF_SPECIAL, // flags
+		MF2_SHOOTABLE, // flags2
+	},
+	{           // MT_BUSTED_BOX
+		-1,             // doomednum
+		S_BOX_POP2,     // spawnstate
+		1,              // spawnhealth
+		S_NULL,         // seestate
+		sfx_None,       // seesound
+		8,              // reactiontime
+		sfx_None,       // attacksound
+		S_RING_BOX,     // painstate
+		0,              // painchance
+		sfx_None,       // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_BOX_POP1,     // deathstate
+		S_NULL,         // xdeathstate
+		sfx_s3k_3d,     // deathsound
+		1,              // speed
+		18*FRACUNIT,    // radius
+		8*FRACUNIT,    // height
+		100,            // mass
+		MT_RING_ICON,   // damage
+		sfx_None,       // activesound
+		MF_RINGMOBJ,    // flags
 		MF2_SHOOTABLE, // flags2
 	},
 	{           // MT_RING_ICON

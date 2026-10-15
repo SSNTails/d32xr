@@ -21,6 +21,11 @@ short phaseFrameCount = 0;
 
 typedef struct
 {
+	int16_t x, y;
+} coord_t;
+
+typedef struct
+{
     int16_t x, y;
     int16_t width, height;
 } rect_t;
@@ -42,6 +47,7 @@ typedef struct storyscene_s
 	int16_t curTextPosX;
 	int16_t curTextPosY;
 	int16_t drawText; // Flag to indicate that the text should be drawn this frame
+	int sceneTime;
 
 	void (*init)(struct storyscene_s *self);
     void (*tic)(struct storyscene_s *self);
@@ -70,10 +76,41 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
+	jagobj_t *flicker[3];
+	jagobj_t *stache[2];
+	jagobj_t *metal;
+	fixed_t metalX, metalY;
+	boolean talking;
+	int stacheCounter;
+} scene_6_t;
+
+typedef struct
+{
+	storyscene_t scene;
+	jagobj_t *sonic;
+	jagobj_t *aura;
+	jagobj_t *zoom[14];
+	coord_t zoomCoords[14];
+	fixed_t sonicPosX;
+	fixed_t sonicPosY;
+	fixed_t sonicScale;
+	fixed_t auraScale;
+	int16_t zoomStartDelay;
+	int16_t zoomChangeInterval;
+	int16_t zoomCurIndex;
+	int16_t sonicCounter;
+	int16_t auraCounter;
+	int16_t sonicStep;
+} scene_9_t;
+
+
+typedef struct
+{
+	storyscene_t scene;
 } scene_2_t, scene_3_t, scene_4_t;
 
 //#define NUMSCENES 12
-#define NUMSCENES	5
+#define NUMSCENES	7
 storyscene_t *introScenes[NUMSCENES];
 
 
@@ -775,6 +812,256 @@ void Scene_5_Stop(scene_5_t *scene)
 	Z_Free(scene->scene.background);
 }
 
+void Scene_6_Init(scene_6_t *scene)
+{
+	// Cache any graphics, etc.
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
+
+	scene->flicker[0] = W_CacheLumpName("THKFLIK1", PU_LEVEL);
+	scene->flicker[1] = W_CacheLumpName("THKFLIK2", PU_LEVEL);
+	scene->flicker[2] = W_CacheLumpName("THKFLIK3", PU_LEVEL);
+	scene->stache[0] = W_CacheLumpName("THKTALK1", PU_LEVEL);
+	scene->stache[1] = W_CacheLumpName("THKTALK2", PU_LEVEL);
+	scene->metal = W_CacheLumpName("THKMETAL", PU_LEVEL);
+}
+
+void Scene_6_Tick(scene_6_t *scene)
+{
+	int16_t lastTextPos = scene->scene.textPos;
+	TIC_Text(&scene->scene);
+
+	if (scene->scene.textPos != lastTextPos)
+	{
+		if (scene->scene.text[scene->scene.textPos] == '\xA7')
+		{
+			scene->talking = !scene->talking;
+			scene->stacheCounter = 0;
+		}
+	}
+
+	scene->scene.sceneTime++;
+	if ((sceneFrameCount & 7) == 0)
+		scene->stacheCounter++;
+}
+
+void Scene_6_Draw(scene_6_t *scene)
+{
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		I_FrameBuffer()
+	);
+
+	int metalY = scene->metalY + (finesine(sceneFrameCount<<5) >> 15);
+
+	DrawScaledJagobj_15bpp(
+		scene->metal,
+		scene->metalX,
+		metalY,
+		FRACUNIT,
+		FRACUNIT,
+		true,
+		I_FrameBuffer()
+	);
+
+	jagobj_t *stache = (scene->talking && (scene->stacheCounter & 1)) ? scene->stache[1] : scene->stache[0];
+	DrawScaledJagobj_15bpp(
+		stache,
+		55,
+		70,
+		FRACUNIT,
+		FRACUNIT,
+		true,
+		I_FrameBuffer()
+	);
+
+	DrawText(&scene->scene);
+}
+
+void Scene_6_Stop(scene_6_t *scene)
+{
+	// Free any resources
+	Z_Free(scene->scene.background);
+	Z_Free(scene->flicker[0]);
+	Z_Free(scene->flicker[1]);
+	Z_Free(scene->flicker[2]);
+	Z_Free(scene->stache[0]);
+	Z_Free(scene->stache[1]);
+	Z_Free(scene->metal);
+}
+
+void Scene_9_Init(scene_9_t *scene)
+{
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
+
+	scene->sonic = W_CacheLumpName("SPRSONIC", PU_LEVEL);
+	scene->aura = W_CacheLumpName("SPRAURA", PU_LEVEL);
+
+	for (int i = 1; i <= 14; i++)
+	{
+		char ln[12];
+		D_snprintf(ln, 10, "SPRZ%02d", i);
+		scene->zoom[i - 1] = W_CacheLumpName(ln, PU_LEVEL);
+	}
+
+	scene->zoomStartDelay = 2*TICRATE;
+	scene->zoomChangeInterval = 4;
+	scene->sonicScale = 0;
+	scene->auraScale = 0;
+
+	scene->sonicPosX = 234 << FRACBITS;
+	scene->sonicPosY = 110 << FRACBITS;
+	scene->sonicStep = 0;
+}
+
+void Scene_9_Tick(scene_9_t *scene)
+{
+	if (scene->zoomStartDelay)
+	{
+		scene->zoomStartDelay--;
+		return;
+	}
+
+	if (scene->zoomCurIndex < 14)
+	{
+		if (scene->zoomChangeInterval)
+		{
+			if (--scene->zoomChangeInterval <= 0)
+			{
+				scene->zoomChangeInterval = 2;
+				scene->zoomCurIndex++;
+
+				if (scene->zoomCurIndex >= 14)
+					S_StartSound(NULL, sfx_s3k_b1);
+			}
+		}
+
+		return;
+	}
+
+	if (scene->sonicStep == 0)
+	{
+		scene->auraScale += 1 << 12;
+		scene->sonicScale = scene->auraScale;
+		scene->sonicPosX -= 4 << 16; 
+		scene->sonicPosY += 3 << 15;
+
+		if (scene->sonicScale > FRACUNIT)
+		{
+			scene->sonicScale = FRACUNIT;
+			scene->auraScale = FRACUNIT;
+			scene->sonicPosX += 4 << 16; 
+			scene->sonicPosY -= 3 << 15;
+			scene->sonicStep = 1;
+			scene->sonicCounter = 0;
+		}
+	}
+	else if (scene->sonicStep == 1)
+	{
+		scene->sonicCounter++;
+		scene->sonicPosX -= 1 << 16;
+
+		if (scene->sonicCounter > 4)
+		{
+			scene->sonicStep = 2;
+			scene->sonicCounter = 0;
+		}
+	}
+	else if (scene->sonicStep == 2)
+	{
+		scene->sonicPosX -= 1 << 16;
+		scene->sonicCounter++;
+
+		if (scene->sonicCounter > 5)
+		{
+			scene->sonicCounter = 0;
+			scene->sonicStep = 3;
+		}
+	}
+	else if (scene->sonicStep == 3)
+	{
+		scene->sonicScale += 10 << 10;
+		scene->sonicPosX -= 8 << 16; 
+		scene->sonicPosY += 5 << 15;
+		scene->sonicCounter++;
+
+		if (scene->sonicCounter > 10)
+			scene->sonicStep = 4; // No drawing of Sonic
+	}
+}
+
+void Scene_9_Draw(scene_9_t *scene)
+{
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		I_FrameBuffer()
+	);
+
+	if (scene->zoomStartDelay <= 0 && scene->zoomCurIndex < 14)
+	{
+		const int drawX = 182;
+		const int drawY = 62;
+
+		DrawScaledJagobj_15bpp(
+			scene->zoom[scene->zoomCurIndex],
+			drawX + scene->zoomCoords[scene->zoomCurIndex].x,
+			drawY + scene->zoomCoords[scene->zoomCurIndex].y,
+			FRACUNIT,
+			FRACUNIT,
+			true,
+			I_FrameBuffer()
+		);
+	}
+
+	if (scene->zoomCurIndex >= 14 && scene->sonicStep < 4)
+	{
+		const coord_t auraPos = { 234, 110 };
+
+		// Spring OUT!
+		if (scene->sonicStep == 2)
+		{
+			if (scene->sonicCounter < 5)
+				DrawScaledJagobj_15bppBlendWithOrigin(
+					scene->aura, auraPos.x, auraPos.y, 93, 92, scene->auraScale, scene->auraScale, scene->sonicCounter + 1, true, I_FrameBuffer());
+		}
+		else if (scene->sonicStep < 2)
+		{
+			DrawScaledJagobj_15bppBlendWithOrigin(
+				scene->aura, auraPos.x, auraPos.y, 93, 92, scene->auraScale, scene->auraScale, 1, true, I_FrameBuffer());
+		}
+
+		DrawScaledJagobj_15bppBlendWithOrigin(
+			scene->sonic, scene->sonicPosX >> FRACBITS, scene->sonicPosY >> FRACBITS, 64, 126, scene->sonicScale, scene->sonicScale, 0, true, I_FrameBuffer());
+	}
+}
+
+void Scene_9_Stop(scene_9_t *scene)
+{
+	Z_Free(scene->scene.background);
+	Z_Free(scene->sonic);
+	Z_Free(scene->aura);
+
+	for (int i = 1; i <= 14; i++)
+		Z_Free(scene->zoom[i - 1]);
+}
+
 const char *intro1text =
 "Two months had passed since Dr. Eggman\n"
 "tried to take over the world using his\n"
@@ -801,29 +1088,29 @@ const char *intro4text =
 "No one knows why it appears, or how.";
 
 const char *intro5text = 
-"\xA7\"Curses!\"\xA9\xBA Eggman yelled. \xA7\"That hedgehog\n"
+"\"Curses!\" Eggman yelled. \"That hedgehog\n"
 "and his ridiculous friends will pay\n"
-"dearly for this!\"\xA9\xC8 Just then his scanner\n"
+"dearly for this!\"\xC8 Just then his scanner\n"
 "blipped as the Black Rock made its\n"
-"appearance from nowhere.\xBF Eggman looked at\n"
+"appearance from nowhere. Eggman looked at\n"
 "the screen, and just shrugged it off.";
 
 const char *intro6text =
 "It was hours later\n"
 "that he had an\n"
-"idea. \xBF\xA7\"The Black\n"
+"idea. \xA7\"The Black\n"
 "Rock has a large\n"
 "amount of energy\n"
-"within it\xAC...\xA7\xBF\n"
+"within it\xA7...\xA7\n"
 "If I can somehow\n"
-"harness this,\xB8 I\n"
+"harness this\xA7, \xA7I\n"
 "can turn it into\n"
 "the ultimate\n"
-"battle station\xAC...\xA7\xBF\n"
+"battle station\xA7...\xA7\n"
 "And every last\n"
 "person will be\n"
-"begging for mercy,\xB8\xA8\n"
-"including Sonic!\"";
+"begging for mercy,\n"
+"including Sonic!\"\xA7";
 
 const char *intro7text =
 "\xA8\nBefore beginning his scheme,\n"
@@ -1006,6 +1293,70 @@ void BuildScenes()
 	scene5->scene.draw = (void(*)(storyscene_t *))Scene_5_Draw;
 	scene5->scene.stop = (void(*)(storyscene_t *))Scene_5_Stop;
 	introScenes[i++] = (storyscene_t*)scene5;
+
+	scene_6_t *scene6 = Z_Calloc(sizeof(*scene6), PU_STATIC);
+	scene6->scene.transitionOutHeight = 204;
+	scene6->scene.picLump = W_GetNumForName("THINKBG");
+	scene6->scene.text = intro6text;
+	scene6->scene.textCharDelayTics = scene6->scene.textCharDelayCounter = 5;
+	scene6->scene.preTextDelay = TICRATE;
+	scene6->scene.postTextDelay = 2*TICRATE;
+	scene6->scene.textBox.x = 184;
+	scene6->scene.textBox.y = 32;
+	scene6->scene.textBox.width = 320 - 184 - 32;
+	scene6->scene.textBox.height = 200 - 64;
+	scene6->metalX = 27 - 10;
+	scene6->metalY = 64 - 25;
+	scene6->scene.init = (void(*)(storyscene_t *))Scene_6_Init;
+	scene6->scene.tic = (void(*)(storyscene_t *))Scene_6_Tick;
+	scene6->scene.draw = (void(*)(storyscene_t *))Scene_6_Draw;
+	scene6->scene.stop = (void(*)(storyscene_t *))Scene_6_Stop;
+	introScenes[i++] = (storyscene_t*)scene6;
+
+	scene_9_t *scene9 = Z_Calloc(sizeof(*scene9), PU_STATIC);
+	scene9->scene.transitionOutHeight = 204;
+	scene9->scene.picLump = W_GetNumForName("SPRINGBG");
+	scene9->scene.text = intro9text;
+	scene9->scene.textCharDelayTics = scene9->scene.textCharDelayCounter = 5;
+	scene9->scene.preTextDelay = TICRATE;
+	scene9->scene.postTextDelay = 2*TICRATE;
+	scene9->scene.textBox.x = 16;
+	scene9->scene.textBox.y = 128 + 16;
+	scene9->scene.textBox.width = 320 - 32 - 32;
+	scene9->scene.textBox.height = 224 - 16 - scene9->scene.textBox.y;
+	scene9->scene.init = (void(*)(storyscene_t *))Scene_9_Init;
+	scene9->scene.tic = (void(*)(storyscene_t *))Scene_9_Tick;
+	scene9->scene.draw = (void(*)(storyscene_t *))Scene_9_Draw;
+	scene9->scene.stop = (void(*)(storyscene_t *))Scene_9_Stop;
+	scene9->zoomCoords[0].x = 128;
+	scene9->zoomCoords[0].y = 19;
+	scene9->zoomCoords[1].x = 118;
+	scene9->zoomCoords[1].y = 11;
+	scene9->zoomCoords[2].x = 118;
+	scene9->zoomCoords[2].y = 11;
+	scene9->zoomCoords[3].x = 65;
+	scene9->zoomCoords[3].y = 3;
+	scene9->zoomCoords[4].x = 59;
+	scene9->zoomCoords[4].y = 2;
+	scene9->zoomCoords[5].x = 11;
+	scene9->zoomCoords[5].y = 0;
+	scene9->zoomCoords[6].x = 3;
+	scene9->zoomCoords[6].y = 0;
+	scene9->zoomCoords[7].x = 0;
+	scene9->zoomCoords[7].y = 1;
+	scene9->zoomCoords[8].x = 0;
+	scene9->zoomCoords[8].y = 12;
+	scene9->zoomCoords[9].x = 9;
+	scene9->zoomCoords[9].y = 16;
+	scene9->zoomCoords[10].x = 24;
+	scene9->zoomCoords[10].y = 16;
+	scene9->zoomCoords[11].x = 48;
+	scene9->zoomCoords[11].y = 17;
+	scene9->zoomCoords[12].x = 50;
+	scene9->zoomCoords[12].y = 24;
+	scene9->zoomCoords[13].x = 50;
+	scene9->zoomCoords[13].y = 40;
+	introScenes[i++] = (storyscene_t*)scene9;
 }
 
 void START_Story (void)

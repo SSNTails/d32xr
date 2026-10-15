@@ -838,7 +838,10 @@ vector3_t *FV3_Cross(const vector3_t *a_1, const vector3_t *a_2, vector3_t *a_o)
 fixed_t FV3_Magnitude(const vector3_t *a_normal);
 fixed_t FV3_Normalize(const vector3_t *a_normal, vector3_t *a_o);
 fixed_t FV3_Dot(const vector3_t *a_1, const vector3_t *a_2);
-vector4_t FV3_RotateVector(const vector3_t *rotationDir, const vector3_t *axis, int16_t fineangles);
+vector3_t FV3_RotateVector(const vector3_t *rotationDir, const vector3_t *axis, int16_t fineangles);
+vector3_t FV3_RotateVectorXY(const vector3_t *rotationDir, int16_t fineangles);
+vector3_t FV3_RotateVectorXZ(const vector3_t *rotationDir, int16_t fineangles);
+vector3_t FV3_RotateVectorYZ(const vector3_t *rotationDir, int16_t fineangles);
 fixed_t FixedSqrt(fixed_t x);
 
 #define	ACC_FIXEDMUL	4
@@ -1453,13 +1456,17 @@ void DrawJagobj3 (jagobj_t* jo, int x, int y,
 void DrawScaledJagobj (jagobj_t* jo, int x, int y, 
 	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb);
 void DrawScaledJagobj_15bpp (jagobj_t* jo, int x, int y, 
-	fixed_t ratio_w, fixed_t ratio_h, boolean masked, pixel_t *fb);
+	fixed_t ratio_w, fixed_t ratio_h, boolean masked, pixel_t *fb) ATTR_DATA_CACHE_ALIGN;
 /* blend_shift sets the source weight to 1 / 2^blend_shift */
 void DrawScaledJagobj_15bppBlend (jagobj_t* jo, int x, int y,
 	fixed_t ratio_w, fixed_t ratio_h, unsigned blend_shift,
 	boolean masked, pixel_t *fb);
 void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
 	angle_t angle_deg, boolean center_origin, boolean masked, pixel_t *fb);
+/* x and y mark the screen position of the source origin. */
+void DrawScaledJagobj_15bppBlendWithOrigin (jagobj_t* jo, int x, int y,
+	int origin_x, int origin_y, fixed_t ratio_w, fixed_t ratio_h,
+	unsigned blend_shift, boolean masked, pixel_t *fb);
 void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h,
 	const int canvas_width, boolean masked, pixel_t *fb);
@@ -1628,9 +1635,9 @@ typedef struct
 	uint8_t swingSpeed;
 	int8_t msublinks; // # of links from the inside to subtract
 	int8_t sound;
-	int8_t flags;
+	uint8_t nolinks;
 
-	boolean nolinks;
+	int16_t flags;
 } swingmace_t;
 
 void T_SwingMace(swingmace_t *sm);
@@ -1647,8 +1654,7 @@ typedef enum
 	SHF_REVERSE = 128,    // This swing is reversed (for bezier swings)
 	SHF_SINEWAVE = 256,    // This swing follows a sine wave path
 	SHF_STARTINREVERSE = 512,  // This swing starts at the end of the path instead of the beginning
-	SHF_SYNC = 1024,  // This swing is synchronized to the leveltime
-	SHF_NOLINKS = 2048, // This swing does not have any links
+	SHF_NOLINKS = 1024, // This swing does not have any links
 } shflags_e;
 
 //

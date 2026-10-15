@@ -200,8 +200,6 @@ int8_t P_MobjFlip(mobj_t *mo)
 
 boolean P_SetMobjState (mobj_t *mobj, statenum_t state)
 {
-	uint16_t changes = 0xf; // Only chain up to 16 states.
-
 	if (mobj->flags & MF_RINGMOBJ)
 		return true; // silently fail
 
@@ -224,13 +222,13 @@ boolean P_SetMobjState (mobj_t *mobj, statenum_t state)
 
 		st = &states[state];
 		mobj->state = state;
-		mobj->tics = st->tics;
+		mobj->tics = (int8_t)st->tics;
 
 		if (st->action)		/* call action functions when the state is set */
 			st->action(mobj, st->var1, st->var2);
 
 		state = st->nextstate;
-	} while (!mobj->tics && --changes > 0);
+	} while (!mobj->tics);
 
 	return true;
 }
@@ -278,7 +276,7 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		if (info->flags & MF_NOBLOCKMAP) // It's scenery
 		{
 			if (numscenerymobjs >= scenerymobjcount)
-				I_Error("No more slots available for a scenery mobj.");
+				I_Error("No more slots for a scenery mobj. (%d)", type);
 				
 			scenerymobj_t *scenerymobj = &scenerymobjlist[numscenerymobjs];
 			scenerymobj->type = type;
@@ -329,7 +327,7 @@ mobj_t *P_SpawnMobjNoSector(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		else // It's a ring
 		{
 			if (numringmobjs >= ringmobjcount)
-				I_Error("No more slots available for a ring mobj.");
+				I_Error("No more slots for a ring mobj. (%d)", type);
 
 			ringmobj_t *ringmobj = &ringmobjlist[numringmobjs];
 			ringmobj->type = type;

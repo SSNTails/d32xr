@@ -496,7 +496,7 @@ void P_LoadThings (int lump)
 			continue; // Don't count
 #endif
 
-		if (mt->type == 1121) // Flame holder
+		if (mt->type == 1121) // Flame holder (This is NOT part of the if/else structure below)
 			numringthings++;
 
 		if (mt->type == 1104 || mt->type == 1105 || mt->type == 1107) // Mace points
@@ -526,7 +526,7 @@ void P_LoadThings (int lump)
 					break;
 				case 1:
 					numthingsreal++;
-					if (mt->type == 118)
+					if (mt->type == 118) // MT_FACESTABBER
 						numthingsreal++; // Jet fume
 					else if (mt->type == 119) // MT_EGGGUARD
 						numringthings++;

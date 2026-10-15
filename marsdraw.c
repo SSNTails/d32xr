@@ -1339,7 +1339,15 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 	}
 }
 
-
+void DrawScaledJagobj_15bppBlendWithOrigin(jagobj_t* jo, int x, int y,
+	int origin_x, int origin_y, fixed_t ratio_w, fixed_t ratio_h,
+	unsigned blend_shift, boolean masked, pixel_t *fb)
+{
+	x -= FixedMul(origin_x * FRACUNIT, ratio_w) >> 16;
+	y -= FixedMul(origin_y * FRACUNIT, ratio_h) >> 16;
+	DrawScaledJagobj_15bppBlend(jo, x, y, ratio_w, ratio_h,
+		blend_shift, masked, fb);
+}
 
 //#define ROTATION_DEBUG
 void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle_deg,
@@ -1559,8 +1567,6 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle
 #endif
     }
 }
-
-
 
 void DrawMaskedGraphicLump(int lumpnum, int x, int y)
 {
