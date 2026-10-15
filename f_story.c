@@ -77,6 +77,7 @@ typedef struct
 	jagobj_t *flicker[3];
 	jagobj_t *stache[2];
 	jagobj_t *metal;
+	jagobj_t *noflash;
 	fixed_t metalX, metalY;
 	boolean talking;
 	int stacheCounter;
@@ -735,6 +736,7 @@ void Scene_6_Init(scene_6_t *scene)
 	scene->stache[0] = W_CacheLumpName("THKTALK1", PU_LEVEL);
 	scene->stache[1] = W_CacheLumpName("THKTALK2", PU_LEVEL);
 	scene->metal = W_CacheLumpName("THKMETAL", PU_LEVEL);
+	scene->noflash = W_CacheLumpName("THFLASH", PU_LEVEL);
 }
 
 void Scene_6_Tick(scene_6_t *scene)
@@ -776,6 +778,19 @@ void Scene_6_Draw(scene_6_t *scene)
 		320,
 		I_FrameBuffer()
 	);
+
+	if (sceneFrameCount & 1)
+		DrawJagobj3_15bpp(
+			scene->noflash,
+			105,
+			55,
+			0,
+			0,
+			scene->noflash->width,
+			scene->noflash->height,
+			320,
+			I_FrameBuffer()
+		);
 
 	DrawScaledJagobj_15bpp(
 		scene->flicker[scene->flickerCounter],
