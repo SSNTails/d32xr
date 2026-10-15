@@ -80,6 +80,7 @@ typedef struct
 	fixed_t metalX, metalY;
 	boolean talking;
 	int stacheCounter;
+	int flickerCounter;
 } scene_6_t;
 
 typedef struct
@@ -753,6 +754,13 @@ void Scene_6_Tick(scene_6_t *scene)
 	scene->scene.sceneTime++;
 	if ((sceneFrameCount & 7) == 0)
 		scene->stacheCounter++;
+
+	if ((sceneFrameCount & 3) == 0)
+	{
+		scene->flickerCounter++;
+		if (scene->flickerCounter > 2)
+			scene->flickerCounter = 0;
+	}
 }
 
 void Scene_6_Draw(scene_6_t *scene)
@@ -766,6 +774,16 @@ void Scene_6_Draw(scene_6_t *scene)
 		scene->scene.background->width,
 		scene->scene.background->height,
 		320,
+		I_FrameBuffer()
+	);
+
+	DrawScaledJagobj_15bpp(
+		scene->flicker[scene->flickerCounter],
+		50,
+		6,
+		FRACUNIT,
+		FRACUNIT,
+		true,
 		I_FrameBuffer()
 	);
 
