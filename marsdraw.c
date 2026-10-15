@@ -1831,7 +1831,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y, int canvas_width)
 
 void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h,
-	const int canvas_width, pixel_t *fb)
+	const int canvas_width, boolean masked, pixel_t *fb)
 {
 	int		srcx, srcy;
 	int		width, height, depth, flags, index;
@@ -1906,19 +1906,57 @@ void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y,
 		pixel_t* dest2 = (pixel_t*)dest, * source2 = (pixel_t*)source;
 		int canvas_inc = (canvas_width - total_w); //((canvas_width >> 1) - hw) << 1;
 
-		for (; total_h; total_h--)
-		{
-			int n = ((total_w + 3) >> 2);
-			switch (total_w & 3)
+		if (masked) {
+			for (; total_h; total_h--)
 			{
-			case 0: do { *dest2++ = *source2++;
-			case 3:      *dest2++ = *source2++;
-			case 2:      *dest2++ = *source2++;
-			case 1:      *dest2++ = *source2++;
-			} while (--n > 0);
+				int n = ((total_w + 3) >> 2);
+				switch (total_w & 3)
+				{
+				case 0: do {
+					if (*source2 & 0x8000) {
+						*dest2 = *source2;
+					}
+					dest2++;
+					source2++;
+				case 3:
+					if (*source2 & 0x8000) {
+						*dest2 = *source2;
+					}
+					dest2++;
+					source2++;
+				case 2:
+					if (*source2 & 0x8000) {
+						*dest2 = *source2;
+					}
+					dest2++;
+					source2++;
+				case 1:
+					if (*source2 & 0x8000) {
+						*dest2 = *source2;
+					}
+					dest2++;
+					source2++;
+				} while (--n > 0);
+				}
+				source2 += inc;
+				dest2 += canvas_inc;
 			}
-			source2 += inc;
-			dest2 += canvas_inc;
+		}
+		else {
+			for (; total_h; total_h--)
+			{
+				int n = ((total_w + 3) >> 2);
+				switch (total_w & 3)
+				{
+				case 0: do { *dest2++ = *source2++;
+				case 3:      *dest2++ = *source2++;
+				case 2:      *dest2++ = *source2++;
+				case 1:      *dest2++ = *source2++;
+				} while (--n > 0);
+				}
+				source2 += inc;
+				dest2 += canvas_inc;
+			}
 		}
 	}
 }
@@ -1955,6 +1993,38 @@ void DrawFillRect(int x, int y, int w, int h, int c)
 		dest += 160;
 	}
 }
+
+/*
+void DrawFillRect_15bpp(int x, int y, int w, int h, int c)
+{
+	int i;
+
+	if (x + w > 320)
+		w = 320 - x;
+	if (y + h > mars_framebuffer_height)
+		h = mars_framebuffer_height - y;
+
+	int hw = w;
+
+	pixel_t* dest = I_FrameBuffer() + y * 320 + x;
+	for (i = 0; i < h; i++)
+	{
+		int n = (hw + 3) >> 2;
+		pixel_t* dest2 = dest;
+
+		switch (hw & 3)
+		{
+		case 0: do { *dest2++ = c;
+		case 3:      *dest2++ = c;
+		case 2:      *dest2++ = c;
+		case 1:      *dest2++ = c;
+		} while (--n > 0);
+		}
+
+		dest += 320;
+	}
+}
+*/
 
 void DrawLine(int x, int y, int length, int c, boolean vertical)
 {

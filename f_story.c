@@ -326,6 +326,7 @@ void TransitionIn() {
 			background->width,
 			1,
 			320,
+			true,
 			I_FrameBuffer()
 		);
 	}
@@ -341,6 +342,7 @@ void TransitionIn() {
 				background->width,
 				1,
 				320,
+				true,
 				I_FrameBuffer()
 			);
 		}
@@ -388,6 +390,7 @@ void Scene_1_Draw(scene_1_t *scene)
 			scene->scene.background->width,
 			scene->scene.background->height,
 			320,
+			false,
 			I_FrameBuffer()
 		);
 	}
@@ -406,6 +409,7 @@ void Scene_1_Draw(scene_1_t *scene)
 				width,
 				height,
 				320,
+				false,
 				I_FrameBuffer()
 			);
 		}
@@ -434,6 +438,7 @@ void Scene_1_Draw(scene_1_t *scene)
 			scene->scene.background->width/2,
 			scene->scene.background->height,
 			320,
+			false,
 			I_FrameBuffer()
 		);
 		DrawRotatedJagobj_15bpp(
@@ -494,6 +499,7 @@ void Scene_2_Draw(scene_2_t *scene)
 			scene->scene.background->width,
 			scene->scene.background->height,
 			320,
+			false,
 			I_FrameBuffer()
 		);
 	}
@@ -534,6 +540,7 @@ void Scene_3_Draw(scene_3_t *scene)
 			scene->scene.background->width,
 			scene->scene.background->height,
 			320,
+			false,
 			I_FrameBuffer()
 		);
 	}
@@ -573,6 +580,7 @@ void Scene_4_Draw(scene_4_t *scene)
 			scene->scene.background->width,
 			scene->scene.background->height,
 			320,
+			false,
 			I_FrameBuffer()
 		);
 	}
@@ -615,6 +623,7 @@ void Scene_5_Draw(scene_5_t *scene)
 				scene->scene.background->width,
 				scene->scene.background->height,
 				320,
+				false,
 				I_FrameBuffer()
 			);
 		}
@@ -632,6 +641,7 @@ void Scene_5_Draw(scene_5_t *scene)
 				scene->scene.background->width,
 				bottomEdge,
 				320,
+				false,
 				I_FrameBuffer()
 			);
 			
@@ -661,30 +671,14 @@ void Scene_5_Draw(scene_5_t *scene)
 				StartTransition();
 			}
 			else {
-				// Clear the area around the radar screen
+				// Clear to black
 				pixel_t *framebuffer = I_FrameBuffer();
 
-				for (int i = 0; i < scene->scene.backgroundY; i++) {
+				for (int i = 0; i < (scene->scene.backgroundY + scene->scene.background->height); i++) {
 					// Top
 					for (int x=0; x < 320; x += 4) {
 						*framebuffer++ = 0;
 						*framebuffer++ = 0;
-						*framebuffer++ = 0;
-						*framebuffer++ = 0;
-					}
-				}
-
-				for (int i = 0; i < scene->scene.background->height; i++) {
-					// Left side
-					for (int x=0; x < scene->scene.backgroundX; x += 2) {
-						*framebuffer++ = 0;
-						*framebuffer++ = 0;
-					}
-
-					framebuffer += scene->scene.background->width;
-
-					// Right side
-					for (int x=0; x < scene->scene.backgroundX; x += 2) {
 						*framebuffer++ = 0;
 						*framebuffer++ = 0;
 					}
@@ -700,6 +694,7 @@ void Scene_5_Draw(scene_5_t *scene)
 					scene->scene.background->width,
 					scene->scene.background->height,
 					320,
+					true,
 					I_FrameBuffer()
 				);
 			}
@@ -756,7 +751,7 @@ void Scene_5_Draw(scene_5_t *scene)
 				}
 			}
 
-			/*DrawJagobj3_15bpp(
+			DrawJagobj3_15bpp(
 				scene->scene.background,
 				scene->scene.backgroundX + srcX,
 				scene->scene.backgroundY + srcY,
@@ -765,8 +760,9 @@ void Scene_5_Draw(scene_5_t *scene)
 				overlayWidth,
 				overlayHeight,
 				320,
+				true,
 				I_FrameBuffer()
-			);*/
+			);
 		}
 	}
 
