@@ -1349,108 +1349,224 @@ void DrawScaledJagobj_15bppBlendWithOrigin(jagobj_t* jo, int x, int y,
 		blend_shift, masked, fb);
 }
 
-//TODO: Remove these -- src_x, src_y, src_w, src_h, canvas_width
-void DrawRotatedJagobj_15bpp(jagobj_t* jo, int x, int y, 
-	int src_x, int src_y, int src_w, int src_h, angle_t angle,
-	const int canvas_width, pixel_t *fb)
-{
-	int		srcx, srcy;
-	int		width, height, depth, flags, index;
-	int		total_w, total_h;
-	int		rowsize, inc;
-	uint16_t	*dest, *source;
+//#define ROTATION_DEBUG
+void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle_deg,
+							boolean center_origin, boolean masked, pixel_t *fb) {
+	int width = jo->width;
+	int height = jo->height;
 
-	rowsize = BIGSHORT(jo->width);
-	width = BIGSHORT(jo->width);
-	height = BIGSHORT(jo->height);
-	depth = BIGSHORT(jo->depth);
-	flags = BIGSHORT(jo->flags);
-	index = BIGSHORT(jo->index);
+#ifdef ROTATION_DEBUG
+	width = 24;
+	height = 32;
+#endif
 
-	if (src_w > 0)
-		width = src_w;
-	else if (src_w < 0)
-		width += src_w;
+	pixel_t *src = (pixel_t *)jo->data;
 
-	if (src_h > 0)
-		height = src_h;
-	else if (src_h < 0)
-		height += src_h;
+    fixed_t sin_a;
+    fixed_t cos_a;
+    //fixed_t tan_a;
 
-	srcx = 0;
-	srcy = 0;
-
-	total_w = width;
-	total_h = height;
-
-	if (x < 0)
-	{
-		total_w += x;
-		srcx = -x;
-		x = 0;
+	if (angle_deg > (ANG270>>19)) {
+		cos_a = finecosine((angle_t)(ANG180>>18)-angle_deg);
+		sin_a = finesine((angle_t)(ANG180>>18)-angle_deg);
+		//tan_a = finetangent((angle_t)(ANG180>>18)-angle_deg);
 	}
-	srcx += src_x;
-
-	if (y < 0)
-	{
-		srcy = -y;
-		total_h += y;
-		y = 0;
+	else if (angle_deg > (ANG180>>19)) {
+		sin_a = finecosine((angle_t)(ANG270>>19)-angle_deg);
+		cos_a = finesine((angle_t)(ANG270>>19)-angle_deg);
+		//tan_a = finetangent(angle_deg-(angle_t)(ANG180>>19));
 	}
-	srcy += src_y;
-
-	if (x + total_w > canvas_width)
-		total_w = canvas_width - x;
-	if (y + total_h > 204)
-		total_h = 204 - y;
-	inc = rowsize - total_w;
-
-	if (total_w <= 0 || total_h <= 0) {
-		return;
+	else if (angle_deg > (ANG90>>19)) {
+		cos_a = finecosine((angle_t)(ANG180>>19)-angle_deg);
+		sin_a = finesine((angle_t)(ANG180>>19)-angle_deg);
+		//tan_a = finetangent(angle_deg);
+	}
+	else {
+		cos_a = finecosine(angle_deg);
+		sin_a = finesine(angle_deg);
+		//tan_a = (65536 - finetangent(angle_deg)) + 65536;
 	}
 
-//	hw = width >> 1;
+    const fixed_t x_center = (fixed_t)(width << 15);
+    const fixed_t y_center = (fixed_t)(height << 15);
 
-	if (depth == 2)
-	{
-		inc >>= 1;
-		srcx >>= 1;
-		rowsize >>= 1;
-		index = (index << 1) + (flags & 2 ? 1 : 0);
+    const fixed_t adj_w = (width * cos_a);
+    const fixed_t opp_w = (width * sin_a);
+    const fixed_t adj_h = (height * cos_a);
+    const fixed_t opp_h = (height * sin_a);
+
+    const fixed_t canvas_width = (adj_w + opp_h);
+    const fixed_t canvas_height = (adj_h + opp_w);
+
+    const fixed_t canvas_x_center = (canvas_width >> 1);
+    const fixed_t canvas_y_center = (canvas_height >> 1);
+
+    const fixed_t opening_width = adj_w - opp_h;
+    const fixed_t opening_height = adj_h - opp_w;
+
+	const fixed_t horizontal_breakpoint = ((canvas_width - opening_width) >> 1);
+    const fixed_t vertical_breakpoint = ((canvas_height - opening_height) >> 1);
+
+	if (angle_deg > (ANG270>>19)) {
+		dest_x -= (horizontal_breakpoint >> 16);
+	}
+	else if (angle_deg > (ANG180>>19)) {
+		dest_x -= (canvas_width >> 16);
+		dest_y -= ((vertical_breakpoint + opening_height) >> 16);
+	}
+	else if (angle_deg > (ANG90>>19)) {
+		dest_x -= ((horizontal_breakpoint + opening_width) >> 16);
+		dest_y -= (canvas_height >> 16);
+	}
+	else {
+		dest_y -= (vertical_breakpoint >> 16);
 	}
 
-	// Find the pixel coordinate where all four quadrants meet.
-	fixed_t opp1 = finesine(angle);
-	fixed_t adj1 = finecosine(angle);
-	fixed_t opp2 = opp1 * opp1;
-	fixed_t adj2 = adj1 >> 1;
-	fixed_t centerX = width - opp2;
-	fixed_t centerY = height - adj2;
+	if (center_origin) {
+		dest_x -= ((canvas_width >> 1) >> 16);
+		dest_y -= ((canvas_height >> 1) >> 16);
+	}
 
-	dest = (uint16_t*)((byte*)fb + ((y * canvas_width + x) << 1));
-	source = (uint16_t*)(jo->data + (((srcx + centerX) + ((srcy + centerY) * rowsize)) << 1));
+#ifdef ROTATION_DEBUG
+	int *dram_debug = (int*)(I_FrameBuffer() + ((0x20000 - 512 - 4096) >> 1)); // Last 4KB of DRAM
 
-	//if ((x & 1) == 0 && (width & 1) == 0 && (rowsize & 1) == 0)
-	{
-		pixel_t* dest2 = (pixel_t*)dest;
-		pixel_t* source2 = (pixel_t*)source;
-		int canvas_inc = (canvas_width - total_w); //((canvas_width >> 1) - hw) << 1;
+	int first = 1;
 
-		for (; total_h; total_h--)
-		{
-			int n = ((total_w + 3) >> 2);
-			switch (total_w & 3)
-			{
-			case 0: do { *dest2++ = *source2++;
-			case 3:      *dest2++ = *source2++;
-			case 2:      *dest2++ = *source2++;
-			case 1:      *dest2++ = *source2++;
-			} while (--n > 0);
-			}
-			source2 += inc;
-			dest2 += canvas_inc;
+	dram_debug[0x00] = width;
+	dram_debug[0x01] = height;
+	dram_debug[0x02] = angle_deg;
+
+	dram_debug[0x04] = sin_a;
+	dram_debug[0x05] = cos_a;
+	//dram_debug[0x06] = tan_a;
+
+	dram_debug[0x08] = x_center;
+	dram_debug[0x09] = y_center;
+
+	dram_debug[0x0C] = adj_w;
+	dram_debug[0x0D] = opp_w;
+	dram_debug[0x0E] = adj_h;
+	dram_debug[0x0F] = opp_h;
+
+	dram_debug[0x10] = canvas_width;
+	dram_debug[0x11] = canvas_height;
+
+	dram_debug[0x14] = canvas_x_center;
+	dram_debug[0x15] = canvas_y_center;
+
+	dram_debug[0x18] = opening_width;
+	dram_debug[0x19] = opening_height;
+
+	dram_debug[0x1C] = vertical_breakpoint;
+#endif
+
+	//const fixed_t tan_a_recip = FixedDiv(FRACUNIT, tan_a);
+    for (int y = 0; y < (canvas_height>>16); y++) {
+		int start_x;
+		//int start_y;
+		if ((y<<16) >= vertical_breakpoint) {
+			start_x = (FixedMul(((y<<16) - vertical_breakpoint), sin_a) + (FRACUNIT>>1)) >> 16;
+			//start_y = (FixedMul(((y<<16) - vertical_breakpoint), tan_a) + (FRACUNIT>>1)) >> 16;
 		}
-	}
+		else {
+			start_x = (FixedMul((vertical_breakpoint - (y<<16)), cos_a) + (FRACUNIT>>1)) >> 16;
+			//start_y = (FixedMul((vertical_breakpoint - (y<<16)), tan_a_recip) + (FRACUNIT>>1)) >> 16;
+		}
+
+		// When walking one coordinate, it affects the other coordinate. Calculate this bias here.
+		fixed_t src_x_bias = FixedMul(((y<<16) - canvas_y_center), sin_a) - x_center;
+		fixed_t src_y_bias = FixedMul(((y<<16) - canvas_y_center), cos_a) + y_center;
+
+        for (int x = start_x; (x<<16) < canvas_width; x++) {
+            fixed_t src_x = FixedMul(((x<<16) - canvas_x_center), cos_a) - src_x_bias; // + 0.5;
+            fixed_t src_y = FixedMul(((x<<16) - canvas_x_center), sin_a) + src_y_bias; // 0+0.5; 90; 180+0.5; 270
+
+#ifdef ROTATION_DEBUG
+			if (first) {
+				first = 0;
+				dram_debug[0x20] = start_x;
+				//dram_debug[0x21] = start_y;
+				dram_debug[0x24] = src_x_bias;
+				dram_debug[0x25] = src_y_bias;
+				dram_debug[0x26] = src_x;
+				dram_debug[0x27] = src_y;
+				dram_debug[0x28] = x;
+				dram_debug[0x29] = y;
+
+				dram_debug[0x40] = x;
+				dram_debug[0x41] = canvas_x_center;
+				dram_debug[0x42] = cos_a;
+				dram_debug[0x43] = src_x_bias;
+
+				dram_debug[0x44] = (x << 16);
+				dram_debug[0x45] = (x << 16) - canvas_x_center;
+				dram_debug[0x46] = FixedMul(((x<<16) - canvas_x_center), cos_a);
+				dram_debug[0x47] = FixedMul(((x<<16) - canvas_x_center), cos_a) - src_x_bias;
+
+				dram_debug[0x50] = x;
+				dram_debug[0x51] = canvas_x_center;
+				dram_debug[0x52] = sin_a;
+				dram_debug[0x53] = src_y_bias;
+
+				dram_debug[0x54] = (x << 16);
+				dram_debug[0x55] = (x << 16) - canvas_x_center;
+				dram_debug[0x56] = FixedMul(((x<<16) - canvas_x_center), sin_a);
+				dram_debug[0x57] = FixedMul(((x<<16) - canvas_x_center), sin_a) + src_y_bias;
+			}
+#endif
+
+            int ix = (int)(src_x >> 16);
+            int iy = (int)(src_y >> 16);
+
+			if (ix < 0) {	//TODO: TESTING! REMOVE ME!
+#ifdef ROTATION_DEBUG
+				fb[((y + dest_y) * 320) + (x + dest_x)] = 0x801F; // fill with red
+#endif
+			}
+            else if (ix >= 0 && ix < width && iy >= 0 && iy < height) {
+				if (angle_deg > (ANG270>>19)) {
+					int source_pixel = src[((height-1)-iy) * width + ix];
+					//int source_pixel = 0x83E0;
+					if (!masked || (source_pixel & 0x8000)) {
+						fb[(((int)((canvas_height>>16)-y) + dest_y) * 320) + (x + dest_x)] = source_pixel;
+					}
+				}
+				else if (angle_deg > (ANG180>>19)) {
+					int source_pixel = src[((height-1)-iy) * width + ((width-1)-ix)];
+					//int source_pixel = 0x83E0;
+					if (!masked || (source_pixel & 0x8000)) {
+						fb[((y + dest_y) * 320) + (x + dest_x)] = source_pixel;
+					}
+				}
+				else if (angle_deg > (ANG90>>19)) {
+					int source_pixel = src[iy * width + ((width-1)-ix)];
+					//int source_pixel = 0x83E0;
+					if (!masked || (source_pixel & 0x8000)) {
+						fb[(((int)((canvas_height>>16)-y) + dest_y) * 320) + (x + dest_x)] = source_pixel;
+					}
+				}
+				else {
+					int source_pixel = src[iy * width + ix];
+					//int source_pixel = 0x83E0;
+					if (!masked || (source_pixel & 0x8000)) {
+						fb[((y + dest_y) * 320) + (x + dest_x)] = source_pixel;
+					}
+				}
+            }
+#ifdef ROTATION_DEBUG
+            else {	//TODO: TESTING! REMOVE ME!
+                fb[((y + dest_y) * 320) + (x + dest_x)] = 0xFFFF; // fill with white
+			}
+#endif
+
+#ifdef ROTATION_DEBUG
+			//x--; //TODO: TESTING! REMOVE ME!
+#endif
+        }
+#ifdef ROTATION_DEBUG
+		//y--; //TODO: TESTING! REMOVE ME!
+#endif
+    }
 }
 
 void DrawMaskedGraphicLump(int lumpnum, int x, int y)
@@ -1720,7 +1836,7 @@ void DrawJagobj2(jagobj_t* jo, int x, int y, int canvas_width)
 
 void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h,
-	const int canvas_width, pixel_t *fb)
+	const int canvas_width, boolean masked, pixel_t *fb)
 {
 	int		srcx, srcy;
 	int		width, height, depth, flags, index;
@@ -1795,19 +1911,57 @@ void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y,
 		pixel_t* dest2 = (pixel_t*)dest, * source2 = (pixel_t*)source;
 		int canvas_inc = (canvas_width - total_w); //((canvas_width >> 1) - hw) << 1;
 
-		for (; total_h; total_h--)
-		{
-			int n = ((total_w + 3) >> 2);
-			switch (total_w & 3)
+		if (masked) {
+			for (; total_h; total_h--)
 			{
-			case 0: do { *dest2++ = *source2++;
-			case 3:      *dest2++ = *source2++;
-			case 2:      *dest2++ = *source2++;
-			case 1:      *dest2++ = *source2++;
-			} while (--n > 0);
+				int n = ((total_w + 3) >> 2);
+				switch (total_w & 3)
+				{
+				case 0: do {
+					if (*source2 & 0x8000) {
+						*dest2 = *source2;
+					}
+					dest2++;
+					source2++;
+				case 3:
+					if (*source2 & 0x8000) {
+						*dest2 = *source2;
+					}
+					dest2++;
+					source2++;
+				case 2:
+					if (*source2 & 0x8000) {
+						*dest2 = *source2;
+					}
+					dest2++;
+					source2++;
+				case 1:
+					if (*source2 & 0x8000) {
+						*dest2 = *source2;
+					}
+					dest2++;
+					source2++;
+				} while (--n > 0);
+				}
+				source2 += inc;
+				dest2 += canvas_inc;
 			}
-			source2 += inc;
-			dest2 += canvas_inc;
+		}
+		else {
+			for (; total_h; total_h--)
+			{
+				int n = ((total_w + 3) >> 2);
+				switch (total_w & 3)
+				{
+				case 0: do { *dest2++ = *source2++;
+				case 3:      *dest2++ = *source2++;
+				case 2:      *dest2++ = *source2++;
+				case 1:      *dest2++ = *source2++;
+				} while (--n > 0);
+				}
+				source2 += inc;
+				dest2 += canvas_inc;
+			}
 		}
 	}
 }
@@ -1844,6 +1998,38 @@ void DrawFillRect(int x, int y, int w, int h, int c)
 		dest += 160;
 	}
 }
+
+/*
+void DrawFillRect_15bpp(int x, int y, int w, int h, pixel_t c)
+{
+	int i;
+
+	if (x + w > 320)
+		w = 320 - x;
+	if (y + h > mars_framebuffer_height)
+		h = mars_framebuffer_height - y;
+
+	int hw = w;
+
+	pixel_t* dest = I_FrameBuffer() + y * 320 + x;
+	for (i = 0; i < h; i++)
+	{
+		int n = (hw + 3) >> 2;
+		pixel_t* dest2 = dest;
+
+		switch (hw & 3)
+		{
+		case 0: do { *dest2++ = c;
+		case 3:      *dest2++ = c;
+		case 2:      *dest2++ = c;
+		case 1:      *dest2++ = c;
+		} while (--n > 0);
+		}
+
+		dest += 320;
+	}
+}
+*/
 
 void DrawLine(int x, int y, int length, int c, boolean vertical)
 {

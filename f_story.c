@@ -69,6 +69,8 @@ typedef struct
 {
 	storyscene_t scene;
 	VINT picRadar;
+	jagobj_t *sweep;
+	VINT picSweep;
 } scene_5_t;
 
 typedef struct
@@ -288,13 +290,13 @@ void DrawText(storyscene_t *scene)
 	}
 }
 
-void StartTransition() {
+void StartTransition(void) {
 	transitionCount = 8;
 	transitionDirection = 0;
 	transitionInProgress = true;
 }
 
-void RunTransition() {
+void RunTransition(void) {
 	if (transitionDirection == 0) {
 		if (transitionCount >= 0) {
 			TransitionOut();
@@ -311,7 +313,7 @@ void RunTransition() {
 	}
 }
 
-void TransitionOut() {
+void TransitionOut(void) {
 	transitionCount--;
 
 	int transitionOutHeight = introScenes[currentScene]->transitionOutHeight;
@@ -346,7 +348,7 @@ void TransitionOut() {
 	}
 }
 
-void TransitionIn() {
+void TransitionIn(void) {
 	transitionCount++;
 
 	jagobj_t *background = introScenes[currentScene]->background;
@@ -363,6 +365,7 @@ void TransitionIn() {
 			background->width,
 			1,
 			320,
+			true,
 			I_FrameBuffer()
 		);
 	}
@@ -378,6 +381,7 @@ void TransitionIn() {
 				background->width,
 				1,
 				320,
+				true,
 				I_FrameBuffer()
 			);
 		}
@@ -425,6 +429,7 @@ void Scene_1_Draw(scene_1_t *scene)
 			scene->scene.background->width,
 			scene->scene.background->height,
 			320,
+			false,
 			I_FrameBuffer()
 		);
 	}
@@ -443,6 +448,7 @@ void Scene_1_Draw(scene_1_t *scene)
 				width,
 				height,
 				320,
+				false,
 				I_FrameBuffer()
 			);
 		}
@@ -458,6 +464,34 @@ void Scene_1_Draw(scene_1_t *scene)
 		true,
 		I_FrameBuffer()
 	);
+
+	//TODO: TESTING!
+	/*if (sceneFrameCount > 2) {
+		// Draw background
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width/2,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+		DrawRotatedJagobj_15bpp(
+			scene->satellite,
+			80, //64,
+			140, //32,
+			16,
+			16,
+			(angle_t)(((sceneFrameCount * ANGLE_1) >> 18) & 0x00001F80),
+			//(angle_t)((ANG90 + (ANG45/2)) >> 19),
+			true,
+			I_FrameBuffer()
+		);
+	}*/
 
 	// Keep track of the previous two satellite positions for clearing it on new frames.
 	scene->prevSatX[1] = scene->prevSatX[0];
@@ -504,6 +538,7 @@ void Scene_2_Draw(scene_2_t *scene)
 			scene->scene.background->width,
 			scene->scene.background->height,
 			320,
+			false,
 			I_FrameBuffer()
 		);
 	}
@@ -544,6 +579,7 @@ void Scene_3_Draw(scene_3_t *scene)
 			scene->scene.background->width,
 			scene->scene.background->height,
 			320,
+			false,
 			I_FrameBuffer()
 		);
 	}
@@ -583,6 +619,7 @@ void Scene_4_Draw(scene_4_t *scene)
 			scene->scene.background->width,
 			scene->scene.background->height,
 			320,
+			false,
 			I_FrameBuffer()
 		);
 	}
@@ -625,6 +662,7 @@ void Scene_5_Draw(scene_5_t *scene)
 				scene->scene.background->width,
 				scene->scene.background->height,
 				320,
+				false,
 				I_FrameBuffer()
 			);
 		}
@@ -642,6 +680,7 @@ void Scene_5_Draw(scene_5_t *scene)
 				scene->scene.background->width,
 				bottomEdge,
 				320,
+				false,
 				I_FrameBuffer()
 			);
 			
@@ -666,33 +705,19 @@ void Scene_5_Draw(scene_5_t *scene)
 				scene->scene.backgroundX = 160 - (scene->scene.background->width >> 1);
 				scene->scene.backgroundY = 128 - scene->scene.background->height;
 
+				scene->sweep = W_CacheLumpNum(scene->picSweep, PU_LEVEL);
+
 				StartTransition();
 			}
 			else {
-				// Clear the area around the radar screen
+				// Clear to black
 				pixel_t *framebuffer = I_FrameBuffer();
 
-				for (int i = 0; i < scene->scene.backgroundY; i++) {
+				for (int i = 0; i < (scene->scene.backgroundY + scene->scene.background->height); i++) {
 					// Top
 					for (int x=0; x < 320; x += 4) {
 						*framebuffer++ = 0;
 						*framebuffer++ = 0;
-						*framebuffer++ = 0;
-						*framebuffer++ = 0;
-					}
-				}
-
-				for (int i = 0; i < scene->scene.background->height; i++) {
-					// Left side
-					for (int x=0; x < scene->scene.backgroundX; x += 2) {
-						*framebuffer++ = 0;
-						*framebuffer++ = 0;
-					}
-
-					framebuffer += scene->scene.background->width;
-
-					// Right side
-					for (int x=0; x < scene->scene.backgroundX; x += 2) {
 						*framebuffer++ = 0;
 						*framebuffer++ = 0;
 					}
@@ -708,9 +733,75 @@ void Scene_5_Draw(scene_5_t *scene)
 					scene->scene.background->width,
 					scene->scene.background->height,
 					320,
+					true,
 					I_FrameBuffer()
 				);
 			}
+		}
+		else {
+			angle_t sweepAngle = 0x1FFF - (((phaseFrameCount << 6) + (phaseFrameCount << 5)) & 0x1FFF);
+			// Draw radar sweep
+			DrawRotatedJagobj_15bpp(
+				scene->sweep,
+				scene->scene.backgroundX + (scene->scene.background->width >> 1) - 1,
+				scene->scene.backgroundY + (scene->scene.background->height >> 1),
+				sweepAngle,
+				false,
+				true,
+				I_FrameBuffer()
+			);
+
+			// Draw radar screen overlay
+			int overlayWidth = scene->scene.background->width;
+			int overlayHeight = scene->scene.background->height;
+			int srcX = 0;
+			int srcY = 0;
+
+			if (sweepAngle < 0x800) {
+				overlayWidth >>= 1;
+				srcX = overlayWidth;
+
+				if (sweepAngle == 0) {
+					overlayHeight >>= 1;
+					srcY = overlayHeight;
+				}
+			}
+			else if (sweepAngle < 0x1000) {
+				overlayHeight >>= 1;
+
+				if (sweepAngle == 0x800) {
+					overlayWidth >>= 1;
+					srcX = overlayWidth;
+				}
+			}
+			else if (sweepAngle < 0x1800) {
+				overlayWidth >>= 1;
+
+				if (sweepAngle == 0x1000) {
+					overlayHeight >>= 1;
+				}
+			}
+			else /*if (sweepAngle < 0x2000)*/ {
+				overlayHeight >>= 1;
+				srcY = overlayHeight;
+
+				if (sweepAngle == 0x1800) {
+					overlayWidth >>= 1;
+				}
+			}
+
+			DrawJagobj3_15bpp(
+				scene->scene.background,
+				scene->scene.backgroundX + srcX,
+				scene->scene.backgroundY + srcY,
+				srcX,
+				srcY,
+				overlayWidth,
+				overlayHeight,
+				320,
+				true,
+				I_FrameBuffer()
+			);
 		}
 	}
 
@@ -776,6 +867,7 @@ void Scene_6_Draw(scene_6_t *scene)
 		scene->scene.background->width,
 		scene->scene.background->height,
 		320,
+		false,
 		I_FrameBuffer()
 	);
 
@@ -953,6 +1045,7 @@ void Scene_9_Draw(scene_9_t *scene)
 		scene->scene.background->width,
 		scene->scene.background->height,
 		320,
+		false,
 		I_FrameBuffer()
 	);
 
@@ -1221,6 +1314,7 @@ void BuildScenes()
 	scene5->scene.transitionOutHeight = 204;
 	scene5->scene.picLump = W_GetNumForName("EGGMAD");
 	scene5->picRadar = W_GetNumForName("RADARBG");
+	scene5->picSweep = W_GetNumForName("RSWEEP");
 	scene5->scene.text = intro5text;
 	scene5->scene.textCharDelayTics = scene5->scene.textCharDelayCounter = 5;
 	scene5->scene.preTextDelay = TICRATE;

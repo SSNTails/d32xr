@@ -1461,19 +1461,22 @@ void DrawScaledJagobj_15bpp (jagobj_t* jo, int x, int y,
 void DrawScaledJagobj_15bppBlend (jagobj_t* jo, int x, int y,
 	fixed_t ratio_w, fixed_t ratio_h, unsigned blend_shift,
 	boolean masked, pixel_t *fb);
+void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
+	angle_t angle_deg, boolean center_origin, boolean masked, pixel_t *fb);
 /* x and y mark the screen position of the source origin. */
 void DrawScaledJagobj_15bppBlendWithOrigin (jagobj_t* jo, int x, int y,
 	int origin_x, int origin_y, fixed_t ratio_w, fixed_t ratio_h,
 	unsigned blend_shift, boolean masked, pixel_t *fb);
 void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h,
-	const int canvas_width, pixel_t *fb);
+	const int canvas_width, boolean masked, pixel_t *fb);
 void DrawMaskedGraphic(byte *data, int x, int y);
 void DrawMaskedGraphic2(byte *data, int x, int y, int src_y);
 void DrawMaskedGraphic3(byte *data, int x, int y, int src_y, int colormap);
 void DrawMaskedGraphicWithColormap(byte *data, int x, int y, int colormap);
 void DrawMaskedGraphicLump(int lumpnum, int x, int y);
 void DrawFillRect (int x, int y, int w, int h, int c);
+//void DrawFillRect_15bpp(int x, int y, int w, int h, pixel_t c);
 void DrawLine (int x, int y, int length, int c, boolean vertical);
 void UpdateBuffer (void);
 
