@@ -1364,27 +1364,27 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle
 
     fixed_t sin_a;
     fixed_t cos_a;
-    fixed_t tan_a;
+    //fixed_t tan_a;
 
 	if (angle_deg > (ANG270>>19)) {
 		cos_a = finecosine((angle_t)(ANG180>>18)-angle_deg);
 		sin_a = finesine((angle_t)(ANG180>>18)-angle_deg);
-		tan_a = finetangent((angle_t)(ANG180>>18)-angle_deg);
+		//tan_a = finetangent((angle_t)(ANG180>>18)-angle_deg);
 	}
 	else if (angle_deg > (ANG180>>19)) {
 		sin_a = finecosine((angle_t)(ANG270>>19)-angle_deg);
 		cos_a = finesine((angle_t)(ANG270>>19)-angle_deg);
-		tan_a = finetangent(angle_deg-(angle_t)(ANG180>>19));
+		//tan_a = finetangent(angle_deg-(angle_t)(ANG180>>19));
 	}
 	else if (angle_deg > (ANG90>>19)) {
 		cos_a = finecosine((angle_t)(ANG180>>19)-angle_deg);
 		sin_a = finesine((angle_t)(ANG180>>19)-angle_deg);
-		tan_a = finetangent(angle_deg);
+		//tan_a = finetangent(angle_deg);
 	}
 	else {
 		cos_a = finecosine(angle_deg);
 		sin_a = finesine(angle_deg);
-		tan_a = (65536 - finetangent(angle_deg)) + 65536;
+		//tan_a = (65536 - finetangent(angle_deg)) + 65536;
 	}
 
     const fixed_t x_center = (fixed_t)(width << 15);
@@ -1438,7 +1438,7 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle
 
 	dram_debug[0x04] = sin_a;
 	dram_debug[0x05] = cos_a;
-	dram_debug[0x06] = tan_a;
+	//dram_debug[0x06] = tan_a;
 
 	dram_debug[0x08] = x_center;
 	dram_debug[0x09] = y_center;
@@ -1460,19 +1460,20 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle
 	dram_debug[0x1C] = vertical_breakpoint;
 #endif
 
-	const fixed_t tan_a_recip = FixedDiv(FRACUNIT, tan_a);
+	//const fixed_t tan_a_recip = FixedDiv(FRACUNIT, tan_a);
     for (int y = 0; y < (canvas_height>>16); y++) {
 		int start_x;
-		int start_y;
+		//int start_y;
 		if ((y<<16) >= vertical_breakpoint) {
 			start_x = (FixedMul(((y<<16) - vertical_breakpoint), sin_a) + (FRACUNIT>>1)) >> 16;
-			start_y = (FixedMul(((y<<16) - vertical_breakpoint), tan_a) + (FRACUNIT>>1)) >> 16;
+			//start_y = (FixedMul(((y<<16) - vertical_breakpoint), tan_a) + (FRACUNIT>>1)) >> 16;
 		}
 		else {
 			start_x = (FixedMul((vertical_breakpoint - (y<<16)), cos_a) + (FRACUNIT>>1)) >> 16;
-			start_y = (FixedMul((vertical_breakpoint - (y<<16)), tan_a_recip) + (FRACUNIT>>1)) >> 16;
+			//start_y = (FixedMul((vertical_breakpoint - (y<<16)), tan_a_recip) + (FRACUNIT>>1)) >> 16;
 		}
 
+		// When walking one coordinate, it affects the other coordinate. Calculate this bias here.
 		fixed_t src_x_bias = FixedMul(((y<<16) - canvas_y_center), sin_a) - x_center;
 		fixed_t src_y_bias = FixedMul(((y<<16) - canvas_y_center), cos_a) + y_center;
 
@@ -1484,7 +1485,7 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle
 			if (first) {
 				first = 0;
 				dram_debug[0x20] = start_x;
-				dram_debug[0x21] = start_y;
+				//dram_debug[0x21] = start_y;
 				dram_debug[0x24] = src_x_bias;
 				dram_debug[0x25] = src_y_bias;
 				dram_debug[0x26] = src_x;
@@ -1999,7 +2000,7 @@ void DrawFillRect(int x, int y, int w, int h, int c)
 }
 
 /*
-void DrawFillRect_15bpp(int x, int y, int w, int h, int c)
+void DrawFillRect_15bpp(int x, int y, int w, int h, pixel_t c)
 {
 	int i;
 

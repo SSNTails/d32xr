@@ -7,6 +7,11 @@
 extern uint16_t screenCount;
 extern uint32_t frame_sync;
 
+void StartTransition (void);
+void RunTransition (void);
+void TransitionOut (void);
+void TransitionIn (void);
+
 void START_Story (void);
 int TIC_Story (void);
 void DRAW_Story (void);

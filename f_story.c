@@ -288,13 +288,13 @@ void DrawText(storyscene_t *scene)
 	}
 }
 
-void StartTransition() {
+void StartTransition(void) {
 	transitionCount = 8;
 	transitionDirection = 0;
 	transitionInProgress = true;
 }
 
-void RunTransition() {
+void RunTransition(void) {
 	if (transitionDirection == 0) {
 		if (transitionCount >= 0) {
 			TransitionOut();
@@ -311,7 +311,7 @@ void RunTransition() {
 	}
 }
 
-void TransitionOut() {
+void TransitionOut(void) {
 	transitionCount--;
 
 	int transitionOutHeight = introScenes[currentScene]->transitionOutHeight;
@@ -346,7 +346,7 @@ void TransitionOut() {
 	}
 }
 
-void TransitionIn() {
+void TransitionIn(void) {
 	transitionCount++;
 
 	jagobj_t *background = introScenes[currentScene]->background;
