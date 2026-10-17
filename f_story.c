@@ -465,34 +465,6 @@ void Scene_1_Draw(scene_1_t *scene)
 		I_FrameBuffer()
 	);
 
-	//TODO: TESTING!
-	/*if (sceneFrameCount > 2) {
-		// Draw background
-		DrawJagobj3_15bpp(
-			scene->scene.background,
-			scene->scene.backgroundX,
-			scene->scene.backgroundY,
-			0,
-			0,
-			scene->scene.background->width/2,
-			scene->scene.background->height,
-			320,
-			false,
-			I_FrameBuffer()
-		);
-		DrawRotatedJagobj_15bpp(
-			scene->satellite,
-			80, //64,
-			140, //32,
-			16,
-			16,
-			(angle_t)(((sceneFrameCount * ANGLE_1) >> 18) & 0x00001F80),
-			//(angle_t)((ANG90 + (ANG45/2)) >> 19),
-			true,
-			I_FrameBuffer()
-		);
-	}*/
-
 	// Keep track of the previous two satellite positions for clearing it on new frames.
 	scene->prevSatX[1] = scene->prevSatX[0];
 	scene->prevSatY[1] = scene->prevSatY[0];
@@ -885,35 +857,45 @@ void Scene_6_Draw(scene_6_t *scene)
 			I_FrameBuffer()
 		);
 
-	DrawScaledJagobj_15bpp(
-		scene->flicker[scene->flickerCounter],
+	jagobj_t *flicker = scene->flicker[scene->flickerCounter];
+	DrawJagobj3_15bpp(
+		flicker,
 		50,
 		6,
-		FRACUNIT,
-		FRACUNIT,
+		0,
+		0,
+		flicker->width,
+		flicker->height,
+		320,
 		true,
 		I_FrameBuffer()
 	);
 
 	int metalY = scene->metalY + (finesine(sceneFrameCount<<5) >> 15);
 
-	DrawScaledJagobj_15bpp(
+	DrawJagobj3_15bpp(
 		scene->metal,
 		scene->metalX,
 		metalY,
-		FRACUNIT,
-		FRACUNIT,
+		0,
+		0,
+		scene->metal->width,
+		scene->metal->height,
+		320,
 		true,
 		I_FrameBuffer()
 	);
 
 	jagobj_t *stache = (scene->talking && (scene->stacheCounter & 1)) ? scene->stache[1] : scene->stache[0];
-	DrawScaledJagobj_15bpp(
+	DrawJagobj3_15bpp(
 		stache,
 		55,
 		70,
-		FRACUNIT,
-		FRACUNIT,
+		0,
+		0,
+		stache->width,
+		stache->height,
+		320,
 		true,
 		I_FrameBuffer()
 	);
@@ -1055,12 +1037,16 @@ void Scene_9_Draw(scene_9_t *scene)
 		const int drawX = 182;
 		const int drawY = 62;
 
-		DrawScaledJagobj_15bpp(
-			scene->zoom[scene->zoomCurIndex],
+		jagobj_t *zoom = scene->zoom[scene->zoomCurIndex];
+		DrawJagobj3_15bpp(
+			zoom,
 			drawX + scene->zoomCoords[scene->zoomCurIndex].x,
 			drawY + scene->zoomCoords[scene->zoomCurIndex].y,
-			FRACUNIT,
-			FRACUNIT,
+			0,
+			0,
+			zoom->width,
+			zoom->height,
+			320,
 			true,
 			I_FrameBuffer()
 		);
