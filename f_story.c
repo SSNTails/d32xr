@@ -881,6 +881,7 @@ void Scene_6_Draw(scene_6_t *scene)
 			scene->noflash->width,
 			scene->noflash->height,
 			320,
+			false,
 			I_FrameBuffer()
 		);
 
@@ -1403,6 +1404,9 @@ void START_Story (void)
 	fadetime = 0;
 
 	startmap = 1;
+
+	sceneFrameCount = 0;
+	phaseFrameCount = 0;
 
 	I_SetPalette(dc_playpals);
 

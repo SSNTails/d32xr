@@ -646,8 +646,10 @@ static void ST_Drawer_ (stbar_t* sb)
 			gameX = gameStartX + (((gameX - gameStartX)/timesize) * timepassed);
 			overX = overStartX + (((overX - overStartX)/timesize) * timepassed);
 		}
-		DrawJagobjLump(go_game, gameX, 102, NULL, NULL);
-		DrawJagobjLump(go_over, overX, 102, NULL, NULL);
+
+		int gameoverY = (viewportHeight >> 1) - 12;
+		DrawJagobjLump(go_game, gameX, gameoverY, NULL, NULL);
+		DrawJagobjLump(go_over, overX, gameoverY, NULL, NULL);
 
 		if ((viewportNum & 1) == VIEWPORT_H32) {
 			clear_h32_borders = 2;
