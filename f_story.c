@@ -89,6 +89,26 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
+	jagobj_t *sleep1d;
+	jagobj_t *sleep[3]; // SLEEP2, SLEEP3, SLEEP4
+	int sleepCounter;
+	int sleepStep;
+} scene_7_t;
+
+typedef struct
+{
+	storyscene_t scene;
+	jagobj_t *crosshair;
+	jagobj_t *targetAcquired;
+	jagobj_t *gfzMountainText;
+	jagobj_t *bottomLeftInd[4];
+	int stepNum;
+	int stepCounter;
+} scene_8_t;
+
+typedef struct
+{
+	storyscene_t scene;
 	jagobj_t *sonic;
 	jagobj_t *aura;
 	jagobj_t *zoom[14];
@@ -112,7 +132,7 @@ typedef struct
 } scene_2_t, scene_3_t, scene_4_t;
 
 //#define NUMSCENES 12
-#define NUMSCENES	7
+#define NUMSCENES	9
 storyscene_t *introScenes[NUMSCENES];
 
 
@@ -718,10 +738,10 @@ void Scene_5_Draw(scene_5_t *scene)
 				scene->scene.backgroundX + (scene->scene.background->width >> 1) - 1,
 				scene->scene.backgroundY + (scene->scene.background->height >> 1),
 				sweepAngle,
-				false,
+					false,
 				true,
-				I_FrameBuffer()
-			);
+					I_FrameBuffer()
+				);
 
 			// Draw radar screen overlay
 			int overlayWidth = scene->scene.background->width;
@@ -784,6 +804,7 @@ void Scene_5_Stop(scene_5_t *scene)
 {
 	// Free any resources
 	Z_Free(scene->scene.background);
+	Z_Free(scene->sweep);
 }
 
 void Scene_6_Init(scene_6_t *scene)
@@ -913,6 +934,138 @@ void Scene_6_Stop(scene_6_t *scene)
 	Z_Free(scene->stache[0]);
 	Z_Free(scene->stache[1]);
 	Z_Free(scene->metal);
+	Z_Free(scene->noflash);
+}
+
+void Scene_7_Init(scene_7_t *scene)
+{
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->sleep1d = W_CacheLumpName("SLEEP1D", PU_LEVEL);
+	scene->sleep[0] = W_CacheLumpName("SLEEP2", PU_LEVEL);
+	scene->sleep[1] = W_CacheLumpName("SLEEP3", PU_LEVEL);
+	scene->sleep[2] = W_CacheLumpName("SLEEP4", PU_LEVEL);
+
+	scene->sleepStep = 0;
+	scene->sleepCounter = 4 * 60;
+}
+
+void Scene_7_Tick(scene_7_t *scene)
+{
+	if (scene->sleepStep == 0)
+	{
+		scene->sleepCounter--;
+		if (scene->sleepCounter <= 0)
+		{
+			scene->sleepStep++;
+			scene->sleepCounter = 30;
+		}
+	}
+	else if (scene->sleepStep == 1) // Fade to dark
+	{
+		scene->sleepCounter--;
+		if (scene->sleepCounter <= 0)
+		{
+			scene->sleepStep++;
+			scene->sleepCounter = 0;
+		}
+	}
+	else if (scene->sleepStep == 2) // Surprised
+	{
+		if ((sceneFrameCount & 7) == 0)
+			scene->sleepCounter++;
+
+		if (scene->sleepCounter >= 3)
+		{
+			scene->sleepStep++;
+			scene->sleepCounter = 120;
+		}
+	}
+}
+
+void Scene_7_Draw(scene_7_t *scene)
+{
+	if (scene->sleepStep == 0)
+	{
+		DrawJagobj3_15bpp(
+				scene->scene.background,
+				scene->scene.backgroundX,
+				scene->scene.backgroundY,
+				0,
+				0,
+				scene->scene.background->width,
+				scene->scene.background->height,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+	}
+	else if (scene->sleepStep == 1) // Fade to dark.. we can just keep redrawing!
+	{
+		int blendShift = scene->sleepCounter / 6;
+
+		DrawScaledJagobj_15bppBlend(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			FRACUNIT,
+			FRACUNIT,
+			5,
+			false,
+			I_FrameBuffer());
+	}
+	else if (scene->sleepStep == 2) // Surprised
+	{
+		VINT x, y;
+		if (scene->sleepCounter == 0)
+		{
+			x = 126;
+			y = 4;
+		}
+		else if (scene->sleepCounter == 1)
+		{
+			x = 94;
+			y = 1;
+		}
+		else // 2
+		{
+			x = 152;
+			y = 33;
+		}
+
+		jagobj_t *gfx = scene->sleep[scene->sleepCounter];
+		DrawJagobj3_15bpp(gfx, x, y, 0, 0,
+			gfx->width, gfx->height,
+			320, false, I_FrameBuffer());
+	}
+}
+
+void Scene_7_Stop(scene_7_t *scene)
+{
+	Z_Free(scene->scene.background);
+	Z_Free(scene->sleep1d);
+	Z_Free(scene->sleep[0]);
+	Z_Free(scene->sleep[1]);
+	Z_Free(scene->sleep[2]);
+}
+
+void Scene_8_Init(scene_8_t *scene)
+{
+
+}
+
+void Scene_8_Tick(scene_8_t *scene)
+{
+
+}
+
+void Scene_8_Draw(scene_8_t *scene)
+{
+
+}
+
+void Scene_8_Stop(scene_8_t *scene)
+{
+
 }
 
 void Scene_9_Init(scene_9_t *scene)
@@ -1334,6 +1487,40 @@ void BuildScenes()
 	scene6->scene.draw = (void(*)(storyscene_t *))Scene_6_Draw;
 	scene6->scene.stop = (void(*)(storyscene_t *))Scene_6_Stop;
 	introScenes[i++] = (storyscene_t*)scene6;
+
+	scene_7_t *scene7 = Z_Calloc(sizeof(*scene7), PU_STATIC);
+	scene7->scene.transitionOutHeight = 204;
+	scene7->scene.picLump = W_GetNumForName("SLEEP1");
+	scene7->scene.text = intro6text;
+	scene7->scene.textCharDelayTics = scene7->scene.textCharDelayCounter = 5;
+	scene7->scene.preTextDelay = TICRATE;
+	scene7->scene.postTextDelay = 4*TICRATE;
+	scene7->scene.textBox.x = 184;
+	scene7->scene.textBox.y = 32;
+	scene7->scene.textBox.width = 320 - 184 - 32;
+	scene7->scene.textBox.height = 200 - 64;
+	scene7->scene.init = (void(*)(storyscene_t *))Scene_7_Init;
+	scene7->scene.tic = (void(*)(storyscene_t *))Scene_7_Tick;
+	scene7->scene.draw = (void(*)(storyscene_t *))Scene_7_Draw;
+	scene7->scene.stop = (void(*)(storyscene_t *))Scene_7_Stop;
+	introScenes[i++] = (storyscene_t*)scene7;
+
+	scene_8_t *scene8 = Z_Calloc(sizeof(*scene8), PU_STATIC);
+	scene8->scene.transitionOutHeight = 204;
+	scene8->scene.picLump = W_GetNumForName("TARGETBG");
+	scene8->scene.text = intro6text;
+	scene8->scene.textCharDelayTics = scene8->scene.textCharDelayCounter = 5;
+	scene8->scene.preTextDelay = TICRATE;
+	scene8->scene.postTextDelay = 2*TICRATE;
+	scene8->scene.textBox.x = 184;
+	scene8->scene.textBox.y = 32;
+	scene8->scene.textBox.width = 320 - 184 - 32;
+	scene8->scene.textBox.height = 200 - 64;
+	scene8->scene.init = (void(*)(storyscene_t *))Scene_8_Init;
+	scene8->scene.tic = (void(*)(storyscene_t *))Scene_8_Tick;
+	scene8->scene.draw = (void(*)(storyscene_t *))Scene_8_Draw;
+	scene8->scene.stop = (void(*)(storyscene_t *))Scene_8_Stop;
+	introScenes[i++] = (storyscene_t*)scene8;
 
 	scene_9_t *scene9 = Z_Calloc(sizeof(*scene9), PU_STATIC);
 	scene9->scene.transitionOutHeight = 204;
