@@ -945,7 +945,6 @@ void Scene_6_Stop(scene_6_t *scene)
 
 void Scene_7_Init(scene_7_t *scene)
 {
-	I_Error("%d", Z_LargestFreeBlock(mainzone));
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->sleep1d = W_CacheLumpName("SLEEP1D", PU_LEVEL);
 	scene->sleep[0] = W_CacheLumpName("SLEEP2", PU_LEVEL);
@@ -1388,22 +1387,7 @@ void BuildScenes()
 {
 	int i = 0;
 
-		scene_7_t *scene7 = Z_Calloc(sizeof(*scene7), PU_STATIC);
-	scene7->scene.transitionOutHeight = 204;
-	scene7->scene.picLump = W_GetNumForName("SLEEP1");
-	scene7->scene.text = intro6text;
-	scene7->scene.textCharDelayTics = scene7->scene.textCharDelayCounter = 5;
-	scene7->scene.preTextDelay = TICRATE;
-	scene7->scene.postTextDelay = 4*TICRATE;
-	scene7->scene.textBox.x = 184;
-	scene7->scene.textBox.y = 32;
-	scene7->scene.textBox.width = 320 - 184 - 32;
-	scene7->scene.textBox.height = 200 - 64;
-	scene7->scene.init = (void(*)(storyscene_t *))Scene_7_Init;
-	scene7->scene.tic = (void(*)(storyscene_t *))Scene_7_Tick;
-	scene7->scene.draw = (void(*)(storyscene_t *))Scene_7_Draw;
-	scene7->scene.stop = (void(*)(storyscene_t *))Scene_7_Stop;
-	introScenes[i++] = (storyscene_t*)scene7;
+	I_Error("%d", Z_LargestFreeBlock(mainzone));
 
 	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
 	scene1->scene.transitionOutHeight = 204;
@@ -1512,7 +1496,22 @@ void BuildScenes()
 	scene6->scene.stop = (void(*)(storyscene_t *))Scene_6_Stop;
 	introScenes[i++] = (storyscene_t*)scene6;
 
-
+	scene_7_t *scene7 = Z_Calloc(sizeof(*scene7), PU_STATIC);
+	scene7->scene.transitionOutHeight = 204;
+	scene7->scene.picLump = W_GetNumForName("SLEEP1");
+	scene7->scene.text = intro6text;
+	scene7->scene.textCharDelayTics = scene7->scene.textCharDelayCounter = 5;
+	scene7->scene.preTextDelay = TICRATE;
+	scene7->scene.postTextDelay = 4*TICRATE;
+	scene7->scene.textBox.x = 184;
+	scene7->scene.textBox.y = 32;
+	scene7->scene.textBox.width = 320 - 184 - 32;
+	scene7->scene.textBox.height = 200 - 64;
+	scene7->scene.init = (void(*)(storyscene_t *))Scene_7_Init;
+	scene7->scene.tic = (void(*)(storyscene_t *))Scene_7_Tick;
+	scene7->scene.draw = (void(*)(storyscene_t *))Scene_7_Draw;
+	scene7->scene.stop = (void(*)(storyscene_t *))Scene_7_Stop;
+	introScenes[i++] = (storyscene_t*)scene7;
 
 	scene_8_t *scene8 = Z_Calloc(sizeof(*scene8), PU_STATIC);
 	scene8->scene.transitionOutHeight = 204;
