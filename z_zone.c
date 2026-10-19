@@ -200,7 +200,7 @@ backtostart:
 			
 			if (base == start)	/* scaned all the way around the list */
 			{
-#if MEMDEBUG
+#ifdef MEMDEBUG
 				if (err)
 					I_Error("Z_Malloc: failed on %i (LFB:%i)\n%s:%d", size, Z_LargestFreeBlock(memzone), file, line);
 #else
@@ -230,10 +230,10 @@ backtostart:
 		base->size = size;
 	}
 	
-//#ifdef MEMDEBUG
-//	D_strncpy(base->file, file, 16);
-//	base->line = line;
-//#endif
+#ifdef MEMDEBUG
+	D_strncpy(base->file, file, 16);
+	base->line = line;
+#endif
 	base->tag = tag;
 	base->id = ZONEID;
 #ifndef MARS
@@ -345,6 +345,45 @@ void Z_DumpHeap(memzone_t *memzone, int skipCount)
 			D_snprintf(appendMe, 32, "%s:%d:%d", block->file, block->line, block->size);
 		else
 			D_snprintf(appendMe, 32, "Free:%d", block->size);
+
+		for (int i = 0; i < 32; i++)
+		{
+			if (appendMe[i] == '\0')
+				break;
+			*mapPtr++ = appendMe[i];
+		}
+		*mapPtr++ = '\n';
+		numblocks++;
+		i++;
+	}
+
+	*mapPtr++ = '\0';
+	I_Error("%d blocks:\n%s", numblocks, memmap);
+}
+#else
+void Z_DumpHeap(memzone_t *memzone, int skipCount)
+{
+	char memmap[2048];
+	memmap[0] = '\0';
+	char *mapPtr = memmap;
+	int numblocks = 0;
+
+	int i = 0;
+
+	memblock_t *block;
+	for (block = &memzone->blocklist; block; block = block->next)
+	{
+		if (i < skipCount)
+		{
+			i++;
+			continue;
+		}
+		char appendMe[32];
+
+		if (block->tag)
+			D_snprintf(appendMe, 32, "%d", block->size);
+		else
+			D_snprintf(appendMe, 32, "Free: %d", block->size);
 
 		for (int i = 0; i < 32; i++)
 		{

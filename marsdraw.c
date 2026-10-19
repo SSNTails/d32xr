@@ -1244,6 +1244,64 @@ static inline uint16_t Blend15bppComponent(uint16_t source, uint16_t dest,
 	return (source + ((dest << blend_shift) - dest)) >> blend_shift;
 }
 
+void DrawJagobj_15bppBlendNomask(jagobj_t* jo, int x, int y,
+	unsigned blend_shift, pixel_t *fb)
+{
+	int width, height;
+	int srcx = 0, srcy = 0;
+	int draw_width, draw_height;
+	uint16_t *dest, *source;
+
+	if (blend_shift > 5)
+		blend_shift = 5;
+
+	width = BIGSHORT(jo->width);
+	height = BIGSHORT(jo->height);
+
+	if (width < 1 || height < 1)
+		return;
+
+	if (x < 0) {
+		srcx = -x;
+		x = 0;
+	}
+	draw_width = width - srcx;
+	if (x + draw_width > 320)
+		draw_width = 320 - x;
+	if (draw_width <= 0)
+		return;
+
+	if (y < 0) {
+		srcy = -y;
+		y = 0;
+	}
+	draw_height = height - srcy;
+	if (y + draw_height > 204)
+		draw_height = 204 - y;
+	if (draw_height <= 0)
+		return;
+
+	dest = (uint16_t*)((byte*)fb + (y * (320 << 1)) + (x << 1));
+	source = (uint16_t*)(jo->data + ((srcy * width + srcx) << 1));
+
+	for (int row = 0; row < draw_height; row++) {
+		for (int col = 0; col < draw_width; col++) {
+			uint16_t source_pixel = source[col];
+			uint16_t dest_pixel = dest[col];
+			uint16_t red = Blend15bppComponent((source_pixel >> 10) & 0x1F,
+				(dest_pixel >> 10) & 0x1F, blend_shift);
+			uint16_t green = Blend15bppComponent((source_pixel >> 5) & 0x1F,
+				(dest_pixel >> 5) & 0x1F, blend_shift);
+			uint16_t blue = Blend15bppComponent(source_pixel & 0x1F,
+				dest_pixel & 0x1F, blend_shift);
+			dest[col] = (source_pixel & 0x8000) | (red << 10) |
+				(green << 5) | blue;
+		}
+		source += width;
+		dest += 320;
+	}
+}
+
 void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 	fixed_t ratio_w, fixed_t ratio_h, unsigned blend_shift,
 	boolean masked, pixel_t *fb)

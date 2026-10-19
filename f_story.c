@@ -90,7 +90,6 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
-	jagobj_t *sleep1d;
 	jagobj_t *sleep[3]; // SLEEP2, SLEEP3, SLEEP4
 	int sleepCounter;
 	int sleepStep;
@@ -946,7 +945,6 @@ void Scene_6_Stop(scene_6_t *scene)
 void Scene_7_Init(scene_7_t *scene)
 {
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
-	scene->sleep1d = W_CacheLumpName("SLEEP1D", PU_LEVEL);
 	scene->sleep[0] = W_CacheLumpName("SLEEP2", PU_LEVEL);
 	scene->sleep[1] = W_CacheLumpName("SLEEP3", PU_LEVEL);
 	scene->sleep[2] = W_CacheLumpName("SLEEP4", PU_LEVEL);
@@ -964,6 +962,8 @@ void Scene_7_Tick(scene_7_t *scene)
 		{
 			scene->sleepStep++;
 			scene->sleepCounter = 30;
+			Z_Free(scene->scene.background);
+			scene->scene.background = W_CacheLumpName("SLEEP1D", PU_LEVEL);
 		}
 	}
 	else if (scene->sleepStep == 1) // Fade to dark
@@ -977,7 +977,7 @@ void Scene_7_Tick(scene_7_t *scene)
 	}
 	else if (scene->sleepStep == 2) // Surprised
 	{
-		if ((sceneFrameCount & 7) == 0)
+		if ((sceneFrameCount & 31) == 0)
 			scene->sleepCounter++;
 
 		if (scene->sleepCounter >= 3)
@@ -1007,16 +1007,11 @@ void Scene_7_Draw(scene_7_t *scene)
 	}
 	else if (scene->sleepStep == 1) // Fade to dark.. we can just keep redrawing!
 	{
-		int blendShift = scene->sleepCounter / 6;
-
-		DrawScaledJagobj_15bppBlend(
+		DrawJagobj_15bppBlendNomask(
 			scene->scene.background,
 			scene->scene.backgroundX,
 			scene->scene.backgroundY,
-			FRACUNIT,
-			FRACUNIT,
-			5,
-			false,
+			4,
 			I_FrameBuffer());
 	}
 	else if (scene->sleepStep == 2) // Surprised
@@ -1034,8 +1029,8 @@ void Scene_7_Draw(scene_7_t *scene)
 		}
 		else // 2
 		{
-			x = 152;
-			y = 33;
+			x = 94;
+			y = 1;
 		}
 
 		jagobj_t *gfx = scene->sleep[scene->sleepCounter];
@@ -1048,7 +1043,6 @@ void Scene_7_Draw(scene_7_t *scene)
 void Scene_7_Stop(scene_7_t *scene)
 {
 	Z_Free(scene->scene.background);
-	Z_Free(scene->sleep1d);
 	Z_Free(scene->sleep[0]);
 	Z_Free(scene->sleep[1]);
 	Z_Free(scene->sleep[2]);
@@ -1387,8 +1381,6 @@ void BuildScenes()
 {
 	int i = 0;
 
-	I_Error("%d", Z_LargestFreeBlock(mainzone));
-
 	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
 	scene1->scene.transitionOutHeight = 204;
 	scene1->scene.picLump = W_GetNumForName("PLANET");
@@ -1590,6 +1582,8 @@ void START_Story (void)
 	phaseFrameCount = 0;
 
 	I_SetPalette(dc_playpals);
+
+	Z_FreeTags(mainzone);
 
 	R_InitColormap();
 
