@@ -68,6 +68,13 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
+	jagobj_t *asteroid[35];
+	int asteroidIndex;
+} scene_4_t;
+
+typedef struct
+{
+	storyscene_t scene;
 	VINT picRadar;
 	jagobj_t *radar;
 	jagobj_t *sweep;
@@ -129,7 +136,7 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
-} scene_2_t, scene_3_t, scene_4_t;
+} scene_2_t, scene_3_t;
 
 //#define NUMSCENES 12
 #define NUMSCENES	9
@@ -595,6 +602,27 @@ void Scene_4_Init(scene_4_t *scene)
 
 void Scene_4_Tick(scene_4_t *scene)
 {
+	if (sceneFrameCount == 24) {
+		// Need to free memory to store the asteroid frames.
+		Z_Free(scene->scene.background);
+		scene->scene.background = NULL;
+
+		// Load all 35 asteroid frames into RAM.
+		for (int i = 0; i < 35; i++)
+		{
+			char ln[9];
+			D_snprintf(ln, 8, "ROID00%02d", i);
+			scene->asteroid[i] = W_CacheLumpName(ln, PU_LEVEL);
+		}
+	}
+
+	if (sceneFrameCount & 1) {
+		scene->asteroidIndex++;
+		if (scene->asteroidIndex == 35) {
+			scene->asteroidIndex = 0;
+		}
+	}
+
 	TIC_Text(&scene->scene);
 }
 
@@ -622,7 +650,15 @@ void Scene_4_Draw(scene_4_t *scene)
 void Scene_4_Stop(scene_4_t *scene)
 {
 	// Free any resources
-	Z_Free(scene->scene.background);
+	if (scene->scene.background != NULL) {
+		Z_Free(scene->scene.background);
+	}
+	else {
+		for (int i = 35-1; i >= 0; i--)
+		{
+			Z_Free(scene->asteroid[i]);
+		}
+	}
 }
 
 void Scene_5_Init(scene_5_t *scene)
@@ -1435,7 +1471,7 @@ void BuildScenes()
 
 	scene_4_t *scene4 = Z_Calloc(sizeof(*scene4), PU_STATIC);
 	scene4->scene.transitionOutHeight = 204;
-	scene4->scene.picLump = W_GetNumForName("PLANET");	//TODO: Change me!
+	scene4->scene.picLump = W_GetNumForName("ROCKBG");
 	scene4->scene.text = intro4text;
 	scene4->scene.textCharDelayTics = scene4->scene.textCharDelayCounter = 5;
 	scene4->scene.preTextDelay = TICRATE;
