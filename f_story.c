@@ -81,6 +81,8 @@ typedef struct
 	jagobj_t *radWave[4];
 	jagobj_t *actBar[4];
 	jagobj_t *warning;
+	jagobj_t *blip;
+	int blipShift;
 	int animationCounter;
 } scene_5_t;
 
@@ -681,17 +683,40 @@ void Scene_5_Init(scene_5_t *scene)
 	scene->actBar[2] = W_CacheLumpName("ACTBAR3", PU_LEVEL);
 	scene->actBar[3] = W_CacheLumpName("ACTBAR4", PU_LEVEL);
 	scene->warning = W_CacheLumpName("ANOMALY", PU_LEVEL);
+	scene->blip = W_CacheLumpName("RADBLIP", PU_LEVEL);
+
+	scene->blipShift = 6; // <= 5 means it draws
 }
 
 void Scene_5_Tick(scene_5_t *scene)
 {
 	TIC_Text(&scene->scene);
 
-	if (sceneFrameCount & 7)
+	if ((sceneFrameCount & 7) == 0)
 	{
 		scene->animationCounter++;
 		if (scene->animationCounter > 3)
 			scene->animationCounter = 0;
+	}
+
+	if (scene->blipShift < 6 && (phaseFrameCount & 3) == 0)
+		scene->blipShift++;
+
+	if (scene->blipShift >= 6)
+		scene->blipShift = 6;
+
+	if (currentPhase >= 1 && (phaseFrameCount & 127) == 0) // Just a test
+		scene->blipShift = 0;
+
+	if (currentPhase == 1 && phaseFrameCount == 0)
+	{
+		jagobj_t *swap = scene->scene.background;
+		scene->scene.background = scene->radar;
+		scene->radar = swap;
+		scene->scene.backgroundX = 160 - (scene->scene.background->width >> 1);
+		scene->scene.backgroundY = 128 - scene->scene.background->height;
+
+		scene->sweep = W_CacheLumpNum(scene->picSweep, PU_LEVEL);
 	}
 }
 
@@ -749,15 +774,6 @@ void Scene_5_Draw(scene_5_t *scene)
 		if (phaseFrameCount <= 2) {
 			if (phaseFrameCount == 0)
 			{
-				// TODO: HACK PLEASE CHANGE
-				jagobj_t *swap = scene->scene.background;
-				scene->scene.background = scene->radar;
-				scene->radar = swap;
-				scene->scene.backgroundX = 160 - (scene->scene.background->width >> 1);
-				scene->scene.backgroundY = 128 - scene->scene.background->height;
-
-				scene->sweep = W_CacheLumpNum(scene->picSweep, PU_LEVEL);
-
 				StartTransition();
 			}
 			else {
@@ -841,13 +857,13 @@ void Scene_5_Draw(scene_5_t *scene)
 				}
 			}
 
-			const int radarPosX = scene->scene.backgroundX + srcX;
-			const int radarPosY = scene->scene.backgroundY + srcY;
+			const int radarPosX = scene->scene.backgroundX;
+			const int radarPosY = scene->scene.backgroundY;
 
 			DrawJagobj3_15bpp(
 				scene->scene.background,
-				radarPosX,
-				radarPosY,
+				scene->scene.backgroundX + srcX,
+				scene->scene.backgroundY + srcY,
 				srcX,
 				srcY,
 				overlayWidth,
@@ -892,6 +908,30 @@ void Scene_5_Draw(scene_5_t *scene)
 				false,
 				I_FrameBuffer()
 			);
+
+			if (scene->blipShift <= 5)
+			{
+				DrawJagobj3_15bpp(
+					scene->scene.background,
+					scene->scene.backgroundX + 96,
+					scene->scene.backgroundY + 32,
+					96,
+					32,
+					scene->blip->width,
+					scene->blip->height,
+					320,
+					true,
+					I_FrameBuffer()
+				);
+
+				DrawScaledJagobj_15bppBlend(
+					scene->blip,
+					radarPosX + 96,
+					radarPosY + 32,
+					FRACUNIT, FRACUNIT,
+					scene->blipShift, true, I_FrameBuffer()
+				);
+			}
 		}
 	}
 
