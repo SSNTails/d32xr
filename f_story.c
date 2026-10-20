@@ -686,6 +686,8 @@ void Scene_5_Init(scene_5_t *scene)
 	scene->blip = W_CacheLumpName("RADBLIP", PU_LEVEL);
 
 	scene->blipShift = 6; // <= 5 means it draws
+
+	S_StartSound(NULL, sfx_s3k_5f);
 }
 
 void Scene_5_Tick(scene_5_t *scene)
