@@ -1127,6 +1127,7 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 {
 	int		srcx, srcy;
 	int		width, height;
+	int		clipped_x, clipped_y;
 	fixed_t	total_scaled_w, total_scaled_h;
 	fixed_t	inc_x, inc_y;
 	uint16_t	*dest, *source;
@@ -1136,19 +1137,18 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 
 	srcx = 0;
 	srcy = 0;
+	clipped_x = 0;
+	clipped_y = 0;
 
 	if (width < 1 || height < 1)
 		return;
 
 	if (x < 0) {
-		total_scaled_w = FixedMul(((width + x) << 16), ratio_w) >> 16;
-		srcx = (-x)<<1;
+		clipped_x = -x;
 		x = 0;
 	}
-	else
-	{
-		total_scaled_w = FixedMul((width << 16), ratio_w) >> 16;
-	}
+	total_scaled_w = FixedMul((width << 16), ratio_w) >> 16;
+	total_scaled_w -= clipped_x;
 
 	if (x + total_scaled_w > 320) {
 		total_scaled_w = 320 - x;
@@ -1158,14 +1158,11 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 	}
 
 	if (y < 0) {
-		total_scaled_h = FixedMul(((height + y) << 16), ratio_h) >> 16;
-		srcy = -y;
+		clipped_y = -y;
 		y = 0;
 	}
-	else
-	{
-		total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
-	}
+	total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
+	total_scaled_h -= clipped_y;
 
 	if (y + total_scaled_h > 204) {
 		total_scaled_h = 204 - y;
@@ -1177,8 +1174,12 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 	ratio_w = FixedDiv(FRACUNIT, ratio_w);
 	ratio_h = FixedDiv(FRACUNIT, ratio_h);
 
-	inc_x = 0;
-	inc_y = 0;
+	inc_x = FixedMul((int64_t)clipped_x * FRACUNIT, ratio_w);
+	srcx = (inc_x >> 16) << 1;
+	inc_x &= 0xFFFF;
+	inc_y = FixedMul((int64_t)clipped_y * FRACUNIT, ratio_h);
+	srcy = inc_y >> 16;
+	inc_y &= 0xFFFF;
 
 	dest = (uint16_t*)((byte*)fb + (y * (320<<1)) + (x<<1));
 	source = (uint16_t*)(jo->data + srcx + ((srcy * width) << 1));
@@ -1308,6 +1309,7 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 {
 	int srcx, srcy;
 	int width, height;
+	int clipped_x, clipped_y;
 	fixed_t total_scaled_w, total_scaled_h;
 	fixed_t inc_x, inc_y;
 	uint16_t *dest, *source;
@@ -1320,18 +1322,18 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 
 	srcx = 0;
 	srcy = 0;
+	clipped_x = 0;
+	clipped_y = 0;
 
 	if (width < 1 || height < 1)
 		return;
 
 	if (x < 0) {
-		total_scaled_w = FixedMul(((width + x) << 16), ratio_w) >> 16;
-		srcx = (-x) << 1;
+		clipped_x = -x;
 		x = 0;
 	}
-	else {
-		total_scaled_w = FixedMul((width << 16), ratio_w) >> 16;
-	}
+	total_scaled_w = FixedMul((width << 16), ratio_w) >> 16;
+	total_scaled_w -= clipped_x;
 
 	if (x + total_scaled_w > 320)
 		total_scaled_w = 320 - x;
@@ -1339,13 +1341,11 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 		return;
 
 	if (y < 0) {
-		total_scaled_h = FixedMul(((height + y) << 16), ratio_h) >> 16;
-		srcy = -y;
+		clipped_y = -y;
 		y = 0;
 	}
-	else {
-		total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
-	}
+	total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
+	total_scaled_h -= clipped_y;
 
 	if (y + total_scaled_h > 204)
 		total_scaled_h = 204 - y;
@@ -1355,8 +1355,12 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 	ratio_w = FixedDiv(FRACUNIT, ratio_w);
 	ratio_h = FixedDiv(FRACUNIT, ratio_h);
 
-	inc_x = 0;
-	inc_y = 0;
+	inc_x = FixedMul((int64_t)clipped_x * FRACUNIT, ratio_w);
+	srcx = (inc_x >> 16) << 1;
+	inc_x &= 0xFFFF;
+	inc_y = FixedMul((int64_t)clipped_y * FRACUNIT, ratio_h);
+	srcy = inc_y >> 16;
+	inc_y &= 0xFFFF;
 
 	dest = (uint16_t*)((byte*)fb + (y * (320 << 1)) + (x << 1));
 	source = (uint16_t*)(jo->data + srcx + ((srcy * width) << 1));
