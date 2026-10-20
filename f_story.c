@@ -47,7 +47,6 @@ typedef struct storyscene_s
 	int16_t curTextPosX;
 	int16_t curTextPosY;
 	int16_t drawText; // Flag to indicate that the text should be drawn this frame
-	int sceneTime;
 
 	void (*init)(struct storyscene_s *self);
     void (*tic)(struct storyscene_s *self);
@@ -76,9 +75,13 @@ typedef struct
 {
 	storyscene_t scene;
 	VINT picRadar;
+	VINT picSweep;
 	jagobj_t *radar;
 	jagobj_t *sweep;
-	VINT picSweep;
+	jagobj_t *radWave[4];
+	jagobj_t *actBar[4];
+	jagobj_t *warning;
+	int animationCounter;
 } scene_5_t;
 
 typedef struct
@@ -98,8 +101,7 @@ typedef struct
 {
 	storyscene_t scene;
 	jagobj_t *sleep[3]; // SLEEP2, SLEEP3, SLEEP4
-	int sleepCounter;
-	int sleepStep;
+	int sleepCounter; // For eye animation
 } scene_7_t;
 
 typedef struct
@@ -669,11 +671,28 @@ void Scene_5_Init(scene_5_t *scene)
 	scene->scene.backgroundY = 0;
 	scene->radar = W_CacheLumpNum(scene->picRadar, PU_LEVEL);
 	scene->sweep = W_CacheLumpNum(scene->picSweep, PU_LEVEL);
+
+	scene->radWave[0] = W_CacheLumpName("RADWAVE1", PU_LEVEL);
+	scene->radWave[1] = W_CacheLumpName("RADWAVE2", PU_LEVEL);
+	scene->radWave[2] = W_CacheLumpName("RADWAVE3", PU_LEVEL);
+	scene->radWave[3] = W_CacheLumpName("RADWAVE4", PU_LEVEL);
+	scene->actBar[0] = W_CacheLumpName("ACTBAR1", PU_LEVEL);
+	scene->actBar[1] = W_CacheLumpName("ACTBAR2", PU_LEVEL);
+	scene->actBar[2] = W_CacheLumpName("ACTBAR3", PU_LEVEL);
+	scene->actBar[3] = W_CacheLumpName("ACTBAR4", PU_LEVEL);
+	scene->warning = W_CacheLumpName("ANOMALY", PU_LEVEL);
 }
 
 void Scene_5_Tick(scene_5_t *scene)
 {
 	TIC_Text(&scene->scene);
+
+	if (sceneFrameCount & 7)
+	{
+		scene->animationCounter++;
+		if (scene->animationCounter > 3)
+			scene->animationCounter = 0;
+	}
 }
 
 void Scene_5_Draw(scene_5_t *scene)
@@ -822,16 +841,55 @@ void Scene_5_Draw(scene_5_t *scene)
 				}
 			}
 
+			const int radarPosX = scene->scene.backgroundX + srcX;
+			const int radarPosY = scene->scene.backgroundY + srcY;
+
 			DrawJagobj3_15bpp(
 				scene->scene.background,
-				scene->scene.backgroundX + srcX,
-				scene->scene.backgroundY + srcY,
+				radarPosX,
+				radarPosY,
 				srcX,
 				srcY,
 				overlayWidth,
 				overlayHeight,
 				320,
 				true,
+				I_FrameBuffer()
+			);
+
+			DrawJagobj3_15bpp(
+				scene->actBar[scene->animationCounter],
+				radarPosX + 5,
+				radarPosY + 108,
+				0, 0,
+				scene->actBar[scene->animationCounter]->width,
+				scene->actBar[scene->animationCounter]->height,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+
+			DrawJagobj3_15bpp(
+				scene->radWave[scene->animationCounter],
+				radarPosX + 108,
+				radarPosY + 3,
+				0, 0,
+				scene->radWave[scene->animationCounter]->width,
+				scene->radWave[scene->animationCounter]->height,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+
+			DrawJagobj3_15bpp(
+				scene->warning,
+				radarPosX + 109,
+				radarPosY + 108,
+				0, 0,
+				scene->warning->width,
+				scene->warning->height,
+				320,
+				false,
 				I_FrameBuffer()
 			);
 		}
@@ -878,7 +936,6 @@ void Scene_6_Tick(scene_6_t *scene)
 		}
 	}
 
-	scene->scene.sceneTime++;
 	if ((sceneFrameCount & 7) == 0)
 		scene->stacheCounter++;
 
@@ -985,48 +1042,38 @@ void Scene_7_Init(scene_7_t *scene)
 	scene->sleep[1] = W_CacheLumpName("SLEEP3", PU_LEVEL);
 	scene->sleep[2] = W_CacheLumpName("SLEEP4", PU_LEVEL);
 
-	scene->sleepStep = 0;
-	scene->sleepCounter = 4 * 60;
+	scene->sleepCounter = 0;
 }
 
 void Scene_7_Tick(scene_7_t *scene)
 {
-	if (scene->sleepStep == 0)
+	if (currentPhase == 0)
 	{
-		scene->sleepCounter--;
-		if (scene->sleepCounter <= 0)
+		if (phaseFrameCount >= 4 * 60)
 		{
-			scene->sleepStep++;
-			scene->sleepCounter = 30;
+			NextPhase();
 			Z_Free(scene->scene.background);
 			scene->scene.background = W_CacheLumpName("SLEEP1D", PU_LEVEL);
 		}
 	}
-	else if (scene->sleepStep == 1) // Fade to dark
+	else if (currentPhase == 1) // Fade to dark
 	{
-		scene->sleepCounter--;
-		if (scene->sleepCounter <= 0)
-		{
-			scene->sleepStep++;
-			scene->sleepCounter = 0;
-		}
+		if (phaseFrameCount >= 30)
+			NextPhase();
 	}
-	else if (scene->sleepStep == 2) // Surprised
+	else if (currentPhase == 2) // Surprised
 	{
 		if ((sceneFrameCount & 31) == 0)
 			scene->sleepCounter++;
 
 		if (scene->sleepCounter >= 3)
-		{
-			scene->sleepStep++;
-			scene->sleepCounter = 120;
-		}
+			NextPhase();
 	}
 }
 
 void Scene_7_Draw(scene_7_t *scene)
 {
-	if (scene->sleepStep == 0)
+	if (currentPhase == 0)
 	{
 		DrawJagobj3_15bpp(
 				scene->scene.background,
@@ -1041,7 +1088,7 @@ void Scene_7_Draw(scene_7_t *scene)
 				I_FrameBuffer()
 			);
 	}
-	else if (scene->sleepStep == 1) // Fade to dark.. we can just keep redrawing!
+	else if (currentPhase == 1) // Fade to dark.. we can just keep redrawing!
 	{
 		DrawJagobj_15bppBlendNomask(
 			scene->scene.background,
@@ -1050,7 +1097,7 @@ void Scene_7_Draw(scene_7_t *scene)
 			4,
 			I_FrameBuffer());
 	}
-	else if (scene->sleepStep == 2) // Surprised
+	else if (currentPhase == 2) // Surprised
 	{
 		VINT x, y;
 		if (scene->sleepCounter == 0)
