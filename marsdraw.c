@@ -1469,24 +1469,25 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle
 	const fixed_t horizontal_breakpoint = ((canvas_width - opening_width) >> 1);
     const fixed_t vertical_breakpoint = ((canvas_height - opening_height) >> 1);
 
-	if (angle_deg > (ANG270>>19)) {
-		dest_x -= (horizontal_breakpoint >> 16);
-	}
-	else if (angle_deg > (ANG180>>19)) {
-		dest_x -= (canvas_width >> 16);
-		dest_y -= ((vertical_breakpoint + opening_height) >> 16);
-	}
-	else if (angle_deg > (ANG90>>19)) {
-		dest_x -= ((horizontal_breakpoint + opening_width) >> 16);
-		dest_y -= (canvas_height >> 16);
-	}
-	else {
-		dest_y -= (vertical_breakpoint >> 16);
-	}
-
 	if (center_origin) {
 		dest_x -= ((canvas_width >> 1) >> 16);
 		dest_y -= ((canvas_height >> 1) >> 16);
+	}
+	else {
+		if (angle_deg > (ANG270>>19)) {
+			dest_x -= (horizontal_breakpoint >> 16);
+		}
+		else if (angle_deg > (ANG180>>19)) {
+			dest_x -= (canvas_width >> 16);
+			dest_y -= ((vertical_breakpoint + opening_height) >> 16);
+		}
+		else if (angle_deg > (ANG90>>19)) {
+			dest_x -= ((horizontal_breakpoint + opening_width) >> 16);
+			dest_y -= (canvas_height >> 16);
+		}
+		else {
+			dest_y -= (vertical_breakpoint >> 16);
+		}
 	}
 
 #ifdef ROTATION_DEBUG

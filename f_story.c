@@ -87,6 +87,7 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
+	jagobj_t *behindAsteroid;
 	jagobj_t *asteroid[35];
 	int asteroidIndex;
 } scene_4_t;
@@ -659,6 +660,14 @@ void Scene_3_Stop(scene_3_t *scene)
 void Scene_4_Init(scene_4_t *scene)
 {
 	// Cache any graphics, etc.
+	/*jagobj_t *behindAsteroid = (jagobj_t *)Z_Malloc(16 + (sizeof(pixel_t) * (320*72)), PU_LEVEL);
+	behindAsteroid->depth = 5;
+	behindAsteroid->width = 320;
+	behindAsteroid->height = 72;
+	behindAsteroid->flags = 0;
+	behindAsteroid->index = 0;
+	scene->behindAsteroid = behindAsteroid;*/
+
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
@@ -667,6 +676,20 @@ void Scene_4_Init(scene_4_t *scene)
 void Scene_4_Tick(scene_4_t *scene)
 {
 	if (sceneFrameCount == 24) {
+		// Save the portion of the background that the asteroid will travel across.
+		/*DrawJagobj3_15bpp(
+			scene->scene.background,
+			0,
+			0,
+			0,
+			48,
+			scene->behindAsteroid->width,
+			scene->behindAsteroid->height,
+			320,
+			false,
+			scene->behindAsteroid->data
+		);*/
+
 		// Need to free memory to store the asteroid frames.
 		Z_Free(scene->scene.background);
 		scene->scene.background = NULL;
@@ -707,6 +730,34 @@ void Scene_4_Draw(scene_4_t *scene)
 			I_FrameBuffer()
 		);
 	}
+	else if (sceneFrameCount > 24) {
+		const int asteroidX = 296 - (sceneFrameCount >> 2);
+		const int asteroidY = 48;
+		const angle_t asteroidAngle = (((sceneFrameCount << 4) + (sceneFrameCount << 3)) & 0x1FFF);
+
+		/*DrawJagobj3_15bpp(
+			scene->behindAsteroid,
+			asteroidX - 36,
+			asteroidY - 36,
+			asteroidX - 36,
+			0,
+			76,
+			scene->behindAsteroid->height,
+			320,
+			false,
+			scene->behindAsteroid
+		);*/
+
+		DrawRotatedJagobj_15bpp(
+			scene->asteroid[scene->asteroidIndex],
+			asteroidX,
+			asteroidY,
+			asteroidAngle,
+			true,
+			true,
+			I_FrameBuffer()
+		);
+	}
 
 	DrawText(&scene->scene);
 }
@@ -723,6 +774,7 @@ void Scene_4_Stop(scene_4_t *scene)
 			Z_Free(scene->asteroid[i]);
 		}
 	}
+	//Z_Free(scene->behindAsteroid);
 }
 
 void Scene_5_Init(scene_5_t *scene)
