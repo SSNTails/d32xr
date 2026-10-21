@@ -112,9 +112,13 @@ typedef struct
 	jagobj_t *crosshair;
 	jagobj_t *targetAcquired;
 	jagobj_t *gfzMountainText;
+	jagobj_t *compass;
+	jagobj_t *bar;
 	jagobj_t *bottomLeftInd[4];
-	int stepNum;
-	int stepCounter;
+	int barAnim;
+	int acquiredWidth;
+	int gfzWidth;
+	fixed_t crosshairScale;
 } scene_8_t;
 
 typedef struct
@@ -1089,6 +1093,8 @@ void Scene_7_Init(scene_7_t *scene)
 
 void Scene_7_Tick(scene_7_t *scene)
 {
+	TIC_Text(&scene->scene);
+
 	if (currentPhase == 0)
 	{
 		if (phaseFrameCount >= 4 * 60)
@@ -1163,6 +1169,8 @@ void Scene_7_Draw(scene_7_t *scene)
 			gfx->width, gfx->height,
 			320, false, I_FrameBuffer());
 	}
+
+	DrawText(&scene->scene);
 }
 
 void Scene_7_Stop(scene_7_t *scene)
@@ -1175,22 +1183,213 @@ void Scene_7_Stop(scene_7_t *scene)
 
 void Scene_8_Init(scene_8_t *scene)
 {
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 68;
+	scene->scene.backgroundY = 0;
 
+	scene->crosshair = W_CacheLumpName("TGCROSSH", PU_LEVEL);
+	scene->targetAcquired = W_CacheLumpName("TGACQ", PU_LEVEL);
+	scene->gfzMountainText = W_CacheLumpName("TGGFZ", PU_LEVEL);
+	scene->compass = W_CacheLumpName("TGCOMPAS", PU_LEVEL);
+	scene->bar = W_CacheLumpName("TGBAR", PU_LEVEL);
+	scene->bottomLeftInd[0] = W_CacheLumpName("TGBAR1", PU_LEVEL);
+	scene->bottomLeftInd[1] = W_CacheLumpName("TGBAR2", PU_LEVEL);
+	scene->bottomLeftInd[2] = W_CacheLumpName("TGBAR3", PU_LEVEL);
+	scene->bottomLeftInd[3] = W_CacheLumpName("TGBAR4", PU_LEVEL);
+	scene->gfzWidth = 0;
+	scene->acquiredWidth = 0;
 }
 
 void Scene_8_Tick(scene_8_t *scene)
 {
+	TIC_Text(&scene->scene);
 
+	if ((sceneFrameCount & 7) == 0)
+	{
+		scene->barAnim++;
+		if (scene->barAnim > 3)
+			scene->barAnim = 0;		
+	}
+
+	if (currentPhase == 0 && phaseFrameCount > 120)
+	{
+		// Play sound
+		NextPhase();
+	}
+	else if (currentPhase == 1)
+	{
+		scene->acquiredWidth++;
+		if (scene->acquiredWidth > scene->targetAcquired->width)
+			scene->acquiredWidth = scene->targetAcquired->width;
+
+		if (phaseFrameCount > scene->targetAcquired->width * 2)
+			NextPhase();
+	}
+	else if (currentPhase == 2)
+	{
+		scene->gfzWidth++;
+		if (scene->gfzWidth > scene->gfzMountainText->width)
+			scene->gfzWidth = scene->gfzMountainText->width;
+
+		if (phaseFrameCount > scene->gfzMountainText->width * 2)
+		{
+			NextPhase();
+			scene->crosshairScale = 8*FRACUNIT;
+		}
+	}
+	else if (currentPhase == 3)
+	{
+		if (scene->crosshairScale > FRACUNIT)
+			scene->crosshairScale -= FRACUNIT;
+
+		if (scene->crosshairScale <= FRACUNIT)
+		{
+			scene->crosshairScale = FRACUNIT;
+			NextPhase();
+		}
+	}
+	else if (currentPhase == 4)
+	{
+		// Things!
+	}
 }
 
 void Scene_8_Draw(scene_8_t *scene)
 {
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		false,
+		I_FrameBuffer()
+	);
 
+	if (currentPhase > 0)
+	{
+		if (scene->acquiredWidth > 0)
+		{
+			DrawJagobj3_15bpp(
+				scene->targetAcquired,
+				scene->scene.backgroundX + 2,
+				scene->scene.backgroundY + 4,
+				0, 0,
+				scene->acquiredWidth,
+				scene->targetAcquired->height,
+				320,
+				true,
+				I_FrameBuffer()
+			);
+		}
+
+		if (scene->gfzWidth > 0)
+		{
+			DrawJagobj3_15bpp(
+				scene->gfzMountainText,
+				scene->scene.backgroundX + 2,
+				scene->scene.backgroundY + 10,
+				0, 0,
+				scene->gfzWidth,
+				scene->gfzMountainText->height,
+				320,
+				true,
+				I_FrameBuffer()
+			);
+		}
+
+		DrawJagobj3_15bpp(
+			scene->compass,
+			scene->scene.backgroundX + 155,
+			scene->scene.backgroundY + 98,
+			0, 0,
+			scene->compass->width,
+			scene->compass->height,
+			320,
+			true,
+			I_FrameBuffer()
+		);
+		
+		DrawJagobj3_15bpp(
+			scene->bottomLeftInd[scene->barAnim],
+			scene->scene.backgroundX + 2,
+			scene->scene.backgroundY + 114,
+			0, 0,
+			scene->bottomLeftInd[scene->barAnim]->width,
+			scene->bottomLeftInd[scene->barAnim]->height,
+			320,
+			true,
+			I_FrameBuffer()
+		);
+
+		if (currentPhase >= 3)
+		{
+			if (currentPhase >= 4)
+			{
+				if ((phaseFrameCount & 15) < 8)
+				{
+					DrawScaledJagobj_15bppBlendWithOrigin(
+						scene->crosshair,
+						scene->scene.backgroundX + (scene->scene.background->width / 2),
+						scene->scene.backgroundY + (scene->scene.background->height / 2),
+						scene->crosshair->width / 2,
+						scene->crosshair->height / 2,
+						scene->crosshairScale,
+						scene->crosshairScale,
+						1,
+						true,
+						I_FrameBuffer()
+					);
+				}
+				else
+				{
+					DrawJagobj3_15bpp(
+						scene->scene.background,
+						scene->scene.backgroundX + 68,
+						scene->scene.backgroundY + 39,
+						68, 39,
+						scene->crosshair->width,
+						scene->crosshair->height,
+						320,
+						false,
+						I_FrameBuffer()
+					);
+				}
+			}
+			else
+				DrawScaledJagobj_15bppBlendWithOrigin(
+					scene->crosshair,
+					scene->scene.backgroundX + (scene->scene.background->width / 2),
+					scene->scene.backgroundY + (scene->scene.background->height / 2),
+					scene->crosshair->width / 2,
+					scene->crosshair->height / 2,
+					scene->crosshairScale,
+					scene->crosshairScale,
+					1,
+					true,
+					I_FrameBuffer()
+				);
+		}
+	}
+
+	DrawText(&scene->scene);
 }
 
 void Scene_8_Stop(scene_8_t *scene)
 {
-
+	Z_Free(scene->scene.background);
+	Z_Free(scene->crosshair);
+	Z_Free(scene->targetAcquired);
+	Z_Free(scene->gfzMountainText);
+	Z_Free(scene->compass);
+	Z_Free(scene->bar);
+	Z_Free(scene->bottomLeftInd[0]);
+	Z_Free(scene->bottomLeftInd[1]);
+	Z_Free(scene->bottomLeftInd[2]);
+	Z_Free(scene->bottomLeftInd[3]);
 }
 
 void Scene_9_Init(scene_9_t *scene)
@@ -1221,6 +1420,8 @@ void Scene_9_Init(scene_9_t *scene)
 
 void Scene_9_Tick(scene_9_t *scene)
 {
+	TIC_Text(&scene->scene);
+
 	if (scene->zoomStartDelay)
 	{
 		scene->zoomStartDelay--;
@@ -1350,6 +1551,8 @@ void Scene_9_Draw(scene_9_t *scene)
 		DrawScaledJagobj_15bppBlendWithOrigin(
 			scene->sonic, scene->sonicPosX >> FRACBITS, scene->sonicPosY >> FRACBITS, 64, 126, scene->sonicScale, scene->sonicScale, 0, true, I_FrameBuffer());
 	}
+
+	DrawText(&scene->scene);
 }
 
 void Scene_9_Stop(scene_9_t *scene)
@@ -1511,7 +1714,7 @@ void BuildScenes()
 	scene1->scene.picLump = W_GetNumForName("PLANET");
 	scene1->picSatellite = W_GetNumForName("SATELLIT");
 	scene1->scene.text = intro1text;
-	scene1->scene.textCharDelayTics = scene1->scene.textCharDelayCounter = 5;
+	scene1->scene.textCharDelayTics = scene1->scene.textCharDelayCounter = 4;
 	scene1->scene.preTextDelay = TICRATE;
 	scene1->scene.postTextDelay = 2*TICRATE;
 	scene1->scene.textBox.x = 16;
@@ -1528,7 +1731,7 @@ void BuildScenes()
 	scene2->scene.transitionOutHeight = 204;
 	scene2->scene.picLump = W_GetNumForName("RSBG");
 	scene2->scene.text = intro2text;
-	scene2->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 5;
+	scene2->scene.textCharDelayTics = scene2->scene.textCharDelayCounter = 4;
 	scene2->scene.preTextDelay = TICRATE;
 	scene2->scene.postTextDelay = 2*TICRATE;
 	scene2->scene.textBox.x = 16;
@@ -1545,7 +1748,7 @@ void BuildScenes()
 	scene3->scene.transitionOutHeight = 204;
 	scene3->scene.picLump = W_GetNumForName("PLANET2");
 	scene3->scene.text = intro3text;
-	scene3->scene.textCharDelayTics = scene3->scene.textCharDelayCounter = 5;
+	scene3->scene.textCharDelayTics = scene3->scene.textCharDelayCounter = 4;
 	scene3->scene.preTextDelay = TICRATE;
 	scene3->scene.postTextDelay = 2*TICRATE;
 	scene3->scene.textBox.x = 16;
@@ -1562,7 +1765,7 @@ void BuildScenes()
 	scene4->scene.transitionOutHeight = 204;
 	scene4->scene.picLump = W_GetNumForName("ROCKBG");
 	scene4->scene.text = intro4text;
-	scene4->scene.textCharDelayTics = scene4->scene.textCharDelayCounter = 5;
+	scene4->scene.textCharDelayTics = scene4->scene.textCharDelayCounter = 4;
 	scene4->scene.preTextDelay = TICRATE;
 	scene4->scene.postTextDelay = 2*TICRATE;
 	scene4->scene.textBox.x = 16;
@@ -1581,7 +1784,7 @@ void BuildScenes()
 	scene5->picRadar = W_GetNumForName("RADARBG");
 	scene5->picSweep = W_GetNumForName("RSWEEP");
 	scene5->scene.text = intro5text;
-	scene5->scene.textCharDelayTics = scene5->scene.textCharDelayCounter = 5;
+	scene5->scene.textCharDelayTics = scene5->scene.textCharDelayCounter = 4;
 	scene5->scene.preTextDelay = TICRATE;
 	scene5->scene.postTextDelay = 2*TICRATE;
 	scene5->scene.textBox.x = 16;
@@ -1598,7 +1801,7 @@ void BuildScenes()
 	scene6->scene.transitionOutHeight = 204;
 	scene6->scene.picLump = W_GetNumForName("THINKBG");
 	scene6->scene.text = intro6text;
-	scene6->scene.textCharDelayTics = scene6->scene.textCharDelayCounter = 5;
+	scene6->scene.textCharDelayTics = scene6->scene.textCharDelayCounter = 4;
 	scene6->scene.preTextDelay = TICRATE;
 	scene6->scene.postTextDelay = 2*TICRATE;
 	scene6->scene.textBox.x = 184;
@@ -1617,7 +1820,7 @@ void BuildScenes()
 	scene7->scene.transitionOutHeight = 204;
 	scene7->scene.picLump = W_GetNumForName("SLEEP1");
 	scene7->scene.text = intro6text;
-	scene7->scene.textCharDelayTics = scene7->scene.textCharDelayCounter = 5;
+	scene7->scene.textCharDelayTics = scene7->scene.textCharDelayCounter = 4;
 	scene7->scene.preTextDelay = TICRATE;
 	scene7->scene.postTextDelay = 4*TICRATE;
 	scene7->scene.textBox.x = 184;
@@ -1633,14 +1836,14 @@ void BuildScenes()
 	scene_8_t *scene8 = Z_Calloc(sizeof(*scene8), PU_STATIC);
 	scene8->scene.transitionOutHeight = 204;
 	scene8->scene.picLump = W_GetNumForName("TARGETBG");
-	scene8->scene.text = intro6text;
-	scene8->scene.textCharDelayTics = scene8->scene.textCharDelayCounter = 5;
+	scene8->scene.text = intro8text;
+	scene8->scene.textCharDelayTics = scene8->scene.textCharDelayCounter = 4;
 	scene8->scene.preTextDelay = TICRATE;
 	scene8->scene.postTextDelay = 2*TICRATE;
-	scene8->scene.textBox.x = 184;
-	scene8->scene.textBox.y = 32;
-	scene8->scene.textBox.width = 320 - 184 - 32;
-	scene8->scene.textBox.height = 200 - 64;
+	scene8->scene.textBox.x = 16;
+	scene8->scene.textBox.y = 128 + 16;
+	scene8->scene.textBox.width = 320 - 32 - 32;
+	scene8->scene.textBox.height = 224 - 16 - scene8->scene.textBox.y;
 	scene8->scene.init = (void(*)(storyscene_t *))Scene_8_Init;
 	scene8->scene.tic = (void(*)(storyscene_t *))Scene_8_Tick;
 	scene8->scene.draw = (void(*)(storyscene_t *))Scene_8_Draw;
@@ -1651,7 +1854,7 @@ void BuildScenes()
 	scene9->scene.transitionOutHeight = 204;
 	scene9->scene.picLump = W_GetNumForName("SPRINGBG");
 	scene9->scene.text = intro9text;
-	scene9->scene.textCharDelayTics = scene9->scene.textCharDelayCounter = 5;
+	scene9->scene.textCharDelayTics = scene9->scene.textCharDelayCounter = 4;
 	scene9->scene.preTextDelay = TICRATE;
 	scene9->scene.postTextDelay = 2*TICRATE;
 	scene9->scene.textBox.x = 16;
