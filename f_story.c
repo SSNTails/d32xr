@@ -140,6 +140,40 @@ typedef struct
 	int16_t sonicStep;
 } scene_9_t;
 
+typedef struct 
+{
+	storyscene_t scene;
+} scene_10_t;
+
+typedef struct 
+{
+	storyscene_t scene;
+} scene_11_t;
+
+typedef struct 
+{
+	storyscene_t scene;
+} scene_12_t;
+
+typedef struct 
+{
+	storyscene_t scene;
+} scene_13_t;
+
+typedef struct 
+{
+	storyscene_t scene;
+} scene_14_t;
+
+typedef struct 
+{
+	storyscene_t scene;
+} scene_15_t;
+
+typedef struct 
+{
+	storyscene_t scene;
+} scene_16_t;
 
 typedef struct
 {
@@ -1565,6 +1599,146 @@ void Scene_9_Stop(scene_9_t *scene)
 		Z_Free(scene->zoom[i - 1]);
 }
 
+void Scene_10_Init(scene_10_t *scene)
+{
+
+}
+
+void Scene_10_Tick(scene_10_t *scene)
+{
+
+}
+
+void Scene_10_Draw(scene_10_t *scene)
+{
+
+}
+
+void Scene_10_Stop(scene_10_t *scene)
+{
+
+}
+
+void Scene_11_Init(scene_10_t *scene)
+{
+
+}
+
+void Scene_11_Tick(scene_10_t *scene)
+{
+
+}
+
+void Scene_11_Draw(scene_10_t *scene)
+{
+
+}
+
+void Scene_11_Stop(scene_10_t *scene)
+{
+	
+}
+
+void Scene_12_Init(scene_10_t *scene)
+{
+
+}
+
+void Scene_12_Tick(scene_10_t *scene)
+{
+
+}
+
+void Scene_12_Draw(scene_10_t *scene)
+{
+
+}
+
+void Scene_12_Stop(scene_10_t *scene)
+{
+	
+}
+
+void Scene_13_Init(scene_10_t *scene)
+{
+
+}
+
+void Scene_13_Tick(scene_10_t *scene)
+{
+
+}
+
+void Scene_13_Draw(scene_10_t *scene)
+{
+
+}
+
+void Scene_13_Stop(scene_10_t *scene)
+{
+	
+}
+
+void Scene_14_Init(scene_10_t *scene)
+{
+
+}
+
+void Scene_14_Tick(scene_10_t *scene)
+{
+
+}
+
+void Scene_14_Draw(scene_10_t *scene)
+{
+
+}
+
+void Scene_14_Stop(scene_10_t *scene)
+{
+	
+}
+
+void Scene_15_Init(scene_10_t *scene)
+{
+
+}
+
+void Scene_15_Tick(scene_10_t *scene)
+{
+
+}
+
+void Scene_15_Draw(scene_10_t *scene)
+{
+
+}
+
+void Scene_15_Stop(scene_10_t *scene)
+{
+	
+}
+
+void Scene_16_Init(scene_10_t *scene)
+{
+
+}
+
+void Scene_16_Tick(scene_10_t *scene)
+{
+
+}
+
+void Scene_16_Draw(scene_10_t *scene)
+{
+
+}
+
+void Scene_16_Stop(scene_10_t *scene)
+{
+	
+}
+
 const char *intro1text =
 "Two months had passed since Dr. Eggman\n"
 "tried to take over the world using his\n"
@@ -1819,14 +1993,14 @@ void BuildScenes()
 	scene_7_t *scene7 = Z_Calloc(sizeof(*scene7), PU_STATIC);
 	scene7->scene.transitionOutHeight = 204;
 	scene7->scene.picLump = W_GetNumForName("SLEEP1");
-	scene7->scene.text = intro6text;
+	scene7->scene.text = intro7text;
 	scene7->scene.textCharDelayTics = scene7->scene.textCharDelayCounter = 4;
 	scene7->scene.preTextDelay = TICRATE;
 	scene7->scene.postTextDelay = 4*TICRATE;
-	scene7->scene.textBox.x = 184;
-	scene7->scene.textBox.y = 32;
-	scene7->scene.textBox.width = 320 - 184 - 32;
-	scene7->scene.textBox.height = 200 - 64;
+	scene7->scene.textBox.x = 16;
+	scene7->scene.textBox.y = 128 + 16;
+	scene7->scene.textBox.width = 320 - 32 - 32;
+	scene7->scene.textBox.height = 224 - 16 - scene7->scene.textBox.y;
 	scene7->scene.init = (void(*)(storyscene_t *))Scene_7_Init;
 	scene7->scene.tic = (void(*)(storyscene_t *))Scene_7_Tick;
 	scene7->scene.draw = (void(*)(storyscene_t *))Scene_7_Draw;
@@ -1894,6 +2068,125 @@ void BuildScenes()
 	scene9->zoomCoords[13].x = 50;
 	scene9->zoomCoords[13].y = 40;
 	introScenes[i++] = (storyscene_t*)scene9;
+
+	scene_10_t *scene10 = Z_Calloc(sizeof(*scene10), PU_STATIC);
+	scene10->scene.transitionOutHeight = 204;
+	scene10->scene.picLump = W_GetNumForName("RUNBG");
+	scene10->scene.text = intro10text;
+	scene10->scene.textCharDelayTics = scene10->scene.textCharDelayCounter = 4;
+	scene10->scene.preTextDelay = TICRATE;
+	scene10->scene.postTextDelay = 2*TICRATE;
+	scene10->scene.textBox.x = 16;
+	scene10->scene.textBox.y = 128 + 16;
+	scene10->scene.textBox.width = 320 - 32 - 32;
+	scene10->scene.textBox.height = 224 - 16 - scene10->scene.textBox.y;
+	scene10->scene.init = (void(*)(storyscene_t *))Scene_10_Init;
+	scene10->scene.tic = (void(*)(storyscene_t *))Scene_10_Tick;
+	scene10->scene.draw = (void(*)(storyscene_t *))Scene_10_Draw;
+	scene10->scene.stop = (void(*)(storyscene_t *))Scene_10_Stop;
+	introScenes[i++] = (storyscene_t*)scene10;
+
+	scene_11_t *scene11 = Z_Calloc(sizeof(*scene11), PU_STATIC);
+	scene11->scene.transitionOutHeight = 204;
+	scene11->scene.picLump = W_GetNumForName("EGGMOUNT");
+	scene11->scene.text = intro11text;
+	scene11->scene.textCharDelayTics = scene11->scene.textCharDelayCounter = 4;
+	scene11->scene.preTextDelay = TICRATE;
+	scene11->scene.postTextDelay = 2*TICRATE;
+	scene11->scene.textBox.x = 16;
+	scene11->scene.textBox.y = 128 + 16;
+	scene11->scene.textBox.width = 320 - 32 - 32;
+	scene11->scene.textBox.height = 224 - 16 - scene11->scene.textBox.y;
+	scene11->scene.init = (void(*)(storyscene_t *))Scene_11_Init;
+	scene11->scene.tic = (void(*)(storyscene_t *))Scene_11_Tick;
+	scene11->scene.draw = (void(*)(storyscene_t *))Scene_11_Draw;
+	scene11->scene.stop = (void(*)(storyscene_t *))Scene_11_Stop;
+	introScenes[i++] = (storyscene_t*)scene11;
+
+	scene_12_t *scene12 = Z_Calloc(sizeof(*scene12), PU_STATIC);
+	scene12->scene.transitionOutHeight = 204;
+	scene12->scene.picLump = W_GetNumForName("SPOINT");
+	scene12->scene.text = intro12text;
+	scene12->scene.textCharDelayTics = scene12->scene.textCharDelayCounter = 4;
+	scene12->scene.preTextDelay = TICRATE;
+	scene12->scene.postTextDelay = 2*TICRATE;
+	scene12->scene.textBox.x = 16;
+	scene12->scene.textBox.y = 128 + 16;
+	scene12->scene.textBox.width = 320 - 32 - 32;
+	scene12->scene.textBox.height = 224 - 16 - scene12->scene.textBox.y;
+	scene12->scene.init = (void(*)(storyscene_t *))Scene_12_Init;
+	scene12->scene.tic = (void(*)(storyscene_t *))Scene_12_Tick;
+	scene12->scene.draw = (void(*)(storyscene_t *))Scene_12_Draw;
+	scene12->scene.stop = (void(*)(storyscene_t *))Scene_12_Stop;
+	introScenes[i++] = (storyscene_t*)scene12;
+
+	scene_13_t *scene13 = Z_Calloc(sizeof(*scene13), PU_STATIC);
+	scene13->scene.transitionOutHeight = 204;
+	scene13->scene.picLump = W_GetNumForName("EJBG");
+	scene13->scene.text = intro13text;
+	scene13->scene.textCharDelayTics = scene13->scene.textCharDelayCounter = 4;
+	scene13->scene.preTextDelay = TICRATE;
+	scene13->scene.postTextDelay = 2*TICRATE;
+	scene13->scene.textBox.x = 16;
+	scene13->scene.textBox.y = 128 + 16;
+	scene13->scene.textBox.width = 320 - 32 - 32;
+	scene13->scene.textBox.height = 224 - 16 - scene13->scene.textBox.y;
+	scene13->scene.init = (void(*)(storyscene_t *))Scene_13_Init;
+	scene13->scene.tic = (void(*)(storyscene_t *))Scene_13_Tick;
+	scene13->scene.draw = (void(*)(storyscene_t *))Scene_13_Draw;
+	scene13->scene.stop = (void(*)(storyscene_t *))Scene_13_Stop;
+	introScenes[i++] = (storyscene_t*)scene13;
+
+	scene_14_t *scene14 = Z_Calloc(sizeof(*scene14), PU_STATIC);
+	scene14->scene.transitionOutHeight = 204;
+	scene14->scene.picLump = W_GetNumForName("SADTAILS");
+	scene14->scene.text = intro14text;
+	scene14->scene.textCharDelayTics = scene14->scene.textCharDelayCounter = 4;
+	scene14->scene.preTextDelay = TICRATE;
+	scene14->scene.postTextDelay = 2*TICRATE;
+	scene14->scene.textBox.x = 16;
+	scene14->scene.textBox.y = 128 + 16;
+	scene14->scene.textBox.width = 320 - 32 - 32;
+	scene14->scene.textBox.height = 224 - 16 - scene14->scene.textBox.y;
+	scene14->scene.init = (void(*)(storyscene_t *))Scene_14_Init;
+	scene14->scene.tic = (void(*)(storyscene_t *))Scene_14_Tick;
+	scene14->scene.draw = (void(*)(storyscene_t *))Scene_14_Draw;
+	scene14->scene.stop = (void(*)(storyscene_t *))Scene_14_Stop;
+	introScenes[i++] = (storyscene_t*)scene14;
+
+	scene_15_t *scene15 = Z_Calloc(sizeof(*scene15), PU_STATIC);
+	scene15->scene.transitionOutHeight = 204;
+	scene15->scene.picLump = W_GetNumForName("STALK1");
+	scene15->scene.text = intro15text;
+	scene15->scene.textCharDelayTics = scene15->scene.textCharDelayCounter = 4;
+	scene15->scene.preTextDelay = TICRATE;
+	scene15->scene.postTextDelay = 2*TICRATE;
+	scene15->scene.textBox.x = 16;
+	scene15->scene.textBox.y = 128 + 16;
+	scene15->scene.textBox.width = 320 - 32 - 32;
+	scene15->scene.textBox.height = 224 - 16 - scene15->scene.textBox.y;
+	scene15->scene.init = (void(*)(storyscene_t *))Scene_15_Init;
+	scene15->scene.tic = (void(*)(storyscene_t *))Scene_15_Tick;
+	scene15->scene.draw = (void(*)(storyscene_t *))Scene_15_Draw;
+	scene15->scene.stop = (void(*)(storyscene_t *))Scene_15_Stop;
+	introScenes[i++] = (storyscene_t*)scene15;
+
+	scene_16_t *scene16 = Z_Calloc(sizeof(*scene16), PU_STATIC);
+	scene16->scene.transitionOutHeight = 204;
+	scene16->scene.picLump = W_GetNumForName("MOBG");
+	scene16->scene.text = intro16text;
+	scene16->scene.textCharDelayTics = scene16->scene.textCharDelayCounter = 4;
+	scene16->scene.preTextDelay = TICRATE;
+	scene16->scene.postTextDelay = 2*TICRATE;
+	scene16->scene.textBox.x = 16;
+	scene16->scene.textBox.y = 128 + 16;
+	scene16->scene.textBox.width = 320 - 32 - 32;
+	scene16->scene.textBox.height = 224 - 16 - scene16->scene.textBox.y;
+	scene16->scene.init = (void(*)(storyscene_t *))Scene_16_Init;
+	scene16->scene.tic = (void(*)(storyscene_t *))Scene_16_Tick;
+	scene16->scene.draw = (void(*)(storyscene_t *))Scene_16_Draw;
+	scene16->scene.stop = (void(*)(storyscene_t *))Scene_16_Stop;
+	introScenes[i++] = (storyscene_t*)scene16;
 }
 
 void START_Story (void)
