@@ -181,7 +181,7 @@ typedef struct
 } scene_2_t, scene_3_t;
 
 //#define NUMSCENES 12
-#define NUMSCENES	9
+#define NUMSCENES	16
 storyscene_t *introScenes[NUMSCENES];
 
 
