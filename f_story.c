@@ -688,6 +688,7 @@ void Scene_4_Draw(scene_4_t *scene)
 		);
 	}
 	else if (sceneFrameCount <= 24) {
+		// Fade in
 		const int asteroidX = 288 - (scene->asteroid->width >> 1);
 		const int asteroidY = 48 - (scene->asteroid->height >> 1);
 
@@ -702,7 +703,8 @@ void Scene_4_Draw(scene_4_t *scene)
 			I_FrameBuffer()
 		);
 	}
-	else if (sceneFrameCount > 24) {
+	else /*if (sceneFrameCount > 24)*/ {
+		// Move asteroid
 		const int asteroidX = 288 - ((sceneFrameCount-24) >> 2);
 		const int asteroidY = 48;
 		const angle_t asteroidAngle = ((((sceneFrameCount-24) << 4)) & 0x1FFF);
@@ -1019,9 +1021,19 @@ void Scene_5_Draw(scene_5_t *scene)
 void Scene_5_Stop(scene_5_t *scene)
 {
 	// Free any resources
-	Z_Free(scene->scene.background);
+	Z_Free(scene->blip);
+	Z_Free(scene->warning);
+	Z_Free(scene->actBar[3]);
+	Z_Free(scene->actBar[2]);
+	Z_Free(scene->actBar[1]);
+	Z_Free(scene->actBar[0]);
+	Z_Free(scene->radWave[3]);
+	Z_Free(scene->radWave[2]);
+	Z_Free(scene->radWave[1]);
+	Z_Free(scene->radWave[0]);
 	Z_Free(scene->sweep);
 	Z_Free(scene->radar);
+	Z_Free(scene->scene.background);
 }
 
 void Scene_6_Init(scene_6_t *scene)
@@ -1143,22 +1155,22 @@ void Scene_6_Draw(scene_6_t *scene)
 void Scene_6_Stop(scene_6_t *scene)
 {
 	// Free any resources
-	Z_Free(scene->scene.background);
-	Z_Free(scene->flicker[0]);
-	Z_Free(scene->flicker[1]);
-	Z_Free(scene->flicker[2]);
-	Z_Free(scene->stache[0]);
-	Z_Free(scene->stache[1]);
-	Z_Free(scene->metal);
 	Z_Free(scene->noflash);
+	Z_Free(scene->metal);
+	Z_Free(scene->stache[1]);
+	Z_Free(scene->stache[0]);
+	Z_Free(scene->flicker[2]);
+	Z_Free(scene->flicker[1]);
+	Z_Free(scene->flicker[0]);
+	Z_Free(scene->scene.background);
 }
 
 void Scene_7_Init(scene_7_t *scene)
 {
-	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->sleep[0] = W_CacheLumpName("SLEEP2", PU_LEVEL);
 	scene->sleep[1] = W_CacheLumpName("SLEEP3", PU_LEVEL);
 	scene->sleep[2] = W_CacheLumpName("SLEEP4", PU_LEVEL);
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 
 	scene->sleepCounter = 0;
 }
@@ -1247,10 +1259,11 @@ void Scene_7_Draw(scene_7_t *scene)
 
 void Scene_7_Stop(scene_7_t *scene)
 {
-	Z_Free(scene->scene.background);
-	Z_Free(scene->sleep[0]);
-	Z_Free(scene->sleep[1]);
+	// Free any resources
 	Z_Free(scene->sleep[2]);
+	Z_Free(scene->sleep[1]);
+	Z_Free(scene->sleep[0]);
+	Z_Free(scene->scene.background);
 }
 
 void Scene_8_Init(scene_8_t *scene)
@@ -1452,16 +1465,17 @@ void Scene_8_Draw(scene_8_t *scene)
 
 void Scene_8_Stop(scene_8_t *scene)
 {
-	Z_Free(scene->scene.background);
-	Z_Free(scene->crosshair);
-	Z_Free(scene->targetAcquired);
-	Z_Free(scene->gfzMountainText);
-	Z_Free(scene->compass);
-	Z_Free(scene->bar);
-	Z_Free(scene->bottomLeftInd[0]);
-	Z_Free(scene->bottomLeftInd[1]);
-	Z_Free(scene->bottomLeftInd[2]);
+	// Free any resources
 	Z_Free(scene->bottomLeftInd[3]);
+	Z_Free(scene->bottomLeftInd[2]);
+	Z_Free(scene->bottomLeftInd[1]);
+	Z_Free(scene->bottomLeftInd[0]);
+	Z_Free(scene->bar);
+	Z_Free(scene->compass);
+	Z_Free(scene->gfzMountainText);
+	Z_Free(scene->targetAcquired);
+	Z_Free(scene->crosshair);
+	Z_Free(scene->scene.background);
 }
 
 void Scene_9_Init(scene_9_t *scene)
@@ -1706,12 +1720,14 @@ void Scene_9_Draw(scene_9_t *scene)
 
 void Scene_9_Stop(scene_9_t *scene)
 {
-	Z_Free(scene->scene.background);
-	Z_Free(scene->sonic);
-	Z_Free(scene->aura);
+	// Free any resources
+	for (int i = 14-1; i >= 1-1; i--) {
+		Z_Free(scene->zoom[i]);
+	}
 
-	for (int i = 1; i <= 14; i++)
-		Z_Free(scene->zoom[i - 1]);
+	Z_Free(scene->aura);
+	Z_Free(scene->sonic);
+	Z_Free(scene->scene.background);
 }
 
 void Scene_10_Init(scene_10_t *scene)
@@ -1746,6 +1762,7 @@ void Scene_10_Draw(scene_10_t *scene)
 
 void Scene_10_Stop(scene_10_t *scene)
 {
+	// Free any resources
 	Z_Free(scene->scene.background);
 }
 
@@ -1781,6 +1798,7 @@ void Scene_11_Draw(scene_10_t *scene)
 
 void Scene_11_Stop(scene_10_t *scene)
 {
+	// Free any resources
 	Z_Free(scene->scene.background);
 }
 
@@ -1816,6 +1834,7 @@ void Scene_12_Draw(scene_10_t *scene)
 
 void Scene_12_Stop(scene_10_t *scene)
 {
+	// Free any resources
 	Z_Free(scene->scene.background);
 }
 
@@ -1851,6 +1870,7 @@ void Scene_13_Draw(scene_10_t *scene)
 
 void Scene_13_Stop(scene_10_t *scene)
 {
+	// Free any resources
 	Z_Free(scene->scene.background);	
 }
 
@@ -1886,6 +1906,7 @@ void Scene_14_Draw(scene_10_t *scene)
 
 void Scene_14_Stop(scene_10_t *scene)
 {
+	// Free any resources
 	Z_Free(scene->scene.background);	
 }
 
@@ -1921,6 +1942,7 @@ void Scene_15_Draw(scene_10_t *scene)
 
 void Scene_15_Stop(scene_10_t *scene)
 {
+	// Free any resources
 	Z_Free(scene->scene.background);
 }
 
@@ -1956,6 +1978,7 @@ void Scene_16_Draw(scene_10_t *scene)
 
 void Scene_16_Stop(scene_10_t *scene)
 {
+	// Free any resources
 	Z_Free(scene->scene.background);
 }
 
