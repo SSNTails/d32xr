@@ -662,7 +662,7 @@ void Scene_4_Init(scene_4_t *scene)
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
 
-	scene->asteroid = W_CacheLumpNum(scene->asteroid, PU_LEVEL);
+	scene->asteroid = W_CacheLumpName("ASTEROID", PU_LEVEL);
 }
 
 void Scene_4_Tick(scene_4_t *scene)
@@ -2181,7 +2181,6 @@ void BuildScenes()
 	scene_4_t *scene4 = Z_Calloc(sizeof(*scene4), PU_STATIC);
 	scene4->scene.transitionOutHeight = 204;
 	scene4->scene.picLump = W_GetNumForName("ROCKBG");
-	scene4->asteroid = W_GetNumForName("ASTEROID");
 	scene4->scene.text = intro4text;
 	scene4->scene.textCharDelayTics = scene4->scene.textCharDelayCounter = 4;
 	scene4->scene.preTextDelay = TICRATE;
