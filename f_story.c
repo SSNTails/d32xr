@@ -87,9 +87,7 @@ typedef struct
 typedef struct
 {
 	storyscene_t scene;
-	jagobj_t *behindAsteroid;
-	jagobj_t *asteroid[35];
-	int asteroidIndex;
+	jagobj_t *asteroid;
 } scene_4_t;
 
 typedef struct
@@ -660,56 +658,15 @@ void Scene_3_Stop(scene_3_t *scene)
 void Scene_4_Init(scene_4_t *scene)
 {
 	// Cache any graphics, etc.
-	/*jagobj_t *behindAsteroid = (jagobj_t *)Z_Malloc(16 + (sizeof(pixel_t) * (320*72)), PU_LEVEL);
-	behindAsteroid->depth = 5;
-	behindAsteroid->width = 320;
-	behindAsteroid->height = 72;
-	behindAsteroid->flags = 0;
-	behindAsteroid->index = 0;
-	scene->behindAsteroid = behindAsteroid;*/
-
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
+
+	scene->asteroid = W_CacheLumpNum(scene->asteroid, PU_LEVEL);
 }
 
 void Scene_4_Tick(scene_4_t *scene)
 {
-	if (sceneFrameCount == 24) {
-		// Save the portion of the background that the asteroid will travel across.
-		/*DrawJagobj3_15bpp(
-			scene->scene.background,
-			0,
-			0,
-			0,
-			48,
-			scene->behindAsteroid->width,
-			scene->behindAsteroid->height,
-			320,
-			false,
-			scene->behindAsteroid->data
-		);*/
-
-		// Need to free memory to store the asteroid frames.
-		Z_Free(scene->scene.background);
-		scene->scene.background = NULL;
-
-		// Load all 35 asteroid frames into RAM.
-		for (int i = 0; i < 35; i++)
-		{
-			char ln[9];
-			D_snprintf(ln, 8, "ROID00%02d", i);
-			scene->asteroid[i] = W_CacheLumpName(ln, PU_LEVEL);
-		}
-	}
-
-	if (sceneFrameCount & 1) {
-		scene->asteroidIndex++;
-		if (scene->asteroidIndex == 35) {
-			scene->asteroidIndex = 0;
-		}
-	}
-
 	TIC_Text(&scene->scene);
 }
 
@@ -730,26 +687,41 @@ void Scene_4_Draw(scene_4_t *scene)
 			I_FrameBuffer()
 		);
 	}
-	else if (sceneFrameCount > 24) {
-		const int asteroidX = 296 - (sceneFrameCount >> 2);
-		const int asteroidY = 48;
-		const angle_t asteroidAngle = (((sceneFrameCount << 4) + (sceneFrameCount << 3)) & 0x1FFF);
+	else if (sceneFrameCount <= 24) {
+		const int asteroidX = 288 - (scene->asteroid->width >> 1);
+		const int asteroidY = 48 - (scene->asteroid->height >> 1);
 
-		/*DrawJagobj3_15bpp(
-			scene->behindAsteroid,
-			asteroidX - 36,
-			asteroidY - 36,
-			asteroidX - 36,
-			0,
-			76,
-			scene->behindAsteroid->height,
+		DrawScaledJagobj_15bppBlend(
+			scene->asteroid,
+			asteroidX,
+			asteroidY,
+			FRACUNIT,
+			FRACUNIT,
+			6 - (sceneFrameCount >> 2),
+			true,
+			I_FrameBuffer()
+		);
+	}
+	else if (sceneFrameCount > 24) {
+		const int asteroidX = 288 - ((sceneFrameCount-24) >> 2);
+		const int asteroidY = 48;
+		const angle_t asteroidAngle = ((((sceneFrameCount-24) << 4)) & 0x1FFF);
+
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			asteroidX - 34,
+			asteroidY - 34,
+			asteroidX - 34,
+			asteroidY - 34,
+			34*2,
+			34*2,
 			320,
 			false,
-			scene->behindAsteroid
-		);*/
+			I_FrameBuffer()
+		);
 
 		DrawRotatedJagobj_15bpp(
-			scene->asteroid[scene->asteroidIndex],
+			scene->asteroid,
 			asteroidX,
 			asteroidY,
 			asteroidAngle,
@@ -765,16 +737,8 @@ void Scene_4_Draw(scene_4_t *scene)
 void Scene_4_Stop(scene_4_t *scene)
 {
 	// Free any resources
-	if (scene->scene.background != NULL) {
-		Z_Free(scene->scene.background);
-	}
-	else {
-		for (int i = 35-1; i >= 0; i--)
-		{
-			Z_Free(scene->asteroid[i]);
-		}
-	}
-	//Z_Free(scene->behindAsteroid);
+	Z_Free(scene->asteroid);
+	Z_Free(scene->scene.background);
 }
 
 void Scene_5_Init(scene_5_t *scene)
@@ -2194,6 +2158,7 @@ void BuildScenes()
 	scene_4_t *scene4 = Z_Calloc(sizeof(*scene4), PU_STATIC);
 	scene4->scene.transitionOutHeight = 204;
 	scene4->scene.picLump = W_GetNumForName("ROCKBG");
+	scene4->asteroid = W_GetNumForName("ASTEROID");
 	scene4->scene.text = intro4text;
 	scene4->scene.textCharDelayTics = scene4->scene.textCharDelayCounter = 4;
 	scene4->scene.preTextDelay = TICRATE;
