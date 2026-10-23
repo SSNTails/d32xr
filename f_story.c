@@ -24,6 +24,26 @@ typedef struct
 	int16_t x, y;
 } coord_t;
 
+static void ExpandRectToInclude(coord_t bounds[2], const coord_t rect[2], boolean *hasBounds)
+{
+	if (!*hasBounds)
+	{
+		bounds[0] = rect[0];
+		bounds[1] = rect[1];
+		*hasBounds = true;
+		return;
+	}
+
+	if (rect[0].x < bounds[0].x)
+		bounds[0].x = rect[0].x;
+	if (rect[0].y < bounds[0].y)
+		bounds[0].y = rect[0].y;
+	if (rect[1].x > bounds[1].x)
+		bounds[1].x = rect[1].x;
+	if (rect[1].y > bounds[1].y)
+		bounds[1].y = rect[1].y;
+}
+
 typedef struct
 {
     int16_t x, y;
@@ -132,6 +152,8 @@ typedef struct
 	fixed_t sonicPosY;
 	fixed_t sonicScale;
 	fixed_t auraScale;
+	coord_t previousBgRect[2][2];
+	boolean hasPreviousBgRect[2];
 	int16_t zoomStartDelay;
 	int16_t zoomChangeInterval;
 	int16_t zoomCurIndex;
@@ -1450,6 +1472,8 @@ void Scene_9_Init(scene_9_t *scene)
 	scene->sonicPosX = 234 << FRACBITS;
 	scene->sonicPosY = 110 << FRACBITS;
 	scene->sonicStep = 0;
+	scene->hasPreviousBgRect[0] = false;
+	scene->hasPreviousBgRect[1] = false;
 }
 
 void Scene_9_Tick(scene_9_t *scene)
@@ -1532,18 +1556,37 @@ void Scene_9_Tick(scene_9_t *scene)
 
 void Scene_9_Draw(scene_9_t *scene)
 {
-	DrawJagobj3_15bpp(
-		scene->scene.background,
-		scene->scene.backgroundX,
-		scene->scene.backgroundY,
-		0,
-		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
-		320,
-		false,
-		I_FrameBuffer()
-	);
+	if (sceneFrameCount < 2)
+	{
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+	}
+	else if (scene->zoomStartDelay && scene->zoomCurIndex < 14)
+	{
+		// Lazy... just redraw the right half.
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX + (scene->scene.background->width / 2),
+			scene->scene.backgroundY,
+			(scene->scene.background->width / 2),
+			0,
+			scene->scene.background->width / 2,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+	}
 
 	if (scene->zoomStartDelay <= 0 && scene->zoomCurIndex < 14)
 	{
@@ -1565,25 +1608,81 @@ void Scene_9_Draw(scene_9_t *scene)
 		);
 	}
 
-	if (scene->zoomCurIndex >= 14 && scene->sonicStep < 4)
+	if (scene->zoomCurIndex >= 14)
 	{
 		const coord_t auraPos = { 234, 110 };
+		const int backBuffer = Mars_BackBuffer();
 
-		// Spring OUT!
-		if (scene->sonicStep == 2)
+		coord_t currentBgRect[2];
+		boolean hasCurrentBgRect = false;
+
+		if (scene->sonicStep < 4)
 		{
-			if (scene->sonicCounter < 5)
+			coord_t sonicRect[2];
+			sonicRect[0].x = (scene->sonicPosX >> FRACBITS) - 64;
+			sonicRect[0].y = (scene->sonicPosY >> FRACBITS) - 126;
+			sonicRect[1].x = sonicRect[0].x + (FixedMul(scene->sonicScale, scene->sonic->width << FRACBITS) >> FRACBITS);
+			sonicRect[1].y = sonicRect[0].y + (FixedMul(scene->sonicScale, scene->sonic->height << FRACBITS) >> FRACBITS);
+
+			ExpandRectToInclude(currentBgRect, sonicRect, &hasCurrentBgRect);
+
+			if ((scene->sonicStep == 2 && scene->sonicCounter < 5)
+				|| (scene->sonicStep < 2))
+			{
+				coord_t auraRect[2];
+				auraRect[0].x = auraPos.x - 93;
+				auraRect[0].y = auraPos.y - 92;
+				auraRect[1].x = auraRect[0].x + (FixedMul(scene->auraScale, scene->aura->width << FRACBITS) >> FRACBITS);
+				auraRect[1].y = auraRect[0].y + (FixedMul(scene->auraScale, scene->aura->height << FRACBITS) >> FRACBITS);
+
+				ExpandRectToInclude(currentBgRect, auraRect, &hasCurrentBgRect);
+			}
+		}
+
+		// Restore the last sprite area drawn into this backbuffer.
+		if (scene->hasPreviousBgRect[backBuffer])
+		{
+			DrawJagobj3_15bpp(
+				scene->scene.background,
+				scene->previousBgRect[backBuffer][0].x,
+				scene->previousBgRect[backBuffer][0].y,
+				scene->previousBgRect[backBuffer][0].x,
+				scene->previousBgRect[backBuffer][0].y,
+				scene->previousBgRect[backBuffer][1].x - scene->previousBgRect[backBuffer][0].x,
+				scene->previousBgRect[backBuffer][1].y - scene->previousBgRect[backBuffer][0].y,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+		}
+
+		scene->hasPreviousBgRect[backBuffer] = hasCurrentBgRect;
+		if (hasCurrentBgRect)
+		{
+			scene->previousBgRect[backBuffer][0] = currentBgRect[0];
+			scene->previousBgRect[backBuffer][1] = currentBgRect[1];
+		}
+
+		if (scene->sonicStep < 4)
+		{
+			// Spring OUT!
+			if (scene->sonicStep == 2)
+			{
+				if (scene->sonicCounter < 5)
+				{
+					DrawScaledJagobj_15bppBlendWithOrigin(
+						scene->aura, auraPos.x, auraPos.y, 93, 92, scene->auraScale, scene->auraScale, scene->sonicCounter + 1, true, I_FrameBuffer());
+				}
+			}
+			else if (scene->sonicStep < 2)
+			{
 				DrawScaledJagobj_15bppBlendWithOrigin(
-					scene->aura, auraPos.x, auraPos.y, 93, 92, scene->auraScale, scene->auraScale, scene->sonicCounter + 1, true, I_FrameBuffer());
-		}
-		else if (scene->sonicStep < 2)
-		{
-			DrawScaledJagobj_15bppBlendWithOrigin(
-				scene->aura, auraPos.x, auraPos.y, 93, 92, scene->auraScale, scene->auraScale, 1, true, I_FrameBuffer());
-		}
+					scene->aura, auraPos.x, auraPos.y, 93, 92, scene->auraScale, scene->auraScale, 1, true, I_FrameBuffer());
+			}
 
-		DrawScaledJagobj_15bppBlendWithOrigin(
-			scene->sonic, scene->sonicPosX >> FRACBITS, scene->sonicPosY >> FRACBITS, 64, 126, scene->sonicScale, scene->sonicScale, 0, true, I_FrameBuffer());
+			DrawScaledJagobj_15bppBlendWithOrigin(
+				scene->sonic, scene->sonicPosX >> FRACBITS, scene->sonicPosY >> FRACBITS, 64, 126, scene->sonicScale, scene->sonicScale, 0, true, I_FrameBuffer());
+		}
 	}
 
 	DrawText(&scene->scene);
