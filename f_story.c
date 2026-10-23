@@ -1601,142 +1601,247 @@ void Scene_9_Stop(scene_9_t *scene)
 
 void Scene_10_Init(scene_10_t *scene)
 {
-
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
 }
 
 void Scene_10_Tick(scene_10_t *scene)
 {
-
+	TIC_Text(&scene->scene);
 }
 
 void Scene_10_Draw(scene_10_t *scene)
 {
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		false,
+		I_FrameBuffer()
+	);
 
+	DrawText(&scene->scene);
 }
 
 void Scene_10_Stop(scene_10_t *scene)
 {
-
+	Z_Free(scene->scene.background);
 }
 
 void Scene_11_Init(scene_10_t *scene)
 {
-
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
 }
 
 void Scene_11_Tick(scene_10_t *scene)
 {
-
+	TIC_Text(&scene->scene);
 }
 
 void Scene_11_Draw(scene_10_t *scene)
 {
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		false,
+		I_FrameBuffer()
+	);
 
+	DrawText(&scene->scene);
 }
 
 void Scene_11_Stop(scene_10_t *scene)
 {
-	
+	Z_Free(scene->scene.background);
 }
 
 void Scene_12_Init(scene_10_t *scene)
 {
-
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
 }
 
 void Scene_12_Tick(scene_10_t *scene)
 {
-
+	TIC_Text(&scene->scene);
 }
 
 void Scene_12_Draw(scene_10_t *scene)
 {
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		false,
+		I_FrameBuffer()
+	);
 
+	DrawText(&scene->scene);
 }
 
 void Scene_12_Stop(scene_10_t *scene)
 {
-	
+	Z_Free(scene->scene.background);
 }
 
 void Scene_13_Init(scene_10_t *scene)
 {
-
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
 }
 
 void Scene_13_Tick(scene_10_t *scene)
 {
-
+	TIC_Text(&scene->scene);
 }
 
 void Scene_13_Draw(scene_10_t *scene)
 {
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		false,
+		I_FrameBuffer()
+	);
 
+	DrawText(&scene->scene);
 }
 
 void Scene_13_Stop(scene_10_t *scene)
 {
-	
+	Z_Free(scene->scene.background);	
 }
 
 void Scene_14_Init(scene_10_t *scene)
 {
-
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
 }
 
 void Scene_14_Tick(scene_10_t *scene)
 {
-
+	TIC_Text(&scene->scene);
 }
 
 void Scene_14_Draw(scene_10_t *scene)
 {
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		false,
+		I_FrameBuffer()
+	);
 
+	DrawText(&scene->scene);
 }
 
 void Scene_14_Stop(scene_10_t *scene)
 {
-	
+	Z_Free(scene->scene.background);	
 }
 
 void Scene_15_Init(scene_10_t *scene)
 {
-
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
 }
 
 void Scene_15_Tick(scene_10_t *scene)
 {
-
+	TIC_Text(&scene->scene);
 }
 
 void Scene_15_Draw(scene_10_t *scene)
 {
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		false,
+		I_FrameBuffer()
+	);
 
+	DrawText(&scene->scene);
 }
 
 void Scene_15_Stop(scene_10_t *scene)
 {
-	
+	Z_Free(scene->scene.background);
 }
 
 void Scene_16_Init(scene_10_t *scene)
 {
-
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
 }
 
 void Scene_16_Tick(scene_10_t *scene)
 {
-
+	TIC_Text(&scene->scene);
 }
 
 void Scene_16_Draw(scene_10_t *scene)
 {
+	DrawJagobj3_15bpp(
+		scene->scene.background,
+		scene->scene.backgroundX,
+		scene->scene.backgroundY,
+		0,
+		0,
+		scene->scene.background->width,
+		scene->scene.background->height,
+		320,
+		false,
+		I_FrameBuffer()
+	);
 
+	DrawText(&scene->scene);
 }
 
 void Scene_16_Stop(scene_10_t *scene)
 {
-	
+	Z_Free(scene->scene.background);
 }
 
 const char *intro1text =
