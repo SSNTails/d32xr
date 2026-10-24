@@ -680,7 +680,9 @@ pri_h_irq:
         mov     #3,r2
         not     r2,r2
         and     r2,r0
-        add     #3,r0           ! RLE
+        mov.l   phi_mars_border_mode,r2
+        mov.l   @r2,r2
+        add     r2,r0           ! Blank (0) or RLE (3)
         mov.w   r0,@r1
         !bra     2f
 2:
@@ -801,6 +803,8 @@ phi_rle_border_size:
 
 phi_mars_display_mode:
         .long   _mars_display_mode
+phi_mars_border_mode:
+        .long   _mars_border_mode
 
 phi_sh2_frtctl:
         .long   0xfffffe10

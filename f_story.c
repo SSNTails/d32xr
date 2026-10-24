@@ -2526,7 +2526,7 @@ void DRAW_Story (void)
 	// Initialize framebuffers if necessary.
 	if (clearscreen > 0) {
 		h32_adjust = false;
-		Mars_SetVideoMode(MARS_VDP_MODE_32K, 10);
+		Mars_SetVideoMode(MARS_VDP_MODE_32K, 12);
 		clearscreen--;
 	}
 

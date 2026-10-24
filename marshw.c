@@ -46,6 +46,7 @@ volatile uint8_t legacy_emulator = 0;
 volatile unsigned int rle_border_size = 0;
 
 volatile unsigned int mars_display_mode = MARS_VDP_MODE_256;
+volatile unsigned int mars_border_mode = MARS_VDP_MODE_RLE;
 
 volatile unsigned int mars_thru_rgb = 0;
 volatile unsigned int mars_hblank_count = 0;
@@ -131,28 +132,42 @@ void Mars_InitLineTable(void)
 	lines[246] = 0x9BFF;	// RLE thru (156 pixels)
 	lines[247] = 0x061F;	// RLE black (7 pixels)
 
-	for (j=0; j < rle_border_size; j++) {
-		lines[offset+j] = 240;	// RLE black
-	}
-
-	offset = (224-rle_border_size);
-	for (j=0; j < rle_border_size; j++) {
-		lines[offset+j] = 240;	// RLE black
-	}
-
-	offset = rle_border_size;
-
 	switch (mars_display_mode) {
 		case MARS_VDP_MODE_256:
+			for (j=0; j < rle_border_size; j++) {
+				lines[offset+j] = 240;	// RLE black
+			}
+			offset = (224-rle_border_size);
+			for (j=0; j < rle_border_size; j++) {
+				lines[offset+j] = 240;	// RLE black
+			}
+			offset = rle_border_size;
+
 			for (j=0; j < (224-(rle_border_size<<1)); j++) {
 				lines[offset+j] = (j * (320/2) + 0x100) + (((~h40_sky) & h32_adjust)<<1);
 			}
 			break;
 
 		case MARS_VDP_MODE_32K:
-			for (j=0; j < (224-(rle_border_size<<1)); j++) {
+			for (j=0; j < rle_border_size; j++) {
+				lines[offset+j] = ((320*2*203) >> 1);	// Direct color black
+			}
+			offset = (224-rle_border_size);
+			for (j=0; j < rle_border_size; j++) {
+				lines[offset+j] = ((320*2*203) >> 1);	// Direct color black
+			}
+			offset = rle_border_size;
+
+			for (j=0; j <= (224-(rle_border_size<<1)); j++) {
 				lines[offset+j] = (j * 320 + 0x100) + (((~h40_sky) & h32_adjust)<<1);
 			}
+
+			// Create a black line in the last 320 words.
+			pixel_t *framebuffer = I_FrameBuffer() + ((0x20000 - (320*2)) >> 1);
+			for (int i=0; i < 320; i++) {
+				*framebuffer++ = 0;
+			}
+
 			break;
 
 		default:
@@ -296,6 +311,7 @@ void Mars_SetVideoMode(int mode, int border)
 	MARS_VDP_DISPMODE |= mode;
 
 	mars_display_mode = mode;
+	mars_border_mode = (mode & MARS_VDP_MODE_256) ? MARS_VDP_MODE_RLE : MARS_VDP_MODE_OFF;
 	rle_border_size = border;
 
 	Mars_InitLineTable();
