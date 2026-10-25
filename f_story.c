@@ -1991,20 +1991,21 @@ const char *intro2text =
 "As it was about to drain the rings\n"
 "away from the planet, Sonic burst into\n"
 "the control room and for what he thought\n"
-"would be the last time,\xB4 defeated\n"
+"would be the last time, defeated\n"
 "Dr. Eggman.";
 
 const char *intro3text =
 "What Sonic, Tails, and Knuckles had\n"
 "not anticipated was that Eggman would\n"
-"return,\xB8 bringing an all new threat.";
+"return, bringing an all new threat.";
 
 const char *intro4text =
-"\xA8""About every five years, a strange asteroid\n"
-"hovers around the planet.\xBF It suddenly\n"
-"appears from nowhere, circles around, and\n"
-"\xB6- just as mysteriously as it arrives -\xB6\n"
-"vanishes after only one week.\xBF\n"
+"About every five years, a strange\n"
+"asteroid hovers around the planet.\n"
+"It suddenly appears from nowhere,\n"
+"circles around, and - just as\n"
+"mysteriously as it arrives -\n"
+"vanishes after only one week.\n"
 "No one knows why it appears, or how.";
 
 const char *intro5text = 
@@ -2033,20 +2034,20 @@ const char *intro6text =
 "including Sonic!\"\xA7";
 
 const char *intro7text =
-"\xA8\nBefore beginning his scheme,\n"
+"Before beginning his scheme,\n"
 "Eggman decided to give Sonic\n"
 "a reunion party...";
 
 const char *intro8text =
-"\xA5\"PRE-""\xB6""PARING-""\xB6""TO-""\xB4""FIRE-\xB6IN-""\xB6""15-""\xB6""SECONDS!\"\xA8\xB8\n"
+"\"PRE-PARING-TO-FIRE-IN-15-SECONDS!\"\n"
 "his targeting system crackled\n"
-"robotically down the com-link. \xBF\xA7\"Good!\"\xA8\xB8\n"
+"robotically down the com-link. \"Good!\"\n"
 "Eggman sat back in his eggmobile and\n"
 "began to count down as he saw the\n"
 "Greenflower mountain on the monitor.";
 
 const char *intro9text =
-"\xA5\"10...\xD2""9...\xD2""8...\"\xA8\xD2\n"
+"\"10...9...8...\"\n"
 "Meanwhile, Sonic was tearing across the\n"
 "zones. Everything became a blur as he\n"
 "ran up slopes, skimmed over water,\n"
@@ -2054,11 +2055,12 @@ const char *intro9text =
 "his phenomenal speed.";
 
 const char *intro10text =
-"\xA5\"6...\xD2""5...\xD2""4...\"\xA8\xD2\n"
+"\"6...5...4...\"\n"
 "Sonic knew he was getting closer to the\n"
-"zone, and pushed himself harder.\xB4 Finally,\n"
-"the mountain appeared on the horizon.\xD2\xD2\n"
-"\xA5\"3...\xD2""2...\xD2""1...\xD2""Zero.\"";
+"zone, and pushed himself harder.\n"
+"Finally, the mountain appeared on the\n"
+"horizon.\n"
+"\"3...2...1...Zero.\"";
 
 const char *intro11text =
 "Greenflower Mountain was no more.\xC4\n"
@@ -2068,20 +2070,20 @@ const char *intro11text =
 "had been obliterated.";
 
 const char *intro12text =
-"\xA7\"You're not\n"
+"\"You're not\n"
 "quite as gone\n"
 "as we thought,\n"
-"huh?\xBF Are you\n"
+"huh? Are you\n"
 "going to tell\n"
 "us your plan as\n"
 "usual or will I\n"
-"\xA8\xB4'have to work\n"
-"it out'\xA7 or\n"
-"something?\"\xD2\xD2";
+"'have to work\n"
+"it out' or\n"
+"something?\"";
 
 const char *intro13text =
-"\"We'll see\xAA...\xA7\xBF let's give you a quick warm\n"
-"up, Sonic!\xA6\xC4 JETTYSYNS!\xA7\xBD Open fire!\"";
+"\"We'll see... let's give you a quick warm\n"
+"up, Sonic! JETTYSYNS! Open fire!\"";
 
 const char *intro14text =
 "Eggman took this\n"
@@ -2098,29 +2100,29 @@ const char *intro14text =
 "do?\",\xA9 he asked.";
 
 const char *intro15text =
-"\xA7\"Easy!\xBF We go\n"
+"\"Easy! We go\n"
 "find Eggman\n"
 "and stop his\n"
 "latest\n"
-"insane plan.\xBF\n"
+"insane plan.\n"
 "Just like\n"
 "we've always\n"
-"done,\xBA right?\xD2\n\n"
-"\xAE...\xA9\xD2\n\n"
+"done, right?\n\n"
+"...\n\n"
 "\"Tails, what\n"
-"\xAA*ARE*\xA9 you\n"
+"*ARE* you\n"
 "doing?\"";
 
 const char *intro16text =
-"\xA8\"I'm just finding what mission obje\xAC\xB1...\xBF\n"
-"\xA6""a-\xB8""ha!\xBF Here it is!\xA8\xBF This will only give us\n"
-"the robot's primary objective.\xBF It says\xAC\xB1...\"\n"
-"\xD2\xA3\x83"
+"\"I'm just finding what mission obje...\n"
+"a-ha! Here it is! This will only give us\n"
+"the robot's primary objective. It says...\"\n"
+"\n"
 "* LOCATE  AND  RETRIEVE:  CHAOS  EMERALDS *"
-"\xBF\n"
+"\n"
 "*  CLOSEST  LOCATION:  GREENFLOWER  ZONE  *"
-"\x80\n\xA9\xD2\xD2"
-"\"All right, then\xAF... \xD2\xD2\xA7let's go!\"";
+"\n"
+"\"All right, then... let's go!\"";
 
 void BuildScenes()
 {
@@ -2136,7 +2138,7 @@ void BuildScenes()
 	scene1->scene.postTextDelay = 2*TICRATE;
 	scene1->scene.textBox.x = 16;
 	scene1->scene.textBox.y = 128 + 16;
-	scene1->scene.textBox.width = 320 - 32 - 32;
+	scene1->scene.textBox.width = 320 - (scene1->scene.textBox.x * 2);
 	scene1->scene.textBox.height = 224 - 16 - scene1->scene.textBox.y;
 	scene1->scene.init = (void(*)(storyscene_t *))Scene_1_Init;
 	scene1->scene.tic = (void(*)(storyscene_t *))Scene_1_Tick;
@@ -2153,7 +2155,7 @@ void BuildScenes()
 	scene2->scene.postTextDelay = 2*TICRATE;
 	scene2->scene.textBox.x = 16;
 	scene2->scene.textBox.y = 128 + 16;
-	scene2->scene.textBox.width = 320 - 32 - 32;
+	scene2->scene.textBox.width = 320 - (scene2->scene.textBox.x * 2);
 	scene2->scene.textBox.height = 224 - 16 - scene2->scene.textBox.y;
 	scene2->scene.init = (void(*)(storyscene_t *))Scene_2_Init;
 	scene2->scene.tic = (void(*)(storyscene_t *))Scene_2_Tick;
@@ -2170,7 +2172,7 @@ void BuildScenes()
 	scene3->scene.postTextDelay = 2*TICRATE;
 	scene3->scene.textBox.x = 16;
 	scene3->scene.textBox.y = 128 + 16;
-	scene3->scene.textBox.width = 320 - 32 - 32;
+	scene3->scene.textBox.width = 320 - (scene3->scene.textBox.x * 2);
 	scene3->scene.textBox.height = 224 - 16 - scene3->scene.textBox.y;
 	scene3->scene.init = (void(*)(storyscene_t *))Scene_3_Init;
 	scene3->scene.tic = (void(*)(storyscene_t *))Scene_3_Tick;
@@ -2187,7 +2189,7 @@ void BuildScenes()
 	scene4->scene.postTextDelay = 2*TICRATE;
 	scene4->scene.textBox.x = 16;
 	scene4->scene.textBox.y = 128 + 16;
-	scene4->scene.textBox.width = 320 - 32 - 32;
+	scene4->scene.textBox.width = 320 - (scene4->scene.textBox.x * 2);
 	scene4->scene.textBox.height = 224 - 16 - scene4->scene.textBox.y;
 	scene4->scene.init = (void(*)(storyscene_t *))Scene_4_Init;
 	scene4->scene.tic = (void(*)(storyscene_t *))Scene_4_Tick;
@@ -2206,7 +2208,7 @@ void BuildScenes()
 	scene5->scene.postTextDelay = 2*TICRATE;
 	scene5->scene.textBox.x = 16;
 	scene5->scene.textBox.y = 128 + 16;
-	scene5->scene.textBox.width = 320 - 32 - 32;
+	scene5->scene.textBox.width = 320 - (scene5->scene.textBox.x * 2);
 	scene5->scene.textBox.height = 224 - 16 - scene5->scene.textBox.y;
 	scene5->scene.init = (void(*)(storyscene_t *))Scene_5_Init;
 	scene5->scene.tic = (void(*)(storyscene_t *))Scene_5_Tick;
@@ -2221,7 +2223,7 @@ void BuildScenes()
 	scene6->scene.textCharDelayTics = scene6->scene.textCharDelayCounter = 4;
 	scene6->scene.preTextDelay = TICRATE;
 	scene6->scene.postTextDelay = 2*TICRATE;
-	scene6->scene.textBox.x = 184;
+	scene6->scene.textBox.x = 182;
 	scene6->scene.textBox.y = 32;
 	scene6->scene.textBox.width = 320 - 184 - 32;
 	scene6->scene.textBox.height = 200 - 64;
@@ -2242,7 +2244,7 @@ void BuildScenes()
 	scene7->scene.postTextDelay = 4*TICRATE;
 	scene7->scene.textBox.x = 16;
 	scene7->scene.textBox.y = 128 + 16;
-	scene7->scene.textBox.width = 320 - 32 - 32;
+	scene7->scene.textBox.width = 320 - (scene7->scene.textBox.x * 2);
 	scene7->scene.textBox.height = 224 - 16 - scene7->scene.textBox.y;
 	scene7->scene.init = (void(*)(storyscene_t *))Scene_7_Init;
 	scene7->scene.tic = (void(*)(storyscene_t *))Scene_7_Tick;
@@ -2259,7 +2261,7 @@ void BuildScenes()
 	scene8->scene.postTextDelay = 2*TICRATE;
 	scene8->scene.textBox.x = 16;
 	scene8->scene.textBox.y = 128 + 16;
-	scene8->scene.textBox.width = 320 - 32 - 32;
+	scene8->scene.textBox.width = 320 - (scene8->scene.textBox.x * 2);
 	scene8->scene.textBox.height = 224 - 16 - scene8->scene.textBox.y;
 	scene8->scene.init = (void(*)(storyscene_t *))Scene_8_Init;
 	scene8->scene.tic = (void(*)(storyscene_t *))Scene_8_Tick;
@@ -2274,9 +2276,9 @@ void BuildScenes()
 	scene9->scene.textCharDelayTics = scene9->scene.textCharDelayCounter = 4;
 	scene9->scene.preTextDelay = TICRATE;
 	scene9->scene.postTextDelay = 2*TICRATE;
-	scene9->scene.textBox.x = 16;
+	scene9->scene.textBox.x = 12;
 	scene9->scene.textBox.y = 128 + 16;
-	scene9->scene.textBox.width = 320 - 32 - 32;
+	scene9->scene.textBox.width = 320 - (scene9->scene.textBox.x * 2);
 	scene9->scene.textBox.height = 224 - 16 - scene9->scene.textBox.y;
 	scene9->scene.init = (void(*)(storyscene_t *))Scene_9_Init;
 	scene9->scene.tic = (void(*)(storyscene_t *))Scene_9_Tick;
@@ -2321,7 +2323,7 @@ void BuildScenes()
 	scene10->scene.postTextDelay = 2*TICRATE;
 	scene10->scene.textBox.x = 16;
 	scene10->scene.textBox.y = 128 + 16;
-	scene10->scene.textBox.width = 320 - 32 - 32;
+	scene10->scene.textBox.width = 320 - (scene10->scene.textBox.x * 2);
 	scene10->scene.textBox.height = 224 - 16 - scene10->scene.textBox.y;
 	scene10->scene.init = (void(*)(storyscene_t *))Scene_10_Init;
 	scene10->scene.tic = (void(*)(storyscene_t *))Scene_10_Tick;
@@ -2338,7 +2340,7 @@ void BuildScenes()
 	scene11->scene.postTextDelay = 2*TICRATE;
 	scene11->scene.textBox.x = 16;
 	scene11->scene.textBox.y = 128 + 16;
-	scene11->scene.textBox.width = 320 - 32 - 32;
+	scene11->scene.textBox.width = 320 - (scene11->scene.textBox.x * 2);
 	scene11->scene.textBox.height = 224 - 16 - scene11->scene.textBox.y;
 	scene11->scene.init = (void(*)(storyscene_t *))Scene_11_Init;
 	scene11->scene.tic = (void(*)(storyscene_t *))Scene_11_Tick;
@@ -2353,10 +2355,10 @@ void BuildScenes()
 	scene12->scene.textCharDelayTics = scene12->scene.textCharDelayCounter = 4;
 	scene12->scene.preTextDelay = TICRATE;
 	scene12->scene.postTextDelay = 2*TICRATE;
-	scene12->scene.textBox.x = 16;
-	scene12->scene.textBox.y = 128 + 16;
-	scene12->scene.textBox.width = 320 - 32 - 32;
-	scene12->scene.textBox.height = 224 - 16 - scene12->scene.textBox.y;
+	scene12->scene.textBox.x = 204;
+	scene12->scene.textBox.y = 32;
+	scene12->scene.textBox.width = 320 - scene12->scene.textBox.x - 32;
+	scene12->scene.textBox.height = 200 - 32 - scene12->scene.textBox.y;
 	scene12->scene.init = (void(*)(storyscene_t *))Scene_12_Init;
 	scene12->scene.tic = (void(*)(storyscene_t *))Scene_12_Tick;
 	scene12->scene.draw = (void(*)(storyscene_t *))Scene_12_Draw;
@@ -2371,9 +2373,9 @@ void BuildScenes()
 	scene13->scene.preTextDelay = TICRATE;
 	scene13->scene.postTextDelay = 2*TICRATE;
 	scene13->scene.textBox.x = 16;
-	scene13->scene.textBox.y = 128 + 16;
-	scene13->scene.textBox.width = 320 - 32 - 32;
-	scene13->scene.textBox.height = 224 - 16 - scene13->scene.textBox.y;
+	scene13->scene.textBox.y = 164 + 16;
+	scene13->scene.textBox.width = 320 - (scene13->scene.textBox.x * 2);
+	scene13->scene.textBox.height = 200 - 16;
 	scene13->scene.init = (void(*)(storyscene_t *))Scene_13_Init;
 	scene13->scene.tic = (void(*)(storyscene_t *))Scene_13_Tick;
 	scene13->scene.draw = (void(*)(storyscene_t *))Scene_13_Draw;
@@ -2387,10 +2389,10 @@ void BuildScenes()
 	scene14->scene.textCharDelayTics = scene14->scene.textCharDelayCounter = 4;
 	scene14->scene.preTextDelay = TICRATE;
 	scene14->scene.postTextDelay = 2*TICRATE;
-	scene14->scene.textBox.x = 16;
-	scene14->scene.textBox.y = 128 + 16;
-	scene14->scene.textBox.width = 320 - 32 - 32;
-	scene14->scene.textBox.height = 224 - 16 - scene14->scene.textBox.y;
+	scene14->scene.textBox.x = 176;
+	scene14->scene.textBox.y = 32;
+	scene14->scene.textBox.width = 320 - 176 - 32;
+	scene14->scene.textBox.height = 200 - 32;
 	scene14->scene.init = (void(*)(storyscene_t *))Scene_14_Init;
 	scene14->scene.tic = (void(*)(storyscene_t *))Scene_14_Tick;
 	scene14->scene.draw = (void(*)(storyscene_t *))Scene_14_Draw;
