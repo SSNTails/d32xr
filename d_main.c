@@ -1193,7 +1193,8 @@ int TIC_Compatibility(void)
 {
 	screenCount++;
 
-	if (ticrealbuttons & BT_ACTION_START) {
+	if (legacy_emulator == LEGACY_EMULATOR_ARES &&
+		(ticrealbuttons & (BT_ACTION_START | BT_A | BT_Y | BT_C)) == (BT_ACTION_START | BT_A | BT_Y | BT_C)) {
 		return ga_closeprompt;
 	}
 
@@ -1223,42 +1224,10 @@ void STOP_Compatibility (void)
 
 void DRAW_Compatibility (void)
 {
-	const char *ares[6] = {
-		"This emulator exhibits certain",
-		"undesirable graphical glitches.",
-		"While it should play fine otherwise,",
-		"you may want to consider one of",
-		"these alternatives for the best",
-		"experience:"
-	};
-
-	const char *kega[6] = {
-		"This emulator does not support",
-		"certain features used by this game.",
-		"While we do our best to support it,",
-		ares[3],	// "you may want to consider one of",
-		ares[4],	// "these alternatives for the best",
-		ares[5]		// "experience:"
-	};
-
-	const char *gens[4] = {
-		kega[0],	// "This emulator does not support",
-		kega[1],	// "certain features used by this game.",
-		"It is therefore not recommended. We",
-		"suggest one of these alternatives:"
-	};
-
-	const char *ages[4] = {
-		"This emulator has a large number of",
-		"severe graphical and audio issues",
-		"and is strongly discouraged. We",
-		gens[3]		// "suggest one of these alternatives:"
-	};
-
 	const char *incompatible[3] = {
-		"This emulator is not compatible with",
-		"this game. We suggest one of these",
-		"alternatives:"
+		"The emulator or hardware you are using",
+		"is incompatible with this game. Please",
+		"use one of these alternatives:"
 	};
 
 	const char *emulators[2] = {
@@ -1266,7 +1235,7 @@ void DRAW_Compatibility (void)
 		"* PicoDrive 2.06",
 	};
 
-	const uint8_t compatibility_color[6] = { 0x70, 0xBC, 0x49, 0x36, 0x47, 0x23 };
+	const uint8_t border_color = 0x23; // Red
 
 	while (frame_sync == mars_vblank_count);
 	frame_sync = mars_vblank_count;
@@ -1281,67 +1250,26 @@ void DRAW_Compatibility (void)
 
 		I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
 
-		DrawFillRect(0, 0, 320, 8, compatibility_color[legacy_emulator]);
-		DrawFillRect(0, 216, 320, 8, compatibility_color[legacy_emulator]);
-		DrawFillRect(0, 8, 8, 208, compatibility_color[legacy_emulator]);
-		DrawFillRect(312, 8, 8, 208, compatibility_color[legacy_emulator]);
+		DrawFillRect(0, 0, 320, 8, border_color);
+		DrawFillRect(0, 216, 320, 8, border_color);
+		DrawFillRect(0, 8, 8, 208, border_color);
+		DrawFillRect(312, 8, 8, 208, border_color);
 
 		V_DrawValueRight(&menuFont, 296, 16, legacy_emulator);
 
 		V_DrawStringCenterWithColormap(&menuFont, 160, 24, "*** NOTICE ***", YELLOWTEXTCOLORMAP);
 
-		switch (legacy_emulator)
-		{
-			case LEGACY_EMULATOR_ARES:
-				for (int i=0; i < 6; i++) {
-					V_DrawStringCenter(&menuFont, 160, 42+(i*12), ares[i]);
-				}
-				for (int i=0; i < 2; i++) {
-					V_DrawStringLeft(&menuFont, 100, 132+(i*12), emulators[i]);
-				}
-				break;
-
-			case LEGACY_EMULATOR_KEGA:
-				for (int i=0; i < 6; i++) {
-					V_DrawStringCenter(&menuFont, 160, 42+(i*12), kega[i]);
-				}
-				for (int i=0; i < 2; i++) {
-					V_DrawStringLeft(&menuFont, 100, 132+(i*12), emulators[i]);
-				}
-				break;
-
-			case LEGACY_EMULATOR_GENS:
-				for (int i=0; i < 4; i++) {
-					V_DrawStringCenter(&menuFont, 160, 42+(i*12), gens[i]);
-				}
-				for (int i=0; i < 2; i++) {
-					V_DrawStringLeft(&menuFont, 100, 108+(i*12), emulators[i]);
-				}
-				break;
-
-			case LEGACY_EMULATOR_AGES:
-				for (int i=0; i < 4; i++) {
-					V_DrawStringCenter(&menuFont, 160, 42+(i*12), ages[i]);
-				}
-				for (int i=0; i < 2; i++) {
-					V_DrawStringLeft(&menuFont, 100, 108+(i*12), emulators[i]);
-				}
-				break;
-
-			case LEGACY_EMULATOR_INCOMPATIBLE:
-				for (int i=0; i < 3; i++) {
-					V_DrawStringCenter(&menuFont, 160, 48+(i*12), incompatible[i]);
-				}
-				for (int i=0; i < 2; i++) {
-					V_DrawStringLeft(&menuFont, 100, 96+(i*12), emulators[i]);
-				}
-				//break;
+		for (int i=0; i < 3; i++) {
+			V_DrawStringCenter(&menuFont, 160, 56+(i*12), incompatible[i]);
+		}
+		for (int i=0; i < 2; i++) {
+			V_DrawStringLeft(&menuFont, 100, 104+(i*12), emulators[i]);
 		}
 
-		V_DrawStringCenterWithColormap(&menuFont, 160, 192, "PRESS START TO CONTINUE", YELLOWTEXTCOLORMAP);
+		//V_DrawStringCenterWithColormap(&menuFont, 160, 192, "PRESS START TO CONTINUE", YELLOWTEXTCOLORMAP);
 	}
 
-	uint16_t *lines = Mars_FrameBufferLines();
+	/*uint16_t *lines = Mars_FrameBufferLines();
 	short pixel_offset;
 	if (screenCount & 0x20) {
 		// Show "PRESS START" message.
@@ -1355,7 +1283,7 @@ void DRAW_Compatibility (void)
 	for (int i=192; i < 200; i++) {
 		lines[i] = pixel_offset;
 		pixel_offset += (320/2);
-	}
+	}*/
 }
 #endif
 
