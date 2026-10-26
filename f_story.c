@@ -184,16 +184,27 @@ typedef struct
 typedef struct 
 {
 	storyscene_t scene;
+	jagobj_t *sadtalk;
+	boolean talking;
+	int talkCounter;
 } scene_14_t;
 
 typedef struct 
 {
 	storyscene_t scene;
+	jagobj_t *sonictalk;
+	jagobj_t *soniceyes;
+	boolean eyesOpen;
+	boolean talking;
+	int talkCounter;
 } scene_15_t;
 
 typedef struct 
 {
 	storyscene_t scene;
+	boolean tailsTalking;
+	boolean sonicTalking;
+	int talkCounter;
 } scene_16_t;
 
 typedef struct
@@ -1766,19 +1777,19 @@ void Scene_10_Stop(scene_10_t *scene)
 	Z_Free(scene->scene.background);
 }
 
-void Scene_11_Init(scene_10_t *scene)
+void Scene_11_Init(scene_11_t *scene)
 {
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
 }
 
-void Scene_11_Tick(scene_10_t *scene)
+void Scene_11_Tick(scene_11_t *scene)
 {
 	TIC_Text(&scene->scene);
 }
 
-void Scene_11_Draw(scene_10_t *scene)
+void Scene_11_Draw(scene_11_t *scene)
 {
 	DrawJagobj3_15bpp(
 		scene->scene.background,
@@ -1796,25 +1807,25 @@ void Scene_11_Draw(scene_10_t *scene)
 	DrawText(&scene->scene);
 }
 
-void Scene_11_Stop(scene_10_t *scene)
+void Scene_11_Stop(scene_11_t *scene)
 {
 	// Free any resources
 	Z_Free(scene->scene.background);
 }
 
-void Scene_12_Init(scene_10_t *scene)
+void Scene_12_Init(scene_12_t *scene)
 {
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
 }
 
-void Scene_12_Tick(scene_10_t *scene)
+void Scene_12_Tick(scene_12_t *scene)
 {
 	TIC_Text(&scene->scene);
 }
 
-void Scene_12_Draw(scene_10_t *scene)
+void Scene_12_Draw(scene_12_t *scene)
 {
 	DrawJagobj3_15bpp(
 		scene->scene.background,
@@ -1832,25 +1843,25 @@ void Scene_12_Draw(scene_10_t *scene)
 	DrawText(&scene->scene);
 }
 
-void Scene_12_Stop(scene_10_t *scene)
+void Scene_12_Stop(scene_12_t *scene)
 {
 	// Free any resources
 	Z_Free(scene->scene.background);
 }
 
-void Scene_13_Init(scene_10_t *scene)
+void Scene_13_Init(scene_13_t *scene)
 {
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
 }
 
-void Scene_13_Tick(scene_10_t *scene)
+void Scene_13_Tick(scene_13_t *scene)
 {
 	TIC_Text(&scene->scene);
 }
 
-void Scene_13_Draw(scene_10_t *scene)
+void Scene_13_Draw(scene_13_t *scene)
 {
 	DrawJagobj3_15bpp(
 		scene->scene.background,
@@ -1868,97 +1879,233 @@ void Scene_13_Draw(scene_10_t *scene)
 	DrawText(&scene->scene);
 }
 
-void Scene_13_Stop(scene_10_t *scene)
+void Scene_13_Stop(scene_13_t *scene)
 {
 	// Free any resources
 	Z_Free(scene->scene.background);	
 }
 
-void Scene_14_Init(scene_10_t *scene)
+void Scene_14_Init(scene_14_t *scene)
 {
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
+
+	scene->sadtalk = W_CacheLumpName("SADTALK", PU_LEVEL);
 }
 
-void Scene_14_Tick(scene_10_t *scene)
+void Scene_14_Tick(scene_14_t *scene)
 {
+	int16_t lastTextPos = scene->scene.textPos;
 	TIC_Text(&scene->scene);
+
+	if (scene->scene.textPos != lastTextPos)
+	{
+		if (scene->scene.text[scene->scene.textPos] == '\xA7')
+		{
+			scene->talking = !scene->talking;
+			scene->talkCounter = 0;
+		}
+	}
+
+	if ((sceneFrameCount & 7) == 0)
+		scene->talkCounter++;
 }
 
-void Scene_14_Draw(scene_10_t *scene)
+void Scene_14_Draw(scene_14_t *scene)
 {
-	DrawJagobj3_15bpp(
-		scene->scene.background,
-		scene->scene.backgroundX,
-		scene->scene.backgroundY,
-		0,
-		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
-		320,
-		false,
-		I_FrameBuffer()
-	);
+	if (sceneFrameCount < 2)
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+
+	if (scene->talking && (scene->talkCounter & 1))
+	{
+		DrawJagobj3_15bpp(
+				scene->sadtalk,
+				76,
+				120,
+				0,
+				0,
+				scene->sadtalk->width,
+				scene->sadtalk->height,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+	}
+	else
+	{
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX + 76,
+			scene->scene.backgroundY + 120,
+			76,
+			120,
+			scene->sadtalk->width,
+			scene->sadtalk->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+	}
 
 	DrawText(&scene->scene);
 }
 
-void Scene_14_Stop(scene_10_t *scene)
-{
-	// Free any resources
-	Z_Free(scene->scene.background);	
-}
-
-void Scene_15_Init(scene_10_t *scene)
-{
-	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
-	scene->scene.backgroundX = 0;
-	scene->scene.backgroundY = 0;
-}
-
-void Scene_15_Tick(scene_10_t *scene)
-{
-	TIC_Text(&scene->scene);
-}
-
-void Scene_15_Draw(scene_10_t *scene)
-{
-	DrawJagobj3_15bpp(
-		scene->scene.background,
-		scene->scene.backgroundX,
-		scene->scene.backgroundY,
-		0,
-		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
-		320,
-		false,
-		I_FrameBuffer()
-	);
-
-	DrawText(&scene->scene);
-}
-
-void Scene_15_Stop(scene_10_t *scene)
+void Scene_14_Stop(scene_14_t *scene)
 {
 	// Free any resources
 	Z_Free(scene->scene.background);
+	Z_Free(scene->sadtalk);
 }
 
-void Scene_16_Init(scene_10_t *scene)
+void Scene_15_Init(scene_15_t *scene)
+{
+	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
+	scene->scene.backgroundX = 0;
+	scene->scene.backgroundY = 0;
+
+	scene->sonictalk = W_CacheLumpName("STALK2", PU_LEVEL);
+	scene->soniceyes = W_CacheLumpName("STALK3", PU_LEVEL);
+}
+
+void Scene_15_Tick(scene_15_t *scene)
+{
+	int16_t lastTextPos = scene->scene.textPos;
+	TIC_Text(&scene->scene);
+
+	if (scene->scene.textPos != lastTextPos)
+	{
+		if (scene->scene.text[scene->scene.textPos] == '\xA7')
+		{
+			scene->talking = !scene->talking;
+			scene->talkCounter = 0;
+		}
+		else if (scene->scene.text[scene->scene.textPos] == '\xA6')
+		{
+			scene->eyesOpen = true;
+		}
+	}
+
+	if ((sceneFrameCount & 7) == 0)
+		scene->talkCounter++;
+}
+
+void Scene_15_Draw(scene_15_t *scene)
+{
+	if (sceneFrameCount < 2)
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+
+	if (scene->eyesOpen)
+	{
+		DrawJagobj3_15bpp(
+				scene->soniceyes,
+				104,
+				68,
+				0,
+				0,
+				scene->soniceyes->width,
+				scene->soniceyes->height,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+	}
+
+	if (scene->talking && (scene->talkCounter & 1))
+	{
+		DrawJagobj3_15bpp(
+				scene->sonictalk,
+				93,
+				106,
+				0,
+				0,
+				scene->sonictalk->width,
+				scene->sonictalk->height,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+	}
+	else
+	{
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX + 93,
+			scene->scene.backgroundY + 106,
+			93,
+			106,
+			scene->sonictalk->width,
+			scene->sonictalk->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+	}
+
+	DrawText(&scene->scene);
+}
+
+void Scene_15_Stop(scene_15_t *scene)
+{
+	// Free any resources
+	Z_Free(scene->scene.background);
+	Z_Free(scene->sonictalk);
+	Z_Free(scene->soniceyes);
+}
+
+void Scene_16_Init(scene_16_t *scene)
 {
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
 }
 
-void Scene_16_Tick(scene_10_t *scene)
+void Scene_16_Tick(scene_16_t *scene)
 {
+	int16_t lastTextPos = scene->scene.textPos;
 	TIC_Text(&scene->scene);
+
+	if (scene->scene.textPos != lastTextPos)
+	{
+		if (scene->scene.text[scene->scene.textPos] == '\xA7')
+		{
+			scene->tailsTalking = !scene->tailsTalking;
+			scene->talkCounter = 0;
+		}
+		else if (scene->scene.text[scene->scene.textPos] == '\xA6')
+		{
+			scene->sonicTalking = !scene->sonicTalking;
+			scene->talkCounter = 0;
+		}
+	}
+
+	if ((sceneFrameCount & 7) == 0)
+		scene->talkCounter++;
 }
 
-void Scene_16_Draw(scene_10_t *scene)
+void Scene_16_Draw(scene_16_t *scene)
 {
 	DrawJagobj3_15bpp(
 		scene->scene.background,
@@ -1976,7 +2123,7 @@ void Scene_16_Draw(scene_10_t *scene)
 	DrawText(&scene->scene);
 }
 
-void Scene_16_Stop(scene_10_t *scene)
+void Scene_16_Stop(scene_16_t *scene)
 {
 	// Free any resources
 	Z_Free(scene->scene.background);
@@ -2070,7 +2217,7 @@ const char *intro11text =
 "had been obliterated.";
 
 const char *intro12text =
-"\"You're not\n"
+"\"\xA7You're not\n"
 "quite as gone\n"
 "as we thought,\n"
 "huh? Are you\n"
@@ -2079,7 +2226,7 @@ const char *intro12text =
 "usual or will I\n"
 "'have to work\n"
 "it out' or\n"
-"something?\"";
+"something?\xA7\"";
 
 const char *intro13text =
 "\"We'll see... let's give you a quick warm\n"
@@ -2090,39 +2237,39 @@ const char *intro14text =
 "as his cue and\n"
 "blasted off,\n"
 "leaving Sonic\n"
-"and Tails behind.\xB6\n"
+"and Tails behind.\n"
 "Tails looked at\n"
 "the once-perfect\n"
 "mountainside\n"
 "with a grim face\n"
-"and sighed.\xC6\n"
-"\xA7\"Now\xB6 what do we\n"
-"do?\",\xA9 he asked.";
+"and sighed.\n"
+"\xA7\"Now what do we\n"
+"do?\"\xA7, he asked.";
 
 const char *intro15text =
-"\"Easy! We go\n"
+"\n\xA7\"Easy! We go\n"
 "find Eggman\n"
 "and stop his\n"
 "latest\n"
 "insane plan.\n"
 "Just like\n"
 "we've always\n"
-"done, right?\n\n"
-"...\n\n"
-"\"Tails, what\n"
+"done, right?\xA7\n\n"
+"...\xA6\n\n"
+"\xA7\"Tails, what\n"
 "*ARE* you\n"
-"doing?\"";
+"doing?\"\xA7";
 
 const char *intro16text =
-"\"I'm just finding what mission obje...\n"
+"\xA7\"I'm just finding what mission obje\xA7...\xA7\n"
 "a-ha! Here it is! This will only give us\n"
-"the robot's primary objective. It says...\"\n"
+"the robot's primary objective. It says\xA7...\"\n"
 "\n"
-"* LOCATE  AND  RETRIEVE:  CHAOS  EMERALDS *"
+"* \xA7LOCATE  AND  RETRIEVE:  CHAOS  EMERALDS\xA7 *"
 "\n"
-"*  CLOSEST  LOCATION:  GREENFLOWER  ZONE  *"
+"*  \xA7CLOSEST  LOCATION:  GREENFLOWER  ZONE\xA7  *"
 "\n"
-"\"All right, then... let's go!\"";
+"\"\xA6All right, then\xA6... \xA6let's go!\xA6\"";
 
 void BuildScenes()
 {
@@ -2389,7 +2536,7 @@ void BuildScenes()
 	scene14->scene.textCharDelayTics = scene14->scene.textCharDelayCounter = 4;
 	scene14->scene.preTextDelay = TICRATE;
 	scene14->scene.postTextDelay = 2*TICRATE;
-	scene14->scene.textBox.x = 176;
+	scene14->scene.textBox.x = 176 + 8;
 	scene14->scene.textBox.y = 32;
 	scene14->scene.textBox.width = 320 - 176 - 32;
 	scene14->scene.textBox.height = 200 - 32;
@@ -2406,10 +2553,10 @@ void BuildScenes()
 	scene15->scene.textCharDelayTics = scene15->scene.textCharDelayCounter = 4;
 	scene15->scene.preTextDelay = TICRATE;
 	scene15->scene.postTextDelay = 2*TICRATE;
-	scene15->scene.textBox.x = 16;
-	scene15->scene.textBox.y = 128 + 16;
-	scene15->scene.textBox.width = 320 - 32 - 32;
-	scene15->scene.textBox.height = 224 - 16 - scene15->scene.textBox.y;
+	scene15->scene.textBox.x = 218 + 8;
+	scene15->scene.textBox.y = 24;
+	scene15->scene.textBox.width = 320 - 218 - 16;
+	scene15->scene.textBox.height = 200 - 16 - scene15->scene.textBox.y;
 	scene15->scene.init = (void(*)(storyscene_t *))Scene_15_Init;
 	scene15->scene.tic = (void(*)(storyscene_t *))Scene_15_Tick;
 	scene15->scene.draw = (void(*)(storyscene_t *))Scene_15_Draw;
