@@ -698,7 +698,7 @@ void Scene_4_Draw(scene_4_t *scene)
 			I_FrameBuffer()
 		);
 	}
-	else if (sceneFrameCount <= 24) {
+	else if (sceneFrameCount < 16+8) {
 		// Fade in
 		const int asteroidX = 288 - (scene->asteroid->width >> 1);
 		const int asteroidY = 48 - (scene->asteroid->height >> 1);
@@ -709,16 +709,16 @@ void Scene_4_Draw(scene_4_t *scene)
 			asteroidY,
 			FRACUNIT,
 			FRACUNIT,
-			6 - (sceneFrameCount >> 2),
+			5 - ((sceneFrameCount-8) >> 2),
 			true,
 			I_FrameBuffer()
 		);
 	}
-	else /*if (sceneFrameCount > 24)*/ {
+	else /*if (sceneFrameCount >= 16+8)*/ {
 		// Move asteroid
-		const int asteroidX = 288 - ((sceneFrameCount-24) >> 2);
+		const int asteroidX = 288 - ((sceneFrameCount-8) >> 2);
 		const int asteroidY = 48;
-		const angle_t asteroidAngle = ((((sceneFrameCount-24) << 4)) & 0x1FFF);
+		const angle_t asteroidAngle = ((((sceneFrameCount-8) << 4) + ((sceneFrameCount-8) << 3)) & 0x1FFF);
 
 		DrawJagobj3_15bpp(
 			scene->scene.background,
