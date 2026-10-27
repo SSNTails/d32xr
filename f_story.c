@@ -698,27 +698,42 @@ void Scene_4_Draw(scene_4_t *scene)
 			I_FrameBuffer()
 		);
 	}
-	else if (sceneFrameCount < 16+8) {
-		// Fade in
-		const int asteroidX = 288 - (scene->asteroid->width >> 1);
-		const int asteroidY = 48 - (scene->asteroid->height >> 1);
+	else if (sceneFrameCount < 36) {
+		if (sceneFrameCount >= 20) {
+			// Fade in
+			const int asteroidX = 288 - (scene->asteroid->width >> 1);
+			const int asteroidY = 48 - (scene->asteroid->height >> 1);
 
-		DrawScaledJagobj_15bppBlend(
-			scene->asteroid,
-			asteroidX,
-			asteroidY,
-			FRACUNIT,
-			FRACUNIT,
-			5 - ((sceneFrameCount-8) >> 2),
-			true,
-			I_FrameBuffer()
-		);
+			DrawJagobj3_15bpp(
+				scene->scene.background,
+				asteroidX - 34,
+				asteroidY - 34,
+				asteroidX - 34,
+				asteroidY - 34,
+				34*2,
+				34*2,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+
+			DrawScaledJagobj_15bppBlend(
+				scene->asteroid,
+				asteroidX,
+				asteroidY,
+				FRACUNIT,
+				FRACUNIT,
+				4 - ((sceneFrameCount-20) >> 2),
+				true,
+				I_FrameBuffer()
+			);
+		}
 	}
 	else /*if (sceneFrameCount >= 16+8)*/ {
 		// Move asteroid
-		const int asteroidX = 288 - ((sceneFrameCount-8) >> 2);
+		const int asteroidX = 288 - ((sceneFrameCount-36) >> 2);
 		const int asteroidY = 48;
-		const angle_t asteroidAngle = ((((sceneFrameCount-8) << 4) + ((sceneFrameCount-8) << 3)) & 0x1FFF);
+		const angle_t asteroidAngle = ((((sceneFrameCount-36) << 4) + ((sceneFrameCount-36) << 3)) & 0x1FFF);
 
 		DrawJagobj3_15bpp(
 			scene->scene.background,
@@ -2619,6 +2634,53 @@ void BuildScenes()
 	introScenes[i++] = (storyscene_t*)scene16;
 }
 
+#ifdef STORYDEBUG
+void DrawStoryDebug()
+{
+	char cs[12];
+	char sfcount[12];
+	char pfcount[12];
+
+	valtostr(cs, currentScene);
+	valtostr(sfcount, sceneFrameCount);
+	valtostr(pfcount, phaseFrameCount);
+
+	// Clear area where text will be displayed.
+	pixel_t *framebuffer = I_FrameBuffer();
+	framebuffer += (320 * (200-(8*2))) + (320-(8*16));
+	for (int y=0; y < 8; y++) {
+		for (int x=0; x < (8*16); x++) {
+			*framebuffer++ = 0x8000;
+		}
+		framebuffer += (8*24);
+	}
+
+	// Draw scene number.
+	for (int i=0; i < 2; i++) {
+		if (cs[i] == '\0') {
+			break;
+		}
+		V_DrawChar_15bpp(&menuFont, (320-(8*16))+(i<<3), 200-(8*2), cs[i]);
+	}
+
+	// Draw scene frame count.
+	for (int i=0; i < 6; i++) {
+		if (sfcount[i] == '\0') {
+			break;
+		}
+		V_DrawChar_15bpp(&menuFont, (320-(8*12))+(i<<3), 200-(8*2), sfcount[i]);
+	}
+
+	// Draw phase frame count.
+	for (int i=0; i < 6; i++) {
+		if (pfcount[i] == '\0') {
+			break;
+		}
+		V_DrawChar_15bpp(&menuFont, (320-(8*6))+(i<<3), 200-(8*2), pfcount[i]);
+	}
+}
+#endif
+
 void START_Story (void)
 {
 	DoubleBufferSetup();	// Clear frame buffers to black.
@@ -2722,6 +2784,9 @@ void DRAW_Story (void)
 	}
 	else {
 		introScenes[currentScene]->draw(introScenes[currentScene]);
+#ifdef STORYDEBUG
+		DrawStoryDebug();
+#endif
 	}
 }
 
