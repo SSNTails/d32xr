@@ -4,11 +4,11 @@
 #include "marshw.h"
 #include "r_local.h"
 
-boolean test_always_zoom = false;
-fixed_t test_x_zoom = 0;
-fixed_t test_y_zoom = 0;
-fixed_t test_x_pos = 0;
-fixed_t test_y_pos = 0;
+//boolean test_always_zoom = false;
+//fixed_t test_x_zoom = 0;
+//fixed_t test_y_zoom = 0;
+//fixed_t test_x_pos = 0;
+//fixed_t test_y_pos = 0;
 
 boolean transitionInProgress = false;
 boolean transitionDirection = 0;
@@ -18,6 +18,10 @@ int currentScene = 0;
 
 short sceneFrameCount = 0;
 short phaseFrameCount = 0;
+
+#ifdef STORYDEBUG
+int last_bgm_sync_command = 0;
+#endif
 
 typedef struct
 {
@@ -2641,18 +2645,31 @@ void DrawStoryDebug()
 	char sfcount[12];
 	char pfcount[12];
 
-	valtostr(cs, currentScene);
+	valtostr(cs, currentScene+1);
 	valtostr(sfcount, sceneFrameCount);
 	valtostr(pfcount, phaseFrameCount);
 
 	// Clear area where text will be displayed.
 	pixel_t *framebuffer = I_FrameBuffer();
-	framebuffer += (320 * (200-(8*2))) + (320-(8*16));
+	framebuffer += (320 * (200-(8*2))) + (320-(8*22));
 	for (int y=0; y < 8; y++) {
-		for (int x=0; x < (8*16); x++) {
+		for (int x=0; x < (8*22); x++) {
 			*framebuffer++ = 0x8000;
 		}
-		framebuffer += (8*24);
+		framebuffer += (8*18);
+	}
+
+	// Draw last BGM sync command.
+	int bsc = last_bgm_sync_command;
+	for (int i=0; i < 4; i++) {
+		int digit = bsc & 0xF;
+		bsc >>= 4;
+		if (digit < 10) {
+			V_DrawChar_15bpp(&menuFont, (320-(8*19))-(i<<3), 200-(8*2), '0' + digit);
+		}
+		else {
+			V_DrawChar_15bpp(&menuFont, (320-(8*19))-(i<<3), 200-(8*2), 'A'-10 + digit);
+		}
 	}
 
 	// Draw scene number.
@@ -2740,6 +2757,10 @@ int TIC_Story (void)
 	if (bgm_sync_command != 0) {
 		//currentPhase = (bgm_sync_command & 7);
 		//currentScene = ((bgm_sync_command >> 3) & 0x1F);
+
+#ifdef STORYDEBUG
+		last_bgm_sync_command = bgm_sync_command;
+#endif
 
 		// If phase is 0, we're starting a new scene; otherwise, we're starting a new phase.
 		if (bgm_sync_command & 7) {
