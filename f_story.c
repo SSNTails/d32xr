@@ -1007,17 +1007,24 @@ void Scene_5_Draw(scene_5_t *scene)
 				I_FrameBuffer()
 			);
 
-			DrawJagobj3_15bpp(
-				scene->warning,
-				radarPosX + 109,
-				radarPosY + 108,
-				0, 0,
-				scene->warning->width,
-				scene->warning->height,
-				320,
-				false,
-				I_FrameBuffer()
-			);
+			if (scene->animationCounter & 1)
+			{
+				DrawJagobj3_15bpp(
+					scene->warning,
+					radarPosX + 95,
+					radarPosY + 113,
+					0, 0,
+					scene->warning->width,
+					scene->warning->height,
+					320,
+					false,
+					I_FrameBuffer()
+				);
+			}
+			else
+			{
+				DrawFillRect_15bpp(radarPosX + 95, radarPosY + 113, scene->warning->width, scene->warning->height, 0x1000000000000000);
+			}
 
 			if (scene->blipShift <= 5)
 			{
@@ -2341,7 +2348,7 @@ void BuildScenes()
 	scene1->scene.preTextDelay = TICRATE;
 	scene1->scene.postTextDelay = 2*TICRATE;
 	scene1->scene.textBox.x = 16;
-	scene1->scene.textBox.y = 128 + 16;
+	scene1->scene.textBox.y = 128 + 8;
 	scene1->scene.textBox.width = 320 - (scene1->scene.textBox.x * 2);
 	scene1->scene.textBox.height = 224 - 16 - scene1->scene.textBox.y;
 	scene1->scene.init = (void(*)(storyscene_t *))Scene_1_Init;
@@ -2358,7 +2365,7 @@ void BuildScenes()
 	scene2->scene.preTextDelay = TICRATE;
 	scene2->scene.postTextDelay = 2*TICRATE;
 	scene2->scene.textBox.x = 16;
-	scene2->scene.textBox.y = 128 + 16;
+	scene2->scene.textBox.y = 128 + 8;
 	scene2->scene.textBox.width = 320 - (scene2->scene.textBox.x * 2);
 	scene2->scene.textBox.height = 224 - 16 - scene2->scene.textBox.y;
 	scene2->scene.init = (void(*)(storyscene_t *))Scene_2_Init;
@@ -2375,7 +2382,7 @@ void BuildScenes()
 	scene3->scene.preTextDelay = TICRATE;
 	scene3->scene.postTextDelay = 2*TICRATE;
 	scene3->scene.textBox.x = 16;
-	scene3->scene.textBox.y = 128 + 16;
+	scene3->scene.textBox.y = 128 + 8;
 	scene3->scene.textBox.width = 320 - (scene3->scene.textBox.x * 2);
 	scene3->scene.textBox.height = 224 - 16 - scene3->scene.textBox.y;
 	scene3->scene.init = (void(*)(storyscene_t *))Scene_3_Init;
@@ -2392,7 +2399,7 @@ void BuildScenes()
 	scene4->scene.preTextDelay = TICRATE;
 	scene4->scene.postTextDelay = 2*TICRATE;
 	scene4->scene.textBox.x = 16;
-	scene4->scene.textBox.y = 128 + 16;
+	scene4->scene.textBox.y = 128 + 8;
 	scene4->scene.textBox.width = 320 - (scene4->scene.textBox.x * 2);
 	scene4->scene.textBox.height = 224 - 16 - scene4->scene.textBox.y;
 	scene4->scene.init = (void(*)(storyscene_t *))Scene_4_Init;
@@ -2411,7 +2418,7 @@ void BuildScenes()
 	scene5->scene.preTextDelay = TICRATE;
 	scene5->scene.postTextDelay = 2*TICRATE;
 	scene5->scene.textBox.x = 16;
-	scene5->scene.textBox.y = 128 + 16;
+	scene5->scene.textBox.y = 128 + 8;
 	scene5->scene.textBox.width = 320 - (scene5->scene.textBox.x * 2);
 	scene5->scene.textBox.height = 224 - 16 - scene5->scene.textBox.y;
 	scene5->scene.init = (void(*)(storyscene_t *))Scene_5_Init;
@@ -2447,7 +2454,7 @@ void BuildScenes()
 	scene7->scene.preTextDelay = TICRATE;
 	scene7->scene.postTextDelay = 4*TICRATE;
 	scene7->scene.textBox.x = 16;
-	scene7->scene.textBox.y = 128 + 16;
+	scene7->scene.textBox.y = 128 + 8;
 	scene7->scene.textBox.width = 320 - (scene7->scene.textBox.x * 2);
 	scene7->scene.textBox.height = 224 - 16 - scene7->scene.textBox.y;
 	scene7->scene.init = (void(*)(storyscene_t *))Scene_7_Init;
@@ -2464,7 +2471,7 @@ void BuildScenes()
 	scene8->scene.preTextDelay = TICRATE;
 	scene8->scene.postTextDelay = 2*TICRATE;
 	scene8->scene.textBox.x = 16;
-	scene8->scene.textBox.y = 128 + 16;
+	scene8->scene.textBox.y = 128 + 8;
 	scene8->scene.textBox.width = 320 - (scene8->scene.textBox.x * 2);
 	scene8->scene.textBox.height = 224 - 16 - scene8->scene.textBox.y;
 	scene8->scene.init = (void(*)(storyscene_t *))Scene_8_Init;
@@ -2481,7 +2488,7 @@ void BuildScenes()
 	scene9->scene.preTextDelay = TICRATE;
 	scene9->scene.postTextDelay = 2*TICRATE;
 	scene9->scene.textBox.x = 12;
-	scene9->scene.textBox.y = 128 + 16;
+	scene9->scene.textBox.y = 128 + 8;
 	scene9->scene.textBox.width = 320 - (scene9->scene.textBox.x * 2);
 	scene9->scene.textBox.height = 224 - 16 - scene9->scene.textBox.y;
 	scene9->scene.init = (void(*)(storyscene_t *))Scene_9_Init;
@@ -2526,7 +2533,7 @@ void BuildScenes()
 	scene10->scene.preTextDelay = TICRATE;
 	scene10->scene.postTextDelay = 2*TICRATE;
 	scene10->scene.textBox.x = 16;
-	scene10->scene.textBox.y = 128 + 16;
+	scene10->scene.textBox.y = 128 + 8;
 	scene10->scene.textBox.width = 320 - (scene10->scene.textBox.x * 2);
 	scene10->scene.textBox.height = 224 - 16 - scene10->scene.textBox.y;
 	scene10->scene.init = (void(*)(storyscene_t *))Scene_10_Init;
@@ -2543,7 +2550,7 @@ void BuildScenes()
 	scene11->scene.preTextDelay = TICRATE;
 	scene11->scene.postTextDelay = 2*TICRATE;
 	scene11->scene.textBox.x = 16;
-	scene11->scene.textBox.y = 128 + 16;
+	scene11->scene.textBox.y = 128 + 8;
 	scene11->scene.textBox.width = 320 - (scene11->scene.textBox.x * 2);
 	scene11->scene.textBox.height = 224 - 16 - scene11->scene.textBox.y;
 	scene11->scene.init = (void(*)(storyscene_t *))Scene_11_Init;
@@ -2577,7 +2584,7 @@ void BuildScenes()
 	scene13->scene.preTextDelay = TICRATE;
 	scene13->scene.postTextDelay = 2*TICRATE;
 	scene13->scene.textBox.x = 16;
-	scene13->scene.textBox.y = 164 + 16;
+	scene13->scene.textBox.y = 164;
 	scene13->scene.textBox.width = 320 - (scene13->scene.textBox.x * 2);
 	scene13->scene.textBox.height = 200 - 16;
 	scene13->scene.init = (void(*)(storyscene_t *))Scene_13_Init;
@@ -2628,7 +2635,7 @@ void BuildScenes()
 	scene16->scene.preTextDelay = TICRATE;
 	scene16->scene.postTextDelay = 2*TICRATE;
 	scene16->scene.textBox.x = 16;
-	scene16->scene.textBox.y = 128 + 16;
+	scene16->scene.textBox.y = 128 + 8;
 	scene16->scene.textBox.width = 320 - 32 - 32;
 	scene16->scene.textBox.height = 224 - 16 - scene16->scene.textBox.y;
 	scene16->scene.init = (void(*)(storyscene_t *))Scene_16_Init;

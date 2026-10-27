@@ -1478,7 +1478,7 @@ void DrawMaskedGraphic3(byte *data, int x, int y, int src_y, int colormap);
 void DrawMaskedGraphicWithColormap(byte *data, int x, int y, int colormap);
 void DrawMaskedGraphicLump(int lumpnum, int x, int y);
 void DrawFillRect (int x, int y, int w, int h, int c);
-//void DrawFillRect_15bpp(int x, int y, int w, int h, pixel_t c);
+void DrawFillRect_15bpp(int x, int y, int w, int h, pixel_t c);
 void DrawLine (int x, int y, int length, int c, boolean vertical);
 void UpdateBuffer (void);
 

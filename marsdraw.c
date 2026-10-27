@@ -2062,7 +2062,7 @@ void DrawFillRect(int x, int y, int w, int h, int c)
 	}
 }
 
-/*
+
 void DrawFillRect_15bpp(int x, int y, int w, int h, pixel_t c)
 {
 	int i;
@@ -2092,7 +2092,7 @@ void DrawFillRect_15bpp(int x, int y, int w, int h, pixel_t c)
 		dest += 320;
 	}
 }
-*/
+
 
 void DrawLine(int x, int y, int length, int c, boolean vertical)
 {
