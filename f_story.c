@@ -174,6 +174,8 @@ typedef struct
 typedef struct 
 {
 	storyscene_t scene;
+	jagobj_t *talk[4];
+	int talkCounter;
 } scene_12_t;
 
 typedef struct 
@@ -1816,23 +1818,63 @@ void Scene_12_Init(scene_12_t *scene)
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
+	scene->talk[0] = W_CacheLumpName("PTALK1", PU_LEVEL);
+	scene->talk[1] = W_CacheLumpName("PTALK2", PU_LEVEL);
+	scene->talk[2] = W_CacheLumpName("PTALK3", PU_LEVEL);
+	scene->talk[3] = W_CacheLumpName("PTALK4", PU_LEVEL);
 }
 
 void Scene_12_Tick(scene_12_t *scene)
 {
+	int16_t lastTextPos = scene->scene.textPos;
 	TIC_Text(&scene->scene);
+
+	if (scene->scene.textPos != lastTextPos)
+	{
+		switch(scene->scene.text[scene->scene.textPos])
+		{
+			case '\xA0':
+				scene->talkCounter = 0;
+				break;
+			case '\xA1':
+				scene->talkCounter = 1;
+				break;
+			case '\xA2':
+				scene->talkCounter = 2;
+				break;
+			case '\xA3':
+				scene->talkCounter = 3;
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 void Scene_12_Draw(scene_12_t *scene)
 {
+	if (sceneFrameCount < 2)
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+
 	DrawJagobj3_15bpp(
-		scene->scene.background,
-		scene->scene.backgroundX,
-		scene->scene.backgroundY,
+		scene->talk[scene->talkCounter],
+		66,
+		82,
 		0,
 		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
+		scene->talk[scene->talkCounter]->width,
+		scene->talk[scene->talkCounter]->height,
 		320,
 		false,
 		I_FrameBuffer()
@@ -1844,6 +1886,10 @@ void Scene_12_Draw(scene_12_t *scene)
 void Scene_12_Stop(scene_12_t *scene)
 {
 	// Free any resources
+	Z_Free(scene->talk[3]);
+	Z_Free(scene->talk[2]);
+	Z_Free(scene->talk[1]);
+	Z_Free(scene->talk[0]);
 	Z_Free(scene->scene.background);
 }
 
@@ -2209,16 +2255,16 @@ const char *intro11text =
 "had been obliterated.";
 
 const char *intro12text =
-"\"\xA7You're not\n"
-"quite as gone\n"
-"as we thought,\n"
-"huh? Are you\n"
-"going to tell\n"
-"us your plan as\n"
-"usual or will I\n"
-"'have to work\n"
-"it out' or\n"
-"something?\xA7\"";
+"\"\xA2Yo\xA1u'\xA3re\xA0 \xA1n\xA2o\xA1t\xA0\n"
+"\xA3qu\xA2it\xA1""e\xA0 \xA1""as\xA0 \xA2go\xA1ne\xA0\n"
+"\xA1""as\xA0 \xA1we\xA0 \xA2tho\xA1ught\xA0,\n"
+"\xA1huh?\xA0 \xA1""Are\xA0 \xA3you\xA0\n"
+"\xA1g\xA0o\xA1ing\xA0 \xA3to\xA0 \xA1tell\xA0\n"
+"\xA1us\xA0 \xA1y\xA3our\xA0 \xA2pl\xA1""an\xA0 \xA1""as\xA0\n"
+"\xA3u\xA1s\xA3u\xA1""al\xA0 \xA3or\xA0 \xA3w\xA1ill\xA0 \xA1I\xA0\n"
+"\xA1'\xA2ha\xA1ve\xA0 \xA3to\xA0 \xA3wo\xA1rk\xA0\n"
+"\xA1it\xA0 \xA2o\xA1u\xA3t'\xA0 \xA3or\xA0\n"
+"\xA1s\xA2om\xA1""e\xA0th\xA1ing\xA0?\"";
 
 const char *intro13text =
 "\"We'll see... let's give you a quick warm\n"
@@ -2489,7 +2535,7 @@ void BuildScenes()
 
 	scene_12_t *scene12 = Z_Calloc(sizeof(*scene12), PU_STATIC);
 	scene12->scene.transitionOutHeight = 204;
-	scene12->scene.picLump = W_GetNumForName("SPOINT");
+	scene12->scene.picLump = W_GetNumForName("POINT");
 	scene12->scene.text = intro12text;
 	scene12->scene.textCharDelayTics = scene12->scene.textCharDelayCounter = 4;
 	scene12->scene.preTextDelay = TICRATE;
