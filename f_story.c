@@ -723,10 +723,10 @@ void Scene_4_Draw(scene_4_t *scene)
 
 			DrawScaledJagobj_15bppBlend(
 				scene->asteroid,
-				asteroidX,
-				asteroidY,
-				FRACUNIT,
-				FRACUNIT,
+				asteroidX + ((36 - sceneFrameCount) >> 1),
+				asteroidY + ((36 - sceneFrameCount) >> 1),
+				FRACUNIT - ((36 - sceneFrameCount) << 10),
+				FRACUNIT - ((36 - sceneFrameCount) << 10),
 				4 - ((sceneFrameCount-20) >> 2),
 				true,
 				I_FrameBuffer()
