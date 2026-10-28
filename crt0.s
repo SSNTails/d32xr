@@ -1157,6 +1157,11 @@ pri_vres_irq:
         shll2   r0
         ldc     r0,sr                   /* disallow ints */
 
+        /* Turn off display */
+        mov.l   pvri_bitmap_mode,r1
+        mov     #0,r0
+        mov.b   r0,@(1,r1)
+
         mov.l   pvri_pri_stk,r15
         mov.l   pvri_pri_vres,r0
         jmp     @r0
@@ -1165,6 +1170,8 @@ pri_vres_irq:
         .align  2
 pvri_mars_adapter:
         .long   0x20004000
+pvri_bitmap_mode:
+        .long   0x20004100
 pvri_pri_stk:
         .long   pri_stack               /* Cold Start SP */
 pvri_pri_vres:

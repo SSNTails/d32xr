@@ -2649,21 +2649,26 @@ void BuildScenes()
 void DrawStoryDebug()
 {
 	char cs[12];
+	char cp[12];
 	char sfcount[12];
 	char pfcount[12];
 
 	valtostr(cs, currentScene+1);
+	valtostr(cp, currentPhase+1);
 	valtostr(sfcount, sceneFrameCount);
 	valtostr(pfcount, phaseFrameCount);
 
 	// Clear area where text will be displayed.
 	pixel_t *framebuffer = I_FrameBuffer();
-	framebuffer += (320 * (200-(8*2))) + (320-(8*22));
+	framebuffer += (320 * (200-(8*2))) + (320-(8*25));
 	for (int y=0; y < 8; y++) {
-		for (int x=0; x < (8*22); x++) {
+		for (int x=0; x < ((8*25)>>2); x++) {
+			*framebuffer++ = 0x8000;
+			*framebuffer++ = 0x8000;
+			*framebuffer++ = 0x8000;
 			*framebuffer++ = 0x8000;
 		}
-		framebuffer += (8*18);
+		framebuffer += (8*15);
 	}
 
 	// Draw last BGM sync command.
@@ -2672,10 +2677,10 @@ void DrawStoryDebug()
 		int digit = bsc & 0xF;
 		bsc >>= 4;
 		if (digit < 10) {
-			V_DrawChar_15bpp(&menuFont, (320-(8*19))-(i<<3), 200-(8*2), '0' + digit);
+			V_DrawChar_15bpp(&menuFont, (320-(8*22))-(i<<3), 200-(8*2), '0' + digit);
 		}
 		else {
-			V_DrawChar_15bpp(&menuFont, (320-(8*19))-(i<<3), 200-(8*2), 'A'-10 + digit);
+			V_DrawChar_15bpp(&menuFont, (320-(8*22))-(i<<3), 200-(8*2), 'A'-10 + digit);
 		}
 	}
 
@@ -2684,8 +2689,11 @@ void DrawStoryDebug()
 		if (cs[i] == '\0') {
 			break;
 		}
-		V_DrawChar_15bpp(&menuFont, (320-(8*16))+(i<<3), 200-(8*2), cs[i]);
+		V_DrawChar_15bpp(&menuFont, (320-(8*19))+(i<<3), 200-(8*2), cs[i]);
 	}
+
+	// Draw phase number.
+	V_DrawChar_15bpp(&menuFont, (320-(8*16)), 200-(8*2), cp[0]);
 
 	// Draw scene frame count.
 	for (int i=0; i < 6; i++) {
@@ -2812,10 +2820,10 @@ void DRAW_Story (void)
 	}
 	else {
 		introScenes[currentScene]->draw(introScenes[currentScene]);
-#ifdef STORYDEBUG
-		DrawStoryDebug();
-#endif
 	}
+#ifdef STORYDEBUG
+	DrawStoryDebug();
+#endif
 }
 
 void STOP_Story (void)
