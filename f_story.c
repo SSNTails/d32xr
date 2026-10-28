@@ -1119,20 +1119,38 @@ void Scene_6_Tick(scene_6_t *scene)
 
 void Scene_6_Draw(scene_6_t *scene)
 {
-	DrawJagobj3_15bpp(
-		scene->scene.background,
-		scene->scene.backgroundX,
-		scene->scene.backgroundY,
-		0,
-		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
-		320,
-		false,
-		I_FrameBuffer()
-	);
+	if (sceneFrameCount < 2)
+	{
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+	}
+	else
+	{
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width,
+			104,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+	}
 
-	if (sceneFrameCount & 1)
+	if ((sceneFrameCount & 7) < 4)
 		DrawJagobj3_15bpp(
 			scene->noflash,
 			105,
