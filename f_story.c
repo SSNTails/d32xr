@@ -206,9 +206,11 @@ typedef struct
 typedef struct 
 {
 	storyscene_t scene;
-	boolean tailsTalking;
-	boolean sonicTalking;
-	int talkCounter;
+	jagobj_t *stalk[2];
+	jagobj_t *ttalk[2];
+	boolean sonicTalking; // Otherwise, draw nothing (waiting for Tails to finish)
+	int sTalkCounter;
+	int tTalkCounter;
 } scene_16_t;
 
 typedef struct
@@ -1023,7 +1025,7 @@ void Scene_5_Draw(scene_5_t *scene)
 			}
 			else
 			{
-				DrawFillRect_15bpp(radarPosX + 95, radarPosY + 113, scene->warning->width, scene->warning->height, 0x1000000000000000);
+				DrawFillRect_15bpp(radarPosX + 95, radarPosY + 113, scene->warning->width, scene->warning->height, 0x8000);
 			}
 
 			if (scene->blipShift <= 5)
@@ -1100,6 +1102,7 @@ void Scene_6_Tick(scene_6_t *scene)
 		{
 			scene->talking = !scene->talking;
 			scene->stacheCounter = 0;
+			scene->scene.textPos++;
 		}
 	}
 
@@ -1861,15 +1864,19 @@ void Scene_12_Tick(scene_12_t *scene)
 		{
 			case '\xA0':
 				scene->talkCounter = 0;
+				scene->scene.textPos++;
 				break;
 			case '\xA1':
 				scene->talkCounter = 1;
+				scene->scene.textPos++;
 				break;
 			case '\xA2':
 				scene->talkCounter = 2;
+				scene->scene.textPos++;
 				break;
 			case '\xA3':
 				scene->talkCounter = 3;
+				scene->scene.textPos++;
 				break;
 			default:
 				break;
@@ -1978,15 +1985,19 @@ void Scene_14_Tick(scene_14_t *scene)
 		{
 			case '\xA0':
 				scene->talkCounter = 0;
+				scene->scene.textPos++;
 				break;
 			case '\xA1':
 				scene->talkCounter = 1;
+				scene->scene.textPos++;
 				break;
 			case '\xA2':
 				scene->talkCounter = 2;
+				scene->scene.textPos++;
 				break;
 			case '\xA3':
 				scene->talkCounter = 3;
+				scene->scene.textPos++;
 				break;
 			default:
 				break;
@@ -2061,18 +2072,23 @@ void Scene_15_Tick(scene_15_t *scene)
 		{
 			case '\xA0':
 				scene->talkCounter = 0;
+				scene->scene.textPos++;
 				break;
 			case '\xA1':
 				scene->talkCounter = 1;
+				scene->scene.textPos++;
 				break;
 			case '\xA2':
 				scene->talkCounter = 2;
+				scene->scene.textPos++;
 				break;
 			case '\xA3':
 				scene->talkCounter = 3;
+				scene->scene.textPos++;
 				break;
 			case '\xA6':
 				scene->eyesOpen = true;
+				scene->scene.textPos++;
 				break;
 			default:
 				break;
@@ -2144,6 +2160,11 @@ void Scene_16_Init(scene_16_t *scene)
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
+
+	scene->stalk[0] = W_CacheLumpName("MOSTALK1", PU_LEVEL);
+	scene->stalk[1] = W_CacheLumpName("MOSTALK2", PU_LEVEL);
+	scene->ttalk[0] = W_CacheLumpName("MOTTALK1", PU_LEVEL);
+	scene->ttalk[1] = W_CacheLumpName("MOTTALK2", PU_LEVEL);
 }
 
 void Scene_16_Tick(scene_16_t *scene)
@@ -2153,32 +2174,72 @@ void Scene_16_Tick(scene_16_t *scene)
 
 	if (scene->scene.textPos != lastTextPos)
 	{
-		if (scene->scene.text[scene->scene.textPos] == '\xA7')
+		switch(scene->scene.text[scene->scene.textPos])
 		{
-			scene->tailsTalking = !scene->tailsTalking;
-			scene->talkCounter = 0;
-		}
-		else if (scene->scene.text[scene->scene.textPos] == '\xA6')
-		{
-			scene->sonicTalking = !scene->sonicTalking;
-			scene->talkCounter = 0;
+			case '\xA0':
+				if (scene->sonicTalking)
+					scene->sTalkCounter = 0;
+				else
+					scene->tTalkCounter = 0;
+				scene->scene.textPos++;
+				break;
+			case '\xA1':
+				if (scene->sonicTalking)
+					scene->sTalkCounter = 1;
+				else
+					scene->tTalkCounter = 1;
+				scene->scene.textPos++;
+				break;
+			case '\xA6':
+				scene->sonicTalking = true;
+				scene->scene.textPos++;
+				break;
+			default:
+				break;
 		}
 	}
-
-	if ((sceneFrameCount & 7) == 0)
-		scene->talkCounter++;
 }
 
 void Scene_16_Draw(scene_16_t *scene)
 {
+	if (sceneFrameCount < 2)
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+
+	if (scene->sonicTalking)
+	{
+		DrawJagobj3_15bpp(
+			scene->stalk[scene->sTalkCounter],
+			67,
+			52,
+			0,
+			0,
+			scene->stalk[scene->sTalkCounter]->width,
+			scene->stalk[scene->sTalkCounter]->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+	}
+
 	DrawJagobj3_15bpp(
-		scene->scene.background,
-		scene->scene.backgroundX,
-		scene->scene.backgroundY,
+		scene->ttalk[scene->tTalkCounter],
+		131,
+		75,
 		0,
 		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
+		scene->ttalk[scene->tTalkCounter]->width,
+		scene->ttalk[scene->tTalkCounter]->height,
 		320,
 		false,
 		I_FrameBuffer()
@@ -2191,6 +2252,10 @@ void Scene_16_Stop(scene_16_t *scene)
 {
 	// Free any resources
 	Z_Free(scene->scene.background);
+	Z_Free(scene->ttalk[1]);
+	Z_Free(scene->ttalk[0]);
+	Z_Free(scene->stalk[1]);
+	Z_Free(scene->stalk[0]);
 }
 
 const char *intro1text =
@@ -2325,15 +2390,15 @@ const char *intro15text =
 "\xA1""d\xA3""oi\xA1""ng\xA0""?\"";
 
 const char *intro16text =
-"\xA7\"I'm just finding what mission obje\xA7...\xA7\n"
-"a-ha! Here it is! This will only give us\n"
-"the robot's primary objective. It says\xA7...\"\n"
+"\"\xA1I'\xA0m j\xA1us\xA0t f\xA1in\xA0""d\xA1in\xA0g w\xA1ha\xA0t m\xA1is\xA0s\xA1io\xA0n \xA1ob\xA0j\xA1""e\xA0...\n"
+"\xA1""a\xA0-\xA1ha\xA0! \xA1Her\xA0""e \xA1i\xA0t \xA1i\xA0s! T\xA1hi\xA0s w\xA1il\xA0l \xA1on\xA0l\xA1y\xA0 g\xA1iv\xA0""e \xA1u\xA0s\n"
+"\xA1th\xA0""e r\xA1o\xA0""b\xA1o\xA0t's p\xA1ri\xA0m\xA1""a\xA0r\xA1y\xA0 \xA1ob\xA0j\xA1""ec\xA0t\xA1i\xA0ve. \xA1I\xA0t s\xA1""ay\xA0s...\"\n"
 "\n"
-"* \xA7LOCATE  AND  RETRIEVE:  CHAOS  EMERALDS\xA7 *"
+"* LOCATE  AND  RETRIEVE:  CHAOS  EMERALDS *"
 "\n"
-"*  \xA7CLOSEST  LOCATION:  GREENFLOWER  ZONE\xA7  *"
+"*  CLOSEST  LOCATION:  GREENFLOWER  ZONE  *"
 "\n"
-"\"\xA6""All right, then\xA6... \xA6let's go!\xA6\"";
+"\"\xA6""\xA1Al\xA0l r\xA1igh\xA0t, t\xA1he\xA0n... \xA1le\xA0t's \xA1go\xA0!\"";
 
 void BuildScenes()
 {
