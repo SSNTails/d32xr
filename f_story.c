@@ -1811,7 +1811,7 @@ void Scene_10_Tick(scene_10_t *scene)
 	TIC_Text(&scene->scene);
 
 	scene->bgScrollCount += 2;
-	scene->groundScrollCount += 4;
+	scene->groundScrollCount += 8;
 }
 
 void Scene_10_Draw(scene_10_t *scene)
@@ -1863,19 +1863,6 @@ void Scene_10_Draw(scene_10_t *scene)
 				I_FrameBuffer()
 			);
 		}
-
-		DrawJagobj3_15bpp(
-			scene->scene.background,
-			0,
-			scene->scene.background->height - 24,
-			0,
-			scene->scene.background->height - 24,
-			scene->scene.background->width,
-			2,
-			320,
-			false,
-			I_FrameBuffer()
-		);
 	}
 
 	int grassWidth = scene->runGrass->width;
@@ -2386,12 +2373,13 @@ const char *intro4text =
 "No one knows why it appears, or how.";
 
 const char *intro5text = 
-"\"Curses!\" Eggman yelled. \"That hedgehog\n"
-"and his ridiculous friends will pay\n"
-"dearly for this!\"\xC8 Just then his scanner\n"
-"blipped as the Black Rock made its\n"
-"appearance from nowhere. Eggman looked at\n"
-"the screen, and just shrugged it off.";
+"\"Curses!\" Eggman yelled. \"That\n"
+"hedgehog and his ridiculous friends\n"
+"will pay dearly for this!\"\xC8 Just\n"
+"then his scanner blipped as the Black\n"
+"Rock made its appearance from nowhere.\n"
+"Eggman looked at the screen, and just\n"
+"shrugged it off.";
 
 const char *intro6text =
 "It was hours later\n"
