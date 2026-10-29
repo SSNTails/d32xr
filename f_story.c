@@ -1830,8 +1830,14 @@ void Scene_10_Init(scene_10_t *scene)
 	scene->knux[0] = W_CacheLumpName("RUNKNUX1", PU_LEVEL);
 	scene->knux[1] = W_CacheLumpName("RUNKNUX2", PU_LEVEL);
 
-	scene->sonicPos.x = 320 - 64;
+	scene->sonicPos.x = 320 - 80;
 	scene->sonicPos.y = scene->scene.backgroundY + 52;
+
+	scene->tailsPos.x = 320 - 160;
+	scene->tailsPos.y = 16;
+
+	scene->knuxPos.x = 320 - 256;
+	scene->knuxPos.y = 35;
 }
 
 void Scene_10_Tick(scene_10_t *scene)
@@ -1935,18 +1941,39 @@ void Scene_10_Draw(scene_10_t *scene)
 	}
 
 	// Draw background behind animated parts
+
+	// Sonic
 	DrawJagobj3_15bpp(
 			scene->scene.background,
 			scene->sonicPos.x - 8 + peelOffset.x - 3,
 			89,
-			0,
+			scene->sonicPos.x - 8 + peelOffset.x - 3,
 			89,
-			scene->runPeel[peelFrame]->width + 3,
+			scene->runPeel[peelFrame]->width + 7,
 			scene->scene.background->height - 24 - 89,
 			320,
 			false,
 			I_FrameBuffer()
 		);
+
+	// Tails
+	if (35 - scene->tailsPos.y > 0)
+	{
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->tailsPos.x,
+			scene->tailsPos.y,
+			scene->tailsPos.x,
+			scene->tailsPos.y,
+			scene->tails[scene->sonicAnimCount & 1]->width,
+			35 - scene->tailsPos.y,
+			320,
+			true,
+			I_FrameBuffer()
+		);
+	}
+
+	// Knuckles never flies above pixel height 35 and stays in the area that is already getting redrawn.
 
 	// Draw Sonic, then Runpeel overtop
 	DrawJagobj3_15bpp(
@@ -1970,6 +1997,32 @@ void Scene_10_Draw(scene_10_t *scene)
 		0,
 		scene->runPeel[peelFrame]->width,
 		scene->runPeel[peelFrame]->height,
+		320,
+		true,
+		I_FrameBuffer()
+	);
+
+	DrawJagobj3_15bpp(
+		scene->tails[scene->sonicAnimCount & 1],
+		scene->tailsPos.x,
+		scene->tailsPos.y,
+		0,
+		0,
+		scene->tails[scene->sonicAnimCount & 1]->width,
+		scene->tails[scene->sonicAnimCount & 1]->height,
+		320,
+		true,
+		I_FrameBuffer()
+	);
+
+	DrawJagobj3_15bpp(
+		scene->knux[scene->sonicAnimCount & 1],
+		scene->knuxPos.x,
+		scene->knuxPos.y,
+		0,
+		0,
+		scene->knux[scene->sonicAnimCount & 1]->width,
+		scene->knux[scene->sonicAnimCount & 1]->height,
 		320,
 		true,
 		I_FrameBuffer()
