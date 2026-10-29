@@ -168,6 +168,15 @@ typedef struct
 typedef struct 
 {
 	storyscene_t scene;
+	VINT briteEgg[3];
+	VINT darkEgg[3];
+	jagobj_t *runGrass;
+	jagobj_t *knux[2];
+	jagobj_t *runPeel[4];
+	jagobj_t *sonic[2];
+	jagobj_t *tails[2];
+	int bgScrollCount;
+	int groundScrollCount;
 } scene_10_t;
 
 typedef struct 
@@ -1263,7 +1272,7 @@ void Scene_7_Tick(scene_7_t *scene)
 
 void Scene_7_Draw(scene_7_t *scene)
 {
-	if (currentPhase == 0)
+	if (currentPhase == 0 && sceneFrameCount < 2)
 	{
 		DrawJagobj3_15bpp(
 				scene->scene.background,
@@ -1284,7 +1293,7 @@ void Scene_7_Draw(scene_7_t *scene)
 			scene->scene.background,
 			scene->scene.backgroundX,
 			scene->scene.backgroundY,
-			4,
+			1,
 			I_FrameBuffer());
 	}
 	else if (currentPhase == 2) // Surprised
@@ -1399,18 +1408,19 @@ void Scene_8_Tick(scene_8_t *scene)
 
 void Scene_8_Draw(scene_8_t *scene)
 {
-	DrawJagobj3_15bpp(
-		scene->scene.background,
-		scene->scene.backgroundX,
-		scene->scene.backgroundY,
-		0,
-		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
-		320,
-		false,
-		I_FrameBuffer()
-	);
+	if (sceneFrameCount < 2)
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
 
 	if (currentPhase > 0)
 	{
@@ -1793,27 +1803,72 @@ void Scene_10_Init(scene_10_t *scene)
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
+	scene->runGrass = W_CacheLumpName("RUNGRASS", PU_LEVEL);
 }
 
 void Scene_10_Tick(scene_10_t *scene)
 {
 	TIC_Text(&scene->scene);
+
+	scene->bgScrollCount += 2;
+	scene->groundScrollCount += 4;
 }
 
 void Scene_10_Draw(scene_10_t *scene)
 {
-	DrawJagobj3_15bpp(
-		scene->scene.background,
-		scene->scene.backgroundX,
-		scene->scene.backgroundY,
-		0,
-		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
-		320,
-		false,
-		I_FrameBuffer()
-	);
+	if (sceneFrameCount < 2)
+	{
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+
+		DrawJagobj3_15bpp(
+			scene->runGrass, // 175x24
+			0, 
+		)
+	}
+	else
+	{
+		int xOffset = scene->bgScrollCount % 320;
+
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			xOffset,
+			35,
+			0,
+			35,
+			320 - xOffset,
+			54,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+
+		if (xOffset != 0)
+		{
+			DrawJagobj3_15bpp(
+				scene->scene.background,
+				0,
+				35,
+				scene->scene.background->width - xOffset,
+				35,
+				xOffset,
+				54,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+		}
+	}
 
 	DrawText(&scene->scene);
 }
@@ -1822,6 +1877,7 @@ void Scene_10_Stop(scene_10_t *scene)
 {
 	// Free any resources
 	Z_Free(scene->scene.background);
+	Z_Free(scene->runGrass);
 }
 
 void Scene_11_Init(scene_11_t *scene)
@@ -2422,6 +2478,23 @@ void BuildScenes()
 {
 	int i = 0;
 
+	scene_10_t *scene10 = Z_Calloc(sizeof(*scene10), PU_STATIC);
+	scene10->scene.transitionOutHeight = 204;
+	scene10->scene.picLump = W_GetNumForName("RUNBG");
+	scene10->scene.text = intro10text;
+	scene10->scene.textCharDelayTics = scene10->scene.textCharDelayCounter = 4;
+	scene10->scene.preTextDelay = TICRATE;
+	scene10->scene.postTextDelay = 2*TICRATE;
+	scene10->scene.textBox.x = 16;
+	scene10->scene.textBox.y = 128 + 8;
+	scene10->scene.textBox.width = 320 - (scene10->scene.textBox.x * 2);
+	scene10->scene.textBox.height = 224 - 16 - scene10->scene.textBox.y;
+	scene10->scene.init = (void(*)(storyscene_t *))Scene_10_Init;
+	scene10->scene.tic = (void(*)(storyscene_t *))Scene_10_Tick;
+	scene10->scene.draw = (void(*)(storyscene_t *))Scene_10_Draw;
+	scene10->scene.stop = (void(*)(storyscene_t *))Scene_10_Stop;
+	introScenes[i++] = (storyscene_t*)scene10;
+
 	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
 	scene1->scene.transitionOutHeight = 204;
 	scene1->scene.picLump = W_GetNumForName("PLANET");
@@ -2608,22 +2681,7 @@ void BuildScenes()
 	scene9->zoomCoords[13].y = 40;
 	introScenes[i++] = (storyscene_t*)scene9;
 
-	scene_10_t *scene10 = Z_Calloc(sizeof(*scene10), PU_STATIC);
-	scene10->scene.transitionOutHeight = 204;
-	scene10->scene.picLump = W_GetNumForName("RUNBG");
-	scene10->scene.text = intro10text;
-	scene10->scene.textCharDelayTics = scene10->scene.textCharDelayCounter = 4;
-	scene10->scene.preTextDelay = TICRATE;
-	scene10->scene.postTextDelay = 2*TICRATE;
-	scene10->scene.textBox.x = 16;
-	scene10->scene.textBox.y = 128 + 8;
-	scene10->scene.textBox.width = 320 - (scene10->scene.textBox.x * 2);
-	scene10->scene.textBox.height = 224 - 16 - scene10->scene.textBox.y;
-	scene10->scene.init = (void(*)(storyscene_t *))Scene_10_Init;
-	scene10->scene.tic = (void(*)(storyscene_t *))Scene_10_Tick;
-	scene10->scene.draw = (void(*)(storyscene_t *))Scene_10_Draw;
-	scene10->scene.stop = (void(*)(storyscene_t *))Scene_10_Stop;
-	introScenes[i++] = (storyscene_t*)scene10;
+	
 
 	scene_11_t *scene11 = Z_Calloc(sizeof(*scene11), PU_STATIC);
 	scene11->scene.transitionOutHeight = 204;
@@ -2667,7 +2725,7 @@ void BuildScenes()
 	scene13->scene.preTextDelay = TICRATE;
 	scene13->scene.postTextDelay = 2*TICRATE;
 	scene13->scene.textBox.x = 16;
-	scene13->scene.textBox.y = 164;
+	scene13->scene.textBox.y = 168;
 	scene13->scene.textBox.width = 320 - (scene13->scene.textBox.x * 2);
 	scene13->scene.textBox.height = 200 - 16;
 	scene13->scene.init = (void(*)(storyscene_t *))Scene_13_Init;
