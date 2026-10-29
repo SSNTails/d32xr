@@ -170,6 +170,7 @@ typedef struct
 	storyscene_t scene;
 	VINT briteEgg[3];
 	VINT darkEgg[3];
+	fixed_t eggScale;
 	jagobj_t *runGrass;
 	jagobj_t *knux[2];
 	jagobj_t *runPeel[4];
@@ -1838,6 +1839,8 @@ void Scene_10_Init(scene_10_t *scene)
 
 	scene->knuxPos.x = 320 - 256;
 	scene->knuxPos.y = 35;
+
+	scene->eggScale = 52428; // 80%
 }
 
 void Scene_10_Tick(scene_10_t *scene)
@@ -1851,18 +1854,51 @@ void Scene_10_Tick(scene_10_t *scene)
 		scene->sonicAnimCount++;
 }
 
+uint16_t RGBto15bpp(uint8_t r, uint8_t g, uint8_t b)
+{
+	uint8_t r5 = r >> 3;
+	uint8_t g5 = g >> 3;
+	uint8_t b5 = b >> 3;
+
+	/* Pack: p bbbbb ggggg rrrrr */
+	uint16_t word =
+		((uint16_t)b5 << 10) |
+		((uint16_t)g5 << 5) |
+		r5;
+
+	// Non-cyan pixels should be marked high-priority.
+	if (!(b == 255 && g == 255 && r == 0))
+		word |= 0x8000;
+
+	return word;
+}
+
 void Scene_10_Draw(scene_10_t *scene)
 {
-	if (sceneFrameCount < 2)
+	if (false && (currentPhase & 1) == 0)
 	{
+		VINT eggIndex = 0;
+		if (phaseFrameCount == 2) // Happy Eggman
+			eggIndex = 0;
+		else if (phaseFrameCount == 4) // Sinister Eggman
+			eggIndex = 1;
+		else if (phaseFrameCount == 6) // Evil Eggman
+			eggIndex = 2;
+
+		jagobj_t *eggPic;
+		if ((phaseFrameCount & 3) < 2)
+			eggPic = W_POINTLUMPNUM(scene->briteEgg[eggIndex]);
+		else
+			eggPic = W_POINTLUMPNUM(scene->darkEgg[eggIndex]);
+
 		DrawJagobj3_15bpp(
-			scene->scene.background,
+			eggPic,
 			scene->scene.backgroundX,
 			scene->scene.backgroundY,
 			0,
 			0,
-			scene->scene.background->width,
-			scene->scene.background->height,
+			eggPic->width,
+			eggPic->height,
 			320,
 			false,
 			I_FrameBuffer()
@@ -1870,20 +1906,78 @@ void Scene_10_Draw(scene_10_t *scene)
 	}
 	else
 	{
+		// Top sky gradient
+		DrawFillRect_15bpp(
+			0,
+			0,
+			320,
+			4,
+			RGBto15bpp(33, 140, 231)
+		);
+
+		DrawFillRect_15bpp(
+			0,
+			4,
+			320,
+			6,
+			RGBto15bpp(33, 148, 231)
+		);
+
+		DrawFillRect_15bpp(
+			0,
+			10,
+			320,
+			6,
+			RGBto15bpp(41, 156, 239)
+		);
+
+		DrawFillRect_15bpp(
+			0,
+			16,
+			320,
+			7,
+			RGBto15bpp(49, 165, 239)
+		);
+
+		DrawFillRect_15bpp(
+			0,
+			23,
+			320,
+			6,
+			RGBto15bpp(57, 173, 239)
+		);
+
+		DrawFillRect_15bpp(
+			0,
+			29,
+			320,
+			6,
+			RGBto15bpp(66, 181, 239)
+		);
+
+		// Water below
+		DrawFillRect_15bpp(
+			0,
+			89,
+			320,
+			39,
+			RGBto15bpp(0, 90, 90)
+		);
+
 		int xOffset = scene->bgScrollCount % 320;
 
 		DrawJagobj3_15bpp(
-			scene->scene.background,
-			xOffset,
-			35,
-			0,
-			35,
-			320 - xOffset,
-			54,
-			320,
-			false,
-			I_FrameBuffer()
-		);
+				scene->scene.background,
+				xOffset,
+				35,
+				0,
+				0,
+				320 - xOffset,
+				scene->scene.background->height,
+				320,
+				false,
+				I_FrameBuffer()
+			);
 
 		if (xOffset != 0)
 		{
@@ -1892,141 +1986,141 @@ void Scene_10_Draw(scene_10_t *scene)
 				0,
 				35,
 				scene->scene.background->width - xOffset,
-				35,
+				0,
 				xOffset,
-				54,
+				scene->scene.background->height,
 				320,
 				false,
 				I_FrameBuffer()
 			);
 		}
-	}
 
-	int grassWidth = scene->runGrass->width;
-	int grassHeight = scene->runGrass->height;
-	int grassOffset = scene->groundScrollCount % grassWidth;
-	for (int x = grassOffset - grassWidth; x < 320; x += grassWidth)
-	{
+		int grassWidth = scene->runGrass->width;
+		int grassHeight = scene->runGrass->height;
+		int grassOffset = scene->groundScrollCount % grassWidth;
+		for (int x = grassOffset - grassWidth; x < 320; x += grassWidth)
+		{
+			DrawJagobj3_15bpp(
+				scene->runGrass,
+				x,
+				128 - 24,
+				0,
+				0,
+				grassWidth,
+				grassHeight,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+		}
+
+		int peelFrame = scene->sonicAnimCount & 3;
+		coord_t peelOffset = { 0, 0};
+		if (peelFrame == 1)
+		{
+			peelOffset.x -= 2;
+			peelOffset.y -= 3;
+
+		}
+		else if (peelFrame == 2)
+		{
+			peelOffset.x = 0;
+			peelOffset.y += 3;
+		}
+		else if (peelFrame == 3)
+		{
+			peelOffset.x = 0;
+			peelOffset.y += 3;
+		}
+
+		// Draw background behind animated parts
+/*
+		// Sonic
 		DrawJagobj3_15bpp(
-			scene->runGrass,
-			x,
-			scene->scene.background->height - 24,
+				scene->scene.background,
+				scene->sonicPos.x - 8 + peelOffset.x - 3,
+				89,
+				scene->sonicPos.x - 8 + peelOffset.x - 3,
+				89,
+				scene->runPeel[peelFrame]->width + 7,
+				scene->scene.background->height - 24 - 89,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+
+		// Tails
+		if (35 - scene->tailsPos.y > 0)
+		{
+			DrawJagobj3_15bpp(
+				scene->scene.background,
+				scene->tailsPos.x,
+				scene->tailsPos.y,
+				scene->tailsPos.x,
+				scene->tailsPos.y,
+				scene->tails[scene->sonicAnimCount & 1]->width,
+				35 - scene->tailsPos.y,
+				320,
+				true,
+				I_FrameBuffer()
+			);
+		}*/
+
+		// Knuckles never flies above pixel height 35 and stays in the area that is already getting redrawn.
+
+		// Draw Sonic, then Runpeel overtop
+		DrawJagobj3_15bpp(
+			scene->sonic[scene->sonicAnimCount & 1],
+			scene->sonicPos.x,
+			scene->sonicPos.y,
 			0,
 			0,
-			grassWidth,
-			grassHeight,
+			scene->sonic[scene->sonicAnimCount & 1]->width,
+			scene->sonic[scene->sonicAnimCount & 1]->height,
 			320,
-			false,
-			I_FrameBuffer()
-		);
-	}
-
-	int peelFrame = scene->sonicAnimCount & 3;
-	coord_t peelOffset = { 0, 0};
-	if (peelFrame == 1)
-	{
-		peelOffset.x -= 2;
-		peelOffset.y -= 3;
-
-	}
-	else if (peelFrame == 2)
-	{
-		peelOffset.x = 0;
-		peelOffset.y += 3;
-	}
-	else if (peelFrame == 3)
-	{
-		peelOffset.x = 0;
-		peelOffset.y += 3;
-	}
-
-	// Draw background behind animated parts
-
-	// Sonic
-	DrawJagobj3_15bpp(
-			scene->scene.background,
-			scene->sonicPos.x - 8 + peelOffset.x - 3,
-			89,
-			scene->sonicPos.x - 8 + peelOffset.x - 3,
-			89,
-			scene->runPeel[peelFrame]->width + 7,
-			scene->scene.background->height - 24 - 89,
-			320,
-			false,
+			true,
 			I_FrameBuffer()
 		);
 
-	// Tails
-	if (35 - scene->tailsPos.y > 0)
-	{
 		DrawJagobj3_15bpp(
-			scene->scene.background,
+			scene->runPeel[peelFrame],
+			scene->sonicPos.x - 8 + peelOffset.x,
+			scene->sonicPos.y + 36 + peelOffset.y,
+			0,
+			0,
+			scene->runPeel[peelFrame]->width,
+			scene->runPeel[peelFrame]->height,
+			320,
+			true,
+			I_FrameBuffer()
+		);
+
+		DrawJagobj3_15bpp(
+			scene->tails[scene->sonicAnimCount & 1],
 			scene->tailsPos.x,
 			scene->tailsPos.y,
-			scene->tailsPos.x,
-			scene->tailsPos.y,
+			0,
+			0,
 			scene->tails[scene->sonicAnimCount & 1]->width,
-			35 - scene->tailsPos.y,
+			scene->tails[scene->sonicAnimCount & 1]->height,
+			320,
+			true,
+			I_FrameBuffer()
+		);
+
+		DrawJagobj3_15bpp(
+			scene->knux[scene->sonicAnimCount & 1],
+			scene->knuxPos.x,
+			scene->knuxPos.y,
+			0,
+			0,
+			scene->knux[scene->sonicAnimCount & 1]->width,
+			scene->knux[scene->sonicAnimCount & 1]->height,
 			320,
 			true,
 			I_FrameBuffer()
 		);
 	}
-
-	// Knuckles never flies above pixel height 35 and stays in the area that is already getting redrawn.
-
-	// Draw Sonic, then Runpeel overtop
-	DrawJagobj3_15bpp(
-		scene->sonic[scene->sonicAnimCount & 1],
-		scene->sonicPos.x,
-		scene->sonicPos.y,
-		0,
-		0,
-		scene->sonic[scene->sonicAnimCount & 1]->width,
-		scene->sonic[scene->sonicAnimCount & 1]->height,
-		320,
-		true,
-		I_FrameBuffer()
-	);
-
-	DrawJagobj3_15bpp(
-		scene->runPeel[peelFrame],
-		scene->sonicPos.x - 8 + peelOffset.x,
-		scene->sonicPos.y + 36 + peelOffset.y,
-		0,
-		0,
-		scene->runPeel[peelFrame]->width,
-		scene->runPeel[peelFrame]->height,
-		320,
-		true,
-		I_FrameBuffer()
-	);
-
-	DrawJagobj3_15bpp(
-		scene->tails[scene->sonicAnimCount & 1],
-		scene->tailsPos.x,
-		scene->tailsPos.y,
-		0,
-		0,
-		scene->tails[scene->sonicAnimCount & 1]->width,
-		scene->tails[scene->sonicAnimCount & 1]->height,
-		320,
-		true,
-		I_FrameBuffer()
-	);
-
-	DrawJagobj3_15bpp(
-		scene->knux[scene->sonicAnimCount & 1],
-		scene->knuxPos.x,
-		scene->knuxPos.y,
-		0,
-		0,
-		scene->knux[scene->sonicAnimCount & 1]->width,
-		scene->knux[scene->sonicAnimCount & 1]->height,
-		320,
-		true,
-		I_FrameBuffer()
-	);
 
 	DrawText(&scene->scene);
 }
@@ -2512,9 +2606,9 @@ const char *intro1text =
 const char *intro2text =
 "As it was about to drain the rings\n"
 "away from the planet, Sonic burst into\n"
-"the control room and for what he thought\n"
-"would be the last time, defeated\n"
-"Dr. Eggman.";
+"the control room and for what he\n"
+"thought would be the last time,\n"
+"defeated Dr. Eggman.";
 
 const char *intro3text =
 "What Sonic, Tails, and Knuckles had\n"
