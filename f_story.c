@@ -177,6 +177,10 @@ typedef struct
 	jagobj_t *tails[2];
 	int bgScrollCount;
 	int groundScrollCount;
+	int sonicAnimCount;
+	coord_t sonicPos;
+	coord_t tailsPos;
+	coord_t knuxPos;
 } scene_10_t;
 
 typedef struct 
@@ -1804,6 +1808,30 @@ void Scene_10_Init(scene_10_t *scene)
 	scene->scene.backgroundX = 0;
 	scene->scene.backgroundY = 0;
 	scene->runGrass = W_CacheLumpName("RUNGRASS", PU_LEVEL);
+
+	scene->briteEgg[0] = W_GetNumForName("BRITEGG1");
+	scene->briteEgg[1] = W_GetNumForName("BRITEGG2");
+	scene->briteEgg[2] = W_GetNumForName("BRITEGG3");
+	scene->darkEgg[0] = W_GetNumForName("DARKEGG1");
+	scene->darkEgg[1] = W_GetNumForName("DARKEGG2");
+	scene->darkEgg[2] = W_GetNumForName("DARKEGG3");
+
+	scene->runPeel[0] = W_CacheLumpName("RUNPEEL1", PU_LEVEL);
+	scene->runPeel[1] = W_CacheLumpName("RUNPEEL2", PU_LEVEL);
+	scene->runPeel[2] = W_CacheLumpName("RUNPEEL3", PU_LEVEL);
+	scene->runPeel[3] = W_CacheLumpName("RUNPEEL4", PU_LEVEL);
+
+	scene->sonic[0] = W_CacheLumpName("RUNSON1", PU_LEVEL);
+	scene->sonic[1] = W_CacheLumpName("RUNSON2", PU_LEVEL);
+
+	scene->tails[0] = W_CacheLumpName("RUNTAIL1", PU_LEVEL);
+	scene->tails[1] = W_CacheLumpName("RUNTAIL2", PU_LEVEL);
+
+	scene->knux[0] = W_CacheLumpName("RUNKNUX1", PU_LEVEL);
+	scene->knux[1] = W_CacheLumpName("RUNKNUX2", PU_LEVEL);
+
+	scene->sonicPos.x = 320 - 64;
+	scene->sonicPos.y = scene->scene.backgroundY + 52;
 }
 
 void Scene_10_Tick(scene_10_t *scene)
@@ -1812,6 +1840,9 @@ void Scene_10_Tick(scene_10_t *scene)
 
 	scene->bgScrollCount += 2;
 	scene->groundScrollCount += 8;
+
+	if (sceneFrameCount & 1)
+		scene->sonicAnimCount++;
 }
 
 void Scene_10_Draw(scene_10_t *scene)
@@ -1879,10 +1910,70 @@ void Scene_10_Draw(scene_10_t *scene)
 			grassWidth,
 			grassHeight,
 			320,
-			true,
+			false,
 			I_FrameBuffer()
 		);
 	}
+
+	int peelFrame = scene->sonicAnimCount & 3;
+	coord_t peelOffset = { 0, 0};
+	if (peelFrame == 1)
+	{
+		peelOffset.x -= 2;
+		peelOffset.y -= 3;
+
+	}
+	else if (peelFrame == 2)
+	{
+		peelOffset.x = 0;
+		peelOffset.y += 3;
+	}
+	else if (peelFrame == 3)
+	{
+		peelOffset.x = 0;
+		peelOffset.y += 3;
+	}
+
+	// Draw background behind animated parts
+	DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->sonicPos.x - 8 + peelOffset.x - 3,
+			89,
+			0,
+			89,
+			scene->runPeel[peelFrame]->width + 3,
+			scene->scene.background->height - 24 - 89,
+			320,
+			false,
+			I_FrameBuffer()
+		);
+
+	// Draw Sonic, then Runpeel overtop
+	DrawJagobj3_15bpp(
+		scene->sonic[scene->sonicAnimCount & 1],
+		scene->sonicPos.x,
+		scene->sonicPos.y,
+		0,
+		0,
+		scene->sonic[scene->sonicAnimCount & 1]->width,
+		scene->sonic[scene->sonicAnimCount & 1]->height,
+		320,
+		true,
+		I_FrameBuffer()
+	);
+
+	DrawJagobj3_15bpp(
+		scene->runPeel[peelFrame],
+		scene->sonicPos.x - 8 + peelOffset.x,
+		scene->sonicPos.y + 36 + peelOffset.y,
+		0,
+		0,
+		scene->runPeel[peelFrame]->width,
+		scene->runPeel[peelFrame]->height,
+		320,
+		true,
+		I_FrameBuffer()
+	);
 
 	DrawText(&scene->scene);
 }
@@ -1892,6 +1983,20 @@ void Scene_10_Stop(scene_10_t *scene)
 	// Free any resources
 	Z_Free(scene->scene.background);
 	Z_Free(scene->runGrass);
+
+	Z_Free(scene->runPeel[0]);
+	Z_Free(scene->runPeel[1]);
+	Z_Free(scene->runPeel[2]);
+	Z_Free(scene->runPeel[3]);
+
+	Z_Free(scene->sonic[0]);
+	Z_Free(scene->sonic[1]);
+
+	Z_Free(scene->tails[0]);
+	Z_Free(scene->tails[1]);
+
+	Z_Free(scene->knux[0]);
+	Z_Free(scene->knux[1]);
 }
 
 void Scene_11_Init(scene_11_t *scene)
