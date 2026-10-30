@@ -51,6 +51,7 @@ volatile unsigned int mars_border_mode = MARS_VDP_MODE_RLE;
 volatile unsigned int mars_thru_rgb = 0;
 volatile unsigned int mars_hblank_count = 0;
 volatile unsigned int mars_hblank_count_peak = 0;
+volatile unsigned int mars_hblank_misses = 0;
 
 volatile unsigned mars_vblank_count = 0;
 volatile unsigned mars_pwdt_ovf_count = 0;
@@ -1078,10 +1079,19 @@ void pri_vbi_handler(void)
 
 #ifdef SHOW_COMPATIBILITY_PROMPT
 	// Check for dropped interrupts. There are 225 HINT intervals, some emulators only handle 224.
-	if (mars_vblank_count < 300) {
-		if (mars_hblank_count < 225 && mars_hblank_count_peak >= 224 && legacy_emulator == LEGACY_EMULATOR_NONE) {
-			// A modern emulator with unstable interrupts is assumed to be Ares or older version of Jgenesis.
-			legacy_emulator = LEGACY_EMULATOR_ARES;
+	if (mars_vblank_count == 300) {
+		if (mars_hblank_count_peak < 225) {
+			// This emulator doesn't do 225 interrupts!
+			legacy_emulator = LEGACY_EMULATOR_INCOMPATIBLE;
+		}
+	}
+	else if (mars_vblank_count < 300) {
+		if (mars_hblank_count < 225 && mars_hblank_count_peak == 225) {
+			mars_hblank_misses += (225 - mars_hblank_count);
+			if (legacy_emulator == LEGACY_EMULATOR_NONE && mars_hblank_misses > 2) {
+				// A modern emulator with unstable interrupts is assumed to be Ares or older version of Jgenesis.
+				legacy_emulator = LEGACY_EMULATOR_ARES;
+			}
 		}
 	}
 #endif
