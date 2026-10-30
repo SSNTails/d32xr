@@ -168,8 +168,10 @@ typedef struct
 typedef struct 
 {
 	storyscene_t scene;
-	VINT briteEgg[3];
-	VINT darkEgg[3];
+	jagobj_t *briteEggBg;
+	jagobj_t *darkEggBg;
+	VINT briteEgg[2];
+	VINT darkEgg[2];
 	fixed_t eggScale;
 	jagobj_t *runGrass;
 	jagobj_t *knux[2];
@@ -1810,12 +1812,13 @@ void Scene_10_Init(scene_10_t *scene)
 	scene->scene.backgroundY = 0;
 	scene->runGrass = W_CacheLumpName("RUNGRASS", PU_LEVEL);
 
-	scene->briteEgg[0] = W_GetNumForName("BRITEGG1");
-	scene->briteEgg[1] = W_GetNumForName("BRITEGG2");
-	scene->briteEgg[2] = W_GetNumForName("BRITEGG3");
-	scene->darkEgg[0] = W_GetNumForName("DARKEGG1");
-	scene->darkEgg[1] = W_GetNumForName("DARKEGG2");
-	scene->darkEgg[2] = W_GetNumForName("DARKEGG3");
+	scene->briteEggBg = W_CacheLumpName("BRITEGG1", PU_LEVEL);
+	scene->darkEggBg = W_CacheLumpName("DARKEGG1", PU_LEVEL);
+
+	scene->briteEgg[0] = W_GetNumForName("BRITEGG2");
+	scene->briteEgg[1] = W_GetNumForName("BRITEGG3");
+	scene->darkEgg[0] = W_GetNumForName("DARKEGG2");
+	scene->darkEgg[1] = W_GetNumForName("DARKEGG3");
 
 	scene->runPeel[0] = W_CacheLumpName("RUNPEEL1", PU_LEVEL);
 	scene->runPeel[1] = W_CacheLumpName("RUNPEEL2", PU_LEVEL);
@@ -1852,6 +1855,9 @@ void Scene_10_Tick(scene_10_t *scene)
 
 	if (sceneFrameCount & 1)
 		scene->sonicAnimCount++;
+
+	if (currentPhase & 1)
+		scene->eggScale += 192;
 }
 
 uint16_t RGBto15bpp(uint8_t r, uint8_t g, uint8_t b)
@@ -1875,7 +1881,7 @@ uint16_t RGBto15bpp(uint8_t r, uint8_t g, uint8_t b)
 
 void Scene_10_Draw(scene_10_t *scene)
 {
-	if (false && (currentPhase & 1) == 0)
+	if (currentPhase & 1)
 	{
 		VINT eggIndex = 0;
 		if (phaseFrameCount == 2) // Happy Eggman
@@ -1885,21 +1891,16 @@ void Scene_10_Draw(scene_10_t *scene)
 		else if (phaseFrameCount == 6) // Evil Eggman
 			eggIndex = 2;
 
-		jagobj_t *eggPic;
-		if ((phaseFrameCount & 3) < 2)
-			eggPic = W_POINTLUMPNUM(scene->briteEgg[eggIndex]);
-		else
-			eggPic = W_POINTLUMPNUM(scene->darkEgg[eggIndex]);
+		jagobj_t *eggPic = (phaseFrameCount & 7) < 4 ? scene->briteEggBg : scene->darkEggBg;
 
-		DrawJagobj3_15bpp(
+		DrawScaledJagobj_15bppWithOrigin(
 			eggPic,
-			scene->scene.backgroundX,
-			scene->scene.backgroundY,
-			0,
-			0,
-			eggPic->width,
-			eggPic->height,
-			320,
+			160,
+			128,
+			106,
+			106,
+			scene->eggScale,
+			scene->eggScale,
 			false,
 			I_FrameBuffer()
 		);
@@ -2739,7 +2740,7 @@ const char *intro16text =
 "\n"
 "*  CLOSEST  LOCATION:  GREENFLOWER  ZONE  *"
 "\n"
-"\"\xA6""\xA1Al\xA0l r\xA1igh\xA0t, t\xA1he\xA0n... \xA1le\xA0t's \xA1go\xA0!\"";
+"\"\xA6""\xA1""Al\xA0l r\xA1igh\xA0t, t\xA1he\xA0n... \xA1le\xA0t's \xA1go\xA0!\"";
 
 void BuildScenes()
 {

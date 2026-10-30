@@ -1239,6 +1239,16 @@ void DrawScaledJagobj_15bpp(jagobj_t* jo, int x, int y,
 	}
 }
 
+void DrawScaledJagobj_15bppWithOrigin(jagobj_t* jo, int x, int y,
+	int origin_x, int origin_y, fixed_t ratio_w, fixed_t ratio_h,
+	boolean masked, pixel_t *fb)
+{
+	x -= FixedMul(origin_x * FRACUNIT, ratio_w) >> 16;
+	y -= FixedMul(origin_y * FRACUNIT, ratio_h) >> 16;
+	DrawScaledJagobj_15bpp(jo, x, y, ratio_w, ratio_h,
+		masked, fb);
+}
+
 static inline uint16_t Blend15bppComponent(uint16_t source, uint16_t dest,
 	unsigned blend_shift)
 {

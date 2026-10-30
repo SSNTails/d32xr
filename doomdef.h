@@ -1457,6 +1457,9 @@ void DrawScaledJagobj (jagobj_t* jo, int x, int y,
 	fixed_t ratio_w, fixed_t ratio_h, pixel_t *fb);
 void DrawScaledJagobj_15bpp (jagobj_t* jo, int x, int y, 
 	fixed_t ratio_w, fixed_t ratio_h, boolean masked, pixel_t *fb) ATTR_DATA_CACHE_ALIGN;
+void DrawScaledJagobj_15bppWithOrigin(jagobj_t* jo, int x, int y,
+	int origin_x, int origin_y, fixed_t ratio_w, fixed_t ratio_h,
+	boolean masked, pixel_t *fb);
 /* blend_shift sets the source weight to 1 / 2^blend_shift */
 void DrawJagobj_15bppBlendNomask(jagobj_t* jo, int x, int y,
 	unsigned blend_shift, pixel_t *fb) ATTR_DATA_CACHE_ALIGN;
