@@ -92,6 +92,7 @@ typedef struct
 {
 	storyscene_t scene;
 	jagobj_t *asteroid;
+	jagobj_t *appear;
 } scene_4_t;
 
 typedef struct
@@ -696,6 +697,7 @@ void Scene_4_Init(scene_4_t *scene)
 	scene->scene.backgroundY = 0;
 
 	scene->asteroid = W_CacheLumpName("ASTEROID", PU_LEVEL);
+	scene->appear = W_CacheLumpName("ASTAPPR", PU_LEVEL);
 }
 
 void Scene_4_Tick(scene_4_t *scene)
@@ -720,56 +722,92 @@ void Scene_4_Draw(scene_4_t *scene)
 			I_FrameBuffer()
 		);
 	}
-	else if (sceneFrameCount < 36) {
-		if (sceneFrameCount >= 20) {
-			// Fade in
-			const int asteroidX = 288 - (scene->asteroid->width >> 1);
-			const int asteroidY = 48 - (scene->asteroid->height >> 1);
+	else if (sceneFrameCount < 46) {
+		// Entrance of the asteroid
+		const int asteroidX = 280 - (scene->asteroid->width >> 1);
+		const int asteroidY = 48 - (scene->asteroid->height >> 1);
+		const int appearOriginX = 280;
+		const int appearOriginY = 48;
 
+		if (sceneFrameCount < 36) {
+			// Appear glow
+			fixed_t sizeMul = FRACUNIT - ((36 - sceneFrameCount) << 12);
+			fixed_t objSize = scene->appear->width * sizeMul;
+			DrawScaledJagobj_15bppBlend(
+				scene->appear,
+				appearOriginX - (objSize >> 17),
+				appearOriginY - (objSize >> 17),
+				sizeMul,
+				sizeMul,
+				3, //4 - ((sceneFrameCount-20) >> 2),
+				true,
+				I_FrameBuffer()
+			);
+		}
+
+		if (sceneFrameCount >= 44) {
+			// Redraw background
 			DrawJagobj3_15bpp(
 				scene->scene.background,
-				asteroidX - 34,
-				asteroidY - 34,
-				asteroidX - 34,
-				asteroidY - 34,
-				34*2,
-				34*2,
+				appearOriginX - (scene->appear->width >> 1),
+				appearOriginY - (scene->appear->height >> 1),
+				appearOriginX - (scene->appear->width >> 1),
+				appearOriginY - (scene->appear->height >> 1),
+				scene->appear->width,
+				scene->appear->height,
 				320,
 				false,
 				I_FrameBuffer()
 			);
 
+			// Asteroid (not rotating)
+			DrawJagobj3_15bpp(
+				scene->asteroid,
+				asteroidX,
+				asteroidY,
+				0,
+				0,
+				scene->asteroid->width,
+				scene->asteroid->height,
+				320,
+				true,
+				I_FrameBuffer()
+			);
+		}
+		else if (sceneFrameCount >= 28) {
+			// Fade in asteroid
 			DrawScaledJagobj_15bppBlend(
 				scene->asteroid,
-				asteroidX + ((36 - sceneFrameCount) >> 1),
-				asteroidY + ((36 - sceneFrameCount) >> 1),
-				FRACUNIT - ((36 - sceneFrameCount) << 10),
-				FRACUNIT - ((36 - sceneFrameCount) << 10),
-				4 - ((sceneFrameCount-20) >> 2),
+				asteroidX + ((44 - sceneFrameCount) >> 1),
+				asteroidY + ((44 - sceneFrameCount) >> 1),
+				FRACUNIT - ((44 - sceneFrameCount) << 10),
+				FRACUNIT - ((44 - sceneFrameCount) << 10),
+				4 - ((sceneFrameCount-28) >> 2),
 				true,
 				I_FrameBuffer()
 			);
 		}
 	}
-	else /*if (sceneFrameCount >= 16+8)*/ {
-		// Move asteroid
-		const int asteroidX = 288 - ((sceneFrameCount-36) >> 2);
+	else /*if (sceneFrameCount >= 46)*/ {
+		const int asteroidX = 280 - ((sceneFrameCount-46) >> 2);
 		const int asteroidY = 48;
-		const angle_t asteroidAngle = ((((sceneFrameCount-36) << 4) + ((sceneFrameCount-36) << 3)) & 0x1FFF);
+		const angle_t asteroidAngle = ((((sceneFrameCount-46) << 4) + ((sceneFrameCount-46) << 3)) & 0x1FFF);
 
+		// Redraw background
 		DrawJagobj3_15bpp(
 			scene->scene.background,
-			asteroidX - 34,
-			asteroidY - 34,
-			asteroidX - 34,
-			asteroidY - 34,
-			34*2,
-			34*2,
+			asteroidX - 29,
+			asteroidY - 28,
+			asteroidX - 29,
+			asteroidY - 28,
+			29*2,
+			28*2,
 			320,
 			false,
 			I_FrameBuffer()
 		);
 
+		// Move asteroid (rotating)
 		DrawRotatedJagobj_15bpp(
 			scene->asteroid,
 			asteroidX,
@@ -787,6 +825,7 @@ void Scene_4_Draw(scene_4_t *scene)
 void Scene_4_Stop(scene_4_t *scene)
 {
 	// Free any resources
+	Z_Free(scene->appear);
 	Z_Free(scene->asteroid);
 	Z_Free(scene->scene.background);
 }
