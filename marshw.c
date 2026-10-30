@@ -1086,7 +1086,7 @@ void pri_vbi_handler(void)
 		}
 	}
 	else if (mars_vblank_count < 300) {
-		if (mars_hblank_count < 225 && mars_hblank_count_peak == 225) {
+		if (mars_hblank_count < 225 && mars_hblank_count_peak >= 224) {
 			mars_hblank_misses += (225 - mars_hblank_count);
 			if (legacy_emulator == LEGACY_EMULATOR_NONE && mars_hblank_misses > 2) {
 				// A modern emulator with unstable interrupts is assumed to be Ares or older version of Jgenesis.
