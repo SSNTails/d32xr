@@ -2002,7 +2002,7 @@ void Scene_10_Draw(scene_10_t *scene)
 		int waterLeft = 0;
 		int waterWidth = 320;
 		// Top sky gradient
-		if (phaseFrameCount >= 8)
+		if (phaseFrameCount >= 24)
 		{
 			skyLeft = scene->tailsPos.x;
 			skyWidth = scene->tails[0]->width + 8;
