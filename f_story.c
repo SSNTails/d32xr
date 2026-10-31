@@ -1876,10 +1876,10 @@ void Scene_10_Init(scene_10_t *scene)
 	scene->sonicPos.x = 320 - 80;
 	scene->sonicPos.y = scene->scene.backgroundY + 52;
 
-	scene->tailsPos.x = 320 - 160;
+	scene->tailsPos.x = 320;
 	scene->tailsPos.y = 16;
 
-	scene->knuxPos.x = 320 - 256;
+	scene->knuxPos.x = 320;
 	scene->knuxPos.y = 35;
 
 	scene->eggScale = 52428; // 80%
@@ -1897,6 +1897,20 @@ void Scene_10_Tick(scene_10_t *scene)
 
 	if (currentPhase & 1)
 		scene->eggScale += 192;
+
+	if (currentPhase == 6)
+	{
+		scene->sonicPos.x -= 8;
+		scene->tailsPos.x -= 8;
+		scene->knuxPos.x -= 8;
+	}
+	else
+	{
+		if ((sceneFrameCount & 7) == 0)
+			scene->sonicPos.x -= 1;
+	}
+
+	
 }
 
 uint16_t RGBto15bpp(uint8_t r, uint8_t g, uint8_t b)
@@ -1979,6 +1993,14 @@ void Scene_10_Draw(scene_10_t *scene)
 	}
 	else
 	{
+		coord_t sonicPos = scene->sonicPos;
+		coord_t tailsPos = scene->tailsPos;
+		coord_t knuxPos = scene->knuxPos;
+
+		sonicPos.x += (finesine(sceneFrameCount<<5) >> 12);
+		tailsPos.y += (finesine(sceneFrameCount<<8) >> 15);
+		knuxPos.y += (finesine(sceneFrameCount<<7) >> 15);
+
 		int peelFrame = scene->sonicAnimCount & 3;
 		coord_t peelOffset = { 0, 0};
 		if (peelFrame == 1)
@@ -2004,10 +2026,10 @@ void Scene_10_Draw(scene_10_t *scene)
 		// Top sky gradient
 		if (phaseFrameCount >= 24)
 		{
-			skyLeft = scene->tailsPos.x;
+			skyLeft = tailsPos.x;
 			skyWidth = scene->tails[0]->width + 8;
 
-			waterLeft = scene->sonicPos.x - 11;
+			waterLeft = sonicPos.x - 11;
 			waterWidth = 78 + 2; // A little extra for movement
 		}
 
@@ -2123,9 +2145,9 @@ void Scene_10_Draw(scene_10_t *scene)
 		// Sonic
 		DrawJagobj3_15bpp(
 				scene->scene.background,
-				scene->sonicPos.x - 8 + peelOffset.x - 3,
+				sonicPos.x - 8 + peelOffset.x - 3,
 				89,
-				scene->sonicPos.x - 8 + peelOffset.x - 3,
+				sonicPos.x - 8 + peelOffset.x - 3,
 				89,
 				scene->runPeel[peelFrame]->width + 7,
 				scene->scene.background->height - 24 - 89,
@@ -2139,12 +2161,12 @@ void Scene_10_Draw(scene_10_t *scene)
 		{
 			DrawJagobj3_15bpp(
 				scene->scene.background,
-				scene->tailsPos.x,
-				scene->tailsPos.y,
-				scene->tailsPos.x,
-				scene->tailsPos.y,
+				tailsPos.x,
+				tailsPos.y,
+				tailsPos.x,
+				tailsPos.y,
 				scene->tails[scene->sonicAnimCount & 1]->width,
-				35 - scene->tailsPos.y,
+				35 - tailsPos.y,
 				320,
 				true,
 				I_FrameBuffer()
@@ -2156,8 +2178,8 @@ void Scene_10_Draw(scene_10_t *scene)
 		// Draw Sonic, then Runpeel overtop
 		DrawJagobj3_15bpp(
 			scene->sonic[scene->sonicAnimCount & 1],
-			scene->sonicPos.x,
-			scene->sonicPos.y,
+			sonicPos.x,
+			sonicPos.y,
 			0,
 			0,
 			scene->sonic[scene->sonicAnimCount & 1]->width,
@@ -2169,8 +2191,8 @@ void Scene_10_Draw(scene_10_t *scene)
 
 		DrawJagobj3_15bpp(
 			scene->runPeel[peelFrame],
-			scene->sonicPos.x - 8 + peelOffset.x,
-			scene->sonicPos.y + 36 + peelOffset.y,
+			sonicPos.x - 8 + peelOffset.x,
+			sonicPos.y + 36 + peelOffset.y,
 			0,
 			0,
 			scene->runPeel[peelFrame]->width,
@@ -2182,8 +2204,8 @@ void Scene_10_Draw(scene_10_t *scene)
 
 		DrawJagobj3_15bpp(
 			scene->tails[scene->sonicAnimCount & 1],
-			scene->tailsPos.x,
-			scene->tailsPos.y,
+			tailsPos.x,
+			tailsPos.y,
 			0,
 			0,
 			scene->tails[scene->sonicAnimCount & 1]->width,
@@ -2195,8 +2217,8 @@ void Scene_10_Draw(scene_10_t *scene)
 
 		DrawJagobj3_15bpp(
 			scene->knux[scene->sonicAnimCount & 1],
-			scene->knuxPos.x,
-			scene->knuxPos.y,
+			knuxPos.x,
+			knuxPos.y,
 			0,
 			0,
 			scene->knux[scene->sonicAnimCount & 1]->width,
@@ -2223,8 +2245,8 @@ void Scene_10_Stop(scene_10_t *scene)
 	Z_Free(scene->runPeel[2]);
 	Z_Free(scene->runPeel[1]);
 	Z_Free(scene->runPeel[0]);
-	Z_Free(scene->darkEgg);
-	Z_Free(scene->briteEgg);
+	Z_Free(scene->darkEggBg);
+	Z_Free(scene->briteEggBg);
 	Z_Free(scene->runGrass);
 	Z_Free(scene->scene.background);
 }
@@ -2828,23 +2850,6 @@ void BuildScenes()
 {
 	int i = 0;
 
-		scene_10_t *scene10 = Z_Calloc(sizeof(*scene10), PU_STATIC);
-	scene10->scene.transitionOutHeight = 204;
-	scene10->scene.picLump = W_GetNumForName("RUNBG");
-	scene10->scene.text = intro10text;
-	scene10->scene.textCharDelayTics = scene10->scene.textCharDelayCounter = 4;
-	scene10->scene.preTextDelay = TICRATE;
-	scene10->scene.postTextDelay = 2*TICRATE;
-	scene10->scene.textBox.x = 16;
-	scene10->scene.textBox.y = 128 + 8;
-	scene10->scene.textBox.width = 320 - (scene10->scene.textBox.x * 2);
-	scene10->scene.textBox.height = 224 - 16 - scene10->scene.textBox.y;
-	scene10->scene.init = (void(*)(storyscene_t *))Scene_10_Init;
-	scene10->scene.tic = (void(*)(storyscene_t *))Scene_10_Tick;
-	scene10->scene.draw = (void(*)(storyscene_t *))Scene_10_Draw;
-	scene10->scene.stop = (void(*)(storyscene_t *))Scene_10_Stop;
-	introScenes[i++] = (storyscene_t*)scene10;
-
 	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
 	scene1->scene.transitionOutHeight = 204;
 	scene1->scene.picLump = W_GetNumForName("PLANET");
@@ -3031,7 +3036,22 @@ void BuildScenes()
 	scene9->zoomCoords[13].y = 40;
 	introScenes[i++] = (storyscene_t*)scene9;
 
-
+	scene_10_t *scene10 = Z_Calloc(sizeof(*scene10), PU_STATIC);
+	scene10->scene.transitionOutHeight = 204;
+	scene10->scene.picLump = W_GetNumForName("RUNBG");
+	scene10->scene.text = intro10text;
+	scene10->scene.textCharDelayTics = scene10->scene.textCharDelayCounter = 4;
+	scene10->scene.preTextDelay = TICRATE;
+	scene10->scene.postTextDelay = 2*TICRATE;
+	scene10->scene.textBox.x = 16;
+	scene10->scene.textBox.y = 128 + 8;
+	scene10->scene.textBox.width = 320 - (scene10->scene.textBox.x * 2);
+	scene10->scene.textBox.height = 224 - 16 - scene10->scene.textBox.y;
+	scene10->scene.init = (void(*)(storyscene_t *))Scene_10_Init;
+	scene10->scene.tic = (void(*)(storyscene_t *))Scene_10_Tick;
+	scene10->scene.draw = (void(*)(storyscene_t *))Scene_10_Draw;
+	scene10->scene.stop = (void(*)(storyscene_t *))Scene_10_Stop;
+	introScenes[i++] = (storyscene_t*)scene10;
 
 	scene_11_t *scene11 = Z_Calloc(sizeof(*scene11), PU_STATIC);
 	scene11->scene.transitionOutHeight = 204;
