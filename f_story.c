@@ -1892,13 +1892,46 @@ void Scene_10_Draw(scene_10_t *scene)
 			eggIndex = 2;
 
 		jagobj_t *eggPic = (phaseFrameCount & 7) < 4 ? scene->briteEggBg : scene->darkEggBg;
+		int eggOriginX = 106;
+		int eggOriginY = 106;
+
+		if (phaseFrameCount < 2)
+		{
+			int eggX = 160 - (FixedMul(eggOriginX * FRACUNIT, scene->eggScale) >> 16);
+			int eggY = 128 - (FixedMul(eggOriginY * FRACUNIT, scene->eggScale) >> 16);
+			int eggWidth = FixedMul(eggPic->width << 16, scene->eggScale) >> 16;
+			int eggRight = eggX + eggWidth;
+			pixel_t black = RGBto15bpp(0, 0, 0);
+
+			DrawFillRect_15bpp(
+				0,
+				0,
+				320,
+				eggY,
+				black
+			);
+			DrawFillRect_15bpp(
+				0,
+				eggY,
+				eggX,
+				128 - eggY,
+				black
+			);
+			DrawFillRect_15bpp(
+				eggRight,
+				eggY,
+				320 - eggRight,
+				128 - eggY,
+				black
+			);
+		}
 
 		DrawScaledJagobj_15bppWithOrigin(
 			eggPic,
 			160,
 			128,
-			106,
-			106,
+			eggOriginX,
+			eggOriginY,
 			scene->eggScale,
 			scene->eggScale,
 			false,
@@ -1907,60 +1940,91 @@ void Scene_10_Draw(scene_10_t *scene)
 	}
 	else
 	{
+		int peelFrame = scene->sonicAnimCount & 3;
+		coord_t peelOffset = { 0, 0};
+		if (peelFrame == 1)
+		{
+			peelOffset.x -= 2;
+			peelOffset.y -= 3;
+		}
+		else if (peelFrame == 2)
+		{
+			peelOffset.x = 0;
+			peelOffset.y += 3;
+		}
+		else if (peelFrame == 3)
+		{
+			peelOffset.x = 0;
+			peelOffset.y += 3;
+		}
+
+		int skyLeft = 0;
+		int skyWidth = 320;
+		int waterLeft = 0;
+		int waterWidth = 320;
 		// Top sky gradient
+		if (phaseFrameCount >= 8)
+		{
+			skyLeft = scene->tailsPos.x;
+			skyWidth = scene->tails[0]->width + 8;
+
+			waterLeft = scene->sonicPos.x - 11;
+			waterWidth = 78 + 2; // A little extra for movement
+		}
+
 		DrawFillRect_15bpp(
+			skyLeft,
 			0,
-			0,
-			320,
+			skyWidth,
 			4,
 			RGBto15bpp(33, 140, 231)
 		);
 
 		DrawFillRect_15bpp(
-			0,
+			skyLeft,
 			4,
-			320,
+			skyWidth,
 			6,
 			RGBto15bpp(33, 148, 231)
 		);
 
 		DrawFillRect_15bpp(
-			0,
+			skyLeft,
 			10,
-			320,
+			skyWidth,
 			6,
 			RGBto15bpp(41, 156, 239)
 		);
 
 		DrawFillRect_15bpp(
-			0,
+			skyLeft,
 			16,
-			320,
+			skyWidth,
 			7,
 			RGBto15bpp(49, 165, 239)
 		);
 
 		DrawFillRect_15bpp(
-			0,
+			skyLeft,
 			23,
-			320,
+			skyWidth,
 			6,
 			RGBto15bpp(57, 173, 239)
 		);
 
 		DrawFillRect_15bpp(
-			0,
+			skyLeft,
 			29,
-			320,
+			skyWidth,
 			6,
 			RGBto15bpp(66, 181, 239)
 		);
 
 		// Water below
 		DrawFillRect_15bpp(
-			0,
+			waterLeft,
 			89,
-			320,
+			waterWidth,
 			39,
 			RGBto15bpp(0, 90, 90)
 		);
@@ -2013,25 +2077,6 @@ void Scene_10_Draw(scene_10_t *scene)
 				false,
 				I_FrameBuffer()
 			);
-		}
-
-		int peelFrame = scene->sonicAnimCount & 3;
-		coord_t peelOffset = { 0, 0};
-		if (peelFrame == 1)
-		{
-			peelOffset.x -= 2;
-			peelOffset.y -= 3;
-
-		}
-		else if (peelFrame == 2)
-		{
-			peelOffset.x = 0;
-			peelOffset.y += 3;
-		}
-		else if (peelFrame == 3)
-		{
-			peelOffset.x = 0;
-			peelOffset.y += 3;
 		}
 
 		// Draw background behind animated parts
@@ -2129,22 +2174,20 @@ void Scene_10_Draw(scene_10_t *scene)
 void Scene_10_Stop(scene_10_t *scene)
 {
 	// Free any resources
-	Z_Free(scene->scene.background);
-	Z_Free(scene->runGrass);
-
-	Z_Free(scene->runPeel[0]);
-	Z_Free(scene->runPeel[1]);
-	Z_Free(scene->runPeel[2]);
-	Z_Free(scene->runPeel[3]);
-
-	Z_Free(scene->sonic[0]);
-	Z_Free(scene->sonic[1]);
-
-	Z_Free(scene->tails[0]);
-	Z_Free(scene->tails[1]);
-
-	Z_Free(scene->knux[0]);
 	Z_Free(scene->knux[1]);
+	Z_Free(scene->knux[0]);
+	Z_Free(scene->tails[1]);
+	Z_Free(scene->tails[0]);
+	Z_Free(scene->sonic[1]);
+	Z_Free(scene->sonic[0]);
+	Z_Free(scene->runPeel[3]);
+	Z_Free(scene->runPeel[2]);
+	Z_Free(scene->runPeel[1]);
+	Z_Free(scene->runPeel[0]);
+	Z_Free(scene->darkEgg);
+	Z_Free(scene->briteEgg);
+	Z_Free(scene->runGrass);
+	Z_Free(scene->scene.background);
 }
 
 void Scene_11_Init(scene_11_t *scene)
@@ -2746,6 +2789,23 @@ void BuildScenes()
 {
 	int i = 0;
 
+		scene_10_t *scene10 = Z_Calloc(sizeof(*scene10), PU_STATIC);
+	scene10->scene.transitionOutHeight = 204;
+	scene10->scene.picLump = W_GetNumForName("RUNBG");
+	scene10->scene.text = intro10text;
+	scene10->scene.textCharDelayTics = scene10->scene.textCharDelayCounter = 4;
+	scene10->scene.preTextDelay = TICRATE;
+	scene10->scene.postTextDelay = 2*TICRATE;
+	scene10->scene.textBox.x = 16;
+	scene10->scene.textBox.y = 128 + 8;
+	scene10->scene.textBox.width = 320 - (scene10->scene.textBox.x * 2);
+	scene10->scene.textBox.height = 224 - 16 - scene10->scene.textBox.y;
+	scene10->scene.init = (void(*)(storyscene_t *))Scene_10_Init;
+	scene10->scene.tic = (void(*)(storyscene_t *))Scene_10_Tick;
+	scene10->scene.draw = (void(*)(storyscene_t *))Scene_10_Draw;
+	scene10->scene.stop = (void(*)(storyscene_t *))Scene_10_Stop;
+	introScenes[i++] = (storyscene_t*)scene10;
+
 	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
 	scene1->scene.transitionOutHeight = 204;
 	scene1->scene.picLump = W_GetNumForName("PLANET");
@@ -2932,22 +2992,7 @@ void BuildScenes()
 	scene9->zoomCoords[13].y = 40;
 	introScenes[i++] = (storyscene_t*)scene9;
 
-	scene_10_t *scene10 = Z_Calloc(sizeof(*scene10), PU_STATIC);
-	scene10->scene.transitionOutHeight = 204;
-	scene10->scene.picLump = W_GetNumForName("RUNBG");
-	scene10->scene.text = intro10text;
-	scene10->scene.textCharDelayTics = scene10->scene.textCharDelayCounter = 4;
-	scene10->scene.preTextDelay = TICRATE;
-	scene10->scene.postTextDelay = 2*TICRATE;
-	scene10->scene.textBox.x = 16;
-	scene10->scene.textBox.y = 128 + 8;
-	scene10->scene.textBox.width = 320 - (scene10->scene.textBox.x * 2);
-	scene10->scene.textBox.height = 224 - 16 - scene10->scene.textBox.y;
-	scene10->scene.init = (void(*)(storyscene_t *))Scene_10_Init;
-	scene10->scene.tic = (void(*)(storyscene_t *))Scene_10_Tick;
-	scene10->scene.draw = (void(*)(storyscene_t *))Scene_10_Draw;
-	scene10->scene.stop = (void(*)(storyscene_t *))Scene_10_Stop;
-	introScenes[i++] = (storyscene_t*)scene10;
+
 
 	scene_11_t *scene11 = Z_Calloc(sizeof(*scene11), PU_STATIC);
 	scene11->scene.transitionOutHeight = 204;
