@@ -1257,6 +1257,14 @@ void DRAW_Compatibility (void)
 
 		V_DrawValueRight(&menuFont, 296, 16, legacy_emulator);
 
+		while (mars_vblank_count < 300) {
+			// Ensure 300 frames have run to get a consistent benchmark for missed HINTs.
+		}
+
+		if (mars_hblank_misses > 2) {
+			V_DrawValueCenter(&menuFont, 160, 224-24, mars_hblank_misses);
+		}
+
 		V_DrawStringCenterWithColormap(&menuFont, 160, 24, "*** NOTICE ***", YELLOWTEXTCOLORMAP);
 
 		for (int i=0; i < 3; i++) {

@@ -62,6 +62,7 @@ extern volatile uint8_t legacy_emulator;
 extern volatile unsigned int rle_border_size;
 
 extern volatile unsigned int mars_hblank_count_peak;
+extern volatile unsigned int mars_hblank_misses;
 extern volatile unsigned mars_vblank_count;
 extern unsigned mars_frtc2msec_frac;
 extern uint16_t mars_thru_rgb_reference;
