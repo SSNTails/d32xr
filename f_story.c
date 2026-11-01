@@ -1193,11 +1193,11 @@ void Scene_6_Draw(scene_6_t *scene)
 	{
 		DrawJagobj3_15bpp(
 			scene->scene.background,
-			scene->scene.backgroundX,
+			scene->scene.backgroundX + 17,
 			scene->scene.backgroundY,
+			17,
 			0,
-			0,
-			scene->scene.background->width,
+			scene->scene.background->width - 27,
 			104,
 			320,
 			false,
@@ -1877,10 +1877,10 @@ void Scene_10_Init(scene_10_t *scene)
 	scene->sonicPos.y = scene->scene.backgroundY + 52;
 
 	scene->tailsPos.x = 320;
-	scene->tailsPos.y = 16;
+	scene->tailsPos.y = 18;
 
 	scene->knuxPos.x = 320;
-	scene->knuxPos.y = 35;
+	scene->knuxPos.y = 37;
 
 	scene->eggScale = 52428; // 80%
 }
@@ -1896,21 +1896,43 @@ void Scene_10_Tick(scene_10_t *scene)
 		scene->sonicAnimCount++;
 
 	if (currentPhase & 1)
-		scene->eggScale += 192;
+	{
+		if (currentPhase == 1)
+			scene->eggScale += 128;
+		else if (currentPhase == 3)
+			scene->eggScale += 160;
+		else
+			scene->eggScale += 192;
+	}
 
 	if (currentPhase == 6)
 	{
-		scene->sonicPos.x -= 8;
-		scene->tailsPos.x -= 8;
-		scene->knuxPos.x -= 8;
+		scene->sonicPos.x -= 16;
+		scene->tailsPos.x -= 16;
+		scene->knuxPos.x -= 16;
 	}
 	else
 	{
-		if ((sceneFrameCount & 7) == 0)
+		if ((sceneFrameCount & 3) == 0)
 			scene->sonicPos.x -= 1;
-	}
 
-	
+		if (currentPhase == 2)
+		{
+			// Tails enters the scene
+			if (scene->tailsPos.x > 130)
+				scene->tailsPos.x -= 6;
+			else if ((sceneFrameCount & 3) == 0)
+				scene->tailsPos.x--;
+		}
+		else if (currentPhase == 4)
+		{
+			// Knuckles enters the scene
+			if (scene->knuxPos.x > 180)
+				scene->knuxPos.x -= 4;
+			else if ((sceneFrameCount & 3) == 0)
+				scene->knuxPos.x--;
+		}
+	}
 }
 
 uint16_t RGBto15bpp(uint8_t r, uint8_t g, uint8_t b)
@@ -2026,8 +2048,11 @@ void Scene_10_Draw(scene_10_t *scene)
 		// Top sky gradient
 		if (phaseFrameCount >= 24)
 		{
-			skyLeft = tailsPos.x;
-			skyWidth = scene->tails[0]->width + 8;
+			if (tailsPos.x < 320)
+			{
+				skyLeft = tailsPos.x;
+				skyWidth = scene->tails[0]->width + 8;
+			}
 
 			waterLeft = sonicPos.x - 11;
 			waterWidth = 78 + 2; // A little extra for movement
