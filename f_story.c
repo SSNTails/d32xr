@@ -1321,7 +1321,7 @@ void Scene_7_Tick(scene_7_t *scene)
 	}
 	else if (currentPhase == 1) // Fade to dark
 	{
-		if (phaseFrameCount >= 60)
+		if (phaseFrameCount >= 90)
 			NextPhase();
 	}
 	else if (currentPhase == 2) // Surprised
