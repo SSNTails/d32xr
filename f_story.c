@@ -239,6 +239,24 @@ typedef struct
 #define NUMSCENES	16
 storyscene_t *introScenes[NUMSCENES];
 
+uint16_t RGBto15bpp(uint8_t r, uint8_t g, uint8_t b)
+{
+	uint8_t r5 = r >> 3;
+	uint8_t g5 = g >> 3;
+	uint8_t b5 = b >> 3;
+
+	/* Pack: p bbbbb ggggg rrrrr */
+	uint16_t word =
+		((uint16_t)b5 << 10) |
+		((uint16_t)g5 << 5) |
+		r5;
+
+	// Non-cyan pixels should be marked high-priority.
+	if (!(b == 255 && g == 255 && r == 0))
+		word |= 0x8000;
+
+	return word;
+}
 
 /*
 void DebugControls()
@@ -1194,11 +1212,11 @@ void Scene_6_Draw(scene_6_t *scene)
 		DrawJagobj3_15bpp(
 			scene->scene.background,
 			scene->scene.backgroundX + 17,
-			scene->scene.backgroundY,
+			scene->scene.backgroundY + 6,
 			17,
-			0,
+			6,
 			scene->scene.background->width - 27,
-			104,
+			104 - 6,
 			320,
 			false,
 			I_FrameBuffer()
@@ -1294,7 +1312,7 @@ void Scene_7_Tick(scene_7_t *scene)
 
 	if (currentPhase == 0)
 	{
-		if (phaseFrameCount >= 4 * 60)
+		if (phaseFrameCount >= 6 * 60)
 		{
 			NextPhase();
 			Z_Free(scene->scene.background);
@@ -1467,6 +1485,18 @@ void Scene_8_Draw(scene_8_t *scene)
 			false,
 			I_FrameBuffer()
 		);
+	else
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX + 2,
+			scene->scene.backgroundY + 114,
+			2, 114,
+			scene->bottomLeftInd[scene->barAnim]->width,
+			scene->bottomLeftInd[scene->barAnim]->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
 
 	if (currentPhase > 0)
 	{
@@ -1528,6 +1558,26 @@ void Scene_8_Draw(scene_8_t *scene)
 		{
 			if (currentPhase >= 4)
 			{
+				if (phaseFrameCount < 2)
+				{
+					DrawJagobj3_15bpp(
+						scene->scene.background,
+						scene->scene.backgroundX,
+						scene->scene.backgroundY,
+						0,
+						0,
+						scene->scene.background->width,
+						scene->scene.background->height,
+						320,
+						false,
+						I_FrameBuffer()
+					);
+
+					// Clear outside area
+					DrawFillRect_15bpp(0, 0, scene->scene.backgroundX, scene->scene.background->height, RGBto15bpp(0, 0, 0));
+					DrawFillRect_15bpp(scene->scene.backgroundX + scene->scene.background->width, 0, 320 - scene->scene.background->width - scene->scene.backgroundX, scene->scene.background->height, RGBto15bpp(0, 0, 0));
+				}
+				
 				if ((phaseFrameCount & 15) < 8)
 				{
 					DrawScaledJagobj_15bppBlendWithOrigin(
@@ -1543,7 +1593,7 @@ void Scene_8_Draw(scene_8_t *scene)
 						I_FrameBuffer()
 					);
 				}
-				else
+				else if (phaseFrameCount >= 2)
 				{
 					DrawJagobj3_15bpp(
 						scene->scene.background,
@@ -1551,7 +1601,7 @@ void Scene_8_Draw(scene_8_t *scene)
 						scene->scene.backgroundY + 39,
 						68, 39,
 						scene->crosshair->width,
-						scene->crosshair->height,
+						scene->crosshair->height + 1,
 						320,
 						false,
 						I_FrameBuffer()
@@ -1877,7 +1927,7 @@ void Scene_10_Init(scene_10_t *scene)
 	scene->sonicPos.y = scene->scene.backgroundY + 52;
 
 	scene->tailsPos.x = 320;
-	scene->tailsPos.y = 18;
+	scene->tailsPos.y = 12;
 
 	scene->knuxPos.x = 320;
 	scene->knuxPos.y = 37;
@@ -1905,7 +1955,7 @@ void Scene_10_Tick(scene_10_t *scene)
 			scene->eggScale += 192;
 	}
 
-	if (currentPhase == 6)
+	if (currentPhase == 7)
 	{
 		scene->sonicPos.x -= 16;
 		scene->tailsPos.x -= 16;
@@ -1919,7 +1969,7 @@ void Scene_10_Tick(scene_10_t *scene)
 		if (currentPhase == 2)
 		{
 			// Tails enters the scene
-			if (scene->tailsPos.x > 130)
+			if (scene->tailsPos.x > 120)
 				scene->tailsPos.x -= 6;
 			else if ((sceneFrameCount & 3) == 0)
 				scene->tailsPos.x--;
@@ -1933,25 +1983,6 @@ void Scene_10_Tick(scene_10_t *scene)
 				scene->knuxPos.x--;
 		}
 	}
-}
-
-uint16_t RGBto15bpp(uint8_t r, uint8_t g, uint8_t b)
-{
-	uint8_t r5 = r >> 3;
-	uint8_t g5 = g >> 3;
-	uint8_t b5 = b >> 3;
-
-	/* Pack: p bbbbb ggggg rrrrr */
-	uint16_t word =
-		((uint16_t)b5 << 10) |
-		((uint16_t)g5 << 5) |
-		r5;
-
-	// Non-cyan pixels should be marked high-priority.
-	if (!(b == 255 && g == 255 && r == 0))
-		word |= 0x8000;
-
-	return word;
 }
 
 void Scene_10_Draw(scene_10_t *scene)
@@ -2046,7 +2077,8 @@ void Scene_10_Draw(scene_10_t *scene)
 		int waterLeft = 0;
 		int waterWidth = 320;
 		// Top sky gradient
-		if (phaseFrameCount >= 24)
+		if ((currentPhase == 0 && phaseFrameCount >= 24)
+			|| (phaseFrameCount < 2))
 		{
 			if (tailsPos.x < 320)
 			{
@@ -2410,18 +2442,19 @@ void Scene_13_Tick(scene_13_t *scene)
 
 void Scene_13_Draw(scene_13_t *scene)
 {
-	DrawJagobj3_15bpp(
-		scene->scene.background,
-		scene->scene.backgroundX,
-		scene->scene.backgroundY,
-		0,
-		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
-		320,
-		false,
-		I_FrameBuffer()
-	);
+	if (sceneFrameCount < 2)
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
 
 	DrawText(&scene->scene);
 }
@@ -2829,8 +2862,8 @@ const char *intro12text =
 "\xA1s\xA2om\xA1""e\xA0th\xA1ing\xA0?\"";
 
 const char *intro13text =
-"\"We'll see... let's give you a quick warm\n"
-"up, Sonic! JETTYSYNS! Open fire!\"";
+"\"We'll see... let's give you a quick\n"
+"warm up, Sonic! JETTYSYNS! Open fire!\"";
 
 const char *intro14text =
 "Eggman took this\n"
