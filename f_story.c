@@ -1321,7 +1321,7 @@ void Scene_7_Tick(scene_7_t *scene)
 	}
 	else if (currentPhase == 1) // Fade to dark
 	{
-		if (phaseFrameCount >= 30)
+		if (phaseFrameCount >= 60)
 			NextPhase();
 	}
 	else if (currentPhase == 2) // Surprised
@@ -1923,7 +1923,7 @@ void Scene_10_Init(scene_10_t *scene)
 	scene->knux[0] = W_CacheLumpName("RUNKNUX1", PU_LEVEL);
 	scene->knux[1] = W_CacheLumpName("RUNKNUX2", PU_LEVEL);
 
-	scene->sonicPos.x = 320 - 80;
+	scene->sonicPos.x = 320 - 32;
 	scene->sonicPos.y = scene->scene.backgroundY + 52;
 
 	scene->tailsPos.x = 320;
@@ -1969,7 +1969,7 @@ void Scene_10_Tick(scene_10_t *scene)
 		if (currentPhase == 2)
 		{
 			// Tails enters the scene
-			if (scene->tailsPos.x > 120)
+			if (scene->tailsPos.x > 130)
 				scene->tailsPos.x -= 6;
 			else if ((sceneFrameCount & 3) == 0)
 				scene->tailsPos.x--;
@@ -1977,7 +1977,7 @@ void Scene_10_Tick(scene_10_t *scene)
 		else if (currentPhase == 4)
 		{
 			// Knuckles enters the scene
-			if (scene->knuxPos.x > 180)
+			if (scene->knuxPos.x > 190)
 				scene->knuxPos.x -= 4;
 			else if ((sceneFrameCount & 3) == 0)
 				scene->knuxPos.x--;
@@ -1990,11 +1990,11 @@ void Scene_10_Draw(scene_10_t *scene)
 	if (currentPhase & 1)
 	{
 		VINT eggIndex = 0;
-		if (phaseFrameCount == 2) // Happy Eggman
+		if (currentPhase == 1) // Happy Eggman
 			eggIndex = 0;
-		else if (phaseFrameCount == 4) // Sinister Eggman
+		else if (currentPhase == 3) // Sinister Eggman
 			eggIndex = 1;
-		else if (phaseFrameCount == 6) // Evil Eggman
+		else if (currentPhase == 5) // Evil Eggman
 			eggIndex = 2;
 
 		jagobj_t *eggPic = (phaseFrameCount & 7) < 4 ? scene->briteEggBg : scene->darkEggBg;
@@ -2043,6 +2043,43 @@ void Scene_10_Draw(scene_10_t *scene)
 			false,
 			I_FrameBuffer()
 		);
+
+		if (eggIndex == 1)
+		{
+			jagobj_t *eggFace = W_POINTLUMPNUM((phaseFrameCount & 7) < 4 ? scene->briteEgg[0] : scene->darkEgg[0]);
+
+			// 90 pixels from bottom of eggman
+			fixed_t faceX = FixedMul(eggFace->width / 2 * FRACUNIT, scene->eggScale);
+			fixed_t faceY = FixedMul((79 + eggFace->height) * FRACUNIT, scene->eggScale);
+			
+			DrawScaledJagobj_15bpp(
+				eggFace,
+				160 - (faceX >> 16),
+				128 - (faceY >> 16),
+				scene->eggScale,
+				scene->eggScale,
+				false,
+				I_FrameBuffer()
+			);
+		}
+		else if (eggIndex == 2)
+		{
+			jagobj_t *eggFace = W_POINTLUMPNUM((phaseFrameCount & 7) < 4 ? scene->briteEgg[1] : scene->darkEgg[1]);
+
+			// 39 pixels from bottom of eggman
+			fixed_t faceX = FixedMul(eggFace->width / 2 * FRACUNIT, scene->eggScale);
+			fixed_t faceY = FixedMul((39 + eggFace->height) * FRACUNIT, scene->eggScale);
+			
+			DrawScaledJagobj_15bpp(
+				eggFace,
+				160 - (faceX >> 16),
+				128 - (faceY >> 16),
+				scene->eggScale,
+				scene->eggScale,
+				false,
+				I_FrameBuffer()
+			);
+		}
 	}
 	else
 	{
