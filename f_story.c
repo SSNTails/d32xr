@@ -1686,7 +1686,7 @@ void Scene_9_Tick(scene_9_t *scene)
 		{
 			if (--scene->zoomChangeInterval <= 0)
 			{
-				scene->zoomChangeInterval = 2;
+				scene->zoomChangeInterval = 4;
 				scene->zoomCurIndex++;
 
 				if (scene->zoomCurIndex >= 14)
@@ -1765,7 +1765,7 @@ void Scene_9_Draw(scene_9_t *scene)
 			I_FrameBuffer()
 		);
 	}
-	else if (scene->zoomStartDelay && scene->zoomCurIndex < 14)
+	else if (scene->zoomCurIndex < 14)
 	{
 		// Lazy... just redraw the right half.
 		DrawJagobj3_15bpp(
@@ -1810,7 +1810,22 @@ void Scene_9_Draw(scene_9_t *scene)
 		coord_t currentBgRect[2];
 		boolean hasCurrentBgRect = false;
 
-		if (scene->sonicStep < 4)
+		if (scene->sonicStep < 1)
+		{
+			DrawJagobj3_15bpp(
+				scene->scene.background,
+				scene->scene.backgroundX + 230,
+				scene->scene.backgroundY + 84,
+				230,
+				84,
+				320-230,
+				scene->scene.background->height - 84,
+				320,
+				false,
+				I_FrameBuffer()
+			);
+		}
+		else// if (scene->sonicStep >= 1)
 		{
 			coord_t sonicRect[2];
 			sonicRect[0].x = (scene->sonicPosX >> FRACBITS) - 64;
@@ -1820,8 +1835,7 @@ void Scene_9_Draw(scene_9_t *scene)
 
 			ExpandRectToInclude(currentBgRect, sonicRect, &hasCurrentBgRect);
 
-			if ((scene->sonicStep == 2 && scene->sonicCounter < 5)
-				|| (scene->sonicStep < 2))
+			if (scene->sonicStep <= 2)
 			{
 				coord_t auraRect[2];
 				auraRect[0].x = auraPos.x - 93;
@@ -2945,6 +2959,51 @@ void BuildScenes()
 {
 	int i = 0;
 
+	scene_9_t *scene9 = Z_Calloc(sizeof(*scene9), PU_STATIC);
+	scene9->scene.transitionOutHeight = 204;
+	scene9->scene.picLump = W_GetNumForName("SPRINGBG");
+	scene9->scene.text = intro9text;
+	scene9->scene.textCharDelayTics = scene9->scene.textCharDelayCounter = 4;
+	scene9->scene.preTextDelay = TICRATE;
+	scene9->scene.postTextDelay = 2*TICRATE;
+	scene9->scene.textBox.x = 12;
+	scene9->scene.textBox.y = 128 + 8;
+	scene9->scene.textBox.width = 320 - (scene9->scene.textBox.x * 2);
+	scene9->scene.textBox.height = 224 - 16 - scene9->scene.textBox.y;
+	scene9->scene.init = (void(*)(storyscene_t *))Scene_9_Init;
+	scene9->scene.tic = (void(*)(storyscene_t *))Scene_9_Tick;
+	scene9->scene.draw = (void(*)(storyscene_t *))Scene_9_Draw;
+	scene9->scene.stop = (void(*)(storyscene_t *))Scene_9_Stop;
+	scene9->zoomCoords[0].x = 128;
+	scene9->zoomCoords[0].y = 19;
+	scene9->zoomCoords[1].x = 118;
+	scene9->zoomCoords[1].y = 11;
+	scene9->zoomCoords[2].x = 118;
+	scene9->zoomCoords[2].y = 11;
+	scene9->zoomCoords[3].x = 65;
+	scene9->zoomCoords[3].y = 3;
+	scene9->zoomCoords[4].x = 59;
+	scene9->zoomCoords[4].y = 2;
+	scene9->zoomCoords[5].x = 11;
+	scene9->zoomCoords[5].y = 0;
+	scene9->zoomCoords[6].x = 3;
+	scene9->zoomCoords[6].y = 0;
+	scene9->zoomCoords[7].x = 0;
+	scene9->zoomCoords[7].y = 1;
+	scene9->zoomCoords[8].x = 0;
+	scene9->zoomCoords[8].y = 12;
+	scene9->zoomCoords[9].x = 9;
+	scene9->zoomCoords[9].y = 16;
+	scene9->zoomCoords[10].x = 24;
+	scene9->zoomCoords[10].y = 16;
+	scene9->zoomCoords[11].x = 48;
+	scene9->zoomCoords[11].y = 17;
+	scene9->zoomCoords[12].x = 50;
+	scene9->zoomCoords[12].y = 24;
+	scene9->zoomCoords[13].x = 50;
+	scene9->zoomCoords[13].y = 40;
+	introScenes[i++] = (storyscene_t*)scene9;
+
 	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
 	scene1->scene.transitionOutHeight = 204;
 	scene1->scene.picLump = W_GetNumForName("PLANET");
@@ -3085,51 +3144,6 @@ void BuildScenes()
 	scene8->scene.draw = (void(*)(storyscene_t *))Scene_8_Draw;
 	scene8->scene.stop = (void(*)(storyscene_t *))Scene_8_Stop;
 	introScenes[i++] = (storyscene_t*)scene8;
-
-	scene_9_t *scene9 = Z_Calloc(sizeof(*scene9), PU_STATIC);
-	scene9->scene.transitionOutHeight = 204;
-	scene9->scene.picLump = W_GetNumForName("SPRINGBG");
-	scene9->scene.text = intro9text;
-	scene9->scene.textCharDelayTics = scene9->scene.textCharDelayCounter = 4;
-	scene9->scene.preTextDelay = TICRATE;
-	scene9->scene.postTextDelay = 2*TICRATE;
-	scene9->scene.textBox.x = 12;
-	scene9->scene.textBox.y = 128 + 8;
-	scene9->scene.textBox.width = 320 - (scene9->scene.textBox.x * 2);
-	scene9->scene.textBox.height = 224 - 16 - scene9->scene.textBox.y;
-	scene9->scene.init = (void(*)(storyscene_t *))Scene_9_Init;
-	scene9->scene.tic = (void(*)(storyscene_t *))Scene_9_Tick;
-	scene9->scene.draw = (void(*)(storyscene_t *))Scene_9_Draw;
-	scene9->scene.stop = (void(*)(storyscene_t *))Scene_9_Stop;
-	scene9->zoomCoords[0].x = 128;
-	scene9->zoomCoords[0].y = 19;
-	scene9->zoomCoords[1].x = 118;
-	scene9->zoomCoords[1].y = 11;
-	scene9->zoomCoords[2].x = 118;
-	scene9->zoomCoords[2].y = 11;
-	scene9->zoomCoords[3].x = 65;
-	scene9->zoomCoords[3].y = 3;
-	scene9->zoomCoords[4].x = 59;
-	scene9->zoomCoords[4].y = 2;
-	scene9->zoomCoords[5].x = 11;
-	scene9->zoomCoords[5].y = 0;
-	scene9->zoomCoords[6].x = 3;
-	scene9->zoomCoords[6].y = 0;
-	scene9->zoomCoords[7].x = 0;
-	scene9->zoomCoords[7].y = 1;
-	scene9->zoomCoords[8].x = 0;
-	scene9->zoomCoords[8].y = 12;
-	scene9->zoomCoords[9].x = 9;
-	scene9->zoomCoords[9].y = 16;
-	scene9->zoomCoords[10].x = 24;
-	scene9->zoomCoords[10].y = 16;
-	scene9->zoomCoords[11].x = 48;
-	scene9->zoomCoords[11].y = 17;
-	scene9->zoomCoords[12].x = 50;
-	scene9->zoomCoords[12].y = 24;
-	scene9->zoomCoords[13].x = 50;
-	scene9->zoomCoords[13].y = 40;
-	introScenes[i++] = (storyscene_t*)scene9;
 
 	scene_10_t *scene10 = Z_Calloc(sizeof(*scene10), PU_STATIC);
 	scene10->scene.transitionOutHeight = 204;
