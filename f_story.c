@@ -3090,23 +3090,6 @@ void BuildScenes()
 {
 	int i = 0;
 
-	scene_13_t *scene13 = Z_Calloc(sizeof(*scene13), PU_STATIC);
-	scene13->scene.transitionOutHeight = 204;
-	scene13->scene.picLump = W_GetNumForName("EJBG");
-	scene13->scene.text = intro13text;
-	scene13->scene.textCharDelayTics = scene13->scene.textCharDelayCounter = 4;
-	scene13->scene.preTextDelay = TICRATE;
-	scene13->scene.postTextDelay = 2*TICRATE;
-	scene13->scene.textBox.x = 16;
-	scene13->scene.textBox.y = 168;
-	scene13->scene.textBox.width = 320 - (scene13->scene.textBox.x * 2);
-	scene13->scene.textBox.height = 200 - 16;
-	scene13->scene.init = (void(*)(storyscene_t *))Scene_13_Init;
-	scene13->scene.tic = (void(*)(storyscene_t *))Scene_13_Tick;
-	scene13->scene.draw = (void(*)(storyscene_t *))Scene_13_Draw;
-	scene13->scene.stop = (void(*)(storyscene_t *))Scene_13_Stop;
-	introScenes[i++] = (storyscene_t*)scene13;
-
 	scene_1_t *scene1 = Z_Calloc(sizeof(*scene1), PU_STATIC);
 	scene1->scene.transitionOutHeight = 204;
 	scene1->scene.picLump = W_GetNumForName("PLANET");
@@ -3343,6 +3326,23 @@ void BuildScenes()
 	scene12->scene.draw = (void(*)(storyscene_t *))Scene_12_Draw;
 	scene12->scene.stop = (void(*)(storyscene_t *))Scene_12_Stop;
 	introScenes[i++] = (storyscene_t*)scene12;
+
+	scene_13_t *scene13 = Z_Calloc(sizeof(*scene13), PU_STATIC);
+	scene13->scene.transitionOutHeight = 204;
+	scene13->scene.picLump = W_GetNumForName("EJBG");
+	scene13->scene.text = intro13text;
+	scene13->scene.textCharDelayTics = scene13->scene.textCharDelayCounter = 4;
+	scene13->scene.preTextDelay = TICRATE;
+	scene13->scene.postTextDelay = 2*TICRATE;
+	scene13->scene.textBox.x = 16;
+	scene13->scene.textBox.y = 168;
+	scene13->scene.textBox.width = 320 - (scene13->scene.textBox.x * 2);
+	scene13->scene.textBox.height = 200 - 16;
+	scene13->scene.init = (void(*)(storyscene_t *))Scene_13_Init;
+	scene13->scene.tic = (void(*)(storyscene_t *))Scene_13_Tick;
+	scene13->scene.draw = (void(*)(storyscene_t *))Scene_13_Draw;
+	scene13->scene.stop = (void(*)(storyscene_t *))Scene_13_Stop;
+	introScenes[i++] = (storyscene_t*)scene13;
 
 	scene_14_t *scene14 = Z_Calloc(sizeof(*scene14), PU_STATIC);
 	scene14->scene.transitionOutHeight = 204;
