@@ -2377,18 +2377,19 @@ void Scene_11_Tick(scene_11_t *scene)
 
 void Scene_11_Draw(scene_11_t *scene)
 {
-	DrawJagobj3_15bpp(
-		scene->scene.background,
-		scene->scene.backgroundX,
-		scene->scene.backgroundY,
-		0,
-		0,
-		scene->scene.background->width,
-		scene->scene.background->height,
-		320,
-		false,
-		I_FrameBuffer()
-	);
+	if (sceneFrameCount < 2)
+		DrawJagobj3_15bpp(
+			scene->scene.background,
+			scene->scene.backgroundX,
+			scene->scene.backgroundY,
+			0,
+			0,
+			scene->scene.background->width,
+			scene->scene.background->height,
+			320,
+			false,
+			I_FrameBuffer()
+		);
 
 	DrawText(&scene->scene);
 }
