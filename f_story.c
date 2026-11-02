@@ -163,7 +163,6 @@ typedef struct
 	int16_t zoomCurIndex;
 	int16_t sonicCounter;
 	int16_t auraCounter;
-	int16_t sonicStep;
 } scene_9_t;
 
 typedef struct 
@@ -1665,7 +1664,6 @@ void Scene_9_Init(scene_9_t *scene)
 
 	scene->sonicPosX = 234 << FRACBITS;
 	scene->sonicPosY = 110 << FRACBITS;
-	scene->sonicStep = 0;
 	scene->hasPreviousBgRect[0] = false;
 	scene->hasPreviousBgRect[1] = false;
 }
@@ -1697,7 +1695,7 @@ void Scene_9_Tick(scene_9_t *scene)
 		return;
 	}
 
-	if (scene->sonicStep == 0)
+	if (currentPhase == 0)
 	{
 		scene->auraScale += 1 << 12;
 		scene->sonicScale = scene->auraScale;
@@ -1710,22 +1708,22 @@ void Scene_9_Tick(scene_9_t *scene)
 			scene->auraScale = FRACUNIT;
 			scene->sonicPosX += 4 << 16; 
 			scene->sonicPosY -= 3 << 15;
-			scene->sonicStep = 1;
+			NextPhase();
 			scene->sonicCounter = 0;
 		}
 	}
-	else if (scene->sonicStep == 1)
+	else if (currentPhase == 1)
 	{
 		scene->sonicCounter++;
 		scene->sonicPosX -= 1 << 16;
 
 		if (scene->sonicCounter > 4)
 		{
-			scene->sonicStep = 2;
+			NextPhase();
 			scene->sonicCounter = 0;
 		}
 	}
-	else if (scene->sonicStep == 2)
+	else if (currentPhase == 2)
 	{
 		scene->sonicPosX -= 1 << 16;
 		scene->sonicCounter++;
@@ -1733,18 +1731,20 @@ void Scene_9_Tick(scene_9_t *scene)
 		if (scene->sonicCounter > 5)
 		{
 			scene->sonicCounter = 0;
-			scene->sonicStep = 3;
+			NextPhase();
 		}
 	}
-	else if (scene->sonicStep == 3)
+	else if (currentPhase == 3)
 	{
 		scene->sonicScale += 10 << 10;
 		scene->sonicPosX -= 8 << 16; 
 		scene->sonicPosY += 5 << 15;
 		scene->sonicCounter++;
 
-		if (scene->sonicCounter > 10)
-			scene->sonicStep = 4; // No drawing of Sonic
+		scene->sonicPosY -= FRACUNIT;
+
+		if (scene->sonicCounter > 20)
+			NextPhase(); // No drawing of Sonic
 	}
 }
 
@@ -1810,7 +1810,7 @@ void Scene_9_Draw(scene_9_t *scene)
 		coord_t currentBgRect[2];
 		boolean hasCurrentBgRect = false;
 
-		if (scene->sonicStep < 1)
+		if (currentPhase < 1)
 		{
 			DrawJagobj3_15bpp(
 				scene->scene.background,
@@ -1825,43 +1825,43 @@ void Scene_9_Draw(scene_9_t *scene)
 				I_FrameBuffer()
 			);
 		}
-		else// if (scene->sonicStep >= 1)
+
+		coord_t sonicRect[2];
+		sonicRect[0].x = (scene->sonicPosX >> FRACBITS) - (FixedMul(64 << FRACBITS, scene->sonicScale) >> FRACBITS);
+		sonicRect[0].y = (scene->sonicPosY >> FRACBITS) - (FixedMul(126 << FRACBITS, scene->sonicScale) >> FRACBITS);
+		sonicRect[1].x = sonicRect[0].x + (FixedMul(scene->sonicScale, scene->sonic->width << FRACBITS) >> FRACBITS);
+		sonicRect[1].y = sonicRect[0].y + (FixedMul(scene->sonicScale, scene->sonic->height << FRACBITS) >> FRACBITS);
+
+		ExpandRectToInclude(currentBgRect, sonicRect, &hasCurrentBgRect);
+
+		if (currentPhase <= 2)
 		{
-			coord_t sonicRect[2];
-			sonicRect[0].x = (scene->sonicPosX >> FRACBITS) - 64;
-			sonicRect[0].y = (scene->sonicPosY >> FRACBITS) - 126;
-			sonicRect[1].x = sonicRect[0].x + (FixedMul(scene->sonicScale, scene->sonic->width << FRACBITS) >> FRACBITS);
-			sonicRect[1].y = sonicRect[0].y + (FixedMul(scene->sonicScale, scene->sonic->height << FRACBITS) >> FRACBITS);
+			coord_t auraRect[2];
+			auraRect[0].x = auraPos.x - (FixedMul(93 << FRACBITS, scene->auraScale) >> FRACBITS);
+			auraRect[0].y = auraPos.y - (FixedMul(92 << FRACBITS, scene->auraScale) >> FRACBITS);
+			auraRect[1].x = auraRect[0].x + (FixedMul(scene->auraScale, scene->aura->width << FRACBITS) >> FRACBITS);
+			auraRect[1].y = auraRect[0].y + (FixedMul(scene->auraScale, scene->aura->height << FRACBITS) >> FRACBITS);
 
-			ExpandRectToInclude(currentBgRect, sonicRect, &hasCurrentBgRect);
-
-			if (scene->sonicStep <= 2)
-			{
-				coord_t auraRect[2];
-				auraRect[0].x = auraPos.x - 93;
-				auraRect[0].y = auraPos.y - 92;
-				auraRect[1].x = auraRect[0].x + (FixedMul(scene->auraScale, scene->aura->width << FRACBITS) >> FRACBITS);
-				auraRect[1].y = auraRect[0].y + (FixedMul(scene->auraScale, scene->aura->height << FRACBITS) >> FRACBITS);
-
-				ExpandRectToInclude(currentBgRect, auraRect, &hasCurrentBgRect);
-			}
+			ExpandRectToInclude(currentBgRect, auraRect, &hasCurrentBgRect);
 		}
 
 		// Restore the last sprite area drawn into this backbuffer.
 		if (scene->hasPreviousBgRect[backBuffer])
 		{
-			DrawJagobj3_15bpp(
-				scene->scene.background,
-				scene->previousBgRect[backBuffer][0].x,
-				scene->previousBgRect[backBuffer][0].y,
-				scene->previousBgRect[backBuffer][0].x,
-				scene->previousBgRect[backBuffer][0].y,
-				scene->previousBgRect[backBuffer][1].x - scene->previousBgRect[backBuffer][0].x,
-				scene->previousBgRect[backBuffer][1].y - scene->previousBgRect[backBuffer][0].y,
-				320,
-				false,
-				I_FrameBuffer()
-			);
+			if (scene->previousBgRect[backBuffer][1].x - scene->previousBgRect[backBuffer][0].x > 0
+				&& scene->previousBgRect[backBuffer][1].y - scene->previousBgRect[backBuffer][0].y > 0)
+				DrawJagobj3_15bpp(
+					scene->scene.background,
+					scene->previousBgRect[backBuffer][0].x,
+					scene->previousBgRect[backBuffer][0].y,
+					scene->previousBgRect[backBuffer][0].x,
+					scene->previousBgRect[backBuffer][0].y,
+					scene->previousBgRect[backBuffer][1].x - scene->previousBgRect[backBuffer][0].x,
+					scene->previousBgRect[backBuffer][1].y - scene->previousBgRect[backBuffer][0].y,
+					320,
+					false,
+					I_FrameBuffer()
+				);
 		}
 
 		scene->hasPreviousBgRect[backBuffer] = hasCurrentBgRect;
@@ -1871,10 +1871,10 @@ void Scene_9_Draw(scene_9_t *scene)
 			scene->previousBgRect[backBuffer][1] = currentBgRect[1];
 		}
 
-		if (scene->sonicStep < 4)
+		if (currentPhase < 4)
 		{
 			// Spring OUT!
-			if (scene->sonicStep == 2)
+			if (currentPhase == 2)
 			{
 				if (scene->sonicCounter < 5)
 				{
@@ -1882,7 +1882,7 @@ void Scene_9_Draw(scene_9_t *scene)
 						scene->aura, auraPos.x, auraPos.y, 93, 92, scene->auraScale, scene->auraScale, scene->sonicCounter + 1, true, I_FrameBuffer());
 				}
 			}
-			else if (scene->sonicStep < 2)
+			else if (currentPhase < 2)
 			{
 				DrawScaledJagobj_15bppBlendWithOrigin(
 					scene->aura, auraPos.x, auraPos.y, 93, 92, scene->auraScale, scene->auraScale, 1, true, I_FrameBuffer());
