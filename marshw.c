@@ -723,22 +723,7 @@ void Mars_DetectInputDevices(void)
 				}
 				else {
 					// Standard 3/6 button controller found.
-					button_spin = BT_B;
-					button_accelerate = BT_Y;
-					button_decelerate = 0;
-					button_pan_left = BT_X;
-					button_pan_right = BT_Z;
-					button_start = BT_START;
-					button_mode = BT_MODE;
-					button_menu_next = BT_B;
-					button_menu_back = BT_A;
-#ifdef SHOW_DISCLAIMER
-					button_jump = BT_A | BT_C;
-					button_cheat = 0;
-#else
-					button_jump = BT_C;
-					button_cheat = BT_A;
-#endif
+					UpdateControllerInputs();
 				}
 			}
 			mars_gamepadport[i] = i;

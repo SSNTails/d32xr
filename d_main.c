@@ -37,7 +37,6 @@ const uint8_t cheat_metrics_sequence[CHEAT_METRICS_SEQ_LENGTH] = {
 	};
 
 boolean		splitscreen = false;
-VINT		controltype = 0;		/* determine settings for BT_* */
 
 boolean		sky_md_layer = false;
 boolean		sky_32x_layer = false;
@@ -56,6 +55,8 @@ int 		ticstart;
 #ifdef PLAY_POS_DEMO
 	int			realtic;
 #endif
+
+VINT		controltype = 0;
 
 unsigned configuration[NUMCONTROLOPTIONS][3] =
 {

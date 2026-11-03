@@ -21,6 +21,7 @@
 typedef enum
 {
 	mi_game, 
+	mi_controls,
 	mi_audio,
 	mi_video,
 	mi_camerapan,
@@ -98,6 +99,7 @@ typedef enum
 	ms_none,
 	ms_main,
 	ms_game,
+	ms_controls,
 	ms_audio,
 	ms_video,
 	ms_help,
@@ -145,27 +147,32 @@ void O_Init (void)
 	menuitem[mi_game].y = STARTY;
 	menuitem[mi_game].screen = ms_game;
 
+	menuitem[mi_controls].name = "CONTROLS";
+	menuitem[mi_controls].x = ITEMX;
+	menuitem[mi_controls].y = STARTY+ITEMSPACE;
+	menuitem[mi_controls].screen = ms_controls;
+
 	menuitem[mi_audio].name = "AUDIO";
 	menuitem[mi_audio].x = ITEMX;
-	menuitem[mi_audio].y = STARTY+ITEMSPACE;
+	menuitem[mi_audio].y = STARTY+ITEMSPACE*2;
 	menuitem[mi_audio].screen = ms_audio;
 
 	menuitem[mi_video].name = "VIDEO";
 	menuitem[mi_video].x = ITEMX;
-	menuitem[mi_video].y = STARTY+ITEMSPACE*2;
+	menuitem[mi_video].y = STARTY+ITEMSPACE*3;
 	menuitem[mi_video].screen = ms_video;
 
 	menuitem[mi_camerapan].name = "CAMERA";
 	menuitem[mi_camerapan].x = ITEMX;
-	menuitem[mi_camerapan].y = STARTY+ITEMSPACE*3;
+	menuitem[mi_camerapan].y = STARTY+ITEMSPACE*4;
 
 	menuitem[mi_spindash].name = "SPINDASH";
 	menuitem[mi_spindash].x = ITEMX;
-	menuitem[mi_spindash].y = STARTY+ITEMSPACE*4;
+	menuitem[mi_spindash].y = STARTY+ITEMSPACE*5;
 
 	menuitem[mi_help].name = "HELP / ABOUT";
 	menuitem[mi_help].x = ITEMX;
-	menuitem[mi_help].y = STARTY+ITEMSPACE*5;
+	menuitem[mi_help].y = STARTY+ITEMSPACE*6;
 	menuitem[mi_help].screen = ms_help;
 
 	menuitem[mi_soundvol].name = "Sfx volume";
@@ -209,10 +216,14 @@ void O_Init (void)
 	menuitem[mi_upscaler].x = ITEMX - 32;
 	menuitem[mi_upscaler].y = STARTY + ITEMSPACE * 4;
 
-
-	menuitem[mi_controltype].name = "Gamepad";
-	menuitem[mi_controltype].x = ITEMX;
+	menuitem[mi_controltype].name = "TYPE";
+	menuitem[mi_controltype].x = ITEMX - 32;
 	menuitem[mi_controltype].y = STARTY;
+
+
+	/*menuitem[mi_controltype].name = "Gamepad";
+	menuitem[mi_controltype].x = ITEMX;
+	menuitem[mi_controltype].y = STARTY;*/
 
 	menuitem[mi_strafebtns].name = "LR Strafe";
 	menuitem[mi_strafebtns].x = ITEMX;
@@ -222,6 +233,10 @@ void O_Init (void)
 	menuscreen[ms_main].name = "OPTIONS";
 	menuscreen[ms_main].firstitem = mi_game;
 	menuscreen[ms_main].numitems = mi_help - mi_game + 1;
+
+	menuscreen[ms_controls].name = "CONTROLS";
+	menuscreen[ms_controls].firstitem = mi_controltype;
+	menuscreen[ms_controls].numitems = 1;
 
 	menuscreen[ms_audio].name = "AUDIO";
 	menuscreen[ms_audio].firstitem = mi_soundvol;
@@ -433,6 +448,12 @@ void O_Control (player_t *player)
 			{
 				switch (itemno)
 				{
+				case mi_camerapan:
+					invertCamera = !invertCamera;
+					break;
+				case mi_spindash:
+					spindashPlayerOriented = !spindashPlayerOriented;
+					break;
 				case mi_soundvol:
 					sfxvolume = 64 * slider->curval / slider->maxval;
 					break;
@@ -446,12 +467,6 @@ void O_Control (player_t *player)
 					anamorphicview = slider->curval;
 					cameraTargetDistance = (anamorphicview ? CAM_DIST_ANAMORPHIC : CAM_DIST_NORMAL);
 					R_SetViewportSize(viewportNum);
-					break;
-				case mi_camerapan:
-					invertCamera = !invertCamera;
-					break;
-				case mi_spindash:
-					spindashPlayerOriented = !spindashPlayerOriented;
 					break;
 				default:
 					break;
@@ -487,7 +502,22 @@ void O_Control (player_t *player)
 				}
 			}
 
-			if (screenpos == ms_audio)
+			if (screenpos == ms_controls)
+			{
+				if (buttons & BT_ACTION_LEFT)
+				{
+					controltype--;
+					controltype &= 7;
+					UpdateControllerInputs();
+				}
+				if (buttons & BT_ACTION_RIGHT)
+				{
+					controltype++;
+					controltype &= 7;
+					UpdateControllerInputs();
+				}
+			}
+			else if (screenpos == ms_audio)
 			{
 				int oldmusictype = o_musictype;
 				int oldsfxdriver = o_sfxdriver;
@@ -757,7 +787,7 @@ void O_Drawer (void)
 		}*/
 	}
 
-	if (screenpos == ms_video)
+	else if (screenpos == ms_video)
 	{
 /*		char tmp[32];
 		D_snprintf(tmp, sizeof(tmp), "%dx%d", viewportWidth, viewportHeight);
@@ -773,13 +803,147 @@ void O_Drawer (void)
 				upscalerOptimized ? "on" : "off");
 	}
 
-	if (screenpos == ms_help)
-		O_DrawHelp(58);
+	else if (screenpos == ms_controls)
+	{
+		const char typeNumberString[2] = {'1' + controltype, '\0'};
+		V_DrawStringLeft(&menuFont, menuitem[mi_controltype].x + 176, menuitem[mi_controltype].y,
+				typeNumberString);
+	}
 
-	if (screenpos == ms_main)
+	else if (screenpos == ms_help) {
+		O_DrawHelp(58);
+	}
+
+	else if (screenpos == ms_main)
 	{
 		V_DrawStringLeft(&menuFont, menuitem[mi_camerapan].x + 80, menuitem[mi_camerapan].y, invertCamera ? ": INVERTED" : ": NORMAL");
 		V_DrawStringLeft(&menuFont, menuitem[mi_spindash].x + 80, menuitem[mi_spindash].y, spindashPlayerOriented ? ": PLAYER" : ": CAMERA");
+	}
+}
+
+void UpdateControllerInputs(void)
+{
+	button_start = BT_START;
+	button_mode = BT_MODE;
+	button_menu_next = BT_B;
+	button_menu_back = BT_A;
+
+	// Six-button configurations
+	switch (controltype)
+	{
+		case 0:
+			// Saxman preferred
+			button_jump = BT_C;
+			button_spin = BT_B;
+			button_accelerate = BT_Z;
+			button_decelerate = BT_MODE;
+			button_pan_left = BT_X;
+			button_pan_right = BT_Y;
+#ifdef SHOW_DISCLAIMER
+			button_cheat = 0;
+#else
+			button_cheat = BT_A;
+#endif
+			break;
+
+		case 1:
+			// SSNTails preferred
+			button_jump = BT_B;
+			button_spin = BT_C;
+			button_accelerate = BT_Y;
+			button_decelerate = BT_MODE;
+			button_pan_left = BT_X;
+			button_pan_right = BT_Z;
+#ifdef SHOW_DISCLAIMER
+			button_cheat = 0;
+#else
+			button_cheat = BT_A;
+#endif
+			break;
+
+		case 2:
+			button_jump = BT_C;
+			button_spin = BT_A;
+			button_accelerate = BT_B;
+			button_decelerate = BT_MODE;
+			button_pan_left = BT_X;
+			button_pan_right = BT_Z;
+#ifdef SHOW_DISCLAIMER
+			button_cheat = 0;
+#else
+			button_cheat = BT_Y;
+#endif
+			break;
+
+		case 3:
+			button_jump = BT_C;
+			button_spin = BT_A;
+			button_accelerate = BT_B;
+			button_decelerate = BT_Y;
+			button_pan_left = BT_X;
+			button_pan_right = BT_Z;
+#ifdef SHOW_DISCLAIMER
+			button_cheat = 0;
+#else
+			button_cheat = BT_MODE;
+#endif
+			break;
+
+		case 4:
+			button_jump = BT_C;
+			button_spin = BT_Y;
+			button_accelerate = BT_B;
+			button_decelerate = BT_MODE;
+			button_pan_left = BT_X;
+			button_pan_right = BT_Z;
+#ifdef SHOW_DISCLAIMER
+			button_cheat = 0;
+#else
+			button_cheat = BT_A;
+#endif
+			break;
+
+		case 5:
+			button_jump = BT_C;
+			button_spin = BT_Y;
+			button_accelerate = BT_B;
+			button_decelerate = BT_A;
+			button_pan_left = BT_X;
+			button_pan_right = BT_Z;
+#ifdef SHOW_DISCLAIMER
+			button_cheat = 0;
+#else
+			button_cheat = BT_MODE;
+#endif
+			break;
+
+		case 6:
+			button_jump = BT_B;
+			button_spin = BT_Z;
+			button_accelerate = BT_C;
+			button_decelerate = BT_MODE;
+			button_pan_left = BT_X;
+			button_pan_right = BT_Y;
+#ifdef SHOW_DISCLAIMER
+			button_cheat = 0;
+#else
+			button_cheat = BT_A;
+#endif
+			break;
+
+		case 7:
+			button_jump = BT_B;
+			button_spin = BT_Z;
+			button_accelerate = BT_C;
+			button_decelerate = BT_A;
+			button_pan_left = BT_X;
+			button_pan_right = BT_Y;
+#ifdef SHOW_DISCLAIMER
+			button_cheat = 0;
+#else
+			button_cheat = BT_MODE;
+#endif
+			break;
 	}
 }
 
