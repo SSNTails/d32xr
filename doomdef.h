@@ -758,6 +758,8 @@ __attribute__((aligned(2)))
 #endif
 extern	gametype_t	netgame;
 
+extern	VINT		controltype;
+
 extern	boolean		playeringame[MAXPLAYERS];
 extern	VINT		consoleplayer;		/* player taking events and displaying */
 extern	player_t	players[MAXPLAYERS];
@@ -1231,6 +1233,8 @@ void O_Init (void);
 void O_Control (player_t *player);
 void O_Drawer (void);
 void O_SetButtonsFromControltype(void);
+
+void UpdateControllerInputs(void);
 
 
 /*----- */
