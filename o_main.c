@@ -507,13 +507,23 @@ void O_Control (player_t *player)
 				if (buttons & BT_ACTION_LEFT)
 				{
 					controltype--;
-					controltype &= 7;
+					if (controller_id == 1) {
+						controltype &= 7;
+					}
+					else {
+						controltype &= 1;
+					}
 					UpdateControllerInputs();
 				}
 				if (buttons & BT_ACTION_RIGHT)
 				{
 					controltype++;
-					controltype &= 7;
+					if (controller_id == 1) {
+						controltype &= 7;
+					}
+					else {
+						controltype &= 1;
+					}
 					UpdateControllerInputs();
 				}
 			}
@@ -821,127 +831,90 @@ void O_Drawer (void)
 	}
 }
 
+const uint16_t controllerMap3B[2][7] = {
+	//	jump	spin	run		slow		pan l	pan r	cheat
+	{	BT_C,	BT_B,	BT_Z,	BT_MODE,	BT_X,	BT_Y,	BT_A	},	// 0
+	{	BT_B,	BT_C,	BT_Y,	BT_MODE,	BT_X,	BT_Z,	BT_A	}	// 1
+};
+
+const uint16_t controllerMap6B[8][7] = {
+	//	jump	spin	run		slow		pan l	pan r	cheat
+	{	BT_C,	BT_B,	BT_Z,	BT_MODE,	BT_X,	BT_Y,	BT_A	},	// 0
+	{	BT_B,	BT_C,	BT_Y,	BT_MODE,	BT_X,	BT_Z,	BT_A	},	// 1
+	{	BT_C,	BT_A,	BT_B,	BT_MODE,	BT_X,	BT_Z,	BT_Y	},	// 2
+	{	BT_C,	BT_A,	BT_B,	BT_Y,		BT_X,	BT_Z,	BT_MODE	},	// 3
+	{	BT_C,	BT_Y,	BT_B,	BT_MODE,	BT_X,	BT_Z,	BT_A	},	// 4
+	{	BT_C,	BT_Y,	BT_B,	BT_A,		BT_X,	BT_Z,	BT_MODE	},	// 5
+	{	BT_B,	BT_Z,	BT_C,	BT_MODE,	BT_X,	BT_Y,	BT_A	},	// 6
+	{	BT_B,	BT_Z,	BT_C,	BT_A,		BT_X,	BT_Y,	BT_MODE	}	// 7
+};
+
+const uint16_t controllerMapXE[2][7] = {
+	//	jump		spin		run			slow		pan l			pan r			cheat
+	{	XE_BT_A,	XE_BT_C,	XE_BT_B,	XE_BT_D,	XE_BT_B_PRIME,	XE_BT_A_PRIME,	XE_BT_E1	},	// 0
+	{	XE_BT_A,	XE_BT_B,	XE_BT_C,	XE_BT_D,	XE_BT_B_PRIME,	XE_BT_A_PRIME,	XE_BT_E1	}	// 1
+};
+
 void UpdateControllerInputs(void)
 {
-	button_start = BT_START;
-	button_mode = BT_MODE;
-	button_menu_next = BT_B;
-	button_menu_back = BT_A;
-
-	// Six-button configurations
-	switch (controltype)
-	{
+	switch (controller_id) {
 		case 0:
-			// Saxman preferred
-			button_jump = BT_C;
-			button_spin = BT_B;
-			button_accelerate = BT_Z;
-			button_decelerate = BT_MODE;
-			button_pan_left = BT_X;
-			button_pan_right = BT_Y;
+			// Sega 3-button control pad
+			button_start = BT_START;
+			button_mode = 0;
+			button_menu_next = BT_B;
+			button_menu_back = BT_A;
+
+			button_jump = controllerMap3B[controltype][0];
+			button_spin = controllerMap3B[controltype][1];
+			button_accelerate = controllerMap3B[controltype][2];
+			button_decelerate = controllerMap3B[controltype][3];
+			button_pan_left = controllerMap3B[controltype][4];
+			button_pan_right = controllerMap3B[controltype][5];
 #ifdef SHOW_DISCLAIMER
 			button_cheat = 0;
 #else
-			button_cheat = BT_A;
+			button_cheat = controllerMap3B[controltype][6];
 #endif
 			break;
 
 		case 1:
-			// SSNTails preferred
-			button_jump = BT_B;
-			button_spin = BT_C;
-			button_accelerate = BT_Y;
-			button_decelerate = BT_MODE;
-			button_pan_left = BT_X;
-			button_pan_right = BT_Z;
+			// Sega 6-button arcade pad
+			button_start = BT_START;
+			button_mode = BT_MODE;
+			button_menu_next = BT_B;
+			button_menu_back = BT_A;
+
+			button_jump = controllerMap6B[controltype][0];
+			button_spin = controllerMap6B[controltype][1];
+			button_accelerate = controllerMap6B[controltype][2];
+			button_decelerate = controllerMap6B[controltype][3];
+			button_pan_left = controllerMap6B[controltype][4];
+			button_pan_right = controllerMap6B[controltype][5];
 #ifdef SHOW_DISCLAIMER
 			button_cheat = 0;
 #else
-			button_cheat = BT_A;
+			button_cheat = controllerMap6B[controltype][6];
 #endif
 			break;
 
-		case 2:
-			button_jump = BT_C;
-			button_spin = BT_A;
-			button_accelerate = BT_B;
-			button_decelerate = BT_MODE;
-			button_pan_left = BT_X;
-			button_pan_right = BT_Z;
-#ifdef SHOW_DISCLAIMER
-			button_cheat = 0;
-#else
-			button_cheat = BT_Y;
-#endif
-			break;
+		case 8:
+			// Dempa Micom Soft XE-1AP analog controller
+			button_start = XE_BT_START;
+			button_mode = XE_BT_SELECT;
+			button_menu_next = XE_BT_A;
+			button_menu_back = XE_BT_B;
 
-		case 3:
-			button_jump = BT_C;
-			button_spin = BT_A;
-			button_accelerate = BT_B;
-			button_decelerate = BT_Y;
-			button_pan_left = BT_X;
-			button_pan_right = BT_Z;
+			button_jump = controllerMapXE[controltype][0];
+			button_spin = controllerMapXE[controltype][1];
+			button_accelerate = controllerMapXE[controltype][2];
+			button_decelerate = controllerMapXE[controltype][3];
+			button_pan_left = controllerMapXE[controltype][4];
+			button_pan_right = controllerMapXE[controltype][5];
 #ifdef SHOW_DISCLAIMER
 			button_cheat = 0;
 #else
-			button_cheat = BT_MODE;
-#endif
-			break;
-
-		case 4:
-			button_jump = BT_C;
-			button_spin = BT_Y;
-			button_accelerate = BT_B;
-			button_decelerate = BT_MODE;
-			button_pan_left = BT_X;
-			button_pan_right = BT_Z;
-#ifdef SHOW_DISCLAIMER
-			button_cheat = 0;
-#else
-			button_cheat = BT_A;
-#endif
-			break;
-
-		case 5:
-			button_jump = BT_C;
-			button_spin = BT_Y;
-			button_accelerate = BT_B;
-			button_decelerate = BT_A;
-			button_pan_left = BT_X;
-			button_pan_right = BT_Z;
-#ifdef SHOW_DISCLAIMER
-			button_cheat = 0;
-#else
-			button_cheat = BT_MODE;
-#endif
-			break;
-
-		case 6:
-			button_jump = BT_B;
-			button_spin = BT_Z;
-			button_accelerate = BT_C;
-			button_decelerate = BT_MODE;
-			button_pan_left = BT_X;
-			button_pan_right = BT_Y;
-#ifdef SHOW_DISCLAIMER
-			button_cheat = 0;
-#else
-			button_cheat = BT_A;
-#endif
-			break;
-
-		case 7:
-			button_jump = BT_B;
-			button_spin = BT_Z;
-			button_accelerate = BT_C;
-			button_decelerate = BT_A;
-			button_pan_left = BT_X;
-			button_pan_right = BT_Y;
-#ifdef SHOW_DISCLAIMER
-			button_cheat = 0;
-#else
-			button_cheat = BT_MODE;
+			button_cheat = controllerMapXE[controltype][6];
 #endif
 			break;
 	}

@@ -1400,6 +1400,7 @@ enum
 
 #endif
 
+extern uint8_t	controller_id;
 extern uint16_t button_jump;
 extern uint16_t button_spin;
 extern uint16_t button_accelerate;

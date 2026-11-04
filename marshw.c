@@ -674,61 +674,46 @@ void Mars_DetectInputDevices(void)
 		while (MARS_SYS_COMM0 != ctrl_wait);
 		int val = MARS_SYS_COMM2;
 
-		if (IsDemo()) {
-			val |= 0xF000;
-			if ((previous_buttons[i] & 0xF000) != 0xF000) {
-				// Standard 3/6 button controller mapping for demos.
-				button_spin = BT_B;
-				button_accelerate = BT_Y;
-				button_decelerate = 0;
-				button_pan_left = BT_X;
-				button_pan_right = BT_Z;
-				button_start = BT_START;
-				button_mode = BT_MODE;
-				button_menu_next = BT_B;
-				button_menu_back = BT_A;
-				button_jump = BT_A | BT_C;
-				button_cheat = 0;
-			}
-		}
-
-		next_buttons_pressed[i] = 0;
-		next_buttons_released[i] = 0;
-
-		if ((val & 0xF000) == 0xF000) {
-			// No controller found.
-			previous_buttons[i] = 0xF000;
-			next_buttons_pressed[i] = 0xF000;
-			next_buttons_released[i] = 0xF000;
-		}
-		else {
-			if ((val & 0xF000) != (previous_buttons[i] & 0xF000)) {
-				if ((val & 0xF000) == SEGA_CTRL_ANALOG) {
-					// XE-1AP controller found.
-					button_jump = XE_BT_A;
-					button_spin = XE_BT_C;
-					button_accelerate = XE_BT_B;
-					button_decelerate = XE_BT_D;
-					button_pan_left = XE_BT_B_PRIME;
-					button_pan_right = XE_BT_A_PRIME;
-					button_start = XE_BT_START;
-					button_mode = XE_BT_SELECT;
-#ifdef SHOW_DISCLAIMER
+		// Only read buttons on the first controller.
+		if (i == 0) {
+			if (IsDemo()) {
+				val |= 0xF000;
+				if ((previous_buttons[i] & 0xF000) != 0xF000) {
+					// Standard 3/6 button controller mapping for demos.
+					button_spin = BT_B;
+					button_accelerate = BT_Y;
+					button_decelerate = 0;
+					button_pan_left = BT_X;
+					button_pan_right = BT_Z;
+					button_start = BT_START;
+					button_mode = BT_MODE;
+					button_menu_next = BT_B;
+					button_menu_back = BT_A;
+					button_jump = BT_A | BT_C;
 					button_cheat = 0;
-#else
-					button_cheat = XE_BT_E1;
-#endif
-					button_menu_next = XE_BT_A;
-					button_menu_back = XE_BT_B;
 				}
-				else {
-					// Standard 3/6 button controller found.
+			}
+
+			next_buttons_pressed[i] = 0;
+			next_buttons_released[i] = 0;
+
+			if ((val & 0xF000) == 0xF000) {
+				// No controller found.
+				previous_buttons[i] = 0xF000;
+				next_buttons_pressed[i] = 0xF000;
+				next_buttons_released[i] = 0xF000;
+			}
+			else {
+				if ((val & 0xF000) != (previous_buttons[i] & 0xF000)) {
+					// NOTE: These values only work for controller 1.
+					controller_id = (val >> 12) & 0xF;
+					controltype = 0;
 					UpdateControllerInputs();
 				}
+				mars_gamepadport[i] = i;
+				next_buttons_pressed[i] |= (val & 0xF000) | ((val & 0x0FFF) & (~previous_buttons[i]));
+				next_buttons_released[i] |= (val & 0xF000) | (((~val) & 0x0FFF) & previous_buttons[i]);
 			}
-			mars_gamepadport[i] = i;
-			next_buttons_pressed[i] |= (val & 0xF000) | ((val & 0x0FFF) & (~previous_buttons[i]));
-			next_buttons_released[i] |= (val & 0xF000) | (((~val) & 0x0FFF) & previous_buttons[i]);
 		}
 
 		MARS_SYS_COMM0 = ++ctrl_wait;

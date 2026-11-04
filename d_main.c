@@ -361,6 +361,7 @@ int8_t	ticanalogy[MAXPLAYERS];
 int8_t	ticanalogt[MAXPLAYERS];
 int8_t	ticrealanalogx, ticrealanalogy, ticrealanalogt;
 
+uint8_t	controller_id = 0xF;
 uint16_t button_jump;
 uint16_t button_spin;
 uint16_t button_accelerate;
