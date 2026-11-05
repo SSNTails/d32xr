@@ -1359,7 +1359,7 @@ void Scene_7_Tick(scene_7_t *scene)
 	}
 	else if (currentPhase == 1) // Fade to dark
 	{
-		if (phaseFrameCount >= 90)
+		if (phaseFrameCount >= 120)
 			NextPhase();
 	}
 	else if (currentPhase == 2) // Surprised
@@ -2847,6 +2847,8 @@ void Scene_13_A_Draw(scene_13_a_t *scene)
 void Scene_13_A_Stop(scene_13_a_t *scene)
 {
 	// Free any resources
+	Z_Free(scene->jettB[1]);
+	Z_Free(scene->jettB[0]);
 	Z_Free(scene->jettA[1]);
 	Z_Free(scene->jettA[0]);
 	Z_Free(scene->tails[1]);
@@ -3133,6 +3135,12 @@ void Scene_13_B_Draw(scene_13_b_t *scene)
 void Scene_13_B_Stop(scene_13_b_t *scene)
 {
 	// Free any resources
+	Z_Free(scene->boom[5]);
+	Z_Free(scene->boom[4]);
+	Z_Free(scene->boom[3]);
+	Z_Free(scene->boom[2]);
+	Z_Free(scene->boom[1]);
+	Z_Free(scene->boom[0]);
 	Z_Free(scene->jettA[1]);
 	Z_Free(scene->jettA[0]);
 	Z_Free(scene->jettB[1]);
@@ -3140,12 +3148,6 @@ void Scene_13_B_Stop(scene_13_b_t *scene)
 	Z_Free(scene->tails[1]);
 	Z_Free(scene->tails[0]);
 	Z_Free(scene->sonic);
-	Z_Free(scene->boom[5]);
-	Z_Free(scene->boom[4]);
-	Z_Free(scene->boom[3]);
-	Z_Free(scene->boom[2]);
-	Z_Free(scene->boom[1]);
-	Z_Free(scene->boom[0]);
 }
 
 void Scene_14_Init(scene_14_t *scene)
