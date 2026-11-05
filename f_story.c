@@ -207,6 +207,40 @@ typedef struct
 	jagobj_t *steam;
 } scene_13_t;
 
+typedef struct
+{
+	storyscene_t scene;
+	jagobj_t *sonic;
+	jagobj_t *jettA[2];
+	jagobj_t *jettB[2];
+	jagobj_t *tails[2];
+	coord_t sonicPos;
+	coord_t tailsPos;
+	coord_t jettPos;
+	fixed_t sonicScale;
+	fixed_t tailsScale;
+	fixed_t jettScale;
+} scene_13_a_t;
+
+typedef struct
+{
+	storyscene_t scene;
+	jagobj_t *sonic;
+	jagobj_t *jettA[2];
+	jagobj_t *jettB[2];
+	jagobj_t *tails[2];
+	jagobj_t *boom[6];
+	coord_t sonicPos;
+	coord_t tailsPos;
+	coord_t jettPos;
+	coord_t boomPos;
+	int boomIndex;
+	fixed_t sonicScale;
+	fixed_t tailsScale;
+	fixed_t jettScale;
+	fixed_t boomScale;
+} scene_13_b_t;
+
 typedef struct 
 {
 	storyscene_t scene;
@@ -239,9 +273,10 @@ typedef struct
 } scene_2_t, scene_3_t;
 
 //#define NUMSCENES 12
-#define NUMSCENES	16
+#define NUMSCENES	18
 storyscene_t *introScenes[NUMSCENES];
 
+// TODO: belongs elsewhere as a utility function - can often be calculated at runtime.
 uint16_t RGBto15bpp(uint8_t r, uint8_t g, uint8_t b)
 {
 	uint8_t r5 = r >> 3;
@@ -1892,8 +1927,34 @@ void Scene_9_Draw(scene_9_t *scene)
 					scene->aura, auraPos.x, auraPos.y, 93, 92, scene->auraScale, scene->auraScale, 1, true, I_FrameBuffer());
 			}
 
-			DrawScaledJagobj_15bppBlendWithOrigin(
-				scene->sonic, scene->sonicPosX >> FRACBITS, scene->sonicPosY >> FRACBITS, 64, 126, scene->sonicScale, scene->sonicScale, 0, true, I_FrameBuffer());
+			int sonicPosX = (scene->sonicPosX  - FixedMul(64 * FRACUNIT, scene->sonicScale)) >> 16;
+			int sonicPosY = (scene->sonicPosY - FixedMul(126 * FRACUNIT, scene->sonicScale)) >> 16;
+			if (scene->sonicScale == FRACUNIT)
+			{
+				DrawJagobj3_15bpp(
+					scene->sonic,
+					sonicPosX,
+					sonicPosY,
+					0, 0,
+					scene->sonic->width,
+					scene->sonic->height,
+					320,
+					true,
+					I_FrameBuffer()
+				);
+			}
+			else
+			{
+				DrawScaledJagobj_15bpp(
+					scene->sonic,
+					sonicPosX,
+					sonicPosY,
+					scene->sonicScale,
+					scene->sonicScale,
+					true,
+					I_FrameBuffer()
+				);
+			}
 		}
 	}
 
@@ -2648,6 +2709,445 @@ void Scene_13_Stop(scene_13_t *scene)
 	Z_Free(scene->scene.background);	
 }
 
+void Scene_13_A_Init(scene_13_a_t *scene)
+{
+	scene->sonic = W_CacheLumpName("CHSSON1", PU_LEVEL);
+	scene->tails[0] = W_CacheLumpName("CHSTLSA1", PU_LEVEL);
+	scene->tails[1] = W_CacheLumpName("CHSTLSA2", PU_LEVEL);
+	scene->jettA[0] = W_CacheLumpName("EJJETA1", PU_LEVEL);
+	scene->jettA[1] = W_CacheLumpName("EJJETA2", PU_LEVEL);
+	scene->jettB[0] = W_CacheLumpName("CHSJETA1", PU_LEVEL);
+	scene->jettB[1] = W_CacheLumpName("CHSJETA2", PU_LEVEL);
+
+	scene->sonicPos.x = -scene->sonic->width;
+	scene->sonicPos.y = -(scene->sonic->height >> 2);
+
+	scene->jettPos.x = -scene->jettA[0]->width * 2;
+	scene->jettPos.y = -scene->jettA[0]->height;
+
+	scene->sonicScale = scene->tailsScale = scene->jettScale = (FRACUNIT / 16) * 14;
+	scene->jettScale <<= 1;
+
+	scene->tailsPos.x = 320 + scene->tails[0]->width;
+	scene->tailsPos.y = 200;
+}
+
+void Scene_13_A_Tick(scene_13_a_t *scene)
+{
+	if (currentPhase == 0)
+	{
+		if (phaseFrameCount > 60)
+		{
+			scene->sonicPos.x += 16;
+			scene->sonicPos.y += 8;
+			scene->sonicScale += 512;
+		}
+		if (phaseFrameCount > 120)
+		{
+			scene->jettPos.x += 16;
+			scene->jettPos.y += 8;
+			scene->jettScale += 512;
+
+			if (scene->jettPos.x > 400)
+			{
+				scene->jettScale = (FRACUNIT / 16) * 14;
+				scene->jettScale <<= 1;
+				NextPhase();
+			}
+		}
+	}
+	else if (currentPhase == 1)
+	{
+		if (phaseFrameCount > 60)
+		{
+			scene->tailsPos.x -= 16;
+			scene->tailsPos.y -= 8;
+			scene->tailsScale += 512;
+		}
+		if (phaseFrameCount > 120)
+		{
+			scene->jettPos.x -= 16;
+			scene->jettPos.y -= 8;
+			scene->jettScale += 512;
+
+			if (scene->jettPos.x < -80)
+				NextPhase();
+		}
+	}
+}
+
+void Scene_13_A_Draw(scene_13_a_t *scene)
+{
+	DrawFillRect_15bpp(
+		0,
+		0,
+		320,
+		200,
+		RGBto15bpp(128, 0, 128)
+	);
+
+	if (currentPhase == 0)
+	{
+		fixed_t sonicPosX = scene->sonicPos.x - (FixedMul(scene->sonic->width * FRACUNIT / 2, scene->sonicScale) >> 16);
+		fixed_t sonicPosY = scene->sonicPos.y - (FixedMul(scene->sonic->height * FRACUNIT / 2, scene->sonicScale) >> 16);
+
+		DrawScaledJagobj_15bpp(
+			scene->sonic,
+			sonicPosX,
+			sonicPosY,
+			scene->sonicScale,
+			scene->sonicScale,
+			true,
+			I_FrameBuffer()
+		);
+
+		fixed_t jettPosX = scene->jettPos.x - (FixedMul(scene->jettA[phaseFrameCount & 1]->width * FRACUNIT / 2, scene->jettScale) >> 16);
+		fixed_t jettPosY = scene->jettPos.y - (FixedMul(scene->jettA[phaseFrameCount & 1]->height * FRACUNIT / 2, scene->jettScale) >> 16);
+
+		DrawScaledJagobj_15bpp(
+			scene->jettA[phaseFrameCount & 1],
+			jettPosX,
+			jettPosY,
+			scene->jettScale,
+			scene->jettScale,
+			true,
+			I_FrameBuffer());
+	}
+
+	if (currentPhase == 1)
+	{
+		fixed_t tailsPosX = scene->tailsPos.x - (FixedMul(scene->tails[phaseFrameCount & 1]->width * FRACUNIT / 2, scene->tailsScale) >> 16);
+		fixed_t tailsPosY = scene->tailsPos.y - (FixedMul(scene->tails[phaseFrameCount & 1]->height * FRACUNIT / 2, scene->tailsScale) >> 16);
+
+		DrawScaledJagobj_15bpp(
+			scene->tails[phaseFrameCount & 1],
+			tailsPosX,
+			tailsPosY,
+			scene->tailsScale,
+			scene->tailsScale,
+			true,
+			I_FrameBuffer()
+		);
+
+		fixed_t jettPosX = scene->jettPos.x - (FixedMul(scene->jettA[phaseFrameCount & 1]->width * FRACUNIT / 2, scene->jettScale) >> 16);
+		fixed_t jettPosY = scene->jettPos.y - (FixedMul(scene->jettA[phaseFrameCount & 1]->height * FRACUNIT / 2, scene->jettScale) >> 16);
+
+		DrawScaledJagobj_15bpp(
+			scene->jettB[phaseFrameCount & 1],
+			jettPosX,
+			jettPosY,
+			scene->jettScale,
+			scene->jettScale,
+			true,
+			I_FrameBuffer()
+		);
+	}
+}
+
+void Scene_13_A_Stop(scene_13_a_t *scene)
+{
+	// Free any resources
+	Z_Free(scene->jettA[1]);
+	Z_Free(scene->jettA[0]);
+	Z_Free(scene->tails[1]);
+	Z_Free(scene->tails[0]);
+	Z_Free(scene->sonic);
+}
+
+void Scene_13_B_Init(scene_13_b_t *scene)
+{
+	scene->sonic = W_CacheLumpName("CHSSON2", PU_LEVEL);
+	scene->tails[0] = W_CacheLumpName("CHSTLSB1", PU_LEVEL);
+	scene->tails[1] = W_CacheLumpName("CHSTLSB2", PU_LEVEL);
+	scene->jettA[0] = W_CacheLumpName("EJJETA1", PU_LEVEL);
+	scene->jettA[1] = W_CacheLumpName("EJJETA2", PU_LEVEL);
+	scene->jettB[0] = W_CacheLumpName("CHSJETA1", PU_LEVEL);
+	scene->jettB[1] = W_CacheLumpName("CHSJETA2", PU_LEVEL);
+	scene->boom[0] = W_CacheLumpName("CHSBOOM1", PU_LEVEL);
+	scene->boom[1] = W_CacheLumpName("CHSBOOM2", PU_LEVEL);
+	scene->boom[2] = W_CacheLumpName("CHSBOOM3", PU_LEVEL);
+	scene->boom[3] = W_CacheLumpName("CHSBOOM4", PU_LEVEL);
+	scene->boom[4] = W_CacheLumpName("CHSBOOM5", PU_LEVEL);
+	scene->boom[5] = W_CacheLumpName("CHSBOOM6", PU_LEVEL);
+
+	scene->sonicPos.x = 0 - scene->sonic->width;
+	scene->sonicPos.y = 0;
+	scene->sonicScale = FRACUNIT;
+
+	scene->tailsPos.x = 160;
+	scene->tailsPos.y = 0 - scene->tails[0]->height;
+	scene->tailsScale = FRACUNIT;
+
+	scene->jettPos.x = 320 + scene->jettB[0]->width;
+	scene->jettPos.y = 180;
+
+	scene->jettScale = FRACUNIT * 2;
+	scene->boomScale = FRACUNIT * 4;
+
+	scene->boomIndex = 0;
+}
+
+void Scene_13_B_Tick(scene_13_b_t *scene)
+{
+	if (currentPhase == 0)
+	{
+		if (phaseFrameCount > 60)
+		{
+			scene->sonicPos.x += 24;
+			scene->sonicPos.y += 8;
+			scene->jettPos.x -= 12;
+			scene->jettPos.y -= 6;
+		}
+
+		if (scene->sonicPos.x + (FixedMul(scene->sonic->width * FRACUNIT, scene->sonicScale) >> 16) - 16 > scene->jettPos.x)
+		{
+			NextPhase();
+			scene->boomPos.x = scene->jettPos.x;
+			scene->boomPos.y = scene->jettPos.y;
+			scene->boomIndex = 0;
+			S_StartSound(NULL, sfx_s3k_3d);
+		}
+	}
+	else if (currentPhase == 1)
+	{
+		if (phaseFrameCount > 5)
+			NextPhase();
+	}
+	else if (currentPhase == 2)
+	{
+		scene->sonicPos.x += 6;
+		scene->sonicPos.y += 2;
+		scene->boomScale += 512;
+
+		if ((phaseFrameCount & 3) == 0 && scene->boomIndex >= 0)
+		{
+			scene->boomIndex++;
+			if (scene->boomIndex > 5)
+				scene->boomIndex = -1;
+		}
+
+		if (scene->boomIndex == -1)
+		{
+			scene->sonicPos.x += 18;
+			scene->sonicPos.y += 6;
+		}
+
+		if (scene->sonicPos.x > 320)
+		{
+			NextPhase();
+			scene->jettPos.x = 160;
+			scene->jettPos.y = 260;
+			scene->boomScale = FRACUNIT * 4;
+		}
+	}
+	else if (currentPhase == 3)
+	{
+		if (phaseFrameCount > 60)
+		{
+			scene->tailsPos.y += 24;
+			scene->jettPos.y -= 12;
+		}
+
+		if (scene->tailsPos.y + 96 > scene->jettPos.y)
+		{
+			NextPhase();
+			scene->boomPos.x = scene->jettPos.x;
+			scene->boomPos.y = scene->jettPos.y;
+			scene->boomIndex = 0;
+			S_StartSound(NULL, sfx_s3k_3d);
+		}
+	}
+	else if (currentPhase == 4)
+	{
+		if (phaseFrameCount > 5)
+			NextPhase();
+	}
+	else if (currentPhase == 5)
+	{
+		scene->tailsPos.y += 6;
+		scene->boomScale += 512;
+
+		if ((phaseFrameCount & 3) == 0 && scene->boomIndex >= 0)
+		{
+			scene->boomIndex++;
+			if (scene->boomIndex > 5)
+				scene->boomIndex = -1;
+		}
+
+		if (scene->boomIndex == -1)
+		{
+			scene->tailsPos.y += 18;
+		}
+	}
+}
+
+void Scene_13_B_Draw(scene_13_b_t *scene)
+{
+	if (currentPhase == 1 || currentPhase == 4)
+	{
+		DrawFillRect_15bpp(
+			0,
+			0,
+			320,
+			200,
+			RGBto15bpp(255, 255, 255)
+		);
+
+		return;
+	}
+
+	DrawFillRect_15bpp(
+		0,
+		0,
+		320,
+		200,
+		RGBto15bpp(128, 0, 128)
+	);
+
+	if (currentPhase == 0)
+	{
+		fixed_t sonicPosX = scene->sonicPos.x - (FixedMul(scene->sonic->width * FRACUNIT / 2, scene->sonicScale) >> 16);
+		fixed_t sonicPosY = scene->sonicPos.y - (FixedMul(scene->sonic->height * FRACUNIT / 2, scene->sonicScale) >> 16);
+
+		DrawScaledJagobj_15bpp(
+			scene->sonic,
+			sonicPosX,
+			sonicPosY,
+			scene->sonicScale,
+			scene->sonicScale,
+			true,
+			I_FrameBuffer()
+		);
+
+		fixed_t jettPosX = scene->jettPos.x - (FixedMul(scene->jettB[phaseFrameCount & 1]->width * FRACUNIT / 2, scene->jettScale) >> 16);
+		fixed_t jettPosY = scene->jettPos.y - (FixedMul(scene->jettB[phaseFrameCount & 1]->height * FRACUNIT / 2, scene->jettScale) >> 16);
+
+		DrawScaledJagobj_15bpp(
+			scene->jettB[phaseFrameCount & 1],
+			jettPosX,
+			jettPosY,
+			scene->jettScale,
+			scene->jettScale,
+			true,
+			I_FrameBuffer()
+		);
+	}
+	else if (currentPhase == 2)
+	{
+		// BOOM!
+		fixed_t sonicPosX = scene->sonicPos.x - (FixedMul(scene->sonic->width * FRACUNIT / 2, scene->sonicScale) >> 16);
+		fixed_t sonicPosY = scene->sonicPos.y - (FixedMul(scene->sonic->height * FRACUNIT / 2, scene->sonicScale) >> 16);
+
+		DrawScaledJagobj_15bpp(
+			scene->sonic,
+			sonicPosX,
+			sonicPosY,
+			scene->sonicScale,
+			scene->sonicScale,
+			true,
+			I_FrameBuffer()
+		);
+
+		if (scene->boomIndex >= 0)
+		{
+			fixed_t boomPosX = scene->boomPos.x - (FixedMul(scene->boom[scene->boomIndex]->width * FRACUNIT / 2, scene->boomScale) >> 16);
+			fixed_t boomPosY = scene->boomPos.y - (FixedMul(scene->boom[scene->boomIndex]->height * FRACUNIT / 2, scene->boomScale) >> 16);
+
+			DrawScaledJagobj_15bppBlend(
+				scene->boom[scene->boomIndex],
+				boomPosX,
+				boomPosY,
+				scene->boomScale,
+				scene->boomScale,
+				scene->boomIndex > 2 ? scene->boomIndex - 2 : 0,
+				true,
+				I_FrameBuffer()
+			);
+		}
+	}
+	else if (currentPhase == 3)
+	{
+		fixed_t tailsPosX = scene->tailsPos.x - (FixedMul(scene->tails[phaseFrameCount & 1]->width * FRACUNIT / 2, scene->tailsScale) >> 16);
+		fixed_t tailsPosY = scene->tailsPos.y - (FixedMul(scene->tails[phaseFrameCount & 1]->height * FRACUNIT / 2, scene->tailsScale) >> 16);
+
+		// Chase
+		DrawScaledJagobj_15bpp(
+			scene->tails[phaseFrameCount & 1],
+			tailsPosX,
+			tailsPosY,
+			scene->tailsScale,
+			scene->tailsScale,
+			true,
+			I_FrameBuffer()
+		);
+
+		fixed_t jettPosX = scene->jettPos.x - (FixedMul(scene->jettA[phaseFrameCount & 1]->width * FRACUNIT / 2, scene->jettScale) >> 16);
+		fixed_t jettPosY = scene->jettPos.y - (FixedMul(scene->jettA[phaseFrameCount & 1]->height * FRACUNIT / 2, scene->jettScale) >> 16);
+
+		DrawScaledJagobj_15bpp(
+			scene->jettB[phaseFrameCount & 1],
+			jettPosX,
+			jettPosY,
+			scene->jettScale,
+			scene->jettScale,
+			true,
+			I_FrameBuffer()
+		);
+	}
+	else if (currentPhase == 5)
+	{
+		// BOOM!
+		fixed_t tailsPosX = scene->tailsPos.x - (FixedMul(scene->tails[phaseFrameCount & 1]->width * FRACUNIT / 2, scene->tailsScale) >> 16);
+		fixed_t tailsPosY = scene->tailsPos.y - (FixedMul(scene->tails[phaseFrameCount & 1]->height * FRACUNIT / 2, scene->tailsScale) >> 16);
+
+		// Chase
+		DrawScaledJagobj_15bpp(
+			scene->tails[phaseFrameCount & 1],
+			tailsPosX,
+			tailsPosY,
+			scene->tailsScale,
+			scene->tailsScale,
+			true,
+			I_FrameBuffer()
+		);
+
+		if (scene->boomIndex >= 0)
+		{
+			fixed_t boomPosX = scene->boomPos.x - (FixedMul(scene->boom[scene->boomIndex]->width * FRACUNIT / 2, scene->boomScale) >> 16);
+			fixed_t boomPosY = scene->boomPos.y - (FixedMul(scene->boom[scene->boomIndex]->height * FRACUNIT / 2, scene->boomScale) >> 16);
+
+			DrawScaledJagobj_15bppBlend(
+				scene->boom[scene->boomIndex],
+				boomPosX,
+				boomPosY,
+				scene->boomScale,
+				scene->boomScale,
+				scene->boomIndex > 2 ? scene->boomIndex - 2 : 0,
+				true,
+				I_FrameBuffer()
+			);
+		}
+	}
+}
+
+void Scene_13_B_Stop(scene_13_b_t *scene)
+{
+	// Free any resources
+	Z_Free(scene->jettA[1]);
+	Z_Free(scene->jettA[0]);
+	Z_Free(scene->jettB[1]);
+	Z_Free(scene->jettB[0]);
+	Z_Free(scene->tails[1]);
+	Z_Free(scene->tails[0]);
+	Z_Free(scene->sonic);
+	Z_Free(scene->boom[5]);
+	Z_Free(scene->boom[4]);
+	Z_Free(scene->boom[3]);
+	Z_Free(scene->boom[2]);
+	Z_Free(scene->boom[1]);
+	Z_Free(scene->boom[0]);
+}
+
 void Scene_14_Init(scene_14_t *scene)
 {
 	scene->scene.background = W_CacheLumpNum(scene->scene.picLump, PU_LEVEL);
@@ -3344,6 +3844,24 @@ void BuildScenes()
 	scene13->scene.draw = (void(*)(storyscene_t *))Scene_13_Draw;
 	scene13->scene.stop = (void(*)(storyscene_t *))Scene_13_Stop;
 	introScenes[i++] = (storyscene_t*)scene13;
+
+	scene_13_a_t *scene13_a = Z_Calloc(sizeof(*scene13_a), PU_STATIC);
+	scene13_a->scene.transitionOutHeight = 204;
+	scene13_a->scene.picLump = W_GetNumForName("EJBG");
+	scene13_a->scene.init = (void(*)(storyscene_t *))Scene_13_A_Init;
+	scene13_a->scene.tic = (void(*)(storyscene_t *))Scene_13_A_Tick;
+	scene13_a->scene.draw = (void(*)(storyscene_t *))Scene_13_A_Draw;
+	scene13_a->scene.stop = (void(*)(storyscene_t *))Scene_13_A_Stop;
+	introScenes[i++] = (storyscene_t*)scene13_a;
+
+	scene_13_b_t *scene13_b = Z_Calloc(sizeof(*scene13_b), PU_STATIC);
+	scene13_b->scene.transitionOutHeight = 204;
+	scene13_b->scene.picLump = W_GetNumForName("EJBG");
+	scene13_b->scene.init = (void(*)(storyscene_t *))Scene_13_B_Init;
+	scene13_b->scene.tic = (void(*)(storyscene_t *))Scene_13_B_Tick;
+	scene13_b->scene.draw = (void(*)(storyscene_t *))Scene_13_B_Draw;
+	scene13_b->scene.stop = (void(*)(storyscene_t *))Scene_13_B_Stop;
+	introScenes[i++] = (storyscene_t*)scene13_b;
 
 	scene_14_t *scene14 = Z_Calloc(sizeof(*scene14), PU_STATIC);
 	scene14->scene.transitionOutHeight = 204;
