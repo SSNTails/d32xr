@@ -1472,6 +1472,11 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y,
 void DrawScaledJagobj_15bppBlendWithOrigin (jagobj_t* jo, int x, int y,
 	int origin_x, int origin_y, fixed_t ratio_w, fixed_t ratio_h,
 	unsigned blend_shift, boolean masked, pixel_t *fb);
+/* Clip rectangle is (x, y, width, height) in framebuffer coordinates. */
+void DrawScaledJagobj_15bppBlendWithOriginAndClipRect(jagobj_t* jo,
+	int x, int y, int origin_x, int origin_y, fixed_t ratio_w,
+	fixed_t ratio_h, unsigned blend_shift, boolean masked,
+	int clip_x, int clip_y, int clip_width, int clip_height, pixel_t *fb);
 void DrawJagobj3_15bpp(jagobj_t* jo, int x, int y, 
 	int src_x, int src_y, int src_w, int src_h,
 	const int canvas_width, boolean masked, pixel_t *fb);

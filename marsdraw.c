@@ -1313,16 +1313,33 @@ void DrawJagobj_15bppBlendNomask(jagobj_t* jo, int x, int y,
 	}
 }
 
-void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
+static void DrawScaledJagobj_15bppBlendClipped(jagobj_t* jo, int x, int y,
 	fixed_t ratio_w, fixed_t ratio_h, unsigned blend_shift,
-	boolean masked, pixel_t *fb)
+	boolean masked, int clip_x, int clip_y, int clip_width, int clip_height,
+	pixel_t *fb)
 {
 	int srcx, srcy;
 	int width, height;
 	int clipped_x, clipped_y;
+	int clip_right, clip_bottom;
 	fixed_t total_scaled_w, total_scaled_h;
 	fixed_t inc_x, inc_y;
 	uint16_t *dest, *source;
+
+	if (clip_width <= 0 || clip_height <= 0)
+		return;
+
+	int64_t right = (int64_t)clip_x + clip_width;
+	int64_t bottom = (int64_t)clip_y + clip_height;
+	if (right <= 0 || bottom <= 0 || clip_x >= 320 || clip_y >= 204)
+		return;
+
+	if (clip_x < 0)
+		clip_x = 0;
+	if (clip_y < 0)
+		clip_y = 0;
+	clip_right = right > 320 ? 320 : (int)right;
+	clip_bottom = bottom > 204 ? 204 : (int)bottom;
 
 	if (blend_shift > 5)
 		blend_shift = 5;
@@ -1338,27 +1355,27 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 	if (width < 1 || height < 1)
 		return;
 
-	if (x < 0) {
-		clipped_x = -x;
-		x = 0;
+	if (x < clip_x) {
+		clipped_x = clip_x - x;
+		x = clip_x;
 	}
 	total_scaled_w = FixedMul((width << 16), ratio_w) >> 16;
 	total_scaled_w -= clipped_x;
 
-	if (x + total_scaled_w > 320)
-		total_scaled_w = 320 - x;
+	if (x + total_scaled_w > clip_right)
+		total_scaled_w = clip_right - x;
 	if (total_scaled_w <= 0)
 		return;
 
-	if (y < 0) {
-		clipped_y = -y;
-		y = 0;
+	if (y < clip_y) {
+		clipped_y = clip_y - y;
+		y = clip_y;
 	}
 	total_scaled_h = FixedMul((height << 16), ratio_h) >> 16;
 	total_scaled_h -= clipped_y;
 
-	if (y + total_scaled_h > 204)
-		total_scaled_h = 204 - y;
+	if (y + total_scaled_h > clip_bottom)
+		total_scaled_h = clip_bottom - y;
 	if (total_scaled_h <= 0)
 		return;
 
@@ -1411,6 +1428,14 @@ void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
 	}
 }
 
+void DrawScaledJagobj_15bppBlend(jagobj_t* jo, int x, int y,
+	fixed_t ratio_w, fixed_t ratio_h, unsigned blend_shift,
+	boolean masked, pixel_t *fb)
+{
+	DrawScaledJagobj_15bppBlendClipped(jo, x, y, ratio_w, ratio_h,
+		blend_shift, masked, 0, 0, 320, 204, fb);
+}
+
 void DrawScaledJagobj_15bppBlendWithOrigin(jagobj_t* jo, int x, int y,
 	int origin_x, int origin_y, fixed_t ratio_w, fixed_t ratio_h,
 	unsigned blend_shift, boolean masked, pixel_t *fb)
@@ -1419,6 +1444,17 @@ void DrawScaledJagobj_15bppBlendWithOrigin(jagobj_t* jo, int x, int y,
 	y -= FixedMul(origin_y * FRACUNIT, ratio_h) >> 16;
 	DrawScaledJagobj_15bppBlend(jo, x, y, ratio_w, ratio_h,
 		blend_shift, masked, fb);
+}
+
+void DrawScaledJagobj_15bppBlendWithOriginAndClipRect(jagobj_t* jo,
+	int x, int y, int origin_x, int origin_y, fixed_t ratio_w,
+	fixed_t ratio_h, unsigned blend_shift, boolean masked,
+	int clip_x, int clip_y, int clip_width, int clip_height, pixel_t *fb)
+{
+	x -= FixedMul(origin_x * FRACUNIT, ratio_w) >> 16;
+	y -= FixedMul(origin_y * FRACUNIT, ratio_h) >> 16;
+	DrawScaledJagobj_15bppBlendClipped(jo, x, y, ratio_w, ratio_h,
+		blend_shift, masked, clip_x, clip_y, clip_width, clip_height, fb);
 }
 
 //#define ROTATION_DEBUG

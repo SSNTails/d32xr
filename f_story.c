@@ -1507,7 +1507,7 @@ void Scene_8_Tick(scene_8_t *scene)
 			NextPhase();
 		}
 	}
-	else if (currentPhase == 4)
+	else if (currentPhase == 4 && phaseFrameCount >= 60)
 	{
 		// Things!
 		scene->slideCount++;
@@ -1657,7 +1657,7 @@ void Scene_8_Draw(scene_8_t *scene)
 					}
 				}
 				else
-					DrawScaledJagobj_15bppBlendWithOrigin(
+					DrawScaledJagobj_15bppBlendWithOriginAndClipRect(
 						scene->crosshair,
 						scene->scene.backgroundX + (scene->scene.background->width / 2),
 						scene->scene.backgroundY + (scene->scene.background->height / 2),
@@ -1667,6 +1667,10 @@ void Scene_8_Draw(scene_8_t *scene)
 						scene->crosshairScale,
 						1,
 						true,
+						0,
+						0,
+						320,
+						128,
 						I_FrameBuffer()
 					);
 			}
@@ -3515,7 +3519,7 @@ const char *intro4text =
 const char *intro5text = 
 "\"Curses!\" Eggman yelled. \"That\n"
 "hedgehog and his ridiculous friends\n"
-"will pay dearly for this!\"\xC8 Just\n"
+"will pay dearly for this!\"\xC8Just\n"
 "then his scanner blipped as the Black\n"
 "Rock made its appearance from nowhere.\n"
 "Eggman looked at the screen, and just\n"
