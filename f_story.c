@@ -128,6 +128,7 @@ typedef struct
 	storyscene_t scene;
 	jagobj_t *sleep[3]; // SLEEP2, SLEEP3, SLEEP4
 	int sleepCounter; // For eye animation
+	int blendDrawCount;
 } scene_7_t;
 
 typedef struct
@@ -1362,7 +1363,7 @@ void Scene_7_Tick(scene_7_t *scene)
 	}
 	else if (currentPhase == 1) // Fade to dark
 	{
-		if (phaseFrameCount >= 120)
+		if (scene->blendDrawCount > 8)
 			NextPhase();
 	}
 	else if (currentPhase == 2) // Surprised
@@ -1400,6 +1401,8 @@ void Scene_7_Draw(scene_7_t *scene)
 			scene->scene.backgroundY,
 			1,
 			I_FrameBuffer());
+
+		scene->blendDrawCount++;
 	}
 	else if (currentPhase == 2) // Surprised
 	{
