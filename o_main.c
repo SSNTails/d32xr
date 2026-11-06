@@ -816,8 +816,18 @@ void O_Drawer (void)
 	else if (screenpos == ms_controls)
 	{
 		const char typeNumberString[2] = {'1' + controltype, '\0'};
-		V_DrawStringLeft(&menuFont, menuitem[mi_controltype].x + 176, menuitem[mi_controltype].y,
+		V_DrawStringLeft(&menuFont, menuitem[mi_controltype].x + 80, menuitem[mi_controltype].y,
 				typeNumberString);
+
+		DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-16+0, 128-16-0, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BB"), 176-16+34, 128-16-18, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BC"), 176-16+69, 128-16-29, NULL, NULL);
+
+		DrawJagobjLump(W_GetNumForName("CTRL6BM"), 176-30+72, 128-23-96, NULL, NULL);
+
+		DrawJagobjLump(W_GetNumForName("CTRL6BX"), 176-12-12, 128-12-39, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BY"), 176-12+18, 128-12-55, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BZ"), 176-12+49, 128-12-62, NULL, NULL);
 	}
 
 	else if (screenpos == ms_help) {
