@@ -1676,7 +1676,7 @@ void Scene_8_Draw(scene_8_t *scene)
 	if (currentPhase == 4)
 	{
 		DrawJagobj3_15bpp(scene->left,
-			0-scene->slideCount, 
+			-160 + scene->slideCount, 
 			0, 
 			0, 
 			0, 
