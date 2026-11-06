@@ -828,6 +828,16 @@ void O_Drawer (void)
 		DrawJagobjLump(W_GetNumForName("CTRL6BX"), 176-12-12, 128-12-39, NULL, NULL);
 		DrawJagobjLump(W_GetNumForName("CTRL6BY"), 176-12+18, 128-12-55, NULL, NULL);
 		DrawJagobjLump(W_GetNumForName("CTRL6BZ"), 176-12+49, 128-12-62, NULL, NULL);
+
+		V_DrawStringCenter(&menuFont, 176+0+8, 128-16-0+36, "LOOK");
+		V_DrawStringCenter(&menuFont, 176+34+8, 128-16-18+36, "SPIN");
+		V_DrawStringCenter(&menuFont, 176+69+8, 128-16-29+36, "JUMP");
+
+		V_DrawStringCenter(&menuFont, 176+72+24, 128-23-96+8, "SLOW");
+
+		V_DrawStringCenter(&menuFont, 176-12-12, 128-12-39-12, "PAN L");
+		V_DrawStringCenter(&menuFont, 176+18-4, 128-12-55-12, "PAN R");
+		V_DrawStringCenter(&menuFont, 176+49+4, 128-12-62-12, "RUN");
 	}
 
 	else if (screenpos == ms_help) {
