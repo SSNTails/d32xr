@@ -139,9 +139,12 @@ typedef struct
 	jagobj_t *compass;
 	jagobj_t *bar;
 	jagobj_t *bottomLeftInd[4];
+	jagobj_t *left;
+	jagobj_t *right;
 	int barAnim;
 	int acquiredWidth;
 	int gfzWidth;
+	int slideCount;
 	fixed_t crosshairScale;
 } scene_8_t;
 
@@ -1450,6 +1453,8 @@ void Scene_8_Init(scene_8_t *scene)
 	scene->bottomLeftInd[1] = W_CacheLumpName("TGBAR2", PU_LEVEL);
 	scene->bottomLeftInd[2] = W_CacheLumpName("TGBAR3", PU_LEVEL);
 	scene->bottomLeftInd[3] = W_CacheLumpName("TGBAR4", PU_LEVEL);
+	scene->left = W_CacheLumpName("TAILSPOI", PU_LEVEL);
+	scene->right = W_CacheLumpName("CLIFFKNX", PU_LEVEL);
 	scene->gfzWidth = 0;
 	scene->acquiredWidth = 0;
 }
@@ -1476,7 +1481,7 @@ void Scene_8_Tick(scene_8_t *scene)
 		if (scene->acquiredWidth > scene->targetAcquired->width)
 			scene->acquiredWidth = scene->targetAcquired->width;
 
-		if (phaseFrameCount > scene->targetAcquired->width * 2)
+		if (phaseFrameCount > scene->targetAcquired->width)
 			NextPhase();
 	}
 	else if (currentPhase == 2)
@@ -1485,7 +1490,7 @@ void Scene_8_Tick(scene_8_t *scene)
 		if (scene->gfzWidth > scene->gfzMountainText->width)
 			scene->gfzWidth = scene->gfzMountainText->width;
 
-		if (phaseFrameCount > scene->gfzMountainText->width * 2)
+		if (phaseFrameCount > scene->gfzMountainText->width)
 		{
 			NextPhase();
 			scene->crosshairScale = 8*FRACUNIT;
@@ -1505,119 +1510,153 @@ void Scene_8_Tick(scene_8_t *scene)
 	else if (currentPhase == 4)
 	{
 		// Things!
+		scene->slideCount++;
+		if (scene->slideCount > 160)
+			scene->slideCount = 160;
 	}
 }
 
 void Scene_8_Draw(scene_8_t *scene)
 {
-	if (sceneFrameCount < 2)
-		DrawJagobj3_15bpp(
-			scene->scene.background,
-			scene->scene.backgroundX,
-			scene->scene.backgroundY,
-			0,
-			0,
-			scene->scene.background->width,
-			scene->scene.background->height,
-			320,
-			false,
-			I_FrameBuffer()
-		);
-	else
-		DrawJagobj3_15bpp(
-			scene->scene.background,
-			scene->scene.backgroundX + 2,
-			scene->scene.backgroundY + 114,
-			2, 114,
-			scene->bottomLeftInd[scene->barAnim]->width,
-			scene->bottomLeftInd[scene->barAnim]->height,
-			320,
-			false,
-			I_FrameBuffer()
-		);
-
-	if (currentPhase > 0)
+	if (!(currentPhase == 4 && scene->slideCount >= 160))
 	{
-		if (scene->acquiredWidth > 0)
-		{
+		if (sceneFrameCount < 2)
 			DrawJagobj3_15bpp(
-				scene->targetAcquired,
-				scene->scene.backgroundX + 2,
-				scene->scene.backgroundY + 4,
-				0, 0,
-				scene->acquiredWidth,
-				scene->targetAcquired->height,
+				scene->scene.background,
+				scene->scene.backgroundX,
+				scene->scene.backgroundY,
+				0,
+				0,
+				scene->scene.background->width,
+				scene->scene.background->height,
 				320,
-				true,
+				false,
 				I_FrameBuffer()
 			);
-		}
-
-		if (scene->gfzWidth > 0)
-		{
+		else
 			DrawJagobj3_15bpp(
-				scene->gfzMountainText,
+				scene->scene.background,
 				scene->scene.backgroundX + 2,
-				scene->scene.backgroundY + 10,
-				0, 0,
-				scene->gfzWidth,
-				scene->gfzMountainText->height,
+				scene->scene.backgroundY + 114,
+				2, 114,
+				scene->bottomLeftInd[scene->barAnim]->width,
+				scene->bottomLeftInd[scene->barAnim]->height,
 				320,
-				true,
+				false,
 				I_FrameBuffer()
 			);
-		}
 
-		DrawJagobj3_15bpp(
-			scene->compass,
-			scene->scene.backgroundX + 155,
-			scene->scene.backgroundY + 98,
-			0, 0,
-			scene->compass->width,
-			scene->compass->height,
-			320,
-			true,
-			I_FrameBuffer()
-		);
-		
-		DrawJagobj3_15bpp(
-			scene->bottomLeftInd[scene->barAnim],
-			scene->scene.backgroundX + 2,
-			scene->scene.backgroundY + 114,
-			0, 0,
-			scene->bottomLeftInd[scene->barAnim]->width,
-			scene->bottomLeftInd[scene->barAnim]->height,
-			320,
-			true,
-			I_FrameBuffer()
-		);
-
-		if (currentPhase >= 3)
+		if (currentPhase > 0)
 		{
-			if (currentPhase >= 4)
+			if (scene->acquiredWidth > 0)
 			{
-				if (phaseFrameCount < 2)
-				{
-					DrawJagobj3_15bpp(
-						scene->scene.background,
-						scene->scene.backgroundX,
-						scene->scene.backgroundY,
-						0,
-						0,
-						scene->scene.background->width,
-						scene->scene.background->height,
-						320,
-						false,
-						I_FrameBuffer()
-					);
+				DrawJagobj3_15bpp(
+					scene->targetAcquired,
+					scene->scene.backgroundX + 2,
+					scene->scene.backgroundY + 4,
+					0, 0,
+					scene->acquiredWidth,
+					scene->targetAcquired->height,
+					320,
+					true,
+					I_FrameBuffer()
+				);
+			}
 
-					// Clear outside area
-					DrawFillRect_15bpp(0, 0, scene->scene.backgroundX, scene->scene.background->height, RGBto15bpp(0, 0, 0));
-					DrawFillRect_15bpp(scene->scene.backgroundX + scene->scene.background->width, 0, 320 - scene->scene.background->width - scene->scene.backgroundX, scene->scene.background->height, RGBto15bpp(0, 0, 0));
-				}
-				
-				if ((phaseFrameCount & 15) < 8)
+			if (scene->gfzWidth > 0)
+			{
+				DrawJagobj3_15bpp(
+					scene->gfzMountainText,
+					scene->scene.backgroundX + 2,
+					scene->scene.backgroundY + 10,
+					0, 0,
+					scene->gfzWidth,
+					scene->gfzMountainText->height,
+					320,
+					true,
+					I_FrameBuffer()
+				);
+			}
+
+			DrawJagobj3_15bpp(
+				scene->compass,
+				scene->scene.backgroundX + 155,
+				scene->scene.backgroundY + 98,
+				0, 0,
+				scene->compass->width,
+				scene->compass->height,
+				320,
+				true,
+				I_FrameBuffer()
+			);
+			
+			DrawJagobj3_15bpp(
+				scene->bottomLeftInd[scene->barAnim],
+				scene->scene.backgroundX + 2,
+				scene->scene.backgroundY + 114,
+				0, 0,
+				scene->bottomLeftInd[scene->barAnim]->width,
+				scene->bottomLeftInd[scene->barAnim]->height,
+				320,
+				true,
+				I_FrameBuffer()
+			);
+
+			if (currentPhase >= 3)
+			{
+				if (currentPhase >= 4)
 				{
+					if (phaseFrameCount < 2)
+					{
+						DrawJagobj3_15bpp(
+							scene->scene.background,
+							scene->scene.backgroundX,
+							scene->scene.backgroundY,
+							0,
+							0,
+							scene->scene.background->width,
+							scene->scene.background->height,
+							320,
+							false,
+							I_FrameBuffer()
+						);
+
+						// Clear outside area
+						DrawFillRect_15bpp(0, 0, scene->scene.backgroundX, scene->scene.background->height, RGBto15bpp(0, 0, 0));
+						DrawFillRect_15bpp(scene->scene.backgroundX + scene->scene.background->width, 0, 320 - scene->scene.background->width - scene->scene.backgroundX, scene->scene.background->height, RGBto15bpp(0, 0, 0));
+					}
+					
+					if ((phaseFrameCount & 15) < 8)
+					{
+						DrawScaledJagobj_15bppBlendWithOrigin(
+							scene->crosshair,
+							scene->scene.backgroundX + (scene->scene.background->width / 2),
+							scene->scene.backgroundY + (scene->scene.background->height / 2),
+							scene->crosshair->width / 2,
+							scene->crosshair->height / 2,
+							scene->crosshairScale,
+							scene->crosshairScale,
+							1,
+							true,
+							I_FrameBuffer()
+						);
+					}
+					else if (phaseFrameCount >= 2)
+					{
+						DrawJagobj3_15bpp(
+							scene->scene.background,
+							scene->scene.backgroundX + 68,
+							scene->scene.backgroundY + 39,
+							68, 39,
+							scene->crosshair->width,
+							scene->crosshair->height + 1,
+							320,
+							false,
+							I_FrameBuffer()
+						);
+					}
+				}
+				else
 					DrawScaledJagobj_15bppBlendWithOrigin(
 						scene->crosshair,
 						scene->scene.backgroundX + (scene->scene.background->width / 2),
@@ -1630,36 +1669,35 @@ void Scene_8_Draw(scene_8_t *scene)
 						true,
 						I_FrameBuffer()
 					);
-				}
-				else if (phaseFrameCount >= 2)
-				{
-					DrawJagobj3_15bpp(
-						scene->scene.background,
-						scene->scene.backgroundX + 68,
-						scene->scene.backgroundY + 39,
-						68, 39,
-						scene->crosshair->width,
-						scene->crosshair->height + 1,
-						320,
-						false,
-						I_FrameBuffer()
-					);
-				}
 			}
-			else
-				DrawScaledJagobj_15bppBlendWithOrigin(
-					scene->crosshair,
-					scene->scene.backgroundX + (scene->scene.background->width / 2),
-					scene->scene.backgroundY + (scene->scene.background->height / 2),
-					scene->crosshair->width / 2,
-					scene->crosshair->height / 2,
-					scene->crosshairScale,
-					scene->crosshairScale,
-					1,
-					true,
-					I_FrameBuffer()
-				);
 		}
+	}
+
+	if (currentPhase == 4)
+	{
+		DrawJagobj3_15bpp(scene->left,
+			0-scene->slideCount, 
+			0, 
+			0, 
+			0, 
+			scene->left->width, 
+			scene->left->height, 
+			320, 
+			false, 
+			I_FrameBuffer()
+		);
+
+		DrawJagobj3_15bpp(scene->right, 
+			320 - scene->slideCount, 
+			0, 
+			0, 
+			0, 
+			scene->right->width, 
+			scene->right->height, 
+			320, 
+			false, 
+			I_FrameBuffer()
+		);
 	}
 
 	DrawText(&scene->scene);
@@ -1668,6 +1706,8 @@ void Scene_8_Draw(scene_8_t *scene)
 void Scene_8_Stop(scene_8_t *scene)
 {
 	// Free any resources
+	Z_Free(scene->right);
+	Z_Free(scene->left);
 	Z_Free(scene->bottomLeftInd[3]);
 	Z_Free(scene->bottomLeftInd[2]);
 	Z_Free(scene->bottomLeftInd[1]);
