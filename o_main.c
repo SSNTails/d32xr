@@ -217,7 +217,7 @@ void O_Init (void)
 	menuitem[mi_upscaler].y = STARTY + ITEMSPACE * 4;
 
 	menuitem[mi_controltype].name = "TYPE";
-	menuitem[mi_controltype].x = ITEMX - 32;
+	menuitem[mi_controltype].x = ITEMX;
 	menuitem[mi_controltype].y = STARTY;
 
 
@@ -602,8 +602,6 @@ void O_Control (player_t *player)
 			else if (screenpos == ms_video)
 			{
 				int oldanamorphicview = anamorphicview;
-				int oldHardwareOptimized = hardwareOptimized;
-				int oldUpscalerOptimized = upscalerOptimized;
 
 				if (buttons & BT_ACTION_RIGHT)
 				{
@@ -816,28 +814,10 @@ void O_Drawer (void)
 	else if (screenpos == ms_controls)
 	{
 		const char typeNumberString[2] = {'1' + controltype, '\0'};
-		V_DrawStringLeft(&menuFont, menuitem[mi_controltype].x + 80, menuitem[mi_controltype].y,
+		V_DrawStringLeft(&menuFont, menuitem[mi_controltype].x + 48, menuitem[mi_controltype].y,
 				typeNumberString);
 
-		DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-16+0, 128-16-0, NULL, NULL);
-		DrawJagobjLump(W_GetNumForName("CTRL6BB"), 176-16+34, 128-16-18, NULL, NULL);
-		DrawJagobjLump(W_GetNumForName("CTRL6BC"), 176-16+69, 128-16-29, NULL, NULL);
-
-		DrawJagobjLump(W_GetNumForName("CTRL6BM"), 176-30+72, 128-23-96, NULL, NULL);
-
-		DrawJagobjLump(W_GetNumForName("CTRL6BX"), 176-12-12, 128-12-39, NULL, NULL);
-		DrawJagobjLump(W_GetNumForName("CTRL6BY"), 176-12+18, 128-12-55, NULL, NULL);
-		DrawJagobjLump(W_GetNumForName("CTRL6BZ"), 176-12+49, 128-12-62, NULL, NULL);
-
-		V_DrawStringCenter(&menuFont, 176+0+8, 128-16-0+36, "LOOK");
-		V_DrawStringCenter(&menuFont, 176+34+8, 128-16-18+36, "SPIN");
-		V_DrawStringCenter(&menuFont, 176+69+8, 128-16-29+36, "JUMP");
-
-		V_DrawStringCenter(&menuFont, 176+72+24, 128-23-96+8, "SLOW");
-
-		V_DrawStringCenter(&menuFont, 176-12-12, 128-12-39-12, "PAN L");
-		V_DrawStringCenter(&menuFont, 176+18-4, 128-12-55-12, "PAN R");
-		V_DrawStringCenter(&menuFont, 176+49+4, 128-12-62-12, "RUN");
+		ShowControllerButtons();
 	}
 
 	else if (screenpos == ms_help) {
@@ -937,6 +917,82 @@ void UpdateControllerInputs(void)
 			button_cheat = controllerMapXE[controltype][6];
 #endif
 			break;
+	}
+}
+
+void ShowControllerButtons(void)
+{
+	// Draw the button color-coding table.
+	// Note: Colormap entries for CTRLCOLR are 16 colors each, as opposed to the usual 256.
+	DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOLR"), 144, 3, (controltype<<4) + ((19)*256) - 128);
+
+	// Draw the A-B-C buttons.
+	DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-16+0, 128-16-0, NULL, NULL);
+	DrawJagobjLump(W_GetNumForName("CTRL6BB"), 176-16+34, 128-16-18, NULL, NULL);
+	DrawJagobjLump(W_GetNumForName("CTRL6BC"), 176-16+69+2, 128-16-29, NULL, NULL);
+
+	// Draw the Mode button.
+	DrawJagobjLump(W_GetNumForName("CTRL6BM"), 176-30+72, 128-23-96, NULL, NULL);
+
+	// Draw the X-Y-Z buttons.
+	DrawJagobjLump(W_GetNumForName("CTRL6BX"), 176-12-12, 128-12-39, NULL, NULL);
+	DrawJagobjLump(W_GetNumForName("CTRL6BY"), 176-12+18, 128-12-55, NULL, NULL);
+	DrawJagobjLump(W_GetNumForName("CTRL6BZ"), 176-12+49+2, 128-12-62, NULL, NULL);
+
+	// Draw the button map labels.
+	const char *actionLabels[7] = { "JUMP", "SPIN", "RUN", "SLOW", "PAN L", "PAN R", "LOOK" };
+
+	char *strButtonA;
+	char *strButtonB;
+	char *strButtonC;
+	char *strButtonMode;
+	char *strButtonX;
+	char *strButtonY;
+	char *strButtonZ;
+
+	if (controller_id == 1) {
+		// Sega 6-button arcade pad
+		for (int btn = 0; btn < 7; btn++) {
+			uint16_t buttonValue = controllerMap6B[controltype][btn];
+			char *actionString = (char *)actionLabels[btn];
+			if (buttonValue == BT_A) {
+				strButtonA = actionString;
+			}
+			else if (buttonValue == BT_B) {
+				strButtonB = actionString;
+			}
+			else if (buttonValue == BT_C) {
+				strButtonC = actionString;
+			}
+			else if (buttonValue == BT_MODE) {
+				strButtonMode = actionString;
+			}
+			else if (buttonValue == BT_X) {
+				strButtonX = actionString;
+			}
+			else if (buttonValue == BT_Y) {
+				strButtonY = actionString;
+			}
+			else if (buttonValue == BT_Z) {
+				strButtonZ = actionString;
+			}
+		}
+
+		V_DrawStringCenter(&menuFont, 176+0+8, 128-16-0+36, strButtonA);
+		V_DrawStringCenter(&menuFont, 176+34+8, 128-16-18+36, strButtonB);
+		V_DrawStringCenter(&menuFont, 176+69+8, 128-16-29+36, strButtonC);
+
+		V_DrawStringCenter(&menuFont, 176+72+24, 128-23-96+8, strButtonMode);
+
+		V_DrawStringCenter(&menuFont, 176-12-12, 128-12-39-12, strButtonX);
+		V_DrawStringCenter(&menuFont, 176+18-4, 128-12-55-12, strButtonY);
+		V_DrawStringCenter(&menuFont, 176+49+4, 128-12-62-12, strButtonZ);
+	}
+	else if (controller_id == 8) {
+		//TODO: // Dempa Micom Soft XE-1AP analog controller
+	}
+	else {
+		//TODO: // Sega 3-button control pad
 	}
 }
 

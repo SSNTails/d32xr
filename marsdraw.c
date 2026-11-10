@@ -1642,7 +1642,7 @@ void DrawRotatedJagobj_15bpp(jagobj_t* jo, int dest_x, int dest_y, angle_t angle
     }
 }
 
-void DrawMaskedGraphicLump(int lumpnum, int x, int y)
+void DrawMaskedGraphicLumpWithColormap(int lumpnum, int x, int y, int colormap)
 {
 	LZSTATE gfx_lz;
 	uint8_t lz_buf[LZ_BUF_SIZE];
@@ -1652,7 +1652,7 @@ void DrawMaskedGraphicLump(int lumpnum, int x, int y)
 	if (!(lumpinfo[lumpnum].name[0] & 0x80))
 	{
 		// uncompressed
-		DrawMaskedGraphic3(lump, x, y, 0, 0);
+		DrawMaskedGraphic3(lump, x, y, 0, colormap);
 		return;
 	}
 
@@ -1660,7 +1660,11 @@ void DrawMaskedGraphicLump(int lumpnum, int x, int y)
 	if (LzReadPartial(&gfx_lz, 16) != 16)
 		return;
 
-	DrawMaskedGraphic3((byte *)gfx_lz.output, x, y, 0, 0);
+	DrawMaskedGraphic3((byte *)gfx_lz.output, x, y, 0, colormap);
+}
+
+void DrawMaskedGraphicLump(int lumpnum, int x, int y) {
+	DrawMaskedGraphicLumpWithColormap(lumpnum, x, y, 0);
 }
 
 void DrawMaskedGraphicWithColormap(byte *data, int x, int y, int colormap) {
