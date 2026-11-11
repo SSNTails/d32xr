@@ -922,36 +922,36 @@ void UpdateControllerInputs(void)
 
 void ShowControllerButtons(void)
 {
-	// Draw the button color-coding table.
-	// Note: Colormap entries for CTRLCOLR are 16 colors each, as opposed to the usual 256.
-	DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOLR"), 144, 3, (controltype<<4) + ((19)*256) - 128);
-
-	// Draw the A-B-C buttons.
-	DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-16+0, 128-16-0, NULL, NULL);
-	DrawJagobjLump(W_GetNumForName("CTRL6BB"), 176-16+34, 128-16-18, NULL, NULL);
-	DrawJagobjLump(W_GetNumForName("CTRL6BC"), 176-16+69+2, 128-16-29, NULL, NULL);
-
-	// Draw the Mode button.
-	DrawJagobjLump(W_GetNumForName("CTRL6BM"), 176-30+72, 128-23-96, NULL, NULL);
-
-	// Draw the X-Y-Z buttons.
-	DrawJagobjLump(W_GetNumForName("CTRL6BX"), 176-12-12, 128-12-39, NULL, NULL);
-	DrawJagobjLump(W_GetNumForName("CTRL6BY"), 176-12+18, 128-12-55, NULL, NULL);
-	DrawJagobjLump(W_GetNumForName("CTRL6BZ"), 176-12+49+2, 128-12-62, NULL, NULL);
-
-	// Draw the button map labels.
 	const char *actionLabels[7] = { "JUMP", "SPIN", "RUN", "SLOW", "PAN L", "PAN R", "LOOK" };
-
-	char *strButtonA;
-	char *strButtonB;
-	char *strButtonC;
-	char *strButtonMode;
-	char *strButtonX;
-	char *strButtonY;
-	char *strButtonZ;
 
 	if (controller_id == 1) {
 		// Sega 6-button arcade pad
+
+		// Draw the button color-coding table.
+		// Note: Colormap entries for CTRLCOLR are 16 colors each, as opposed to the usual 256.
+		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOLR"), 144, 3, (controltype<<4) + ((19)*256) - 128);
+
+		// Draw the A-B-C buttons.
+		DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-16+0, 128-16-0, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BB"), 176-16+34, 128-16-18, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BC"), 176-16+69+2, 128-16-29, NULL, NULL);
+
+		// Draw the Mode button.
+		DrawJagobjLump(W_GetNumForName("CTRL6BM"), 176-30+72, 128-23-96, NULL, NULL);
+
+		// Draw the X-Y-Z buttons.
+		DrawJagobjLump(W_GetNumForName("CTRL6BX"), 176-12-12, 128-12-39, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BY"), 176-12+18, 128-12-55, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BZ"), 176-12+49+2, 128-12-62, NULL, NULL);
+
+		char *strButtonA;
+		char *strButtonB;
+		char *strButtonC;
+		char *strButtonMode;
+		char *strButtonX;
+		char *strButtonY;
+		char *strButtonZ;
+
 		for (int btn = 0; btn < 7; btn++) {
 			uint16_t buttonValue = controllerMap6B[controltype][btn];
 			char *actionString = (char *)actionLabels[btn];
@@ -989,10 +989,71 @@ void ShowControllerButtons(void)
 		V_DrawStringCenter(&menuFont, 176+49+4, 128-12-62-12, strButtonZ);
 	}
 	else if (controller_id == 8) {
-		//TODO: // Dempa Micom Soft XE-1AP analog controller
+		// Dempa Micom Soft XE-1AP analog controller
+
+		// Draw the A-B-C-D buttons.
+		DrawJagobjLump(W_GetNumForName("CTRLXBCD"), 96, 56, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRLXBAB"), 224, 56, NULL, NULL);
+
+		char *strButtonA;
+		char *strButtonB;
+		char *strButtonC;
+		char *strButtonD;
+
+		for (int btn = 0; btn < 4; btn++) {
+			uint16_t buttonValue = controllerMapXE[controltype][btn];
+			char *actionString = (char *)actionLabels[btn];
+			if (buttonValue == XE_BT_A) {
+				strButtonA = actionString;
+			}
+			else if (buttonValue == XE_BT_B) {
+				strButtonB = actionString;
+			}
+			else if (buttonValue == XE_BT_C) {
+				strButtonC = actionString;
+			}
+			else if (buttonValue == XE_BT_D) {
+				strButtonD = actionString;
+			}
+		}
+
+		V_DrawStringCenter(&menuFont, 176, 72, strButtonC);
+		V_DrawStringCenter(&menuFont, 176, 112, strButtonD);
+		V_DrawStringCenter(&menuFont, 220, 72, strButtonA);
+		V_DrawStringCenter(&menuFont, 220, 112, strButtonB);
 	}
 	else {
-		//TODO: // Sega 3-button control pad
+		// Sega 3-button control pad
+
+		// Draw the A-B-C buttons.
+		DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-16+0, 128-16-34, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BB"), 176-16+34, 128-16-34-18, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BC"), 176-16+69+2, 128-16-34-29, NULL, NULL);
+
+		char *strButtonA;
+		char *strButtonB;
+		char *strButtonC;
+
+		for (int btn = 0; btn < 7; btn++) {
+			uint16_t buttonValue = controllerMap3B[controltype][btn];
+			char *actionString = (char *)actionLabels[btn];
+			if (buttonValue == BT_A) {
+				strButtonA = actionString;
+			}
+			else if (buttonValue == BT_B) {
+				strButtonB = actionString;
+			}
+			else if (buttonValue == BT_C) {
+				strButtonC = actionString;
+			}
+			/*else {
+				// Do nothing!
+			}*/
+		}
+
+		V_DrawStringCenter(&menuFont, 176+0+8, 128-16-0, strButtonA);
+		V_DrawStringCenter(&menuFont, 176+34+8, 128-16-18, strButtonB);
+		V_DrawStringCenter(&menuFont, 176+69+8, 128-16-29, strButtonC);
 	}
 }
 
