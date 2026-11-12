@@ -846,13 +846,24 @@ const uint16_t controllerMap6B[8][7] = {
 	{	BT_C,	BT_Y,	BT_B,	BT_MODE,	BT_X,	BT_Z,	BT_A	},	// 4
 	{	BT_C,	BT_Y,	BT_B,	BT_A,		BT_X,	BT_Z,	BT_MODE	},	// 5
 	{	BT_B,	BT_Z,	BT_C,	BT_MODE,	BT_X,	BT_Y,	BT_A	},	// 6
-	{	BT_B,	BT_Z,	BT_C,	BT_A,		BT_X,	BT_Y,	BT_MODE	}	// 7
+	{	BT_B,	BT_A,	BT_C,	BT_Z,		BT_X,	BT_Y,	BT_MODE	}	// 7
 };
 
 const uint16_t controllerMapXE[2][7] = {
 	//	jump		spin		run			slow		pan l			pan r			cheat
 	{	XE_BT_A,	XE_BT_C,	XE_BT_B,	XE_BT_D,	XE_BT_B_PRIME,	XE_BT_A_PRIME,	XE_BT_E1	},	// 0
 	{	XE_BT_A,	XE_BT_B,	XE_BT_C,	XE_BT_D,	XE_BT_B_PRIME,	XE_BT_A_PRIME,	XE_BT_E1	}	// 1
+};
+
+const char *controllerDescription6B[8] = {
+	"JUMP(C) beside\nSPIN (B).",
+	"RUN (Y), tucked\nbetween PAN L (X)\nand PAN R (Z), and\nabove JUMP (B).",
+	"RUN (B), tucked\nbetween SPIN (A)\nand JUMP (C) action\nbuttons, and a\nbrake-handle style\nSLOW (Mode) button.",
+	"RUN (B), tucked\nbetween SPIN (A)\nand JUMP (C) action\nbuttons, and SLOW\n(Y) above run.",
+	"RUN (B), tucked\nbeside JUMP (C)\nand under SPIN (Y),\nand a brake-handle\nstyle SLOW (Mode)\nbutton.",
+	"RUN (B), tucked\nbetween SLOW (A)\nand JUMP (C)\nbuttons, and under\nSPIN (Y).",
+	"RUN (C), tucked\nbeside JUMP (B)\nand under SPIN (Z),\nand a brake-handle\nstyle SLOW (Mode)\nbutton.",
+	"RUN (C), tucked\nbeside JUMP (B)\nand under SLOW (Z)."
 };
 
 void UpdateControllerInputs(void)
@@ -929,20 +940,20 @@ void ShowControllerButtons(void)
 
 		// Draw the button color-coding table.
 		// Note: Colormap entries for CTRLCOLR are 16 colors each, as opposed to the usual 256.
-		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOLR"), 144, 3, (controltype<<4) + ((19)*256) - 128);
+		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOLR"), 152, 3, (controltype<<4) + ((19)*256) - 128);
 
 		// Draw the A-B-C buttons.
-		DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-16+0, 128-16-0, NULL, NULL);
-		DrawJagobjLump(W_GetNumForName("CTRL6BB"), 176-16+34, 128-16-18, NULL, NULL);
-		DrawJagobjLump(W_GetNumForName("CTRL6BC"), 176-16+69+2, 128-16-29, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-8+0, 128-16-0, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BB"), 176-8+34, 128-16-18, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BC"), 176-8+69+2, 128-16-29, NULL, NULL);
 
 		// Draw the Mode button.
-		DrawJagobjLump(W_GetNumForName("CTRL6BM"), 176-30+72, 128-23-96, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BM"), 176-22+72, 128-23-96, NULL, NULL);
 
 		// Draw the X-Y-Z buttons.
-		DrawJagobjLump(W_GetNumForName("CTRL6BX"), 176-12-12, 128-12-39, NULL, NULL);
-		DrawJagobjLump(W_GetNumForName("CTRL6BY"), 176-12+18, 128-12-55, NULL, NULL);
-		DrawJagobjLump(W_GetNumForName("CTRL6BZ"), 176-12+49+2, 128-12-62, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BX"), 176-4-12, 128-12-39, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BY"), 176-4+18, 128-12-55, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BZ"), 176-4+49+2, 128-12-62, NULL, NULL);
 
 		char *strButtonA;
 		char *strButtonB;
@@ -978,15 +989,27 @@ void ShowControllerButtons(void)
 			}
 		}
 
-		V_DrawStringCenter(&menuFont, 176+0+8, 128-16-0+36, strButtonA);
-		V_DrawStringCenter(&menuFont, 176+34+8, 128-16-18+36, strButtonB);
-		V_DrawStringCenter(&menuFont, 176+69+8, 128-16-29+36, strButtonC);
+		V_DrawStringCenter(&menuFont, 176+0+16, 128-16-0+36, strButtonA);
+		V_DrawStringCenter(&menuFont, 176+34+16, 128-16-18+36, strButtonB);
+		V_DrawStringCenter(&menuFont, 176+69+16, 128-16-29+36, strButtonC);
 
-		V_DrawStringCenter(&menuFont, 176+72+24, 128-23-96+8, strButtonMode);
+		V_DrawStringCenter(&menuFont, 176+72+32, 128-23-96+8, strButtonMode);
 
-		V_DrawStringCenter(&menuFont, 176-12-12, 128-12-39-12, strButtonX);
-		V_DrawStringCenter(&menuFont, 176+18-4, 128-12-55-12, strButtonY);
-		V_DrawStringCenter(&menuFont, 176+49+4, 128-12-62-12, strButtonZ);
+		V_DrawStringCenter(&menuFont, 176-12-4, 128-12-39-12, strButtonX);
+		V_DrawStringCenter(&menuFont, 176+18+4, 128-12-55-12, strButtonY);
+		V_DrawStringCenter(&menuFont, 176+49+12, 128-12-62-12, strButtonZ);
+
+		V_DrawStringLeft(&menuFont, 16, 96, controllerDescription6B[controltype]);
+
+		if (controltype == 0) {
+			V_DrawStringLeft(&menuFont, 16, 80, "SAXMAN'S CHOICE:");
+		}
+		else if (controltype == 1) {
+			V_DrawStringLeft(&menuFont, 16, 80, "SSNTAILS' CHOICE:");
+		}
+		else {
+			V_DrawStringLeft(&menuFont, 16, 80, "EMPHASIS:");
+		}
 	}
 	else if (controller_id == 8) {
 		// Dempa Micom Soft XE-1AP analog controller
