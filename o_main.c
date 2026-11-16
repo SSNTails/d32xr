@@ -1,6 +1,6 @@
 /* o_main.c -- options menu */
 
-#include "doomdef.h"
+#include "o_local.h"
 #include "p_local.h"
 #include "p_camera.h"
 #include "st_main.h"
@@ -8,6 +8,7 @@
 #ifdef MARS
 #include "mars.h"
 #endif
+
 
 #define MOVEWAIT		(I_IsPAL() ? TICVBLS*5 : TICVBLS*6)
 #define STARTY		26
@@ -94,21 +95,8 @@ typedef struct
 	const char *name;
 } menuscreen_t;
 
-typedef enum
-{
-	ms_none,
-	ms_main,
-	ms_game,
-	ms_controls,
-	ms_audio,
-	ms_video,
-	ms_help,
-
-	NUMMENUSCREENS
-} screenpos_t;
-
 static menuscreen_t menuscreen[NUMMENUSCREENS];
-static VINT screenpos;
+VINT screenpos;
 
 /*
 ===============
@@ -855,8 +843,13 @@ const uint16_t controllerMapXE[2][7] = {
 	{	XE_BT_A,	XE_BT_B,	XE_BT_C,	XE_BT_D,	XE_BT_B_PRIME,	XE_BT_A_PRIME,	XE_BT_E1	}	// 1
 };
 
+const char *controllerDescription3B[2] = {
+	"JUMP (C), SPIN (B).",
+	"JUMP (B), SPIN (C)."
+};
+
 const char *controllerDescription6B[8] = {
-	"JUMP(C) beside\nSPIN (B).",
+	"JUMP (C) beside\nSPIN (B).",
 	"RUN (Y), tucked\nbetween PAN L (X)\nand PAN R (Z), and\nabove JUMP (B).",
 	"RUN (B), tucked\nbetween SPIN (A)\nand JUMP (C) action\nbuttons, and a\nbrake-handle style\nSLOW (Mode) button.",
 	"RUN (B), tucked\nbetween SPIN (A)\nand JUMP (C) action\nbuttons, and SLOW\n(Y) above run.",
@@ -864,6 +857,11 @@ const char *controllerDescription6B[8] = {
 	"RUN (B), tucked\nbetween SLOW (A)\nand JUMP (C)\nbuttons, and under\nSPIN (Y).",
 	"RUN (C), tucked\nbeside JUMP (B)\nand under SPIN (Z),\nand a brake-handle\nstyle SLOW (Mode)\nbutton.",
 	"RUN (C), tucked\nbeside JUMP (B)\nand under SLOW (Z)."
+};
+
+const char *controllerDescriptionXE[2] = {
+	"JUMP (A) and SPIN (B) on the right;\nRUN (C) and SLOW (D) on the left.",
+	"JUMP (A) and SPIN (C) in the front;\nRUN (B) and SLOW (D) in the back."
 };
 
 void UpdateControllerInputs(void)
@@ -939,8 +937,8 @@ void ShowControllerButtons(void)
 		// Sega 6-button arcade pad
 
 		// Draw the button color-coding table.
-		// Note: Colormap entries for CTRLCOLR are 16 colors each, as opposed to the usual 256.
-		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOLR"), 152, 3, (controltype<<4) + ((19)*256) - 128);
+		// Note: Colormap entries for CTRLCOL6 are 16 colors each, as opposed to the usual 256.
+		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOL6"), 152, 3, (controltype<<4) + ((19)*256) - 128);
 
 		// Draw the A-B-C buttons.
 		DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-8+0, 128-16-0, NULL, NULL);
@@ -1014,9 +1012,13 @@ void ShowControllerButtons(void)
 	else if (controller_id == 8) {
 		// Dempa Micom Soft XE-1AP analog controller
 
+		// Draw the button color-coding table.
+		// Note: Colormap entries for CTRLCOLX are 16 colors each, as opposed to the usual 256.
+		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOLX"), 114, 90, (controltype<<4) + ((19)*256) + ((8)*16) - 128);
+
 		// Draw the A-B-C-D buttons.
-		DrawJagobjLump(W_GetNumForName("CTRLXBCD"), 96, 56, NULL, NULL);
-		DrawJagobjLump(W_GetNumForName("CTRLXBAB"), 224, 56, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRLXBCD"), 48, 80, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRLXBAB"), 192, 80, NULL, NULL);
 
 		char *strButtonA;
 		char *strButtonB;
@@ -1040,10 +1042,12 @@ void ShowControllerButtons(void)
 			}
 		}
 
-		V_DrawStringCenter(&menuFont, 176, 72, strButtonC);
-		V_DrawStringCenter(&menuFont, 176, 112, strButtonD);
-		V_DrawStringCenter(&menuFont, 220, 72, strButtonA);
-		V_DrawStringCenter(&menuFont, 220, 112, strButtonB);
+		V_DrawStringCenter(&menuFont, 128, 96, strButtonC);
+		V_DrawStringCenter(&menuFont, 128, 136, strButtonD);
+		V_DrawStringCenter(&menuFont, 192, 96, strButtonA);
+		V_DrawStringCenter(&menuFont, 192, 136, strButtonB);
+
+		V_DrawStringLeft(&menuFont, 16, 48, controllerDescriptionXE[controltype]);
 	}
 	else {
 		// Sega 3-button control pad
@@ -1077,6 +1081,8 @@ void ShowControllerButtons(void)
 		V_DrawStringCenter(&menuFont, 176+0+8, 128-16-0, strButtonA);
 		V_DrawStringCenter(&menuFont, 176+34+8, 128-16-18, strButtonB);
 		V_DrawStringCenter(&menuFont, 176+69+8, 128-16-29, strButtonC);
+
+		V_DrawStringLeft(&menuFont, 16, 48, controllerDescription3B[controltype]);
 	}
 }
 
