@@ -682,7 +682,7 @@ void Mars_DetectInputDevices(void)
 					// Standard 3/6 button controller mapping for demos.
 					button_spin = BT_B;
 					button_accelerate = BT_Y;
-					button_decelerate = 0;
+					button_decelerate = BT_MODE;
 					button_pan_left = BT_X;
 					button_pan_right = BT_Z;
 					button_start = BT_START;
