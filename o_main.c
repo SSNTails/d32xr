@@ -880,6 +880,7 @@ void UpdateControllerInputs(void)
 			button_decelerate = controllerMap3B[controltype][3];
 			button_pan_left = controllerMap3B[controltype][4];
 			button_pan_right = controllerMap3B[controltype][5];
+			button_look = controllerMap3B[controltype][6];
 #ifdef SHOW_DISCLAIMER
 			button_cheat = 0;
 #else
@@ -900,6 +901,7 @@ void UpdateControllerInputs(void)
 			button_decelerate = controllerMap6B[controltype][3];
 			button_pan_left = controllerMap6B[controltype][4];
 			button_pan_right = controllerMap6B[controltype][5];
+			button_look = controllerMap6B[controltype][6];
 #ifdef SHOW_DISCLAIMER
 			button_cheat = 0;
 #else
@@ -920,6 +922,7 @@ void UpdateControllerInputs(void)
 			button_decelerate = controllerMapXE[controltype][3];
 			button_pan_left = controllerMapXE[controltype][4];
 			button_pan_right = controllerMapXE[controltype][5];
+			button_look = controllerMapXE[controltype][6];
 #ifdef SHOW_DISCLAIMER
 			button_cheat = 0;
 #else

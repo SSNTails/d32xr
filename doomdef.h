@@ -1388,11 +1388,12 @@ enum
 	BT_ACTION_BRAKE			= (1 << 23),
 	BT_ACTION_CAMLEFT		= (1 << 24),
 	BT_ACTION_CAMRIGHT		= (1 << 25),
-	BT_ACTION_FLIP			= (1 << 26),
+	BT_ACTION_LOOK			= (1 << 26),
 	BT_ACTION_START			= (1 << 27),
 	BT_ACTION_MODE			= (1 << 28),
 	BT_ACTION_MENU_NEXT		= (1 << 29),
 	BT_ACTION_MENU_BACK		= (1 << 30),
+	BT_ACTION_CHEAT			= (1 << 31),
 
 	BT_LMBTN		= SEGA_CTRL_LMB,
 	BT_RMBTN		= SEGA_CTRL_RMB,
@@ -1411,6 +1412,7 @@ extern uint16_t button_pan_left;
 extern uint16_t button_pan_right;
 extern uint16_t button_start;
 extern uint16_t button_mode;
+extern uint16_t button_look;
 extern uint16_t button_cheat;
 extern uint16_t button_menu_next;
 extern uint16_t button_menu_back;
@@ -1423,10 +1425,7 @@ typedef enum
 	NUMCONTROLOPTIONS,
 } control_t;
 
-/* action buttons can be set to BT_A, BT_B, or BT_C */
-/* strafe and use should be set to the same thing */
-extern unsigned configuration[NUMCONTROLOPTIONS][3];
-extern	VINT	controltype;				/* 0 to 5 */
+extern	VINT	controltype;
 extern	boolean	splitscreen;
 
 extern	VINT	sfxvolume, musicvolume;		/* range from 0 to 255 */

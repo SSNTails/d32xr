@@ -58,15 +58,6 @@ int 		ticstart;
 
 VINT		controltype = 0;
 
-unsigned configuration[NUMCONTROLOPTIONS][3] =
-{
-#ifdef SHOW_DISCLAIMER
-	{BT_ACTION_SPIN, BT_ACTION_JUMP, BT_ACTION_SPIN},
-#else
-	{BT_ACTION_FLIP, BT_ACTION_JUMP, BT_ACTION_SPIN},
-#endif
-};
-
 /*============================================================================ */
 
 
@@ -370,6 +361,7 @@ uint16_t button_pan_left;
 uint16_t button_pan_right;
 uint16_t button_start;
 uint16_t button_mode;
+uint16_t button_look;
 uint16_t button_cheat;
 uint16_t button_menu_next;
 uint16_t button_menu_back;

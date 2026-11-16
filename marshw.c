@@ -110,7 +110,6 @@ char Mars_FramebuffersFlipped(void)
 void Mars_InitLineTable(void)
 {
 	int j;
-	int blank;
 	int offset = 0; // 224p or 240p
 	volatile unsigned short* lines = &MARS_FRAMEBUFFER;
 
@@ -689,7 +688,8 @@ void Mars_DetectInputDevices(void)
 					button_mode = BT_MODE;
 					button_menu_next = BT_B;
 					button_menu_back = BT_A;
-					button_jump = BT_A | BT_C;
+					button_jump = BT_C;
+					button_look = BT_A;
 					button_cheat = 0;
 				}
 			}
