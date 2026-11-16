@@ -1302,16 +1302,13 @@ void DRAW_Compatibility (void)
 #ifdef SHOW_DISCLAIMER
 int TIC_Disclaimer(void)
 {
-	if (++screenCount > 600)
-		return 1;
+	screenCount++;
 
-	if (screenCount == 540)
-	{
-		// Set to totally black
-		R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+	if (screenCount > 540) {
+		return ga_closedisclaimer;
 	}
 
-	return 0;
+	return ga_nothing;
 }
 
 void START_Disclaimer(void)
@@ -1338,6 +1335,8 @@ void START_Disclaimer(void)
 
 void STOP_Disclaimer (void)
 {
+	// Set to totally black
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
 }
 
 const unsigned char key[] = { 0x78, 0x11, 0xB6, 0x2A, 0x48, 0x6A, 0x30, 0xA7 };

@@ -224,6 +224,7 @@ typedef enum
 	ga_backtotitle,
 	ga_specialstageexit,
 	ga_closeprompt,
+	ga_closedisclaimer,
 	ga_titleexpired,
 	ga_demoending,
 	ga_showcredits,
