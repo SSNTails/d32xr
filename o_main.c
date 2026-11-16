@@ -820,13 +820,13 @@ void O_Drawer (void)
 }
 
 const uint16_t controllerMap3B[2][7] = {
-	//	jump	spin	run		slow		pan l	pan r	cheat
+	//	jump	spin	run		slow		pan l	pan r	look/cheat
 	{	BT_C,	BT_B,	BT_Z,	BT_MODE,	BT_X,	BT_Y,	BT_A	},	// 0
 	{	BT_B,	BT_C,	BT_Y,	BT_MODE,	BT_X,	BT_Z,	BT_A	}	// 1
 };
 
 const uint16_t controllerMap6B[8][7] = {
-	//	jump	spin	run		slow		pan l	pan r	cheat
+	//	jump	spin	run		slow		pan l	pan r	look/cheat
 	{	BT_C,	BT_B,	BT_Z,	BT_MODE,	BT_X,	BT_Y,	BT_A	},	// 0
 	{	BT_B,	BT_C,	BT_Y,	BT_MODE,	BT_X,	BT_Z,	BT_A	},	// 1
 	{	BT_C,	BT_A,	BT_B,	BT_MODE,	BT_X,	BT_Z,	BT_Y	},	// 2
@@ -838,7 +838,7 @@ const uint16_t controllerMap6B[8][7] = {
 };
 
 const uint16_t controllerMapXE[2][7] = {
-	//	jump		spin		run			slow		pan l			pan r			cheat
+	//	jump		spin		run			slow		pan l			pan r			look/cheat
 	{	XE_BT_A,	XE_BT_C,	XE_BT_B,	XE_BT_D,	XE_BT_B_PRIME,	XE_BT_A_PRIME,	XE_BT_E1	},	// 0
 	{	XE_BT_A,	XE_BT_B,	XE_BT_C,	XE_BT_D,	XE_BT_B_PRIME,	XE_BT_A_PRIME,	XE_BT_E1	}	// 1
 };

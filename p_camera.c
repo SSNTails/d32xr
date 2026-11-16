@@ -242,6 +242,9 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	if (analog_t > 0x1F || analog_t < -0x1F) {
 		camdist -= D_abs(analog_t << 15);
 	}
+	else if (looky != 0) {
+		camdist -= D_abs(looky << 15);
+	}
 
    if (!(player->pflags & PF_MACEHANG) && !player->exiting && player->stillTimer > TICRATE/2)
       camspeed >>= 2;
@@ -295,6 +298,14 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	}
 	else if (analog_t < -0x1F) {
 		z -= ((analog_t << 16));
+	}
+	else if (looky != 0) {
+		if (looky > 0) {
+			z -= ((looky << 15) + (looky << 14));
+		}
+		else if (looky < 0) {
+			z -= ((looky << 16));
+		}
 	}
 
 	if (thiscam->z < thiscam->floorz)
@@ -369,7 +380,7 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	if (analog_t > 0x1F || analog_t < -0x1F) {
 		angle += (analog_t << 22);
 	}
-	else {
+	else if (looky != 0) {
 		angle += (looky << 22);
 	}
 

@@ -743,16 +743,16 @@ void P_BuildMove(player_t *player)
 			}
 		}
 
-		if (analog_y < -0x1F || (analog_y < 0 && (analog_x < -0x1F || analog_x > 0x1F))) {
-			// Analog Y position above deadzone, or Y is above center while X is outside deadzone.
-			player->forwardmove -= ((FRACUNIT >> 7) * analog_y);
-		}
-		else if (analog_y > 0x1F || (analog_y > 0 && (analog_x < -0x1F || analog_x > 0x1F))) {
-			// Analog Y position below deadzone, or Y is above center while X is outside deadzone.
-			player->forwardmove -= (((FRACUNIT >> 7) * analog_y) + (FRACUNIT >> 7));
-		}
-		else if (!(buttons & BT_ACTION_LOOK && button_cheat == 0)) {
-			if (buttons & BT_ACTION_UP) {
+		if (!(buttons & BT_ACTION_LOOK && button_cheat == 0)) {
+			if (analog_y < -0x1F || (analog_y < 0 && (analog_x < -0x1F || analog_x > 0x1F))) {
+				// Analog Y position above deadzone, or Y is above center while X is outside deadzone.
+				player->forwardmove -= ((FRACUNIT >> 7) * analog_y);
+			}
+			else if (analog_y > 0x1F || (analog_y > 0 && (analog_x < -0x1F || analog_x > 0x1F))) {
+				// Analog Y position below deadzone, or Y is above center while X is outside deadzone.
+				player->forwardmove -= (((FRACUNIT >> 7) * analog_y) + (FRACUNIT >> 7));
+			}
+			else if (buttons & BT_ACTION_UP) {
 				player->forwardmove += FRACUNIT;
 			}
 			else if (buttons & BT_ACTION_DOWN) {
