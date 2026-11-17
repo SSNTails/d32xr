@@ -676,22 +676,34 @@ void Mars_DetectInputDevices(void)
 		// Only read buttons on the first controller.
 		if (i == 0) {
 			if (IsDemo()) {
-				val |= 0xF000;
-				if ((previous_buttons[i] & 0xF000) != 0xF000) {
-					// Standard 3/6 button controller mapping for demos.
-					button_spin = BT_B;
-					button_accelerate = BT_Y;
-					button_decelerate = BT_MODE;
-					button_pan_left = BT_X;
-					button_pan_right = BT_Z;
-					button_start = BT_START;
-					button_mode = BT_MODE;
-					button_menu_next = BT_B;
-					button_menu_back = BT_A;
-					button_jump = BT_C;
-					button_look = BT_A;
-					button_cheat = 0;
+				int type = val >> 12;
+				if (type <= 1) {
+					if (!(val & BT_START)) {
+						val |= 0xF000;
+					}
 				}
+				else if (type == 8) {
+					if (!(val & XE_BT_START)) {
+						val |= 0xF000;
+					}
+				}
+				else {
+					val |= 0xF000;
+				}
+
+				// Standard 3/6 button controller mapping for demos.
+				button_spin = BT_B;
+				button_accelerate = BT_Y;
+				button_decelerate = BT_MODE;
+				button_pan_left = BT_X;
+				button_pan_right = BT_Z;
+				button_start = BT_START;
+				button_mode = BT_MODE;
+				button_menu_next = BT_B;
+				button_menu_back = BT_A;
+				button_jump = BT_C;
+				button_look = BT_A;
+				button_cheat = 0;
 			}
 
 			next_buttons_pressed[i] = 0;
