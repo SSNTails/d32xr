@@ -37,7 +37,6 @@ const uint8_t cheat_metrics_sequence[CHEAT_METRICS_SEQ_LENGTH] = {
 	};
 
 boolean		splitscreen = false;
-VINT		controltype = 0;		/* determine settings for BT_* */
 
 boolean		sky_md_layer = false;
 boolean		sky_32x_layer = false;
@@ -57,14 +56,7 @@ int 		ticstart;
 	int			realtic;
 #endif
 
-unsigned configuration[NUMCONTROLOPTIONS][3] =
-{
-#ifdef SHOW_DISCLAIMER
-	{BT_ACTION_SPIN, BT_ACTION_JUMP, BT_ACTION_SPIN},
-#else
-	{BT_ACTION_FLIP, BT_ACTION_JUMP, BT_ACTION_SPIN},
-#endif
-};
+VINT		controltype = 0;
 
 /*============================================================================ */
 
@@ -360,6 +352,7 @@ int8_t	ticanalogy[MAXPLAYERS];
 int8_t	ticanalogt[MAXPLAYERS];
 int8_t	ticrealanalogx, ticrealanalogy, ticrealanalogt;
 
+uint8_t	controller_id = 0xF;
 uint16_t button_jump;
 uint16_t button_spin;
 uint16_t button_accelerate;
@@ -368,6 +361,7 @@ uint16_t button_pan_left;
 uint16_t button_pan_right;
 uint16_t button_start;
 uint16_t button_mode;
+uint16_t button_look;
 uint16_t button_cheat;
 uint16_t button_menu_next;
 uint16_t button_menu_back;
@@ -1300,16 +1294,13 @@ void DRAW_Compatibility (void)
 #ifdef SHOW_DISCLAIMER
 int TIC_Disclaimer(void)
 {
-	if (++screenCount > 600)
-		return 1;
+	screenCount++;
 
-	if (screenCount == 540)
-	{
-		// Set to totally black
-		R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+	if (screenCount > 540) {
+		return ga_closedisclaimer;
 	}
 
-	return 0;
+	return ga_nothing;
 }
 
 void START_Disclaimer(void)
@@ -1336,6 +1327,8 @@ void START_Disclaimer(void)
 
 void STOP_Disclaimer (void)
 {
+	// Set to totally black
+	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
 }
 
 const unsigned char key[] = { 0x78, 0x11, 0xB6, 0x2A, 0x48, 0x6A, 0x30, 0xA7 };

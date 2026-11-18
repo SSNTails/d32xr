@@ -224,6 +224,7 @@ typedef enum
 	ga_backtotitle,
 	ga_specialstageexit,
 	ga_closeprompt,
+	ga_closedisclaimer,
 	ga_titleexpired,
 	ga_demoending,
 	ga_showcredits,
@@ -758,6 +759,8 @@ __attribute__((aligned(2)))
 #endif
 extern	gametype_t	netgame;
 
+extern	VINT		controltype;
+
 extern	boolean		playeringame[MAXPLAYERS];
 extern	VINT		consoleplayer;		/* player taking events and displaying */
 extern	player_t	players[MAXPLAYERS];
@@ -1232,6 +1235,9 @@ void O_Control (player_t *player);
 void O_Drawer (void);
 void O_SetButtonsFromControltype(void);
 
+void UpdateControllerInputs(void);
+void ShowControllerButtons(void);
+
 
 /*----- */
 /*STATUS */
@@ -1382,11 +1388,12 @@ enum
 	BT_ACTION_BRAKE			= (1 << 23),
 	BT_ACTION_CAMLEFT		= (1 << 24),
 	BT_ACTION_CAMRIGHT		= (1 << 25),
-	BT_ACTION_FLIP			= (1 << 26),
+	BT_ACTION_LOOK			= (1 << 26),
 	BT_ACTION_START			= (1 << 27),
 	BT_ACTION_MODE			= (1 << 28),
 	BT_ACTION_MENU_NEXT		= (1 << 29),
 	BT_ACTION_MENU_BACK		= (1 << 30),
+	BT_ACTION_CHEAT			= (1 << 31),
 
 	BT_LMBTN		= SEGA_CTRL_LMB,
 	BT_RMBTN		= SEGA_CTRL_RMB,
@@ -1396,6 +1403,7 @@ enum
 
 #endif
 
+extern uint8_t	controller_id;
 extern uint16_t button_jump;
 extern uint16_t button_spin;
 extern uint16_t button_accelerate;
@@ -1404,6 +1412,7 @@ extern uint16_t button_pan_left;
 extern uint16_t button_pan_right;
 extern uint16_t button_start;
 extern uint16_t button_mode;
+extern uint16_t button_look;
 extern uint16_t button_cheat;
 extern uint16_t button_menu_next;
 extern uint16_t button_menu_back;
@@ -1416,10 +1425,7 @@ typedef enum
 	NUMCONTROLOPTIONS,
 } control_t;
 
-/* action buttons can be set to BT_A, BT_B, or BT_C */
-/* strafe and use should be set to the same thing */
-extern unsigned configuration[NUMCONTROLOPTIONS][3];
-extern	VINT	controltype;				/* 0 to 5 */
+extern	VINT	controltype;
 extern	boolean	splitscreen;
 
 extern	VINT	sfxvolume, musicvolume;		/* range from 0 to 255 */
@@ -1485,6 +1491,7 @@ void DrawMaskedGraphic2(byte *data, int x, int y, int src_y);
 void DrawMaskedGraphic3(byte *data, int x, int y, int src_y, int colormap);
 void DrawMaskedGraphicWithColormap(byte *data, int x, int y, int colormap);
 void DrawMaskedGraphicLump(int lumpnum, int x, int y);
+void DrawMaskedGraphicLumpWithColormap(int lumpnum, int x, int y, int colormap);
 void DrawFillRect (int x, int y, int w, int h, int c);
 void DrawFillRect_15bpp(int x, int y, int w, int h, pixel_t c);
 void DrawLine (int x, int y, int length, int c, boolean vertical);

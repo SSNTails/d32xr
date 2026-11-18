@@ -5,6 +5,7 @@
 #include "v_font.h"
 #include "st_inter.h"
 #include <stdio.h>
+#include "o_local.h"
 #include "r_local.h"
 #include "mars.h"
 #include "p_camera.h"
@@ -585,29 +586,31 @@ static void ST_Drawer_ (stbar_t* sb)
 		const int minutes = worldTime/(60*TICRATE);
 		const int seconds = (worldTime/(TICRATE))%60;
 
-		if (gametic < 94) {
-			const int interval = gametic-89;
-			const int offset_x = 16 + ((6-interval) << 3);
-			DrawScaledJagobj(W_POINTLUMPNUM(score), offset_x, 10+((6-interval)<<1), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
-			DrawScaledJagobj(W_POINTLUMPNUM(time), offset_x, 26+((6-interval)<<2), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
-			DrawScaledJagobj(W_POINTLUMPNUM(rings), offset_x, 42+((6-interval)<<3), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
-		}
-		else {
-			DrawJagobjLump(score, 16, 10, NULL, NULL);
-			V_DrawValuePaddedRight(&hudNumberFont, 16 + 120, 10, sb->score, 0);
-			DrawJagobjLump(time, 16, 26, NULL, NULL);
-			V_DrawValuePaddedRight(&hudNumberFont, 72, 26, minutes, 0);
-			DrawJagobjLump(timecolon, 72, 26, NULL, NULL);
-			V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26, seconds, 2);
-			if (sb->rings <= 0 && (gametic / 4 & 1))
-				DrawJagobjLumpWithColormap(rings, 16, 42, NULL, NULL, YELLOWTEXTCOLORMAP);
-			else
-				DrawJagobjLump(rings, 16, 42, NULL, NULL);
-			V_DrawValuePaddedRight(&hudNumberFont, 96, 42, sb->rings, 0);
-			DrawJagobjLump(face, 16, viewportHeight-24, NULL, NULL);
-			V_DrawStringLeftWithColormap(&menuFont, 16 + 20, viewportHeight-24, "SONIC", YELLOWTEXTCOLORMAP);
-			DrawJagobjLump(livex, 16 + 22, viewportHeight-16+2, NULL, NULL);
-			V_DrawValuePaddedRight(&menuFont, 16 + 58, viewportHeight-16, sb->lives, 0);
+		if (!optionsMenuOn || (screenpos <= ms_game)) {
+			if (gametic < 94) {
+				const int interval = gametic-89;
+				const int offset_x = 16 + ((6-interval) << 3);
+				DrawScaledJagobj(W_POINTLUMPNUM(score), offset_x, 10+((6-interval)<<1), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+				DrawScaledJagobj(W_POINTLUMPNUM(time), offset_x, 26+((6-interval)<<2), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+				DrawScaledJagobj(W_POINTLUMPNUM(rings), offset_x, 42+((6-interval)<<3), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+			}
+			else {
+				DrawJagobjLump(score, 16, 10, NULL, NULL);
+				V_DrawValuePaddedRight(&hudNumberFont, 16 + 120, 10, sb->score, 0);
+				DrawJagobjLump(time, 16, 26, NULL, NULL);
+				V_DrawValuePaddedRight(&hudNumberFont, 72, 26, minutes, 0);
+				DrawJagobjLump(timecolon, 72, 26, NULL, NULL);
+				V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26, seconds, 2);
+				if (sb->rings <= 0 && (gametic / 4 & 1))
+					DrawJagobjLumpWithColormap(rings, 16, 42, NULL, NULL, YELLOWTEXTCOLORMAP);
+				else
+					DrawJagobjLump(rings, 16, 42, NULL, NULL);
+				V_DrawValuePaddedRight(&hudNumberFont, 96, 42, sb->rings, 0);
+				DrawJagobjLump(face, 16, viewportHeight-24, NULL, NULL);
+				V_DrawStringLeftWithColormap(&menuFont, 16 + 20, viewportHeight-24, "SONIC", YELLOWTEXTCOLORMAP);
+				DrawJagobjLump(livex, 16 + 22, viewportHeight-16+2, NULL, NULL);
+				V_DrawValuePaddedRight(&menuFont, 16 + 58, viewportHeight-16, sb->lives, 0);
+			}
 		}
 #endif
 	}

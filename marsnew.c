@@ -153,29 +153,27 @@ int Mars_ConvGamepadButtons(int ctrl, int analog_data)
 		newc |= BT_ACTION_MENU_BACK;
 
 	if (ctrl & button_mode)
-	{
 		newc |= BT_ACTION_MODE;
-	}
-	else
-	{
-		if (ctrl & button_cheat)
-			newc |= BT_ACTION_FLIP; //configuration[controltype][0];
 
-		if (ctrl & button_jump)
-			newc |= BT_ACTION_JUMP; //configuration[controltype][1];
-		if (ctrl & button_spin)
-			newc |= BT_ACTION_SPIN; //configuration[controltype][2];
+	if (ctrl & button_cheat)
+		newc |= BT_ACTION_CHEAT;
 
-		if (ctrl & button_accelerate)
-			newc |= BT_ACTION_GASPEDAL;
-		if (ctrl & button_decelerate)
-			newc |= BT_ACTION_BRAKE;
+	if (ctrl & button_jump)
+		newc |= BT_ACTION_JUMP;
+	if (ctrl & button_spin)
+		newc |= BT_ACTION_SPIN;
 
-		if (ctrl & button_pan_left)
-			newc |= BT_ACTION_CAMLEFT;
-		if (ctrl & button_pan_right)
-			newc |= BT_ACTION_CAMRIGHT;
-	}
+	if (ctrl & button_accelerate)
+		newc |= BT_ACTION_GASPEDAL;
+	if (ctrl & button_decelerate)
+		newc |= BT_ACTION_BRAKE;
+
+	if (ctrl & button_pan_left)
+		newc |= BT_ACTION_CAMLEFT;
+	if (ctrl & button_pan_right)
+		newc |= BT_ACTION_CAMRIGHT;
+	if (ctrl & button_look)
+		newc |= BT_ACTION_LOOK;
 
 	if (!IsDemo()) {
 		newc |= (ctrl & 0xF000);	// Keep the controller type.

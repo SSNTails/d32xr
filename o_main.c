@@ -1,6 +1,6 @@
 /* o_main.c -- options menu */
 
-#include "doomdef.h"
+#include "o_local.h"
 #include "p_local.h"
 #include "p_camera.h"
 #include "st_main.h"
@@ -8,6 +8,7 @@
 #ifdef MARS
 #include "mars.h"
 #endif
+
 
 #define MOVEWAIT		(I_IsPAL() ? TICVBLS*5 : TICVBLS*6)
 #define STARTY		26
@@ -21,6 +22,7 @@
 typedef enum
 {
 	mi_game, 
+	mi_controls,
 	mi_audio,
 	mi_video,
 	mi_camerapan,
@@ -93,20 +95,8 @@ typedef struct
 	const char *name;
 } menuscreen_t;
 
-typedef enum
-{
-	ms_none,
-	ms_main,
-	ms_game,
-	ms_audio,
-	ms_video,
-	ms_help,
-
-	NUMMENUSCREENS
-} screenpos_t;
-
 static menuscreen_t menuscreen[NUMMENUSCREENS];
-static VINT screenpos;
+VINT screenpos;
 
 /*
 ===============
@@ -145,27 +135,32 @@ void O_Init (void)
 	menuitem[mi_game].y = STARTY;
 	menuitem[mi_game].screen = ms_game;
 
+	menuitem[mi_controls].name = "CONTROLS";
+	menuitem[mi_controls].x = ITEMX;
+	menuitem[mi_controls].y = STARTY+ITEMSPACE;
+	menuitem[mi_controls].screen = ms_controls;
+
 	menuitem[mi_audio].name = "AUDIO";
 	menuitem[mi_audio].x = ITEMX;
-	menuitem[mi_audio].y = STARTY+ITEMSPACE;
+	menuitem[mi_audio].y = STARTY+ITEMSPACE*2;
 	menuitem[mi_audio].screen = ms_audio;
 
 	menuitem[mi_video].name = "VIDEO";
 	menuitem[mi_video].x = ITEMX;
-	menuitem[mi_video].y = STARTY+ITEMSPACE*2;
+	menuitem[mi_video].y = STARTY+ITEMSPACE*3;
 	menuitem[mi_video].screen = ms_video;
 
 	menuitem[mi_camerapan].name = "CAMERA";
 	menuitem[mi_camerapan].x = ITEMX;
-	menuitem[mi_camerapan].y = STARTY+ITEMSPACE*3;
+	menuitem[mi_camerapan].y = STARTY+ITEMSPACE*4;
 
 	menuitem[mi_spindash].name = "SPINDASH";
 	menuitem[mi_spindash].x = ITEMX;
-	menuitem[mi_spindash].y = STARTY+ITEMSPACE*4;
+	menuitem[mi_spindash].y = STARTY+ITEMSPACE*5;
 
 	menuitem[mi_help].name = "HELP / ABOUT";
 	menuitem[mi_help].x = ITEMX;
-	menuitem[mi_help].y = STARTY+ITEMSPACE*5;
+	menuitem[mi_help].y = STARTY+ITEMSPACE*6;
 	menuitem[mi_help].screen = ms_help;
 
 	menuitem[mi_soundvol].name = "Sfx volume";
@@ -209,10 +204,14 @@ void O_Init (void)
 	menuitem[mi_upscaler].x = ITEMX - 32;
 	menuitem[mi_upscaler].y = STARTY + ITEMSPACE * 4;
 
-
-	menuitem[mi_controltype].name = "Gamepad";
+	menuitem[mi_controltype].name = "TYPE";
 	menuitem[mi_controltype].x = ITEMX;
 	menuitem[mi_controltype].y = STARTY;
+
+
+	/*menuitem[mi_controltype].name = "Gamepad";
+	menuitem[mi_controltype].x = ITEMX;
+	menuitem[mi_controltype].y = STARTY;*/
 
 	menuitem[mi_strafebtns].name = "LR Strafe";
 	menuitem[mi_strafebtns].x = ITEMX;
@@ -222,6 +221,10 @@ void O_Init (void)
 	menuscreen[ms_main].name = "OPTIONS";
 	menuscreen[ms_main].firstitem = mi_game;
 	menuscreen[ms_main].numitems = mi_help - mi_game + 1;
+
+	menuscreen[ms_controls].name = "CONTROLS";
+	menuscreen[ms_controls].firstitem = mi_controltype;
+	menuscreen[ms_controls].numitems = 1;
 
 	menuscreen[ms_audio].name = "AUDIO";
 	menuscreen[ms_audio].firstitem = mi_soundvol;
@@ -433,6 +436,12 @@ void O_Control (player_t *player)
 			{
 				switch (itemno)
 				{
+				case mi_camerapan:
+					invertCamera = !invertCamera;
+					break;
+				case mi_spindash:
+					spindashPlayerOriented = !spindashPlayerOriented;
+					break;
 				case mi_soundvol:
 					sfxvolume = 64 * slider->curval / slider->maxval;
 					break;
@@ -446,12 +455,6 @@ void O_Control (player_t *player)
 					anamorphicview = slider->curval;
 					cameraTargetDistance = (anamorphicview ? CAM_DIST_ANAMORPHIC : CAM_DIST_NORMAL);
 					R_SetViewportSize(viewportNum);
-					break;
-				case mi_camerapan:
-					invertCamera = !invertCamera;
-					break;
-				case mi_spindash:
-					spindashPlayerOriented = !spindashPlayerOriented;
 					break;
 				default:
 					break;
@@ -487,7 +490,32 @@ void O_Control (player_t *player)
 				}
 			}
 
-			if (screenpos == ms_audio)
+			if (screenpos == ms_controls)
+			{
+				if (buttons & BT_ACTION_LEFT)
+				{
+					controltype--;
+					if (controller_id == 1) {
+						controltype &= 7;
+					}
+					else {
+						controltype &= 1;
+					}
+					UpdateControllerInputs();
+				}
+				if (buttons & BT_ACTION_RIGHT)
+				{
+					controltype++;
+					if (controller_id == 1) {
+						controltype &= 7;
+					}
+					else {
+						controltype &= 1;
+					}
+					UpdateControllerInputs();
+				}
+			}
+			else if (screenpos == ms_audio)
 			{
 				int oldmusictype = o_musictype;
 				int oldsfxdriver = o_sfxdriver;
@@ -562,8 +590,6 @@ void O_Control (player_t *player)
 			else if (screenpos == ms_video)
 			{
 				int oldanamorphicview = anamorphicview;
-				int oldHardwareOptimized = hardwareOptimized;
-				int oldUpscalerOptimized = upscalerOptimized;
 
 				if (buttons & BT_ACTION_RIGHT)
 				{
@@ -757,7 +783,7 @@ void O_Drawer (void)
 		}*/
 	}
 
-	if (screenpos == ms_video)
+	else if (screenpos == ms_video)
 	{
 /*		char tmp[32];
 		D_snprintf(tmp, sizeof(tmp), "%dx%d", viewportWidth, viewportHeight);
@@ -773,13 +799,293 @@ void O_Drawer (void)
 				upscalerOptimized ? "on" : "off");
 	}
 
-	if (screenpos == ms_help)
-		O_DrawHelp(58);
+	else if (screenpos == ms_controls)
+	{
+		const char typeNumberString[2] = {'1' + controltype, '\0'};
+		V_DrawStringLeft(&menuFont, menuitem[mi_controltype].x + 48, menuitem[mi_controltype].y,
+				typeNumberString);
 
-	if (screenpos == ms_main)
+		ShowControllerButtons();
+	}
+
+	else if (screenpos == ms_help) {
+		O_DrawHelp(58);
+	}
+
+	else if (screenpos == ms_main)
 	{
 		V_DrawStringLeft(&menuFont, menuitem[mi_camerapan].x + 80, menuitem[mi_camerapan].y, invertCamera ? ": INVERTED" : ": NORMAL");
 		V_DrawStringLeft(&menuFont, menuitem[mi_spindash].x + 80, menuitem[mi_spindash].y, spindashPlayerOriented ? ": PLAYER" : ": CAMERA");
+	}
+}
+
+const uint16_t controllerMap3B[2][7] = {
+	//	jump	spin	run		slow		pan l	pan r	look/cheat
+	{	BT_C,	BT_B,	BT_Z,	BT_MODE,	BT_X,	BT_Y,	BT_A	},	// 0
+	{	BT_B,	BT_C,	BT_Y,	BT_MODE,	BT_X,	BT_Z,	BT_A	}	// 1
+};
+
+const uint16_t controllerMap6B[8][7] = {
+	//	jump	spin	run		slow		pan l	pan r	look/cheat
+	{	BT_C,	BT_B,	BT_Z,	BT_MODE,	BT_X,	BT_Y,	BT_A	},	// 0
+	{	BT_B,	BT_C,	BT_Y,	BT_MODE,	BT_X,	BT_Z,	BT_A	},	// 1
+	{	BT_C,	BT_A,	BT_B,	BT_MODE,	BT_X,	BT_Z,	BT_Y	},	// 2
+	{	BT_C,	BT_A,	BT_B,	BT_Y,		BT_X,	BT_Z,	BT_MODE	},	// 3
+	{	BT_C,	BT_Y,	BT_B,	BT_MODE,	BT_X,	BT_Z,	BT_A	},	// 4
+	{	BT_C,	BT_Y,	BT_B,	BT_A,		BT_X,	BT_Z,	BT_MODE	},	// 5
+	{	BT_B,	BT_Z,	BT_C,	BT_MODE,	BT_X,	BT_Y,	BT_A	},	// 6
+	{	BT_B,	BT_A,	BT_C,	BT_Z,		BT_X,	BT_Y,	BT_MODE	}	// 7
+};
+
+const uint16_t controllerMapXE[2][7] = {
+	//	jump		spin		run			slow		pan l			pan r			look/cheat
+	{	XE_BT_A,	XE_BT_C,	XE_BT_B,	XE_BT_D,	XE_BT_B_PRIME,	XE_BT_A_PRIME,	XE_BT_E1	},	// 0
+	{	XE_BT_A,	XE_BT_B,	XE_BT_C,	XE_BT_D,	XE_BT_B_PRIME,	XE_BT_A_PRIME,	XE_BT_E1	}	// 1
+};
+
+const char *controllerDescription3B[2] = {
+	"JUMP (C), SPIN (B).",
+	"JUMP (B), SPIN (C)."
+};
+
+const char *controllerDescription6B[8] = {
+	"JUMP (C) beside\nSPIN (B).",
+	"RUN (Y), tucked\nbetween PAN L (X)\nand PAN R (Z), and\nabove JUMP (B).",
+	"RUN (B), tucked\nbetween SPIN (A)\nand JUMP (C) action\nbuttons, and a\nbrake-handle style\nSLOW (Mode) button.",
+	"RUN (B), tucked\nbetween SPIN (A)\nand JUMP (C) action\nbuttons, and SLOW\n(Y) above run.",
+	"RUN (B), tucked\nbeside JUMP (C)\nand under SPIN (Y),\nand a brake-handle\nstyle SLOW (Mode)\nbutton.",
+	"RUN (B), tucked\nbetween SLOW (A)\nand JUMP (C)\nbuttons, and under\nSPIN (Y).",
+	"RUN (C), tucked\nbeside JUMP (B)\nand under SPIN (Z),\nand a brake-handle\nstyle SLOW (Mode)\nbutton.",
+	"RUN (C), tucked\nbeside JUMP (B)\nand under SLOW (Z)."
+};
+
+const char *controllerDescriptionXE[2] = {
+	"JUMP (A) and SPIN (B) on the right;\nRUN (C) and SLOW (D) on the left.",
+	"JUMP (A) and SPIN (C) in the front;\nRUN (B) and SLOW (D) in the back."
+};
+
+void UpdateControllerInputs(void)
+{
+	switch (controller_id) {
+		case 0:
+			// Sega 3-button control pad
+			button_start = BT_START;
+			button_mode = 0;
+			button_menu_next = BT_B;
+			button_menu_back = BT_A;
+
+			button_jump = controllerMap3B[controltype][0];
+			button_spin = controllerMap3B[controltype][1];
+			button_accelerate = controllerMap3B[controltype][2];
+			button_decelerate = controllerMap3B[controltype][3];
+			button_pan_left = controllerMap3B[controltype][4];
+			button_pan_right = controllerMap3B[controltype][5];
+			button_look = controllerMap3B[controltype][6];
+#ifdef SHOW_DISCLAIMER
+			button_cheat = 0;
+#else
+			button_cheat = controllerMap3B[controltype][6];
+#endif
+			break;
+
+		case 1:
+			// Sega 6-button arcade pad
+			button_start = BT_START;
+			button_mode = BT_MODE;
+			button_menu_next = BT_B;
+			button_menu_back = BT_A;
+
+			button_jump = controllerMap6B[controltype][0];
+			button_spin = controllerMap6B[controltype][1];
+			button_accelerate = controllerMap6B[controltype][2];
+			button_decelerate = controllerMap6B[controltype][3];
+			button_pan_left = controllerMap6B[controltype][4];
+			button_pan_right = controllerMap6B[controltype][5];
+			button_look = controllerMap6B[controltype][6];
+#ifdef SHOW_DISCLAIMER
+			button_cheat = 0;
+#else
+			button_cheat = controllerMap6B[controltype][6];
+#endif
+			break;
+
+		case 8:
+			// Dempa Micom Soft XE-1AP analog controller
+			button_start = XE_BT_START;
+			button_mode = XE_BT_SELECT;
+			button_menu_next = XE_BT_A;
+			button_menu_back = XE_BT_B;
+
+			button_jump = controllerMapXE[controltype][0];
+			button_spin = controllerMapXE[controltype][1];
+			button_accelerate = controllerMapXE[controltype][2];
+			button_decelerate = controllerMapXE[controltype][3];
+			button_pan_left = controllerMapXE[controltype][4];
+			button_pan_right = controllerMapXE[controltype][5];
+			button_look = controllerMapXE[controltype][6];
+#ifdef SHOW_DISCLAIMER
+			button_cheat = 0;
+#else
+			button_cheat = controllerMapXE[controltype][6];
+#endif
+			break;
+	}
+}
+
+void ShowControllerButtons(void)
+{
+	const char *actionLabels[7] = { "JUMP", "SPIN", "RUN", "SLOW", "PAN L", "PAN R", "LOOK" };
+
+	if (controller_id == 1) {
+		// Sega 6-button arcade pad
+
+		// Draw the button color-coding table.
+		// Note: Colormap entries for CTRLCOL6 are 16 colors each, as opposed to the usual 256.
+		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOL6"), 152, 3, (controltype<<4) + ((19)*256) - 128);
+
+		// Draw the A-B-C buttons.
+		DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-8+0, 128-16-0, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BB"), 176-8+34, 128-16-18, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BC"), 176-8+69+2, 128-16-29, NULL, NULL);
+
+		// Draw the Mode button.
+		DrawJagobjLump(W_GetNumForName("CTRL6BM"), 176-22+72, 128-23-96, NULL, NULL);
+
+		// Draw the X-Y-Z buttons.
+		DrawJagobjLump(W_GetNumForName("CTRL6BX"), 176-4-12, 128-12-39, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BY"), 176-4+18, 128-12-55, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BZ"), 176-4+49+2, 128-12-62, NULL, NULL);
+
+		char *strButtonA;
+		char *strButtonB;
+		char *strButtonC;
+		char *strButtonMode;
+		char *strButtonX;
+		char *strButtonY;
+		char *strButtonZ;
+
+		for (int btn = 0; btn < 7; btn++) {
+			uint16_t buttonValue = controllerMap6B[controltype][btn];
+			char *actionString = (char *)actionLabels[btn];
+			if (buttonValue == BT_A) {
+				strButtonA = actionString;
+			}
+			else if (buttonValue == BT_B) {
+				strButtonB = actionString;
+			}
+			else if (buttonValue == BT_C) {
+				strButtonC = actionString;
+			}
+			else if (buttonValue == BT_MODE) {
+				strButtonMode = actionString;
+			}
+			else if (buttonValue == BT_X) {
+				strButtonX = actionString;
+			}
+			else if (buttonValue == BT_Y) {
+				strButtonY = actionString;
+			}
+			else if (buttonValue == BT_Z) {
+				strButtonZ = actionString;
+			}
+		}
+
+		V_DrawStringCenter(&menuFont, 176+0+16, 128-16-0+36, strButtonA);
+		V_DrawStringCenter(&menuFont, 176+34+16, 128-16-18+36, strButtonB);
+		V_DrawStringCenter(&menuFont, 176+69+16, 128-16-29+36, strButtonC);
+
+		V_DrawStringCenter(&menuFont, 176+72+32, 128-23-96+8, strButtonMode);
+
+		V_DrawStringCenter(&menuFont, 176-12-4, 128-12-39-12, strButtonX);
+		V_DrawStringCenter(&menuFont, 176+18+4, 128-12-55-12, strButtonY);
+		V_DrawStringCenter(&menuFont, 176+49+12, 128-12-62-12, strButtonZ);
+
+		V_DrawStringLeft(&menuFont, 16, 96, controllerDescription6B[controltype]);
+
+		if (controltype == 0) {
+			V_DrawStringLeft(&menuFont, 16, 80, "SAXMAN'S CHOICE:");
+		}
+		else if (controltype == 1) {
+			V_DrawStringLeft(&menuFont, 16, 80, "SSNTAILS' CHOICE:");
+		}
+		else {
+			V_DrawStringLeft(&menuFont, 16, 80, "EMPHASIS:");
+		}
+	}
+	else if (controller_id == 8) {
+		// Dempa Micom Soft XE-1AP analog controller
+
+		// Draw the button color-coding table.
+		// Note: Colormap entries for CTRLCOLX are 16 colors each, as opposed to the usual 256.
+		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOLX"), 114, 90, (controltype<<4) + ((19)*256) + ((8)*16) - 128);
+
+		// Draw the A-B-C-D buttons.
+		DrawJagobjLump(W_GetNumForName("CTRLXBCD"), 48, 80, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRLXBAB"), 192, 80, NULL, NULL);
+
+		char *strButtonA;
+		char *strButtonB;
+		char *strButtonC;
+		char *strButtonD;
+
+		for (int btn = 0; btn < 4; btn++) {
+			uint16_t buttonValue = controllerMapXE[controltype][btn];
+			char *actionString = (char *)actionLabels[btn];
+			if (buttonValue == XE_BT_A) {
+				strButtonA = actionString;
+			}
+			else if (buttonValue == XE_BT_B) {
+				strButtonB = actionString;
+			}
+			else if (buttonValue == XE_BT_C) {
+				strButtonC = actionString;
+			}
+			else if (buttonValue == XE_BT_D) {
+				strButtonD = actionString;
+			}
+		}
+
+		V_DrawStringCenter(&menuFont, 128, 96, strButtonC);
+		V_DrawStringCenter(&menuFont, 128, 136, strButtonD);
+		V_DrawStringCenter(&menuFont, 192, 96, strButtonA);
+		V_DrawStringCenter(&menuFont, 192, 136, strButtonB);
+
+		V_DrawStringLeft(&menuFont, 16, 48, controllerDescriptionXE[controltype]);
+	}
+	else {
+		// Sega 3-button control pad
+
+		// Draw the A-B-C buttons.
+		DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-16+0, 128-16-34, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BB"), 176-16+34, 128-16-34-18, NULL, NULL);
+		DrawJagobjLump(W_GetNumForName("CTRL6BC"), 176-16+69+2, 128-16-34-29, NULL, NULL);
+
+		char *strButtonA;
+		char *strButtonB;
+		char *strButtonC;
+
+		for (int btn = 0; btn < 7; btn++) {
+			uint16_t buttonValue = controllerMap3B[controltype][btn];
+			char *actionString = (char *)actionLabels[btn];
+			if (buttonValue == BT_A) {
+				strButtonA = actionString;
+			}
+			else if (buttonValue == BT_B) {
+				strButtonB = actionString;
+			}
+			else if (buttonValue == BT_C) {
+				strButtonC = actionString;
+			}
+			/*else {
+				// Do nothing!
+			}*/
+		}
+
+		V_DrawStringCenter(&menuFont, 176+0+8, 128-16-0, strButtonA);
+		V_DrawStringCenter(&menuFont, 176+34+8, 128-16-18, strButtonB);
+		V_DrawStringCenter(&menuFont, 176+69+8, 128-16-29, strButtonC);
+
+		V_DrawStringLeft(&menuFont, 16, 48, controllerDescription3B[controltype]);
 	}
 }
 

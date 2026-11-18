@@ -6,6 +6,8 @@ camera_t camera;
 
 boolean invertCamera = false;
 
+static signed char looky = 0;
+
 fixed_t cameraTargetDistance = CAM_DIST_NORMAL;
 
 boolean PM_CheckPosition(pmovework_t *mw);
@@ -240,6 +242,9 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	if (analog_t > 0x1F || analog_t < -0x1F) {
 		camdist -= D_abs(analog_t << 15);
 	}
+	else if (looky != 0) {
+		camdist -= D_abs(looky << 15);
+	}
 
    if (!(player->pflags & PF_MACEHANG) && !player->exiting && player->stillTimer > TICRATE/2)
       camspeed >>= 2;
@@ -294,6 +299,14 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	else if (analog_t < -0x1F) {
 		z -= ((analog_t << 16));
 	}
+	else if (looky != 0) {
+		if (looky > 0) {
+			z -= ((looky << 15) + (looky << 14));
+		}
+		else if (looky < 0) {
+			z -= ((looky << 16));
+		}
+	}
 
 	if (thiscam->z < thiscam->floorz)
 		thiscam->z = thiscam->floorz;
@@ -314,20 +327,50 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	thiscam->momy = FixedMul(y - thiscam->y, camspeed);
 	thiscam->momz = FixedMul(z - thiscam->z, camspeed);
 
-   if ((player->buttons & BT_ACTION_CAMLEFT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_ACTION_LEFT))
-      P_ThrustValues(thiscam->angle - ANG90, -16*FRACUNIT * (invertCamera ? 1 : -1), &thiscam->momx, &thiscam->momy);
-   if ((player->buttons & BT_ACTION_CAMRIGHT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_ACTION_RIGHT))
-      P_ThrustValues(thiscam->angle - ANG90, 16*FRACUNIT * (invertCamera ? 1 : -1), &thiscam->momx, &thiscam->momy);
+	if ((player->buttons & BT_ACTION_LOOK) && button_cheat == 0) {
+		if ((player->buttons & BT_ACTION_UP)) {
+			if (looky < 124) {
+				looky += 4;
+			}
+			else if (looky < 127) {
+				looky = 127;
+			}
+		}
+		else if ((player->buttons & BT_ACTION_DOWN)) {
+			if (looky >= -124) {
+				looky -= 4;
+			}
+		}
+	}
+	else {
+		if (looky < 0) {
+			looky += 4;
+			/*if (looky > 0) {
+				looky = 0;
+			}*/
+		}
+		else if (looky > 0) {
+			looky -= 4;
+			if (looky < 0) {
+				looky = 0;
+			}
+		}
+	}
 
-   if (player->pflags & PF_MACESPIN)
+	if ((player->buttons & BT_ACTION_CAMLEFT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_ACTION_LEFT))
+		P_ThrustValues(thiscam->angle - ANG90, -16*FRACUNIT * (invertCamera ? 1 : -1), &thiscam->momx, &thiscam->momy);
+	if ((player->buttons & BT_ACTION_CAMRIGHT) || ((player->pflags & PF_MACESPIN) && player->buttons & BT_ACTION_RIGHT))
+		P_ThrustValues(thiscam->angle - ANG90, 16*FRACUNIT * (invertCamera ? 1 : -1), &thiscam->momx, &thiscam->momy);
+
+	if (player->pflags & PF_MACESPIN)
 		player->mo->angle = thiscam->angle;
 
-   if (!(mo->flags2 & MF2_SHOOTABLE))
-      thiscam->momx = thiscam->momy = thiscam->momz = 0;
+	if (!(mo->flags2 & MF2_SHOOTABLE))
+		thiscam->momx = thiscam->momy = thiscam->momz = 0;
 
-   dist = P_AproxDistance(viewpointx - thiscam->x, viewpointy - thiscam->y);
+	dist = P_AproxDistance(viewpointx - thiscam->x, viewpointy - thiscam->y);
 
-   if (player->pflags & PF_VERTICALFLIP)
+	if (player->pflags & PF_VERTICALFLIP)
 		angle = R_PointToAngle2(0, thiscam->z, dist,mo->z + (FixedMul(mobjinfo[mo->type].height, 49152 /*0.75*/) >> 1)
 			- (((mo->theight << FRACBITS) != mobjinfo[mo->type].height) ? (mobjinfo[mo->type].height - (mo->theight << FRACBITS)) >> 1 : 0));
 	else
@@ -336,6 +379,9 @@ void P_MoveChaseCamera(player_t *player, camera_t *thiscam)
 	// Set the look up/down angle based on the throttle position.
 	if (analog_t > 0x1F || analog_t < -0x1F) {
 		angle += (analog_t << 22);
+	}
+	else if (looky != 0) {
+		angle += (looky << 22);
 	}
 
    G_ClipAimingPitch((int*)&angle);
