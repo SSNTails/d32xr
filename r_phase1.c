@@ -172,9 +172,10 @@ static boolean R_CheckBBox(rbspWork_t *rbsp, int16_t bspcoord[4])
    sx2 = (sx1 & 0xffff) - 1;
    sx1 = sx1 >>    16;
 
-   start = rbsp->solidsegs;
-   while(start->last < sx2)
+   start = rbsp->solidsegs - 1;
+   do {
       ++start;
+   } while (start->last < sx2);
 
    // does the clippost contain the new span?
    if(sx1 >= start->first && sx2 <= start->last)
@@ -546,13 +547,14 @@ static void R_StoreWallRange(rbspWork_t *rbsp, int start, int stop)
    viswall_t *rw;
    viswallextra_t *rwex;
    int newstop, split;
-   int numwalls = vd.lastwallcmd - vd.viswalls;
-   const int maxlen = centerX >> 1;
+   viswall_t *lastwall = vd.viswalls + MAXWALLCMDS;
+   const int maxlen = (unsigned)centerX >> 1;
    // split long segments
    int len = stop - start + 1;
 
-   if (numwalls == MAXWALLCMDS)
+   if (start > stop)
       return;
+
    if (rbsp->splitspans <= 0 || len < maxlen)
    {
       split = len;
@@ -564,15 +566,20 @@ static void R_StoreWallRange(rbspWork_t *rbsp, int start, int stop)
       newstop = start + maxlen - 1;
    }
 
+   const int numwalls = vd.lastwallcmd - vd.viswalls;
    rwex = vd.viswallextras + numwalls;
    do {
       rw = vd.lastwallcmd;
+
+      if (rw == lastwall)
+         return;
+
       rw->seg = rbsp->curline;
       rw->start = start;
       rw->stop = newstop;
       rw->scalestep = rbsp->lineangle1;
       rw->actionbits = 0;
-      ++vd.lastwallcmd;
+      vd.lastwallcmd = rw + 1;
 
       R_WallEarlyPrep(rbsp, rw, &rwex->floorheight, &rwex->floornewheight, &rwex->ceilnewheight, &rwex->fofInfo);
 
@@ -581,9 +588,6 @@ static void R_StoreWallRange(rbspWork_t *rbsp, int start, int stop)
 #endif
 
       rwex++;
-      numwalls++;
-      if (numwalls == MAXWALLCMDS)
-         return;
 
       start = newstop + 1;
       newstop += maxlen;
@@ -605,9 +609,10 @@ static void R_ClipWallSegment(rbspWork_t *rbsp, fixed_t first, fixed_t last, boo
 
     // find the first range that touches the range (adjacent pixels are touching)
     scratch = first - 1;
-    start = rbsp->solidsegs;
-    while (start->last < scratch)
+    start = rbsp->solidsegs - 1;
+    do {
         ++start;
+    } while (start->last < scratch);
 
     // add visible pieces and close up holes
     if (first < start->first)
