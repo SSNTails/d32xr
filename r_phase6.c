@@ -258,7 +258,7 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
     fixed_t scalefrac = segl->scalefrac;
     const fixed_t scalestep = segl->scalestep;
 
-    const unsigned centerangle = segl->centerangle;
+    const unsigned centerangle = segl->centerangle >> FRACBITS;
 #ifdef WALLDRAW2X
     unsigned offset = segl->offset >> 1;
 #else
@@ -382,7 +382,7 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
 #endif
 
             // calculate texture offset
-            r = finetangent((centerangle + (*(uint16_t *)&cxtoviewangle[x]<<FRACBITS)) >> ANGLETOFINESHIFT);
+            r = finetangent((uint16_t)(centerangle + (*(uint16_t *)&cxtoviewangle[x])) >> (ANGLETOFINESHIFT-FRACBITS));
             r = FixedMul(distance, r);
 
             colnum = (offset - r) >> FRACBITS;
