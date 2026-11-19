@@ -64,22 +64,23 @@ void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx)
 
       const uint16_t fofColnum = light & fofWidthMask;
       const uint16_t midColnum = light & midWidthMask;
+      fixed_t scale = scalefrac;
+#ifdef MARS
+      int32_t t, divunit;
+#endif
       light &= OPENMARK;
       maskedcol[x] = OPENMARK;
 
 #ifdef MARS
-      volatile int32_t t;
-      __asm volatile(
-          "mov #-128, r0\n\t"
-          "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
-          "mov #0, %0\n\t"
-          "mov.l %0, @(16, r0) /* set high bits of the 64-bit dividend */ \n\t"
-          "mov.l %1, @(0, r0) /* set 32-bit divisor */ \n\t"
-          "mov #-1, %0\n\t"
-          "mov.l %0, @(20, r0) /* set low  bits of the 64-bit dividend, start divide */\n\t"
-          : "=&r"(t) : "r"(scalefrac) : "r0");
-#else
-      fixed_t scale = scalefrac;
+   __asm volatile (
+         "mov #-128, %1\n\t"
+         "add %1, %1 /* %1 is now 0xFFFFFF00 */ \n\t"
+         "mov.l %2, @(0, %1) /* set 32-bit divisor */ \n\t"
+         "mov #0, %0\n\t"
+         "mov.l %0, @(16, %1) /* set high bits of the 64-bit dividend */ \n\t"
+         "mov #-1, %0\n\t"
+         "mov.l %0, @(20, %1) /* set low  bits of the 64-bit dividend, start divide */\n\t"
+         : "=&r" (t), "=&r"(divunit) : "r" (scale));
 #endif
 
       const int topclip = (spropening[x] >> 8);
@@ -88,21 +89,21 @@ void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx)
 
 #ifdef MARS
 #ifdef WALLDRAW2X
-      __asm volatile(
-          "mov #-128, r0\n\t"
-          "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
-          "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
-          "shar %0\n\t"
-          : "=r"(iscale) : : "r0");
+      __asm volatile (
+         "mov #-128, %0\n\t"
+         "add %0, %0 /* %0 is now 0xFFFFFF00 */ \n\t"
+         "mov.l @(20, %0), %0 /* get 32-bit quotient */ \n\t"
+         "shar %0\n\t"
+         : "=&r" (iscale) : "r"(topclip), "r"(bottomclip));
 #else
-      __asm volatile(
-          "mov #-128, r0\n\t"
-          "add r0, r0 /* r0 is now 0xFFFFFF00 */ \n\t"
-          "mov.l @(20, r0), %0 /* get 32-bit quotient */ \n\t"
-          : "=r"(iscale) : : "r0");
+      __asm volatile (
+         "mov #-128, %0\n\t"
+         "add %0, %0 /* %0 is now 0xFFFFFF00 */ \n\t"
+         "mov.l @(20, %0), %0 /* get 32-bit quotient */ \n\t"
+         : "=&r" (iscale) : "r"(topclip), "r"(bottomclip));
 #endif
 #else
-      iscale = 0xffffffffu / scalefrac;
+      iscale = 0xffffffffu / scale;
 #endif
 
       // Draw the FOF side
