@@ -71,6 +71,11 @@ void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx)
       light &= OPENMARK;
       maskedcol[x] = OPENMARK;
 
+      int topclip     = (spropening[x] >> 8);
+      int bottomclip  = (spropening[x] & 0xff) - 1;
+      if (topclip > bottomclip)
+         continue; // column is fully covered
+
 #ifdef MARS
    __asm volatile (
          "mov #-128, %1\n\t"
@@ -83,8 +88,6 @@ void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx)
          : "=&r" (t), "=&r"(divunit) : "r" (scale));
 #endif
 
-      const int topclip = (spropening[x] >> 8);
-      const int bottomclip = (spropening[x] & 0xff) - 1;
       fixed_t iscale;
 
 #ifdef MARS
@@ -344,8 +347,6 @@ void R_DrawVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
       // TODO: Properly clip sprite
       do
       {
-         byte *columnptr  = ((byte *)patch + BIGSHORT(patch->columnofs[xfrac>>FRACBITS]));
-
 #ifdef HIGH_DETAIL_SPRITES
          int topclip;
          int bottomclip;
@@ -364,6 +365,12 @@ void R_DrawVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
 #endif
 
          xfrac += fracstep;
+
+         // column is fully covered: don't touch the patch data at all
+         if (topclip > bottomclip)
+            continue;
+
+         byte *columnptr  = ((byte *)patch + BIGSHORT(patch->columnofs[xfrac>>FRACBITS]));
 
          // column loop
          // a post record has four bytes: topdelta length pixelofs*2
