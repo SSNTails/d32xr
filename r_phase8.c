@@ -509,6 +509,7 @@ void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
    int top;        // r19
    int bottom;     // r20
    unsigned short openmark = OPENMARK;
+   unsigned vph = (uint16_t)viewportHeight;
    viswall_t *ds;      // r17
 
    x1  = vis->x1;
@@ -530,13 +531,18 @@ void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
       if (x2 >= viewportWidth)
          x2 = viewportWidth-1;
    }
+#endif
 
    if (x1 > x2)
       return;
-#endif
 
-   for(x = x1; x <= x2; x++)
-      spropening[x] = viewportHeight;
+   {
+      unsigned short *p = spropening + x2 + 1;
+      x = x2 - x1 + 1;
+      do {
+         *--p = vph;
+      } while (--x);
+   }
 
    do
    {
@@ -567,44 +573,41 @@ void R_ClipVisSprite(vissprite_t *vis, unsigned short *spropening, int sprscreen
       if(silhouette == 0)
          continue;
 
-      if(silhouette == 1)
+      if(silhouette < 3)
       {
          int8_t *popn = (int8_t *)opening;
          int8_t *psil = (int8_t *)sil;
+         int mark = 0;
+
+         if (silhouette == 2)
+         {
+            mark = (int8_t)vph;
+            popn++, psil++;
+         }
+
          do
          {
-            if(*popn == 0)
-               *popn = *psil;
-            popn += 2, psil += 2;
-         } while (--x);
-      }
-      else if(silhouette == 2)
-      {
-         int8_t *popn = (int8_t *)opening;
-         int8_t *psil = (int8_t *)sil;
-         int vph = (int8_t)viewportHeight;
-         popn++, psil++;
-         do
-         {
-            if(*popn == vph)
+            if(*popn == mark)
                *popn = *psil;
             popn += 2, psil += 2;
          } while (--x);
       }
       else if (silhouette == 3)
       {
+         int ivph = vph, omark = openmark;
+         sil += x;
+         opening += x;
          do
          {
-            uint16_t clip = *sil;
-            top    = *opening;
+            int clip = *--sil;
+            top    = opening[-1];
             bottom = top & 0xff;
-            top = top & openmark;
-            if(bottom == viewportHeight)
+            top = top & omark;
+            if(bottom == ivph)
                bottom = clip & 0xff;
             if(top == 0)
-               top = clip & openmark;
-            *opening = top | bottom;
-            opening++, sil++;
+               top = clip & omark;
+            *--opening = top | bottom;
          } while (--x);
       }
       else
