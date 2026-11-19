@@ -251,10 +251,10 @@ static void R_PlaneLoop(localplane_t *lpl)
     void (*mapplane)(localplane_t*, int, int, int);
 
     pl_x       = pl->minx;
-    pl_stopx   = pl->maxx;
+    pl_stopx   = pl->maxx + 1;
 
     // see if there is any open space
-    if(pl_x > pl_stopx)
+    if(pl_x >= pl_stopx)
         return; // nothing to map
 
     pl_openptr = &pl->open[pl_x];
@@ -298,7 +298,7 @@ static void R_PlaneLoop(localplane_t *lpl)
             --b1;
         }
 
-        if (pl_x == pl_stopx + 1)
+        if (pl_x == pl_stopx)
             break;
 
         while (t2 < t1 && t2 <= b2)
@@ -317,7 +317,7 @@ static void R_PlaneLoop(localplane_t *lpl)
 
         b1 = pl_oldbottom;
         t1 = pl_oldtop;
-        t2 = pl_x++ < pl_stopx ? *++pl_openptr : OPENMARK;
+        t2 = ++pl_x < pl_stopx ? *++pl_openptr : OPENMARK;
     }
     while(1);
 }
