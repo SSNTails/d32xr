@@ -378,7 +378,7 @@ static void R_DrawPlanes2(int isFOF)
 #ifdef MARS
     Mars_ClearCacheLine(&vd.lastvisplane);
     Mars_ClearCacheLine(&vd.gsortedvisplanes);
-    Mars_ClearCacheLines(vd.gsortedvisplanes, ((vd.lastvisplane - vd.visplanes - 1) * sizeof(*vd.gsortedvisplanes) + 31) / 16);
+    Mars_ClearCacheLines(vd.gsortedvisplanes, (MAXVISPLANES * sizeof(*vd.gsortedvisplanes) + 15) / 16);
 #endif
 
     if (vd.gsortedvisplanes == NULL)
@@ -502,10 +502,12 @@ static void R_DrawPlanes2(int isFOF)
             lpl.lightmin = light;
 
             lpl.lightsub = 0;
-            if (lpl.lightmin != lpl.lightmax)
+            if (lpl.lightmax > lpl.lightmin)
             {
-                lpl.lightcoef = (unsigned)(lpl.lightmax - lpl.lightmin) << 8;
-                lpl.lightsub = (((lpl.lightmax - lpl.lightmin) * 160) << FRACBITS) / (800 - 160);
+                unsigned temp;
+                lpl.lightcoef = (lpl.lightmax - lpl.lightmin) << 8;
+                temp = ((lpl.lightmax - lpl.lightmin) * 160) << FRACBITS;
+                lpl.lightsub = temp / (800 - 160);
             }
 
             if (lpl.lightsub != 0)
@@ -595,6 +597,7 @@ static void Mars_R_SortPlanes(void)
 {
     int i, numplanes;
     visplane_t* pl;
+    __attribute__((aligned(16)))
     uint16_t *sortbuf = (uint16_t *)vd.gsortedvisplanes;
 
     i = 0;
