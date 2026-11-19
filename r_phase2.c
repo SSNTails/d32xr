@@ -9,7 +9,7 @@
 #include "mars.h"
 
 static fixed_t R_PointToDist(fixed_t x, fixed_t y) ATTR_DATA_CACHE_ALIGN;
-static fixed_t R_ScaleFromGlobalAngle(fixed_t rw_distance, angle_t visangle, angle_t normalangle) ATTR_DATA_CACHE_ALIGN;
+static fixed_t R_ScaleFromGlobalAngle(fixed_t invdist, fixed_t sineb, int x) ATTR_DATA_CACHE_ALIGN;
 static void R_SetupCalc(viswall_t* wc, fixed_t hyp, angle_t normalangle, int angle1) ATTR_DATA_CACHE_ALIGN;
 void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts) ATTR_DATA_CACHE_ALIGN;
 static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds, fixed_t floorheight, 
@@ -68,23 +68,16 @@ fixed_t R_PointToDist2(fixed_t dx, fixed_t dy)
 //
 // Convert angle and distance within view frustum to texture scale factor.
 //
-static fixed_t R_ScaleFromGlobalAngle(fixed_t rw_distance, angle_t visangle, angle_t normalangle)
+// scale = stretchX * sin(visangle + ANG90 - normalangle) / (rw_distance * cos(xtoviewangle[x]))
+//
+// invdist is stretchX / rw_distance, computed once per wall, sineb is
+// sin(visangle + ANG90 - normalangle), and 1/cos(xtoviewangle[x]) is the
+// precomputed distscale[x] table (stored >> 1). The caller looks up sineb
+// while the hardware divider is still working on invdist.
+//
+static fixed_t R_ScaleFromGlobalAngle(fixed_t invdist, fixed_t sineb, int x)
 {
-    angle_t anglea, angleb;
-    fixed_t num, den;
-    int     sinea, sineb;
-
-    visangle += ANG90;
-
-    anglea = visangle - vd.viewangle;
-    sinea = finesine(anglea >> ANGLETOFINESHIFT);
-    angleb = visangle - normalangle;
-    sineb = finesine(angleb >> ANGLETOFINESHIFT);
-
-    num = FixedMul(stretchX, sineb);
-    den = FixedMul(rw_distance, sinea);
-
-    return FixedDiv(num, den);
+    return FixedMul(FixedMul(invdist, sineb), (fixed_t)distscale[x] << 1);
 }
 
 //
@@ -120,6 +113,9 @@ void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts)
     angle_t          angle1 = wc->scalestep;
     fixed_t      sineval, rw_distance;
     fixed_t      scalefrac, scale2;
+    fixed_t      invdist;
+    angle_t      baseangle;
+    fixed_t      sineb1, sineb2;
     fixed_t      hyp;
     fixed_t      x1, y1, x2, y2;
 
@@ -153,12 +149,37 @@ void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts)
     wc->distance = rw_distance;
 #endif
 
+#ifdef MARS
+    // invdist = FixedDiv(stretchX, rw_distance), started on the divider here
+    // and collected after the sine lookups, which don't depend on it and
+    // hide most of its 39-cycle latency. Nothing in between may use the divider.
+    SH2_DIVU_DVSR = rw_distance;           // set 32-bit divisor
+    SH2_DIVU_DVDNTH = stretchX >> 16;      // high long of 64-bit dividend
+    SH2_DIVU_DVDNTL = stretchX << 16;      // low long, starts the divide
+#else
+    invdist = FixedDiv(stretchX, rw_distance);
+#endif
+
+    baseangle = vd.viewangle + ANG90 - normalangle;
+    sineb1 = finesine((baseangle + (xtoviewangle[wc->start]<<FRACBITS)) >> ANGLETOFINESHIFT);
+    sineb2 = sineb1;
+    if (wc->stop > wc->start)
+        sineb2 = finesine((baseangle + (xtoviewangle[wc->stop]<<FRACBITS)) >> ANGLETOFINESHIFT);
+
+#ifdef MARS
+    invdist = SH2_DIVU_DVDNTL;             // get 32-bit quotient (stalls if not done)
+#endif
+    // the divide saturates when rw_distance is ~0 (standing on the line);
+    // clamp so the multiply by distscale (up to ~1.42) can't overflow
+    if ((unsigned)invdist > 0x50000000)
+        invdist = 0x50000000;
+
     scalefrac = scale2 = wc->scalefrac =
-        R_ScaleFromGlobalAngle(rw_distance, vd.viewangle + (xtoviewangle[wc->start]<<FRACBITS), normalangle);
+        R_ScaleFromGlobalAngle(invdist, sineb1, wc->start);
 
     if (wc->stop > wc->start)
     {
-        scale2 = R_ScaleFromGlobalAngle(rw_distance, vd.viewangle + (xtoviewangle[wc->stop]<<FRACBITS), normalangle);
+        scale2 = R_ScaleFromGlobalAngle(invdist, sineb2, wc->stop);
 #ifdef MARS
         SH2_DIVU_DVSR = wc->stop - wc->start;  // set 32-bit divisor
         SH2_DIVU_DVDNT = scale2 - scalefrac;   // set 32-bit dividend, start divide
@@ -238,6 +259,11 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
 
         scale2 = scalefrac;
         scalefrac += scalestep;
+#ifdef MARS
+        // keep GCC from turning the FixedMul()s below into 64-bit running sums
+        // (strength reduction), which the SH-2 has to keep on the stack
+        __asm volatile ("" : "+r" (scale2));
+#endif
 
         //
         // get ceilingclipx and floorclipx from clipbounds
@@ -249,26 +275,35 @@ static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds,
         cy = cyvh >> 16;
         vh = cyvh & 0xffff;
 
-        //
-        // calc high and low
-        //
-        low = FixedMul(scale2, floornewheight)>>FRACBITS;
-        low = cy - low;
-        if (low < 0)
-            low = 0;
-        else if (low > floorclipx)
-            low = floorclipx;
-
-        high = FixedMul(scale2, ceilingnewheight)>>FRACBITS;
-        high = cy - high;
-        if (high > vh)
-            high = vh;
-        else if (high < ceilingclipx)
-            high = ceilingclipx;
-
         if (newclipbounds)
         {
+            const int newclip = actionbits & (AC_NEWFLOOR|AC_NEWCEILING);
+
+            //
+            // calc high and low
+            //
+            low = FixedMul(scale2, floornewheight)>>FRACBITS;
+            low = cy - low;
+            if (low < 0)
+                low = 0;
+            else if (low > floorclipx)
+                low = floorclipx;
+
+            high = FixedMul(scale2, ceilingnewheight)>>FRACBITS;
+            high = cy - high;
+            if (high > vh)
+                high = vh;
+            else if (high < ceilingclipx)
+                high = ceilingclipx;
+
             newclipbounds[x] = (high << 8) | low;
+
+            if (!(newclip & AC_NEWFLOOR))
+                low = floorclipx;
+            if (!(newclip & AC_NEWCEILING))
+                high = ceilingclipx;
+            // rewrite clipbounds
+            clipbounds[x] = (high << 8) | low;
         }
 
         int newclip = actionbits & (AC_NEWFLOOR|AC_NEWCEILING);
