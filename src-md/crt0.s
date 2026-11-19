@@ -356,10 +356,6 @@ do_main:
 
 .ifdef CHECKSUM
 calculate_checksum:
-        move.w  0x88018E,d5
-        |cmpi.w  #0,d5               /* should we skip the checksum routine? */
-        |beq.w   checksum_pass
-
         lea     0x880200,a1         /* skip the ROM header */
         move.w  #0xFFBF,d1          /* read 512 bytes less for the first bank */
 
@@ -367,10 +363,7 @@ calculate_checksum:
 
         move.w  0x8801A4,d2         /* get the upper word of the ROM size */
         lsr.w   #3,d2               /* last bank */
-        move.w  d2,d3
-        cmpi.w  #8,d2
-        blo.s   0f
-        move.b  #7,d2
+        move.b  d2,checksum_position_page
 
 | Handle the first page (512KB) of ROM with RV=0 to avoid hardware bugs with ROM reads.
 0:
@@ -379,69 +372,150 @@ calculate_checksum:
         add.w   (a1)+,d0
         add.w   (a1)+,d0
         dbra    d1,0b
-
-        move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
-        subq    #1,d2
         set_rv
-        lea     0x80000,a1          /* start at the second page with remapped memory */
+        move.w  d0,checksum_rom_total
+        bra.w   setup_horizontal_interrupt
+
+
+        
+checksum_read_next_segment:
+        cmpi.w  #0,checksum_position
+        beq.w   checksum_validation
+
+        move.w  #0x2700,sr          /* disable ints */
+        set_rv
+
+        moveq   #0,d1
+        moveq   #0,d2
+
+        move.w  checksum_position,d2
+        move.b  d2,d1
+
+        move.b  #0,d2
+        lsl.l   #5,d2               /* Use segment to calculate page offset */
+
+        lea     0xA130FF,a0         /* Bank 7 register */
+
+        cmpi.b  #8,d1
+        blo.w   1f
+0:
+        lea     0x380000,a1
+        move.b  d1,(a0)             /* Point to the next page */
+        bra.s   2f
+1:
+        lsl.l   #8,d1
+        lsl.l   #8,d1
+        lsl.l   #3,d1               /* Use page to calculate the bank offset */
+        movea.l d1,a1
+2:
+        adda.l  d2,a1               /* Add page offset to the bank address */
+        move.w  checksum_rom_total,d0
+        move.w  #0x3FF,d1  /* Read 4 words per loop, for a total of 8KB */
+3:
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        add.w   (a1)+,d0
+        dbra    d1,3b
+4:
+        move.b  #7,(a0)             /* Restore bank 7 */
+        move.w  d0,checksum_rom_total
+        move.b  checksum_position_segment,d1
+        cmpi.b  #63,d1
+        beq.s   6f
+5:
+        addq    #1,d1
+        move.b  d1,checksum_position_segment
+        bra.s   7f
+6:
+        moveq   #0,d1
+        move.b  d1,checksum_position_segment
+        move.b  checksum_position_page,d2
+        subq    #1,d2
+        move.b  d2,checksum_position_page
+7:
+        clr_rv
+        move.w  #0x2000,sr          /* enable ints */
+        rts
+
+
 
 | Handle the next seven pages (3.5MB) of ROM with RV=1
-        lea     0xA130F3,a0         /* initialize banks */
-        moveq   #1,d4
-        moveq   #6,d1               /* 7 banks */
-1:
-        move.b  d4,(a0)
-        addq    #2,a0
-        addq    #1,d4
-        dbra    d1,1b
-2:
-        add.w   (a1)+,d0
-        add.w   (a1)+,d0
-        add.w   (a1)+,d0
-        add.w   (a1)+,d0
-        dbra    d1,2b
-
-        move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
-        dbra    d2,2b
-
-        cmpi.b  #8,d3               /* are there fewer than 8 banks total? */
-        blo.b   checksum_validation
-
+|        lea     0xA130F3,a0         /* initialize banks */
+|        moveq   #1,d4
+|        moveq   #6,d1               /* 7 banks */
+|1:
+|        move.b  d4,(a0)
+|        addq    #2,a0
+|        addq    #1,d4
+|        dbra    d1,1b
+|2:
+|        add.w   (a1)+,d0
+|        add.w   (a1)+,d0
+|        add.w   (a1)+,d0
+|        add.w   (a1)+,d0
+|        dbra    d1,2b
+|
+|        move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
+|        dbra    d2,2b
+|
+|        cmpi.b  #8,d3               /* are there fewer than 8 banks total? */
+|        blo.b   checksum_validation
+|
 | Handle bytes beyond the first 4MB of ROM
-        move.w  d3,d2               /* bank counter */
-        sub.b   #8,d2               /* skip the first 8 banks */
-
-        lea     0xA130FD,a0         /* switch banks on offset 0x300000 */
-3:
-        lea     0x300000,a1         /* go back to the start of the bank */
-        move.b  d3,d4
-        sub.b   d2,d4
-        move.b  d4,(a0)             /* point to the next bank */
-4:
-        add.w   (a1)+,d0
-        add.w   (a1)+,d0
-        add.w   (a1)+,d0
-        add.w   (a1)+,d0
-        dbra    d1,4b
-
-        move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
-        dbra    d2,3b
-
-        move.b  #6,(a0)             /* reset bank */
+|        move.w  d3,d2               /* bank counter */
+|        sub.b   #8,d2               /* skip the first 8 banks */
+|
+|        lea     0xA130FD,a0         /* switch banks on offset 0x300000 */
+|3:
+|        lea     0x300000,a1         /* go back to the start of the bank */
+|        move.b  d3,d4
+|        sub.b   d2,d4
+|        move.b  d4,(a0)             /* point to the next bank */
+|4:
+|        add.w   (a1)+,d0
+|        add.w   (a1)+,d0
+|        add.w   (a1)+,d0
+|        add.w   (a1)+,d0
+|        dbra    d1,4b
+|
+|        move.w  #0xFFFF,d1          /* prepare to read another 512 KB */
+|        dbra    d2,3b
+|
+|        move.b  #6,(a0)             /* reset bank */
+|
+|checksum_validation:
+|        cmp.w   d0,d5               /* is the checksum correct? */
+|        beq.s   checksum_pass
+|
+|checksum_fail:
+|        lea     0xC00004,a0
+|        lea     0xC00000,a1
+|        move.l  #0xC0000000,(a0)    /* write CRAM address 0 */
+|        move.w  #0x000E,(a1)        /* set background color to red */
+|checksum_fail_lock:
+|        bra.s   checksum_fail_lock  /* forever loop */
+|
+|checksum_pass:
 
 checksum_validation:
-        cmp.w   d0,d5               /* is the checksum correct? */
-        beq.s   checksum_pass
+        move.w  0x88018E,d0
+        move.w  checksum_rom_total,d1
+        cmp.w   d0,d1
+        bne.s   checksum_fail
+
+checksum_pass:
+        move.w  #0xFFFF,checksum_position
+        rts
 
 checksum_fail:
         lea     0xC00004,a0
         lea     0xC00000,a1
         move.l  #0xC0000000,(a0)    /* write CRAM address 0 */
         move.w  #0x000E,(a1)        /* set background color to red */
+
 checksum_fail_lock:
         bra.s   checksum_fail_lock  /* forever loop */
-
-checksum_pass:
 
 .else
         set_rv
@@ -528,6 +602,11 @@ main_loop_start:
         move.l  #0,0xA15120         /* let Master SH2 run */
 
 main_loop:
+        move.w  checksum_position,d0
+        cmpi.w  #0xFFFF,d0
+        beq.s   1f
+        bsr     checksum_read_next_segment
+1:
         tst.b   need_ctrl_int
         beq.w   main_loop_bump_fm
         move.b  #0,need_ctrl_int
@@ -4534,6 +4613,15 @@ crsr_y:
         dc.w    0
 dbug_color:
         dc.w    0
+
+checksum_rom_total:
+        dc.w    0
+
+checksum_position:
+checksum_position_segment:
+        dc.b    0
+checksum_position_page:
+        dc.b    0
         
 scroll_b_vert_offset_top:
         dc.w    0
