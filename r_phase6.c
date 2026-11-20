@@ -47,8 +47,6 @@ typedef struct drawtex_s
 typedef struct
 {
     viswall_t* segl;
-
-    drawtex_t tex[2];
     drawtex_t *first, *last;
 
 #ifndef SIMPLELIGHT
@@ -58,6 +56,9 @@ typedef struct
 #ifndef SIMPLELIGHT
     int lightsub, lightcoef;
 #endif
+    fixed_t scalestep, offset, distance;
+    unsigned centerangle;
+    drawtex_t tex[2];
 #if MIPLEVELS > 1   
     unsigned minmip, maxmip;
 #endif
@@ -68,7 +69,7 @@ extern boolean sky_md_layer;
 static char seg_lock = 0;
 
 static void R_DrawTexture(int x, unsigned iscale, int colnum, fixed_t scale2, int floorclipx, int ceilingclipx, unsigned light, drawtex_t *tex, int miplevel) ATTR_DATA_CACHE_ALIGN;
-static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
+static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 static void R_SetupDrawTexture(drawtex_t *drawtex, texture_t *tex, fixed_t texturemid, fixed_t topheight, fixed_t bottomheight) ATTR_DATA_CACHE_ALIGN;
 
 static void R_LockSeg(void) ATTR_DATA_CACHE_ALIGN;
@@ -233,7 +234,7 @@ static void R_Draw32XSky(const int top, const int bottom, const int x, drawcol_t
 //
 // Main seg drawing loop
 //
-static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
+static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
 {
     viswall_t* segl = lseg->segl;
 
@@ -256,15 +257,6 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
     #endif
 
     fixed_t scalefrac = segl->scalefrac;
-    const fixed_t scalestep = segl->scalestep;
-
-    const unsigned centerangle = segl->centerangle >> FRACBITS;
-#ifdef WALLDRAW2X
-    unsigned offset = segl->offset >> 1;
-#else
-    unsigned offset = segl->offset;
-#endif
-    fixed_t distance = segl->distance;
 
     const int floorheight = segl->floorheight_t << FRACBITS;
     const int ceilingheight = segl->ceilingheight;
@@ -322,7 +314,7 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
 #endif
 
             scale2 = scalefrac;
-            scalefrac += scalestep;
+            scalefrac += lseg->scalestep;
 
             //
             // get ceilingclipx and floorclipx from clipbounds
@@ -382,10 +374,10 @@ static void R_DrawSeg(seglocal_t* lseg, unsigned short *clipbounds)
 #endif
 
             // calculate texture offset
-            r = finetangent((uint16_t)(centerangle + (*(uint16_t *)&cxtoviewangle[x])) >> (ANGLETOFINESHIFT-FRACBITS));
-            r = FixedMul(distance, r);
+            r = finetangent((uint16_t)(lseg->centerangle + (*(uint16_t *)&cxtoviewangle[x])) >> (ANGLETOFINESHIFT-FRACBITS));
+            r = FixedMul(lseg->distance, r);
 
-            colnum = (offset - r) >> FRACBITS;
+            colnum = (lseg->offset - r) >> FRACBITS;
             colnum &= 0xff;
 
             if (csegcolmask)
@@ -637,6 +629,14 @@ void R_SegCommands(void)
             lseg.last++;
         }
 
+        lseg.scalestep = segl->scalestep;
+        lseg.centerangle = segl->centerangle >> FRACBITS;
+#ifdef WALLDRAW2X
+        lseg.offset = segl->offset >> 1;
+#else
+    u   lseg.offset = segl->offset;
+#endif
+        lseg.distance = segl->distance;
         R_DrawSeg(&lseg, clipbounds);
 
 #if MIPLEVELS > 1
