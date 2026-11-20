@@ -55,6 +55,7 @@ void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx)
 #else
       const fixed_t spryscale = scalefrac;
 #endif
+      fixed_t scale = scalefrac;
       scalefrac += fracstep;
 
       int light = maskedcol[x];
@@ -64,7 +65,6 @@ void R_DrawBothMaskedSegRange(viswall_t *seg, int x, int stopx)
 
       const uint16_t fofColnum = light & fofWidthMask;
       const uint16_t midColnum = light & midWidthMask;
-      fixed_t scale = scalefrac;
 #ifdef MARS
       int32_t t, divunit;
 #endif
