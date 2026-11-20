@@ -211,7 +211,36 @@ int 	P_BoxOnLineSide (fixed_t *tmbox, line_t *ld);
 
 fixed_t	P_LineOpening (line_t *linedef);
 
-void 	P_LineBBox(line_t* ld, fixed_t*bbox);
+static inline __attribute__((always_inline)) void P_LineBBox(line_t* ld, fixed_t *bbox)
+{
+	mapvertex_t* v1 = &vertexes[ld->v1], * v2 = &vertexes[ld->v2];
+
+	if (v1->x < v2->x)
+	{
+		bbox[BOXLEFT] = v1->x;
+		bbox[BOXRIGHT] = v2->x;
+	}
+	else
+	{
+		bbox[BOXLEFT] = v2->x;
+		bbox[BOXRIGHT] = v1->x;
+	}
+	if (v1->y < v2->y)
+	{
+		bbox[BOXBOTTOM] = v1->y;
+		bbox[BOXTOP] = v2->y;
+	}
+	else
+	{
+		bbox[BOXBOTTOM] = v2->y;
+		bbox[BOXTOP] = v1->y;
+	}
+
+	bbox[BOXTOP] <<= FRACBITS;
+	bbox[BOXBOTTOM] <<= FRACBITS;
+	bbox[BOXLEFT] <<= FRACBITS;
+	bbox[BOXRIGHT] <<= FRACBITS;
+}
 
 typedef boolean(*blocklinesiter_t)(line_t*, void*);
 typedef boolean(*blockthingsiter_t)(mobj_t*, void*);

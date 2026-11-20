@@ -9,7 +9,6 @@ int P_PointOnLineSide(fixed_t x, fixed_t y, line_t* line) ATTR_DATA_CACHE_ALIGN;
 int P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t* line) ATTR_DATA_CACHE_ALIGN;
 int P_DivlineSide(fixed_t x, fixed_t y, divline_t *node) ATTR_DATA_CACHE_ALIGN;
 fixed_t P_LineOpening(line_t* linedef) ATTR_DATA_CACHE_ALIGN;
-void P_LineBBox(line_t* ld, fixed_t* bbox) ATTR_DATA_CACHE_ALIGN;
 void P_UnsetThingPosition(mobj_t* thing) ATTR_DATA_CACHE_ALIGN;
 void P_SetThingPosition(mobj_t* thing) ATTR_DATA_CACHE_ALIGN;
 void P_SetThingPosition2(mobj_t* thing, VINT iss) ATTR_DATA_CACHE_ALIGN;
@@ -420,32 +419,6 @@ fixed_t P_LineOpening (line_t *linedef)
 	return opentop - openbottom;
 }
 
-void P_LineBBox(line_t* ld, fixed_t *bbox)
-{
-	const mapvertex_t* v1 = &vertexes[ld->v1], * v2 = &vertexes[ld->v2];
-
-	if (v1->x < v2->x)
-	{
-		bbox[BOXLEFT] = v1->x << FRACBITS;
-		bbox[BOXRIGHT] = v2->x << FRACBITS;
-	}
-	else
-	{
-		bbox[BOXLEFT] = v2->x << FRACBITS;
-		bbox[BOXRIGHT] = v1->x << FRACBITS;
-	}
-	if (v1->y < v2->y)
-	{
-		bbox[BOXBOTTOM] = v1->y << FRACBITS;
-		bbox[BOXTOP] = v2->y << FRACBITS;
-	}
-	else
-	{
-		bbox[BOXBOTTOM] = v2->y << FRACBITS;
-		bbox[BOXTOP] = v1->y << FRACBITS;
-	}
-}
-
 /*
 ===============================================================================
 
@@ -697,7 +670,6 @@ boolean P_BlockLinesIterator (int x, int y, blocklinesiter_t func, void *userp )
 {
 	int			offset;
 	short		*list;
-	line_t		*ld;
 	VINT *lvalidcount = validcount;
 	VINT 		vc;
 
@@ -713,13 +685,12 @@ boolean P_BlockLinesIterator (int x, int y, blocklinesiter_t func, void *userp )
 	for ( list = blockmaplump+offset ; *list != -1 ; list++)
 	{
 		int l = *list;
-		ld = &lines[*list];
 
 		if (lvalidcount[l] == vc)
 			continue;		/* line has already been checked */
 		lvalidcount[l] = vc;
 		
-		if ( !func(ld, userp) )
+		if ( !func(&lines[*list], userp) )
 			return false;
 	}
 	
