@@ -86,7 +86,6 @@ const int8_t wave_table[128] =
 //
 static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
 {
-    int remaining;
     fixed_t distance;
     fixed_t length, xfrac, yfrac, xstep, ystep;
     angle_t angle;
@@ -97,11 +96,6 @@ static void R_MapFlatPlane(localplane_t* lpl, int y, int x, int x2)
     unsigned scale;
 #endif
     unsigned miplevel, mipsizeX, mipsizeY;
-
-    remaining = x2 - x + 1;
-
-    if (remaining <= 0)
-        return; // nothing to draw (shouldn't happen)
 
     distance = FixedMul(lpl->height, yslope[y]);
 
