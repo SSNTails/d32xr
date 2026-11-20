@@ -63,7 +63,7 @@ void Mars_Sec_R_DrawSprites(int sprscreenhalf) ATTR_DATA_CACHE_ALIGN;
 void Mars_Sec_InitSoundDMA(int initfull);
 void Mars_Sec_ReadSoundCmds(void) ATTR_DATA_OPTIMIZE_NONE;
 
-#define Mars_R_SecWait() do { while (MARS_SYS_COMM4 != MARS_SECCMD_NONE); } while(0)
+#define Mars_R_SecWait() do { while (MARS_SYS_COMM4 != MARS_SECCMD_NONE) { SH2_Delay64(); } } while(0)
 
 static inline void Mars_CommSlaveClearCache(void)
 {

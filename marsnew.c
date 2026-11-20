@@ -266,7 +266,10 @@ void Mars_Secondary(void)
 	{
 		int cmd;
 
-		while ((cmd = MARS_SYS_COMM4) == MARS_SECCMD_NONE);
+		while ((cmd = MARS_SYS_COMM4) == MARS_SECCMD_NONE) {
+			SH2_Delay512();
+			continue;
+		}
 
 		switch (cmd) {
 		case MARS_SECCMD_CLEAR_CACHE:
@@ -305,7 +308,7 @@ void Mars_Secondary(void)
 			break;
 		}
 
-		MARS_SYS_COMM4 = 0;
+		MARS_SYS_COMM4 = MARS_SECCMD_NONE;
 	}
 }
 

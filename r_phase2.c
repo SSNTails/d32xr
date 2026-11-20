@@ -487,6 +487,8 @@ void Mars_Sec_R_WallPrep(void)
             seglex++;
             *readysegs = *readysegs + 1;
         }
+
+        SH2_Delay64();
     }
 }
 
