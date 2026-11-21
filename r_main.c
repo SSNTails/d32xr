@@ -872,60 +872,107 @@ void R_SetTextureData(texture_t *tex, uint8_t *start, int size, boolean skiphead
 	}
 }
 
+const char *wavyFlats[] = {
+	"BWATER01",
+	"BWATER02",
+	"BWATER03",
+	"BWATER04",
+	"BWATER05",
+	"BWATER06",
+	"BWATER07",
+	"BWATER08",
+	"CEZWATR0",
+	"CHEMG01",
+	"CHEMG02",
+	"CHEMG03",
+	"CHEMG04",
+	"DWATER01",
+	"DWATER02",
+	"DWATER03",
+	"DWATER04",
+	"DWATER05",
+	"DWATER06",
+	"DWATER07",
+	"DWATER08",
+	"RLAVA1",
+	NULL
+};
+
 static boolean IsWavyFlat(uint8_t flatnum)
 {
-    return (flatnum >= 9 && flatnum <= 30); // BWATER/CEZWATR/CHEMG/DWATER/RLAVA1
+	const char *flatname = W_GetNameForNum(firstflat + flatnum);
+
+	for (int i = 0; wavyFlats[i] != NULL; i++)
+	{
+		if (!D_strcasecmp(flatname, wavyFlats[i]))
+			return true;
+	}
+
+	return false;
 }
+
+const char *rotatedFlats[] = {
+	"ASPECF",
+	"ASPECF2",
+	"BSPECF",
+	"BSPECF2",
+	"CASTLEE",
+	"CECRPTG2",
+	"CESTONE5",
+	"CETILB1",
+	"CETILB2",
+	"CETILD1",
+	"CETILD2",
+	"CETILE1",
+	"CETILE2",
+	"CEZRCKF0",
+	"CSPECF",
+	"CSPECF2",
+	"DSBLOCK1",
+	"DSDEBRIS",
+	"DSTILE_1",
+	"GFZBLKBG",
+	"GFZBLKSM",
+	"GFZFLR01",
+	"GFZFLR02",
+	"GFZFLR06",
+	"GFZFLR07",
+	"GFZFLR11",
+	"GFZFLR19",
+	"GFZFNCF",
+	"PSPECF",
+	"PSPECF2",
+	"RSPECF",
+	"RSPECF2",
+	"RVPUMICF",
+	"SFLR02B",
+	"STEEL06",
+	"THCOMPF1",
+	"THPIPEF1",
+	"THZ2FN2",
+	"THZ2FN5B",
+	"THZFLR02",
+	"THZFLR03",
+	"THZFLR15",
+	"THZFLR17",
+	"THZFLR23",
+	"THZFLR27",
+	"YSPECF",
+	"YSPECF2",
+	NULL
+};
 
 static boolean IsRotatedFlat(uint8_t flatnum)
 {
-	return flatnum == 5
-		|| flatnum == 6
-		|| flatnum == 7
-		|| flatnum == 8
-		|| flatnum == 32
-		|| flatnum == 36
-		|| flatnum == 39
-		|| flatnum == 40
-		|| flatnum == 41
-		|| flatnum == 43
-		|| flatnum == 44
-		|| flatnum == 46
-		|| flatnum == 47
-		|| flatnum == 55
-		|| flatnum == 56
-		|| flatnum == 57
-		|| flatnum == 64
-		|| flatnum == 65
-		|| flatnum == 70
-		|| flatnum == 72
-		|| flatnum == 73
-		|| flatnum == 74
-		|| flatnum == 75
-		|| flatnum == 78
-		|| flatnum == 79
-		|| flatnum == 81
-		|| flatnum == 83
-		|| flatnum == 85
-		|| flatnum == 95
-		|| flatnum == 96
-		|| flatnum == 97
-		|| flatnum == 98
-		|| flatnum == 99
-		|| flatnum == 100
-		|| flatnum == 106
-		|| flatnum == 109
-		|| flatnum == 111
-		|| flatnum == 116
-		|| flatnum == 117
-		|| flatnum == 124
-		|| flatnum == 125
-		|| flatnum == 129
-		|| flatnum == 131
-		|| flatnum == 134
-		|| flatnum == 135
-		|| flatnum == 141
-		|| flatnum == 142;
+	const char *flatname = W_GetNameForNum(firstflat + flatnum);
+
+	for (int i = 0; rotatedFlats[i] != NULL; i++)
+	{
+		if (!D_strcasecmp(flatname, rotatedFlats[i]))
+			return true;
+	}
+
+	return false;
 }
 
 /*
