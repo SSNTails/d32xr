@@ -976,16 +976,16 @@ void DRAW_LevelSelect (void)
 		V_DrawStringCenterWithColormap(&menuFont, 160, 32, "SELECT A STAGE", YELLOWTEXTCOLORMAP);
 
 		// Draw black lines
-		DrawLine(86, 58, 152, 0x1F, false);
-		DrawLine(86, 193, 152, 0x1F, false);
-		DrawLine(86, 59, 134, 0x1F, true);
-		DrawLine(237, 59, 134, 0x1F, true);
+		DrawLine(84+2, 56+2, 152, COLOR_BLACK, false);
+		DrawLine(84+2, 191+2, 152, COLOR_BLACK, false);
+		DrawLine(84+2, 56+3, 134, COLOR_BLACK, true);
+		DrawLine(235+2, 56+3, 134, COLOR_BLACK, true);
 
 		// Draw red lines
-		DrawLine(84, 56, 152, 0x23, false);
-		DrawLine(84, 191, 152, 0x23, false);
-		DrawLine(84, 57, 134, 0x23, true);
-		DrawLine(235, 57, 134, 0x23, true);
+		DrawLine(84+0, 56+0, 152, 0x23, false);
+		DrawLine(84+0, 191+0, 152, 0x23, false);
+		DrawLine(84+0, 56+1, 134, 0x23, true);
+		DrawLine(235+0, 56+1, 134, 0x23, true);
 
 		// Draw level picture
 		DrawJagobj(lvlsel_pic, (320-96)>>1, 72);
@@ -1292,12 +1292,75 @@ void DRAW_Compatibility (void)
 /*============================================================================= */
 
 #ifdef SHOW_DISCLAIMER
+boolean alteringConfig = false;
+int configSelection = 0;
+int prevConfigSelection = 0;
+int redrawConfigText = 0;
+int redrawConfigSelector = 0;
+
 int TIC_Disclaimer(void)
 {
 	screenCount++;
 
-	if (screenCount > 540) {
+	if (screenCount > 540 && !alteringConfig) {
 		return ga_closedisclaimer;
+	}
+
+	if (alteringConfig && !redrawConfigSelector) {
+		int newConfigSelection = configSelection;
+		if (ticrealbuttons & BT_ACTION_LEFT && !(oldticrealbuttons & BT_ACTION_LEFT)) {
+			redrawConfigSelector = 2;
+			prevConfigSelection = configSelection;
+			newConfigSelection ^= 2;
+		}
+		else if (ticrealbuttons & BT_ACTION_RIGHT && !(oldticrealbuttons & BT_ACTION_RIGHT)) {
+			redrawConfigSelector = 2;
+			prevConfigSelection = configSelection;
+			newConfigSelection ^= 2;
+		}
+
+		if (ticrealbuttons & BT_ACTION_UP && !(oldticrealbuttons & BT_ACTION_UP)) {
+			redrawConfigSelector = 2;
+			prevConfigSelection = configSelection;
+			newConfigSelection ^= 1;
+		}
+		else if (ticrealbuttons & BT_ACTION_DOWN && !(oldticrealbuttons & BT_ACTION_DOWN)) {
+			redrawConfigSelector = 2;
+			prevConfigSelection = configSelection;
+			newConfigSelection ^= 1;
+		}
+
+		configSelection = newConfigSelection;
+	}
+
+	if (ticrealbuttons & (BT_A | BT_B | BT_C) && !(oldticrealbuttons & (BT_A | BT_B | BT_C))) {
+		switch (configSelection) {
+			case 0:
+				hardwareOptimized ^= 1;
+				break;
+			case 1:
+				upscalerOptimized ^= 1;
+				break;
+			case 2:
+				anamorphicview ^= 1;
+				break;
+			case 3:
+				controltype++;
+				if (controller_id == 1) {
+					controltype &= 7;
+				}
+				else {
+					controltype &= 1;
+				}
+				//break;
+		}
+		redrawConfigText = 2;
+	}
+
+	if (ticrealbuttons & BT_ACTION_START && !(oldticrealbuttons & BT_ACTION_START)) {
+		alteringConfig ^= 1;
+		redrawConfigText = 2;
+		redrawConfigSelector = 2;
 	}
 
 	return ga_nothing;
@@ -1305,6 +1368,8 @@ int TIC_Disclaimer(void)
 
 void START_Disclaimer(void)
 {
+	DoubleBufferSetup();	// Clear frame buffers to black.
+
 	int		i;
 
 	for (i = 0; i < 2; i++)
@@ -1323,12 +1388,21 @@ void START_Disclaimer(void)
 	S_StartSong(gameinfo.gameoverMus, 0, cdtrack_gameover);
 
 	R_InitColormap();
+
+	redrawConfigText = 2;
+
+	clearscreen = 2;
 }
 
 void STOP_Disclaimer (void)
 {
 	// Set to totally black
 	R_FadePalette(dc_playpals, (PALETTE_SHIFT_CLASSIC_FADE_TO_BLACK + 20), dc_cshift_playpals);
+
+	UpdateControllerInputs();
+	R_SetViewportSize(h40_sky ? VIEWPORT_H40_OPTIMIZED : VIEWPORT_H32_OPTIMIZED);
+	Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
+	Mars_SetVideoMode(MARS_VDP_MODE_256, (224-viewportHeight)>>1);
 }
 
 const unsigned char key[] = { 0x78, 0x11, 0xB6, 0x2A, 0x48, 0x6A, 0x30, 0xA7 };
@@ -1455,6 +1529,14 @@ void DRAW_Disclaimer (void)
 	while (frame_sync == mars_vblank_count);
 	frame_sync = mars_vblank_count;
 
+	// Initialize framebuffers if necessary.
+	if (clearscreen > 0) {
+		//h32_adjust = true;
+		//Mars_SetVideoMode(MARS_VDP_MODE_256, 0);
+		RemoveDistortionFilters();	// Normalize the line table to get rid of the three-pixel shift.
+		clearscreen--;
+	}
+
 	if (screenCount < 4) {
 		unsigned char text1[] = { 0x2C, 0x59, 0xFF, 0x79, 0x68, 0x2D, 0x71, 0xEA, 0x3D, 0x31, 0xE5, 0x62, 0x07, 0x3F, 0x7C, 0xE3, 0x78};
 		unsigned char text2[] = { 0x36, 0x5E, 0xE2, 0x0A, 0x0A, 0x2F, 0x10, 0xF4, 0x37, 0x5D, 0xF2, 0x2A};
@@ -1480,36 +1562,139 @@ void DRAW_Disclaimer (void)
 
 		DrawFillRect(0, 0, 320, viewportHeight, COLOR_BLACK);
 
-		V_DrawStringCenter(&creditFont, 160, 64+32, (const char*)text1);
-		V_DrawStringCenter(&creditFont, 160, 88+32, (const char*)text2);
+		V_DrawStringCenter(&creditFont, 160, 48+32, (const char*)text1);
+		V_DrawStringCenter(&creditFont, 160, 72+32, (const char*)text2);
 
-		V_DrawStringCenter(&menuFont, 160, 128+32, (const char*)text3);
+		//V_DrawStringCenter(&menuFont, 160, 112+32, (const char*)text3);
 	}
 
 	if (screenCount < 500)
 	{
-		DrawFillRect((320>>1)-(56>>1), 24, 56, 64, COLOR_BLACK);
+		DrawFillRect((320>>1)-(56>>1), 8, 56, 64, COLOR_BLACK);
 
 		if (screenCount < 480)
 		{
 			viewportbuffer = (pixel_t*)I_FrameBuffer();
 			I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
-			BufferedDrawSprite(SPR_PLAY, 1 + ((screenCount>>4) & 1), 0, 80, 160, false);
+			BufferedDrawSprite(SPR_PLAY, 1 + ((screenCount>>4) & 1), 0, 64, 160, false);
 		}
 		else
 		{
-			DrawJagobjLump(W_GetNumForName("ZOOM"), 136, 80-56, NULL, NULL);
+			DrawJagobjLump(W_GetNumForName("ZOOM"), 136, 64-56, NULL, NULL);
 		}
 	}
 	else
 	{
 		VINT Xpos = screenCount - 500;
 
-		DrawFillRect((320>>1)-(80>>1) + (Xpos<<3), 20, 80, 64, COLOR_BLACK);
+		DrawFillRect((320>>1)-(80>>1) + (Xpos<<3), 4, 80, 64, COLOR_BLACK);
 
 		viewportbuffer = (pixel_t*)I_FrameBuffer();
 		I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
-		BufferedDrawSprite(SPR_PLAY, 11 + ((screenCount>>2) & 3), 2, 80, 160 + (Xpos<<3), true);
+		BufferedDrawSprite(SPR_PLAY, 11 + ((screenCount>>2) & 3), 2, 64, 160 + (Xpos<<3), true);
+	}
+
+	int configTitleColor = YELLOWTEXTCOLORMAP;
+	int configValueColor = 0;
+
+	if (redrawConfigSelector) {
+		const int select_w = 144;
+		const int select_h = 24;
+
+		int select_x = 16 + (72*(prevConfigSelection&2));
+		int select_y = 168 + (24*(prevConfigSelection&1));
+
+		// Clear black lines
+		DrawLine(select_x+2, select_y+2, select_w, COLOR_BLACK, false);
+		DrawLine(select_x+2, select_y+select_h+1, select_w, COLOR_BLACK, false);
+		DrawLine(select_x+2, select_y+3, select_h-2, COLOR_BLACK, true);
+		DrawLine(select_x+select_w+1, select_y+3, select_h-2, COLOR_BLACK, true);
+
+		// Clear red lines
+		DrawLine(select_x+0, select_y+0, select_w, COLOR_BLACK, false);
+		DrawLine(select_x+0, select_y+select_h-1, select_w, COLOR_BLACK, false);
+		DrawLine(select_x+0, select_y+1, select_h-2, COLOR_BLACK, true);
+		DrawLine(select_x+select_w-1, select_y+1, select_h-2, COLOR_BLACK, true);
+
+
+		select_x = 16 + (72*(configSelection&2));
+		select_y = 168 + (24*(configSelection&1));
+
+		int selectorColor = 0x70;
+		int selectorShadowColor = 0x1A;
+
+		if (!alteringConfig) {
+			selectorColor = COLOR_BLACK;
+			selectorShadowColor = COLOR_BLACK;
+		}
+
+		// Draw black lines
+		DrawLine(select_x+2, select_y+2, select_w, selectorShadowColor, false);
+		DrawLine(select_x+2, select_y+select_h+1, select_w, selectorShadowColor, false);
+		DrawLine(select_x+2, select_y+3, select_h-2, selectorShadowColor, true);
+		DrawLine(select_x+select_w+1, select_y+3, select_h-2, selectorShadowColor, true);
+
+		// Draw red lines
+		DrawLine(select_x+0, select_y+0, select_w, selectorColor, false);
+		DrawLine(select_x+0, select_y+select_h-1, select_w, selectorColor, false);
+		DrawLine(select_x+0, select_y+1, select_h-2, selectorColor, true);
+		DrawLine(select_x+select_w-1, select_y+1, select_h-2, selectorColor, true);
+
+		redrawConfigSelector--;
+	}
+
+	if (redrawConfigText) {
+		if (alteringConfig) {
+			// Use ^ to move the cursor
+			//const char select_text1[] = { 'U','s','e',' ',0x17,' ','t','o',' ','m','o','v','e',' ','t','h','e',' ','c','u','r','s','o','r','.','\0' };
+			// Use < to alter the configuration
+			//const char select_text2[] = { 'U','s','e',' ',0x18,' ','t','o',' ','a','l','t','e','r',' ','t','h','e',' ','c','o','n','f','i','g','u','r','a','t','i','o','n','.','\0' };
+
+			DrawFillRect(24, 148, 260, 16, COLOR_BLACK);
+			//V_DrawStringLeft(&menuFont, 24, 140, &select_text1);
+			//V_DrawStringLeft(&menuFont, 24, 148, &select_text2);
+			V_DrawStringLeft(&menuFont, 24, 140, "Use the D-PAD to move the cursor.");
+			V_DrawStringLeft(&menuFont, 24, 148, "Press A, B, or C to change the value.");
+			V_DrawStringLeft(&menuFont, 24, 156, "Press start to continue.");
+		}
+		else {
+			DrawFillRect(24, 140, 260, 24, COLOR_BLACK);
+			V_DrawStringLeft(&menuFont, 24, 148, "Using default configurations.");
+			V_DrawStringLeft(&menuFont, 24, 156, "Press start to change.");
+
+			configTitleColor = DARKLIMETEXTCOLORMAP;
+			configValueColor = DARKGREENTEXTCOLORMAP;
+		}
+
+		const char *optimizedValue = hardwareOptimized ? "Hardware" : "Emulator";
+		const char *videoSourceValue = upscalerOptimized ? "Upscaler" : "Direct";
+		const char *screenValue = anamorphicview ? "Wide 16:9" : "Standard 4:3";
+		char controlsValue[] = { 'T','y','p','e',' ','1','\0','(','S','S','N','T','a','i','l','s',')','\0' };
+
+		if (controltype < 2) {
+			D_snprintf(controlsValue, 17, "Type %d %s", controltype+1, (controltype == 1 ? "(SSNTails)" : "(Saxman)"));
+		}
+		else {
+			controlsValue[5] += controltype;
+		}
+
+		V_DrawStringLeftWithColormap(&menuFont, 20, 172, "OPTIMIZED FOR:", configTitleColor);
+		DrawFillRect(20+8, 172+8, 128, 8, COLOR_BLACK);
+		V_DrawStringLeftWithColormap(&menuFont, 20+8, 172+8, optimizedValue, configValueColor);
+
+		V_DrawStringLeftWithColormap(&menuFont, 20, 172+24, "VIDEO SOURCE:", configTitleColor);
+		DrawFillRect(20+8, 172+24+8, 128, 8, COLOR_BLACK);
+		V_DrawStringLeftWithColormap(&menuFont, 20+8, 172+24+8, videoSourceValue, configValueColor);
+
+		V_DrawStringLeftWithColormap(&menuFont, 20+144, 172, "SCREEN:", configTitleColor);
+		DrawFillRect(20+144+8, 172+8, 128, 8, COLOR_BLACK);
+		V_DrawStringLeftWithColormap(&menuFont, 20+144+8, 172+8, screenValue, configValueColor);
+
+		V_DrawStringLeftWithColormap(&menuFont, 20+144, 172+24, "CONTROLS:", configTitleColor);
+		DrawFillRect(20+144+8, 172+24+8, 128, 8, COLOR_BLACK);
+		V_DrawStringLeftWithColormap(&menuFont, 20+144+8, 172+24+8, controlsValue, configValueColor);
+
+		redrawConfigText--;
 	}
 
 	Mars_ClearCache();

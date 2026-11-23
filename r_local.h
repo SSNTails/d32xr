@@ -40,7 +40,10 @@ extern fixed_t stretchX;
 #define	INVERSECOLORMAP		255
 #else
 #define	BOSSFLASHCOLORMAP		(17)*256
-#define YELLOWTEXTCOLORMAP      (18)*256
+//#define YELLOWTEXTCOLORMAP      (18)*256
+#define YELLOWTEXTCOLORMAP		((0x2740-0x100)>>1)
+#define DARKLIMETEXTCOLORMAP	((0x2780-0x100)>>1)
+#define DARKGREENTEXTCOLORMAP	((0x27C0-0x100)>>1)
 #endif
 
 #ifdef MARS

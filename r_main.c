@@ -469,7 +469,7 @@ D_printf ("R_InitData\n");
 	R_InitData ();
 D_printf ("Done\n");
 
-	R_SetViewportSize(VIEWPORT_H40_OPTIMIZED);
+	R_SetViewportSize(VIEWPORT_H32_OPTIMIZED);
 
 	Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
 
