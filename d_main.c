@@ -1331,30 +1331,30 @@ int TIC_Disclaimer(void)
 		}
 
 		configSelection = newConfigSelection;
-	}
 
-	if (ticrealbuttons & (BT_A | BT_B | BT_C) && !(oldticrealbuttons & (BT_A | BT_B | BT_C))) {
-		switch (configSelection) {
-			case 0:
-				hardwareOptimized ^= 1;
-				break;
-			case 1:
-				upscalerOptimized ^= 1;
-				break;
-			case 2:
-				anamorphicview ^= 1;
-				break;
-			case 3:
-				controltype++;
-				if (controller_id == 1) {
-					controltype &= 7;
-				}
-				else {
-					controltype &= 1;
-				}
-				//break;
+		if (ticrealbuttons & (BT_A | BT_B | BT_C) && !(oldticrealbuttons & (BT_A | BT_B | BT_C))) {
+			switch (configSelection) {
+				case 0:
+					hardwareOptimized ^= 1;
+					break;
+				case 1:
+					upscalerOptimized ^= 1;
+					break;
+				case 2:
+					anamorphicview ^= 1;
+					break;
+				case 3:
+					controltype++;
+					if (controller_id == 1) {
+						controltype &= 7;
+					}
+					else {
+						controltype &= 1;
+					}
+					//break;
+			}
+			redrawConfigText = 2;
 		}
-		redrawConfigText = 2;
 	}
 
 	if (ticrealbuttons & BT_ACTION_START && !(oldticrealbuttons & BT_ACTION_START)) {
