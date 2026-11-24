@@ -1575,8 +1575,6 @@ void DRAW_Disclaimer (void)
 		parse_data(text2, stext2+1);
 		parse_data(text3, stext3+1);
 
-		DrawFillRect(0, 0, 320, viewportHeight, COLOR_BLACK);
-
 		V_DrawStringCenter(&creditFont, 160, 48+32, (const char*)text1);
 		V_DrawStringCenter(&creditFont, 160, 72+32, (const char*)text2);
 
@@ -1660,14 +1658,7 @@ void DRAW_Disclaimer (void)
 
 	if (redrawConfigText) {
 		if (alteringConfig) {
-			// Use ^ to move the cursor
-			//const char select_text1[] = { 'U','s','e',' ',0x17,' ','t','o',' ','m','o','v','e',' ','t','h','e',' ','c','u','r','s','o','r','.','\0' };
-			// Use < to alter the configuration
-			//const char select_text2[] = { 'U','s','e',' ',0x18,' ','t','o',' ','a','l','t','e','r',' ','t','h','e',' ','c','o','n','f','i','g','u','r','a','t','i','o','n','.','\0' };
-
 			DrawFillRect(24, 148, 268, 16, COLOR_BLACK);
-			//V_DrawStringLeft(&menuFont, 24, 140, &select_text1);
-			//V_DrawStringLeft(&menuFont, 24, 148, &select_text2);
 			V_DrawStringLeft(&menuFont, 24, 140, "Use the D-PAD to move the cursor.");
 			V_DrawStringLeft(&menuFont, 24, 148, "Press A, B, or C to change the value.");
 			V_DrawStringLeft(&menuFont, 24, 156, "Press start to continue.");
