@@ -1313,6 +1313,10 @@ int TIC_Disclaimer(void)
 	if (screenCount >= 480 && !alteringConfig) {
 		if (screenCloseCount == 0) {
 			redrawConfigText = 2;
+
+			if (configChanged) {
+				Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
+			}
 		}
 
 		screenCloseCount++;
