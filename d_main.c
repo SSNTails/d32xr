@@ -1300,82 +1300,98 @@ int prevConfigSelection = 0;
 int redrawConfigText = 0;
 int redrawConfigSelector = 0;
 
+int screenCloseCount = 0;
+
 int TIC_Disclaimer(void)
 {
 	screenCount++;
 
-	if (screenCount > 540 && !alteringConfig) {
-		return ga_closedisclaimer;
+	if (screenCount == 540) {
+		S_StopSong();
 	}
 
-	if (alteringConfig && !redrawConfigSelector) {
-		int newConfigSelection = configSelection;
-		if (ticrealbuttons & BT_ACTION_LEFT && !(oldticrealbuttons & BT_ACTION_LEFT)) {
-			redrawConfigSelector = 2;
-			prevConfigSelection = configSelection;
-			newConfigSelection ^= 2;
-		}
-		else if (ticrealbuttons & BT_ACTION_RIGHT && !(oldticrealbuttons & BT_ACTION_RIGHT)) {
-			redrawConfigSelector = 2;
-			prevConfigSelection = configSelection;
-			newConfigSelection ^= 2;
-		}
-
-		if (ticrealbuttons & BT_ACTION_UP && !(oldticrealbuttons & BT_ACTION_UP)) {
-			redrawConfigSelector = 2;
-			prevConfigSelection = configSelection;
-			newConfigSelection ^= 1;
-		}
-		else if (ticrealbuttons & BT_ACTION_DOWN && !(oldticrealbuttons & BT_ACTION_DOWN)) {
-			redrawConfigSelector = 2;
-			prevConfigSelection = configSelection;
-			newConfigSelection ^= 1;
-		}
-
-		configSelection = newConfigSelection;
-
-		int currentButtons;
-		int previousButtons;
-
-		if (controller_id == 8) {
-			currentButtons = ticrealbuttons & (XE_BT_A | XE_BT_B | XE_BT_C | XE_BT_D);
-			previousButtons = oldticrealbuttons & (XE_BT_A | XE_BT_B | XE_BT_C | XE_BT_D);
-		}
-		else {
-			currentButtons = ticrealbuttons & (BT_A | BT_B | BT_C);
-			previousButtons = oldticrealbuttons & (BT_A | BT_B | BT_C);
-		}
-
-		if (currentButtons && !previousButtons) {
-			switch (configSelection) {
-				case 0:
-					hardwareOptimized ^= 1;
-					break;
-				case 1:
-					upscalerOptimized ^= 1;
-					break;
-				case 2:
-					anamorphicview ^= 1;
-					break;
-				case 3:
-					controltype++;
-					if (controller_id == 1) {
-						controltype &= 7;
-					}
-					else {
-						controltype &= 1;
-					}
-					//break;
-			}
-			configChanged = true;
+	if (screenCount >= 480 && !alteringConfig) {
+		if (screenCloseCount == 0) {
 			redrawConfigText = 2;
 		}
+
+		screenCloseCount++;
+
+		if (screenCloseCount > 60) {
+			return ga_closedisclaimer;
+		}
 	}
 
-	if (ticrealbuttons & BT_ACTION_START && !(oldticrealbuttons & BT_ACTION_START)) {
-		alteringConfig ^= 1;
-		redrawConfigText = 2;
-		redrawConfigSelector = 2;
+	if (screenCloseCount == 0) {
+		if (alteringConfig && !redrawConfigSelector) {
+			int newConfigSelection = configSelection;
+			if (ticrealbuttons & BT_ACTION_LEFT && !(oldticrealbuttons & BT_ACTION_LEFT)) {
+				redrawConfigSelector = 2;
+				prevConfigSelection = configSelection;
+				newConfigSelection ^= 2;
+			}
+			else if (ticrealbuttons & BT_ACTION_RIGHT && !(oldticrealbuttons & BT_ACTION_RIGHT)) {
+				redrawConfigSelector = 2;
+				prevConfigSelection = configSelection;
+				newConfigSelection ^= 2;
+			}
+
+			if (ticrealbuttons & BT_ACTION_UP && !(oldticrealbuttons & BT_ACTION_UP)) {
+				redrawConfigSelector = 2;
+				prevConfigSelection = configSelection;
+				newConfigSelection ^= 1;
+			}
+			else if (ticrealbuttons & BT_ACTION_DOWN && !(oldticrealbuttons & BT_ACTION_DOWN)) {
+				redrawConfigSelector = 2;
+				prevConfigSelection = configSelection;
+				newConfigSelection ^= 1;
+			}
+
+			configSelection = newConfigSelection;
+
+			int currentButtons;
+			int previousButtons;
+
+			if (controller_id == 8) {
+				currentButtons = ticrealbuttons & (XE_BT_A | XE_BT_B | XE_BT_C | XE_BT_D);
+				previousButtons = oldticrealbuttons & (XE_BT_A | XE_BT_B | XE_BT_C | XE_BT_D);
+			}
+			else {
+				currentButtons = ticrealbuttons & (BT_A | BT_B | BT_C);
+				previousButtons = oldticrealbuttons & (BT_A | BT_B | BT_C);
+			}
+
+			if (currentButtons && !previousButtons) {
+				switch (configSelection) {
+					case 0:
+						hardwareOptimized ^= 1;
+						break;
+					case 1:
+						upscalerOptimized ^= 1;
+						break;
+					case 2:
+						anamorphicview ^= 1;
+						break;
+					case 3:
+						controltype++;
+						if (controller_id == 1) {
+							controltype &= 7;
+						}
+						else {
+							controltype &= 1;
+						}
+						//break;
+				}
+				configChanged = true;
+				redrawConfigText = 2;
+			}
+		}
+
+		if (ticrealbuttons & BT_ACTION_START && !(oldticrealbuttons & BT_ACTION_START)) {
+			alteringConfig ^= 1;
+			redrawConfigText = 2;
+			redrawConfigSelector = 2;
+		}
 	}
 
 	return ga_nothing;
@@ -1394,6 +1410,7 @@ void START_Disclaimer(void)
 	}
 
 	screenCount = 0;
+	screenCloseCount = 0;
 
 	UpdateBuffer();
 
@@ -1581,11 +1598,11 @@ void DRAW_Disclaimer (void)
 		//V_DrawStringCenter(&menuFont, 160, 112+32, (const char*)text3);
 	}
 
-	if (screenCount < 500)
+	if (screenCloseCount < 20)
 	{
 		DrawFillRect((320>>1)-(56>>1), 8, 56, 64, COLOR_BLACK);
 
-		if (screenCount < 480)
+		if (screenCloseCount == 0)
 		{
 			viewportbuffer = (pixel_t*)I_FrameBuffer();
 			I_SetThreadLocalVar(DOOMTLS_COLORMAP, dc_colormaps);
@@ -1598,7 +1615,7 @@ void DRAW_Disclaimer (void)
 	}
 	else
 	{
-		VINT Xpos = screenCount - 500;
+		VINT Xpos = screenCloseCount - 20;
 
 		DrawFillRect((320>>1)-(80>>1) + (Xpos<<3), 4, 80, 64, COLOR_BLACK);
 
@@ -1665,12 +1682,14 @@ void DRAW_Disclaimer (void)
 		}
 		else {
 			DrawFillRect(24, 140, 268, 24, COLOR_BLACK);
-			if (configChanged) {
-				V_DrawStringLeft(&menuFont, 24, 156, "Press start to change configuration.");
-			}
-			else {
-				V_DrawStringLeft(&menuFont, 24, 148, "Using default configurations.");
-				V_DrawStringLeft(&menuFont, 24, 156, "Press start to change.");
+			if (screenCloseCount == 0) {
+				if (configChanged) {
+					V_DrawStringLeft(&menuFont, 24, 156, "Press start to change configuration.");
+				}
+				else {
+					V_DrawStringLeft(&menuFont, 24, 148, "Using default configurations.");
+					V_DrawStringLeft(&menuFont, 24, 156, "Press start to change.");
+				}
 			}
 
 			configTitleColor = DARKLIMETEXTCOLORMAP;
