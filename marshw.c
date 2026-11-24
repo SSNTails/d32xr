@@ -719,7 +719,7 @@ void Mars_DetectInputDevices(void)
 				if ((val & 0xF000) != (previous_buttons[i] & 0xF000)) {
 					// NOTE: These values only work for controller 1.
 					controller_id = (val >> 12) & 0xF;
-					controltype = 0;
+					//controltype = 0;
 					UpdateControllerInputs();
 				}
 				mars_gamepadport[i] = i;

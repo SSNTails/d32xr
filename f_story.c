@@ -4129,7 +4129,7 @@ void DRAW_Story (void)
 
 	// Initialize framebuffers if necessary.
 	if (clearscreen > 0) {
-		h32_adjust = false;
+		h32_adjust = !upscalerOptimized;
 		Mars_SetVideoMode(MARS_VDP_MODE_32K, 12);
 		clearscreen--;
 	}
@@ -4156,7 +4156,7 @@ void STOP_Story (void)
 	// Initialize framebuffers if necessary.
 	clearscreen = 2;
 	if (clearscreen > 0) {
-		h32_adjust = true;
+		h32_adjust = !upscalerOptimized;
 		Mars_SetVideoMode(MARS_VDP_MODE_256, 0);
 		clearscreen--;
 	}

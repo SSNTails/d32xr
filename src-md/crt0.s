@@ -197,7 +197,7 @@ init_hardware:
         move.w  #0x8A00,(a0) /* reg 10 = HINT = 0 */
         move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
         |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
-        move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        move.w  #0x8C00,(a0) /* reg 12 = H32 mode, no lace, no shadow/hilite */
         move.w  #0x8D04,(a0) /* reg 13 = HScroll Tbl = 0x1000 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
         move.w  #0x8F01,(a0) /* reg 15 = data INC = 1 */
@@ -2351,7 +2351,7 @@ load_md_sky:
         ||move.w  #0x8300,(a0) /* reg 3 = Name Tbl W = 0x0000 */
         ||move.w  #0x8407,(a0) /* reg 4 = Name Tbl B = 0xE000 */
         ||move.w  #0x850C,(a0) /* reg 5 = Sprite Attr Tbl = 0x1800 */
-        ||move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        ||move.w  #0x8C00,(a0) /* reg 12 = H32 mode, no lace, no shadow/hilite */
         ||move.w  #0x8D04,(a0) /* reg 13 = HScroll Tbl = 0x1000 */
 
 
@@ -3384,7 +3384,7 @@ init_vdp:
         move.w  #0x8A00,(a0) /* reg 10 = HINT = 0 */
         move.w  #0x8B00,(a0) /* reg 11 = /IE2 (no EXT INT), full scroll */
         |move.w  #0x8B03,(a0) /* reg 11 = /IE2 (no EXT INT), line scroll */
-        move.w  #0x8C81,(a0) /* reg 12 = H40 mode, no lace, no shadow/hilite */
+        move.w  #0x8C00,(a0) /* reg 12 = H32 mode, no lace, no shadow/hilite */
         move.w  #0x8D04,(a0) /* reg 13 = HScroll Tbl = 0x1000 */
         move.w  #0x8E00,(a0) /* reg 14 = always 0 */
         move.w  #0x8F01,(a0) /* reg 15 = data INC = 1 */
