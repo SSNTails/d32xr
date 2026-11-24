@@ -1316,6 +1316,7 @@ int TIC_Disclaimer(void)
 
 			if (configChanged) {
 				Mars_SetVideoConfig(hardwareOptimized, upscalerOptimized, 0);
+				h32_adjust = !upscalerOptimized;
 			}
 		}
 
