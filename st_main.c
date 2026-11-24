@@ -17,7 +17,7 @@ int stbar_tics;
 static short stbarframe;
 static short   stbar_y;
 
-static short score, time, rings;
+static short score, time, rings_yellow, rings_red;
 static short snums; // Numbers
 static short timecolon; // : for TIME
 static short face, livex;
@@ -74,7 +74,8 @@ void ST_Init (void)
 
 	score = W_CheckNumForName("STTSCORE");
 	time = W_CheckNumForName("STTTIME");
-	rings = W_CheckNumForName("STTRINGS");
+	rings_yellow = W_CheckNumForName("STTRINGS");
+	rings_red = W_CheckNumForName("STTRRING");
 	snums = W_CheckNumForName("STTNUM0");
 	timecolon = W_CheckNumForName("STTCOLON");
 	face = W_CheckNumForName("STFACE");
@@ -592,7 +593,7 @@ static void ST_Drawer_ (stbar_t* sb)
 				const int offset_x = 16 + ((6-interval) << 3);
 				DrawScaledJagobj(W_POINTLUMPNUM(score), offset_x, 10+((6-interval)<<1), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
 				DrawScaledJagobj(W_POINTLUMPNUM(time), offset_x, 26+((6-interval)<<2), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
-				DrawScaledJagobj(W_POINTLUMPNUM(rings), offset_x, 42+((6-interval)<<3), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
+				DrawScaledJagobj(W_POINTLUMPNUM(rings_yellow), offset_x, 42+((6-interval)<<3), hud_upscale[gametic-89], hud_upscale[gametic-89], I_OverwriteBuffer());
 			}
 			else {
 				DrawJagobjLump(score, 16, 10, NULL, NULL);
@@ -601,10 +602,10 @@ static void ST_Drawer_ (stbar_t* sb)
 				V_DrawValuePaddedRight(&hudNumberFont, 72, 26, minutes, 0);
 				DrawJagobjLump(timecolon, 72, 26, NULL, NULL);
 				V_DrawValuePaddedRight(&hudNumberFont, 72+8+16, 26, seconds, 2);
-				if (sb->rings <= 0 && (gametic / 4 & 1))
-					DrawJagobjLumpWithColormap(rings, 16, 42, NULL, NULL, YELLOWTEXTCOLORMAP);
+				if (sb->rings <= 0 && (gametic & 4))
+					DrawJagobjLump(rings_red, 16, 42, NULL, NULL);
 				else
-					DrawJagobjLump(rings, 16, 42, NULL, NULL);
+					DrawJagobjLump(rings_yellow, 16, 42, NULL, NULL);
 				V_DrawValuePaddedRight(&hudNumberFont, 96, 42, sb->rings, 0);
 				DrawJagobjLump(face, 16, viewportHeight-24, NULL, NULL);
 				V_DrawStringLeftWithColormap(&menuFont, 16 + 20, viewportHeight-24, "SONIC", YELLOWTEXTCOLORMAP);

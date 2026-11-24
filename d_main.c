@@ -1293,6 +1293,8 @@ void DRAW_Compatibility (void)
 
 #ifdef SHOW_DISCLAIMER
 boolean alteringConfig = false;
+boolean configChanged = false;
+
 int configSelection = 0;
 int prevConfigSelection = 0;
 int redrawConfigText = 0;
@@ -1353,6 +1355,7 @@ int TIC_Disclaimer(void)
 					}
 					//break;
 			}
+			configChanged = true;
 			redrawConfigText = 2;
 		}
 	}
@@ -1650,7 +1653,7 @@ void DRAW_Disclaimer (void)
 			// Use < to alter the configuration
 			//const char select_text2[] = { 'U','s','e',' ',0x18,' ','t','o',' ','a','l','t','e','r',' ','t','h','e',' ','c','o','n','f','i','g','u','r','a','t','i','o','n','.','\0' };
 
-			DrawFillRect(24, 148, 260, 16, COLOR_BLACK);
+			DrawFillRect(24, 148, 268, 16, COLOR_BLACK);
 			//V_DrawStringLeft(&menuFont, 24, 140, &select_text1);
 			//V_DrawStringLeft(&menuFont, 24, 148, &select_text2);
 			V_DrawStringLeft(&menuFont, 24, 140, "Use the D-PAD to move the cursor.");
@@ -1658,9 +1661,14 @@ void DRAW_Disclaimer (void)
 			V_DrawStringLeft(&menuFont, 24, 156, "Press start to continue.");
 		}
 		else {
-			DrawFillRect(24, 140, 260, 24, COLOR_BLACK);
-			V_DrawStringLeft(&menuFont, 24, 148, "Using default configurations.");
-			V_DrawStringLeft(&menuFont, 24, 156, "Press start to change.");
+			DrawFillRect(24, 140, 268, 24, COLOR_BLACK);
+			if (configChanged) {
+				V_DrawStringLeft(&menuFont, 24, 156, "Press start to change configuration.");
+			}
+			else {
+				V_DrawStringLeft(&menuFont, 24, 148, "Using default configurations.");
+				V_DrawStringLeft(&menuFont, 24, 156, "Press start to change.");
+			}
 
 			configTitleColor = DARKLIMETEXTCOLORMAP;
 			configValueColor = DARKGREENTEXTCOLORMAP;
