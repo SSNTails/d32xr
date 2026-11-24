@@ -1334,7 +1334,19 @@ int TIC_Disclaimer(void)
 
 		configSelection = newConfigSelection;
 
-		if (ticrealbuttons & (BT_A | BT_B | BT_C) && !(oldticrealbuttons & (BT_A | BT_B | BT_C))) {
+		int currentButtons;
+		int previousButtons;
+
+		if (controller_id == 8) {
+			currentButtons = ticrealbuttons & (XE_BT_A | XE_BT_B | XE_BT_C | XE_BT_D);
+			previousButtons = oldticrealbuttons & (XE_BT_A | XE_BT_B | XE_BT_C | XE_BT_D);
+		}
+		else {
+			currentButtons = ticrealbuttons & (BT_A | BT_B | BT_C);
+			previousButtons = oldticrealbuttons & (BT_A | BT_B | BT_C);
+		}
+
+		if (currentButtons && !previousButtons) {
 			switch (configSelection) {
 				case 0:
 					hardwareOptimized ^= 1;
@@ -1679,27 +1691,37 @@ void DRAW_Disclaimer (void)
 		const char *screenValue = anamorphicview ? "Wide 16:9" : "Standard 4:3";
 		char controlsValue[] = { 'T','y','p','e',' ','1','\0','(','S','S','N','T','a','i','l','s',')','\0' };
 
-		if (controltype < 2) {
+		if (controller_id == 1 && controltype < 2) {
 			D_snprintf(controlsValue, 17, "Type %d %s", controltype+1, (controltype == 1 ? "(SSNTails)" : "(Saxman)"));
 		}
 		else {
 			controlsValue[5] += controltype;
 		}
 
-		V_DrawStringLeftWithColormap(&menuFont, 20, 172, "OPTIMIZED FOR:", configTitleColor);
+		char controlsTitle[] = { 'C','O','N','T','R','O','L','S',' ','(','3','B',')',':','\0' };
+
+		if (controller_id == 1) {
+			controlsTitle[10] = '6';
+		}
+		else if (controller_id == 8) {
+			controlsTitle[10] = 'X';
+			controlsTitle[11] = 'E';
+		}
+
 		DrawFillRect(20+8, 172+8, 128, 8, COLOR_BLACK);
+		V_DrawStringLeftWithColormap(&menuFont, 20, 172, "OPTIMIZED FOR:", configTitleColor);
 		V_DrawStringLeftWithColormap(&menuFont, 20+8, 172+8, optimizedValue, configValueColor);
 
-		V_DrawStringLeftWithColormap(&menuFont, 20, 172+24, "VIDEO SOURCE:", configTitleColor);
 		DrawFillRect(20+8, 172+24+8, 128, 8, COLOR_BLACK);
+		V_DrawStringLeftWithColormap(&menuFont, 20, 172+24, "VIDEO SOURCE:", configTitleColor);
 		V_DrawStringLeftWithColormap(&menuFont, 20+8, 172+24+8, videoSourceValue, configValueColor);
 
-		V_DrawStringLeftWithColormap(&menuFont, 20+144, 172, "SCREEN:", configTitleColor);
 		DrawFillRect(20+144+8, 172+8, 128, 8, COLOR_BLACK);
+		V_DrawStringLeftWithColormap(&menuFont, 20+144, 172, "SCREEN:", configTitleColor);
 		V_DrawStringLeftWithColormap(&menuFont, 20+144+8, 172+8, screenValue, configValueColor);
 
-		V_DrawStringLeftWithColormap(&menuFont, 20+144, 172+24, "CONTROLS:", configTitleColor);
-		DrawFillRect(20+144+8, 172+24+8, 128, 8, COLOR_BLACK);
+		DrawFillRect(20+144+8, 172+24, 128, 16, COLOR_BLACK);
+		V_DrawStringLeftWithColormap(&menuFont, 20+144, 172+24, controlsTitle, configTitleColor);
 		V_DrawStringLeftWithColormap(&menuFont, 20+144+8, 172+24+8, controlsValue, configValueColor);
 
 		redrawConfigText--;
