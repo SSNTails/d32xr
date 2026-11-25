@@ -633,11 +633,7 @@ void R_SegCommands(void)
 
         lseg.scalestep = segl->scalestep;
         lseg.centerangle = segl->centerangle >> FRACBITS;
-#ifdef WALLDRAW2X
-        lseg.offset = segl->offset >> 1;
-#else
         lseg.offset = segl->offset;
-#endif
         lseg.distance = segl->distance;
         R_DrawSeg(&lseg, clipbounds);
 
