@@ -32,19 +32,25 @@ extern fixed_t stretchX;
 #define VIEWPORT_H32_OPTIMIZED	2
 #define VIEWPORT_H40_OPTIMIZED	3
 
-/* */
-/* lighting constants */
-/* */
-#ifdef JAGUAR
-#define	LIGHTLEVELS			256		/* number of diminishing */
-#define	INVERSECOLORMAP		255
-#else
-#define	BOSSFLASHCOLORMAP		(17)*256
-//#define YELLOWTEXTCOLORMAP      (18)*256
-#define YELLOWTEXTCOLORMAP		((0x2740-0x100)>>1)
-#define DARKLIMETEXTCOLORMAP	((0x2780-0x100)>>1)
-#define DARKGREENTEXTCOLORMAP	((0x27C0-0x100)>>1)
-#endif
+
+// These are addresses to different entries in the COLORMAP lump.
+// Many account for all 256 colors, but some only have 16 or 32.
+#define	BOSSFLASHCOLORMAP			(17)*256
+//#define YELLOWTEXTCOLORMAP      	(18)*256
+#define SIXBUTTONINPUT1COLORMAP		((0x2600-0x100)>>1)
+#define SIXBUTTONINPUT2COLORMAP		((0x2620-0x100)>>1)
+#define SIXBUTTONINPUT3COLORMAP		((0x2640-0x100)>>1)
+#define SIXBUTTONINPUT4COLORMAP		((0x2660-0x100)>>1)
+#define SIXBUTTONINPUT5COLORMAP		((0x2680-0x100)>>1)
+#define SIXBUTTONINPUT6COLORMAP		((0x26A0-0x100)>>1)
+#define SIXBUTTONINPUT7COLORMAP		((0x26C0-0x100)>>1)
+#define SIXBUTTONINPUT8COLORMAP		((0x26E0-0x100)>>1)
+#define ANALOGBUTTONINPUT1COLORMAP	((0x2700-0x100)>>1)
+#define ANALOGBUTTONINPUT2COLORMAP	((0x2720-0x100)>>1)
+#define YELLOWTEXTCOLORMAP			((0x2740-0x100)>>1)
+#define DARKLIMETEXTCOLORMAP		((0x2780-0x100)>>1)
+#define DARKGREENTEXTCOLORMAP		((0x27C0-0x100)>>1)
+
 
 #ifdef MARS
 #define HWLIGHT(light) ((((255 - (light)) >> 4) & 15) * 256)

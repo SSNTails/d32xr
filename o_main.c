@@ -941,7 +941,7 @@ void ShowControllerButtons(void)
 
 		// Draw the button color-coding table.
 		// Note: Colormap entries for CTRLCOL6 are 16 colors each, as opposed to the usual 256.
-		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOL6"), 152, 3, (controltype<<4) + ((19)*256) - 128);
+		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOL6"), 152, 3, SIXBUTTONINPUT1COLORMAP + (controltype<<4));
 
 		// Draw the A-B-C buttons.
 		DrawJagobjLump(W_GetNumForName("CTRL6BA"), 176-8+0, 128-16-0, NULL, NULL);
@@ -1017,7 +1017,7 @@ void ShowControllerButtons(void)
 
 		// Draw the button color-coding table.
 		// Note: Colormap entries for CTRLCOLX are 16 colors each, as opposed to the usual 256.
-		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOLX"), 114, 90, (controltype<<4) + ((19)*256) + ((8)*16) - 128);
+		DrawMaskedGraphicLumpWithColormap(W_GetNumForName("CTRLCOLX"), 114, 90, ANALOGBUTTONINPUT1COLORMAP + (controltype<<4));
 
 		// Draw the A-B-C-D buttons.
 		DrawJagobjLump(W_GetNumForName("CTRLXBCD"), 48, 80, NULL, NULL);
