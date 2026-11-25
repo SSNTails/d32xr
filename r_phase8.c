@@ -783,7 +783,6 @@ void R_Sprites(void)
    unsigned midcount;
    int *sortedsprites = (void *)vd.vissectors;
    viswall_t *wc;
-   mapvertex_t *verts;
 
    sortedcount = 0;
    count = vd.lastsprite_p - vd.vissprites;
@@ -838,23 +837,6 @@ void R_Sprites(void)
    // draw mobj sprites
    sortedsprites[0] = sortedcount;
    D_isort(sortedsprites+1, sortedcount);
-
-#ifdef MARS
-   // bank switching
-   verts = /*W_POINTLUMPNUM(gamemaplump+ML_VERTEXES)*/vertexes;
-#else
-   verts = vertexes;
-#endif
-
-   for (wc = vd.viswalls; wc < vd.lastwallcmd; wc++)
-   {
-      if (wc->actionbits & (AC_TOPSIL | AC_BOTTOMSIL | AC_SOLIDSIL | AC_MIDTEXTURE | AC_FOFSIDE))
-      {
-         volatile int v1 = wc->seg->v1, v2 = wc->seg->v2;
-         wc->v1.x = verts[v1].x, wc->v1.y = verts[v1].y;
-         wc->v2.x = verts[v2].x, wc->v2.y = verts[v2].y;
-      }
-   }
 
 #ifdef MARS
    Mars_R_SecWait();

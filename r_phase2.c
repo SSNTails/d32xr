@@ -9,7 +9,12 @@
 #include "mars.h"
 
 static fixed_t R_ScaleFromGlobalAngle(fixed_t invdist, fixed_t sineb, int x) ATTR_DATA_CACHE_ALIGN;
-void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts) ATTR_DATA_CACHE_ALIGN;
+// consecutive viswalls are often fragments of the same seg (long segs
+// split in R_StoreWallRange, or segs cut into pieces by the solid seg
+// clipper); everything that doesn't depend on the column range is then
+// taken from the previous viswall. wc->seg doesn't survive R_WallLatePrep
+// (it's unioned with v1i), so the caller keeps the last seg in *prevseg
+static void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts, seg_t **prevseg) ATTR_DATA_CACHE_ALIGN;
 static void R_SegLoop(viswall_t* segl, unsigned short* clipbounds, fixed_t floorheight, 
     fixed_t floornewheight, fixed_t ceilingheight, fixed_t ceilingnewheight, fixed_t segexdata) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
 void R_WallPrep(void) ATTR_DATA_CACHE_ALIGN __attribute__((noinline));
@@ -54,51 +59,81 @@ static fixed_t R_ScaleFromGlobalAngle(fixed_t invdist, fixed_t sineb, int x)
     return FixedMul(FixedMul(invdist, sineb), (fixed_t)distscale[x] << 1);
 }
 
-void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts)
+static void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts, seg_t **prevseg)
 {
-    angle_t      normalangle;
-    const seg_t* seg = wc->seg;
-    fixed_t      rw_distance, rw_offset, dx, dy;
+    seg_t* seg = wc->seg;
     fixed_t      scalefrac, scale2;
     fixed_t      invdist;
     angle_t      baseangle;
     fixed_t      sineb1, sineb2;
-    fixed_t      x1, y1, x2, y2;
+    fixed_t      rw_distance, offset;
+    const boolean newseg = seg != *prevseg;
 
     // this is essentially R_StoreWallRange
-    // calculate rw_distance for scale calculation
-
-    x1 = verts[seg->v1].x << FRACBITS;
-    y1 = verts[seg->v1].y << FRACBITS;
-
-    x2 = verts[seg->v2].x << FRACBITS;
-    y2 = verts[seg->v2].y << FRACBITS;
-
-    normalangle = R_PointToAngle2(x1, y1, x2, y2);
-    normalangle += ANG90;
-
-    // project the view->v1 vector onto the wall normal (distance) and
-    // the wall direction (texture offset); axis-aligned walls are exact
-    dx = x1 - vd.viewx;
-    dy = y1 - vd.viewy;
-    if (x1 == x2)
+    if (newseg)
     {
-        rw_distance = D_abs(dx);
-        rw_offset = y2 > y1 ? -dy : dy;
-    }
-    else if (y1 == y2)
-    {
-        rw_distance = D_abs(dy);
-        rw_offset = x2 > x1 ? -dx : dx;
+        angle_t      normalangle;
+        fixed_t      rw_offset, dx, dy;
+        fixed_t      x1, y1, x2, y2;
+
+        // calculate rw_distance for scale calculation
+        x1 = verts[seg->v1].x << FRACBITS;
+        y1 = verts[seg->v1].y << FRACBITS;
+
+        x2 = verts[seg->v2].x << FRACBITS;
+        y2 = verts[seg->v2].y << FRACBITS;
+
+        normalangle = R_PointToAngle2(x1, y1, x2, y2);
+        normalangle += ANG90;
+
+        // project the view->v1 vector onto the wall normal (distance) and
+        // the wall direction (texture offset); axis-aligned walls are exact
+        dx = x1 - vd.viewx;
+        dy = y1 - vd.viewy;
+        if (x1 == x2)
+        {
+            rw_distance = D_abs(dx);
+            rw_offset = y2 > y1 ? -dy : dy;
+        }
+        else if (y1 == y2)
+        {
+            rw_distance = D_abs(dy);
+            rw_offset = x2 > x1 ? -dx : dx;
+        }
+        else
+        {
+            fixed_t sinn = finesine(normalangle >> ANGLETOFINESHIFT);
+            fixed_t cosn = finecosine(normalangle >> ANGLETOFINESHIFT);
+            rw_distance = FixedMul(dx, cosn) + FixedMul(dy, sinn);
+            if (rw_distance < 0)
+                rw_distance = 0;
+            rw_offset = FixedMul(dy, cosn) - FixedMul(dx, sinn);
+        }
+
+        baseangle = vd.viewangle + ANG90 - normalangle;
+        *prevseg = seg;
+
+        // only read by R_DrawSeg for textured walls, so set them
+        // unconditionally; P_SegOffset is added while the divider runs
+        offset = ((fixed_t)wc->offset << FRACBITS) + rw_offset;
+        wc->centerangle = baseangle;
+        // unpack the vertices for walls that clip sprites in phase 8;
+        // this overwrites wc->seg (union with v1i), which isn't needed past here
+        volatile int v1 = wc->seg->v1, v2 = wc->seg->v2;
+        wc->v1.x = verts[v1].x, wc->v1.y = verts[v1].y;
+        wc->v2.x = verts[v2].x, wc->v2.y = verts[v2].y;
     }
     else
     {
-        fixed_t sinn = finesine(normalangle >> ANGLETOFINESHIFT);
-        fixed_t cosn = finecosine(normalangle >> ANGLETOFINESHIFT);
-        rw_distance = FixedMul(dx, cosn) + FixedMul(dy, sinn);
-        if (rw_distance < 0)
-            rw_distance = 0;
-        rw_offset = FixedMul(dy, cosn) - FixedMul(dx, sinn);
+        // same seg as the previous viswall, so the same sidedef texture
+        // offset too; R_SegLoop doesn't modify these
+        const viswall_t *prev = wc - 1;
+        rw_distance = prev->distance;
+        offset = prev->offset;
+        wc->centerangle = baseangle = prev->centerangle;
+        // this overwrites wc->seg (union with v1i), which isn't needed past here
+        wc->v2 = prev->v2;
+        wc->v1 = prev->v1;
     }
 #ifdef WALLDRAW2X
     wc->distance = rw_distance >> 1;
@@ -117,7 +152,10 @@ void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts)
     invdist = FixedDiv(stretchX, rw_distance);
 #endif
 
-    baseangle = vd.viewangle + ANG90 - normalangle;
+    if (newseg)
+        offset += (fixed_t)(seg->sideoffset >> 1) << FRACBITS;
+    wc->offset = offset;
+
     sineb1 = finesine((baseangle + (xtoviewangle[wc->start]<<FRACBITS)) >> ANGLETOFINESHIFT);
     sineb2 = sineb1;
     if (wc->stop > wc->start)
@@ -146,10 +184,6 @@ void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts)
     }
 
     wc->scale2 = scale2;
-
-    // only read by R_DrawSeg for textured walls, so set them unconditionally
-    wc->offset += rw_offset;
-    wc->centerangle = baseangle;
 
     wc->clipbounds = NULL;
 
@@ -449,10 +483,13 @@ void Mars_Sec_R_WallPrep(void)
     uint32_t clipbounds_[SCREENWIDTH/2+1];
     uint16_t *clipbounds = (uint16_t *)clipbounds_;
     mapvertex_t *verts;
+    seg_t *prevseg;
     volatile uint8_t *addedsegs = (volatile uint8_t *)&MARS_SYS_COMM6;
     volatile uint8_t *readysegs = addedsegs + 1;
 
     R_InitClipBounds(clipbounds_);
+
+    prevseg = NULL;
 
     first = last = vd.viswalls;
     verylast = NULL;
@@ -480,7 +517,7 @@ void Mars_Sec_R_WallPrep(void)
 #ifdef MARS
             Mars_ClearCacheLine(seglex);
 #endif
-            R_WallLatePrep(segl, verts);
+            R_WallLatePrep(segl, verts, &prevseg);
 
             R_SegLoop(segl, clipbounds, seglex->floorheight, seglex->floornewheight, segl->ceilingheight, seglex->ceilnewheight, seglex->fofInfo);
 
@@ -499,14 +536,16 @@ void R_WallPrep(void)
     viswall_t* segl;
     unsigned clipbounds_[SCREENWIDTH/2+1];
     unsigned short *clipbounds = (unsigned short *)clipbounds_;
+    seg_t *prevseg;
 
     R_InitClipBounds(clipbounds_);
+    prevseg = NULL;
 
     for (segl = vd.viswalls; segl != vd.lastwallcmd; segl++)
     {
         fixed_t floornewheight = 0, ceilingnewheight = 0;
 
-        R_WallLatePrep(segl, vertexes);
+        R_WallLatePrep(segl, vertexes, &prevseg);
 
         R_SegLoop(segl, clipbounds, floornewheight, ceilingnewheight);
     }
