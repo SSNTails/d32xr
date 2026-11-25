@@ -377,7 +377,11 @@ static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
             r = finetangent((uint16_t)(lseg->centerangle + (*(uint16_t *)&cxtoviewangle[x])) >> (ANGLETOFINESHIFT-FRACBITS));
             r = FixedMul(lseg->distance, r);
 
+#ifdef WALLDRAW2X
+            colnum = (lseg->offset - r) >> (FRACBITS + 1);
+#else
             colnum = (lseg->offset - r) >> FRACBITS;
+#endif
             colnum &= 0xff;
 
             if (csegcolmask)
