@@ -135,11 +135,8 @@ static void R_WallLatePrep(viswall_t* wc, mapvertex_t *verts, seg_t **prevseg)
         wc->v2 = prev->v2;
         wc->v1 = prev->v1;
     }
-#ifdef WALLDRAW2X
-    wc->distance = rw_distance >> 1;
-#else
+
     wc->distance = rw_distance;
-#endif
 
 #ifdef MARS
     // invdist = FixedDiv(stretchX, rw_distance), started on the divider here

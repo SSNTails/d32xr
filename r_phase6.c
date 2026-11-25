@@ -636,7 +636,7 @@ void R_SegCommands(void)
 #ifdef WALLDRAW2X
         lseg.offset = segl->offset >> 1;
 #else
-    u   lseg.offset = segl->offset;
+        lseg.offset = segl->offset;
 #endif
         lseg.distance = segl->distance;
         R_DrawSeg(&lseg, clipbounds);
