@@ -1747,6 +1747,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 #endif
 
 	//I_Error("%d", ((uint16_t *)I_FrameBuffer() + 64*1024-0x100 - tempbuf) * 2);
+	I_SetThreadLocalVar(DOOMTLS_FRAMEBUFFER, viewportbuffer);
 #ifdef USE_DECALS
 	I_SetThreadLocalVar(DOOMTLS_COLUMNCACHE, vd.columncache[0]);
 #endif
@@ -1782,6 +1783,7 @@ void Mars_Sec_R_Setup(void)
 	for (i = 0; i < NUM_VISPLANES_BUCKETS; i++)
 		vd.visplanes_hash[i] = NULL;
 
+	I_SetThreadLocalVar(DOOMTLS_FRAMEBUFFER, viewportbuffer);
 #ifdef USE_DECALS
 	I_SetThreadLocalVar(DOOMTLS_COLUMNCACHE, vd.columncache[1]);
 #endif
