@@ -758,16 +758,8 @@ const sector_t *R_FakeFlat(const sector_t *sec, sector_t *tempsec,
          }
          else if (fofsec->ceilingheight >= watersec->ceilingheight)
          {
-            if (vd.viewz > fofsec->ceilingheight)
-            {
-               tempsec->floorheight = fofsec->ceilingheight;
-               tempsec->floorpic = fofsec->ceilingpic;
-            }
-            else
-            {
-               tempsec->floorheight = watersec->ceilingheight;
-               tempsec->floorpic = watersec->ceilingpic;
-            }
+            tempsec->floorheight = fofsec->ceilingheight;
+            tempsec->floorpic = fofsec->ceilingpic;
          }
          else
          {
