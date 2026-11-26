@@ -668,12 +668,10 @@ static jagobj_t *arrowl_pic = NULL;
 static jagobj_t *arrowr_pic = NULL;
 static jagobj_t *chevblk_pic = NULL;
 
-#ifdef SHOW_DISCLAIMER
-	#define SELECTABLE_MAP_COUNT	10
-	const int8_t selectable_maps[SELECTABLE_MAP_COUNT] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-#else
-	#define SELECTABLE_MAP_COUNT	gamemapcount
-#endif
+//#define SELECTABLE_MAP_COUNT	10
+//const int8_t selectable_maps[SELECTABLE_MAP_COUNT] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+#define SELECTABLE_MAP_COUNT	gamemapcount
 
 static VINT lvlsel_lump = -1;
 
@@ -742,34 +740,33 @@ int TIC_LevelSelect (void)
 			if (selected_map < 0) {
 				selected_map = SELECTABLE_MAP_COUNT-1;
 			}
-#ifdef SHOW_DISCLAIMER
+			/*
 			if (emeralds != 63 && selected_map == 6) {
 				// Skip CEZ1
 				selected_map -= 1;
 			}
-#endif
+			*/
 		}
 		else if (ticrealbuttons & BT_ACTION_RIGHT && !(oldticrealbuttons & BT_ACTION_RIGHT)) {
 			selected_map += 1;
-#ifdef SHOW_DISCLAIMER
+			/*
 			if (emeralds != 63 && selected_map == 6) {
 				// Skip CEZ1
 				selected_map += 1;
 			}
-#endif
+			*/
 			if (selected_map == SELECTABLE_MAP_COUNT) {
 				selected_map = 0;
 			}
 		}
 
 		if (selected_map != prev_selected_map) {
-#ifdef SHOW_DISCLAIMER
+
 			// Show a filtered list of stages.
-			startmap = gamemapnumbers[selectable_maps[selected_map]];
-#else
+			//startmap = gamemapnumbers[selectable_maps[selected_map]];
+
 			// Show all the stages.
 			startmap = gamemapnumbers[selected_map];
-#endif
 
 			char lvlsel_name[9] = { 'L','V','L','S','E','L','0','0','\0' };
 

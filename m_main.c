@@ -701,25 +701,25 @@ int M_Ticker (void)
 						if (++playermap == gamemapcount + 1)
 							playermap = 1;
 
-#ifdef SHOW_DISCLAIMER
+						/*
 						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || (gamemapnumbers[playermap-1] == 10 && !unlockcez) || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
 						{
 							if (++playermap == gamemapcount + 1)
 								playermap = 1;
 						}
-#endif
+						*/
 					}
 					if (buttons & BT_ACTION_LEFT)
 					{
 						if(--playermap == 0)
 							playermap = gamemapcount;
-#ifdef SHOW_DISCLAIMER
+						/*
 						while (gamemapnumbers[playermap-1] == TITLE_MAP_NUMBER || (gamemapnumbers[playermap-1] == 10 && !unlockcez) || (gamemapnumbers[playermap-1] >= SSTAGE_START && gamemapnumbers[playermap-1] <= SSTAGE_END))
 						{
 							if(--playermap == 0)
 								playermap = gamemapcount;
 						}
-#endif
+						*/
 					}
 					break;
 				case mi_savelist:
