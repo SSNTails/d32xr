@@ -1349,57 +1349,54 @@ extern	volatile int		ticcount, joybuttons;
 
 #else
 
-enum
-{
 	// hardware-agnostic game button actions
 	// transmitted over network
 	// should fit into a single word
-	BT_DPAD_UP		= SEGA_CTRL_DPAD_UP,
-	BT_DPAD_DOWN	= SEGA_CTRL_DPAD_DOWN,
-	BT_DPAD_LEFT	= SEGA_CTRL_DPAD_LEFT,
-	BT_DPAD_RIGHT	= SEGA_CTRL_DPAD_RIGHT,
-	BT_C			= SEGA_CTRL_C,
-	BT_B			= SEGA_CTRL_B,
-	BT_A			= SEGA_CTRL_A,
-	BT_START		= SEGA_CTRL_START,
-	BT_Z			= SEGA_CTRL_Z,
-	BT_Y			= SEGA_CTRL_Y,
-	BT_X			= SEGA_CTRL_X,
-	BT_MODE			= SEGA_CTRL_MODE,
+#define BT_DPAD_UP		SEGA_CTRL_DPAD_UP
+#define BT_DPAD_DOWN	SEGA_CTRL_DPAD_DOWN
+#define BT_DPAD_LEFT	SEGA_CTRL_DPAD_LEFT
+#define BT_DPAD_RIGHT	SEGA_CTRL_DPAD_RIGHT
+#define BT_C			SEGA_CTRL_C
+#define BT_B			SEGA_CTRL_B
+#define BT_A			SEGA_CTRL_A
+#define BT_START		SEGA_CTRL_START
+#define BT_Z			SEGA_CTRL_Z
+#define BT_Y			SEGA_CTRL_Y
+#define BT_X			SEGA_CTRL_X
+#define BT_MODE			SEGA_CTRL_MODE
 
-	XE_BT_SELECT	= DEMPA_CTRL_SELECT,
-	XE_BT_START		= DEMPA_CTRL_START,
-	XE_BT_E2		= DEMPA_CTRL_E2,
-	XE_BT_E1		= DEMPA_CTRL_E1,
-	XE_BT_D			= DEMPA_CTRL_D,
-	XE_BT_C			= DEMPA_CTRL_C,
-	XE_BT_B_PRIME	= DEMPA_CTRL_B_PRIME,
-	XE_BT_A_PRIME	= DEMPA_CTRL_A_PRIME,
-	XE_BT_B			= DEMPA_CTRL_B,
-	XE_BT_A			= DEMPA_CTRL_A,
+#define XE_BT_SELECT	DEMPA_CTRL_SELECT
+#define XE_BT_START		DEMPA_CTRL_START
+#define XE_BT_E2		DEMPA_CTRL_E2
+#define XE_BT_E1		DEMPA_CTRL_E1
+#define XE_BT_D			DEMPA_CTRL_D
+#define XE_BT_C			DEMPA_CTRL_C
+#define XE_BT_B_PRIME	DEMPA_CTRL_B_PRIME
+#define XE_BT_A_PRIME	DEMPA_CTRL_A_PRIME
+#define XE_BT_B			DEMPA_CTRL_B
+#define XE_BT_A			DEMPA_CTRL_A
 
-	BT_ACTION_UP			= (1 << 16),
-	BT_ACTION_DOWN			= (1 << 17),
-	BT_ACTION_LEFT			= (1 << 18),
-	BT_ACTION_RIGHT			= (1 << 19),
-	BT_ACTION_JUMP		    = (1 << 20),
-	BT_ACTION_SPIN			= (1 << 21),
-	BT_ACTION_GASPEDAL		= (1 << 22),
-	BT_ACTION_BRAKE			= (1 << 23),
-	BT_ACTION_CAMLEFT		= (1 << 24),
-	BT_ACTION_CAMRIGHT		= (1 << 25),
-	BT_ACTION_LOOK			= (1 << 26),
-	BT_ACTION_START			= (1 << 27),
-	BT_ACTION_MODE			= (1 << 28),
-	BT_ACTION_MENU_NEXT		= (1 << 29),
-	BT_ACTION_MENU_BACK		= (1 << 30),
-	BT_ACTION_CHEAT			= (1 << 31),
+#define BT_ACTION_UP		(1 << 16)
+#define BT_ACTION_DOWN		(1 << 17)
+#define BT_ACTION_LEFT		(1 << 18)
+#define BT_ACTION_RIGHT		(1 << 19)
+#define BT_ACTION_JUMP		(1 << 20)
+#define BT_ACTION_SPIN		(1 << 21)
+#define BT_ACTION_GASPEDAL	(1 << 22)
+#define BT_ACTION_BRAKE		(1 << 23)
+#define BT_ACTION_CAMLEFT	(1 << 24)
+#define BT_ACTION_CAMRIGHT	(1 << 25)
+#define BT_ACTION_LOOK		(1 << 26)
+#define BT_ACTION_START		(1 << 27)
+#define BT_ACTION_MODE		(1 << 28)
+#define BT_ACTION_MENU_NEXT	(1 << 29)
+#define BT_ACTION_MENU_BACK	(1 << 30)
+#define BT_ACTION_CHEAT		(1 << 31)
 
-	BT_LMBTN		= SEGA_CTRL_LMB,
-	BT_RMBTN		= SEGA_CTRL_RMB,
-	BT_MMBTN		= SEGA_CTRL_MMB,
-	BT_PAUSE		= SEGA_CTRL_STARTMB,
-};
+#define BT_LMBTN		SEGA_CTRL_LMB
+#define BT_RMBTN		SEGA_CTRL_RMB
+#define BT_MMBTN		SEGA_CTRL_MMB
+#define BT_PAUSE		SEGA_CTRL_STARTMB
 
 #endif
 
