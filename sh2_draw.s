@@ -3,7 +3,7 @@
 .section .sdata
 
 .equ DOOMTLS_COLORMAP, 16
-.equ DOOMTLS_FRAMEBUFFER, 24
+.equ DOOMTLS_FRAMEBUFFER, 20    !24
 
 !=======================================================================
 !Standard column draw functions use the following data sources:
