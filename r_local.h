@@ -734,15 +734,15 @@ typedef struct
 
 	union
 	{
-		const seg_t			*seg;
+		seg_t			*seg;
 		mapvertex_t		v1;
 	};
 
 	union
 	{
-		fixed_t			ceilingheight;
 		mapvertex_t		v2;
 	};
+	fixed_t			ceilingheight;
 
 	uint16_t 		*clipbounds;
 } viswall_t;
