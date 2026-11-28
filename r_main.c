@@ -1497,10 +1497,6 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 	vd.displayplayer = displayplayer;
 	vd.fixedcolormap = 0;
 
-	vd.clipangle = xtoviewangle[0]<<FRACBITS;
-	vd.doubleclipangle = vd.clipangle * 2;
-	vd.viewangletox = viewangletox;
-
 	if (IsLevelType(LEVELTYPE_NORMAL))
 	{
 		if (leveltime < 62)

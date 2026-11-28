@@ -60,6 +60,9 @@ typedef unsigned short inpixel_t;
 #define ATTR_OPTIMIZE_EXTREME
 #endif
 
+#define ATTR_NO_INLINE __attribute__((noinline))
+#define ATTR_FORCE_INLINE inline __attribute__((always_inline)) 
+
 #ifdef MARS
 #define SPTR uint16_t
 #define LPTR_TO_SPTR_NN(p) ((uint16_t)(((uintptr_t)(p) - DATA_START_ADDRESS)>>2))

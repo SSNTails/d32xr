@@ -176,8 +176,9 @@ typedef struct lineinfo_s
 
 #define SS_SECTOR(x) (I_TO_SEC(subsectors[x].isector))
 
-#define LD_FRONTSECTOR(ld) (I_TO_SEC(sides[(ld)->sidenum[0]].sector))
-#define LD_BACKSECTOR(ld) ((ld)->sidenum[1] >= 0 ? I_TO_SEC(sides[ld->sidenum[1]].sector) : NULL)
+#define LD_SIDESECTOR(ld,s) (I_TO_SEC(sides[(ld)->sidenum[s]].sector))
+#define LD_FRONTSECTOR(ld) LD_SIDESECTOR(ld,0)
+#define LD_BACKSECTOR(ld) ((ld)->sidenum[1] >= 0 ? LD_SIDESECTOR(ld,1) : NULL)
 #define LD_IFRONTSECTOR(ld) (sides[(ld)->sidenum[0]].sector)
 #define LD_IBACKSECTOR(ld) ((ld)->sidenum[1] >= 0 ? sides[ld->sidenum[1]].sector : -1)
 
@@ -332,6 +333,28 @@ extern 	int16_t 	worldbbox[4];
 
 extern VINT viewportNum;
 extern const VINT numViewports;
+
+/*
+===============================================================================
+=
+= R_MulsW
+=
+= Signed 16x16 -> 32-bit product of the low 16 bits of a and b. GCC emits
+= mul.l for int16_t operands that are not loaded straight from memory, so
+= on MARS this forces muls.w.
+===============================================================================
+*/
+#ifdef MARS
+static ATTR_FORCE_INLINE
+int R_MulsW(int a, int b)
+{
+	int r;
+	__asm ("muls.w %1,%2\n\tsts macl,%0" : "=r"(r) : "r"(a), "r"(b) : "macl");
+	return r;
+}
+#else
+#define R_MulsW(a,b) ((int16_t)(a) * (int16_t)(b))
+#endif
 
 /*
 ===============================================================================
@@ -873,8 +896,6 @@ __attribute__((aligned(16)))
 	VINT		displayplayer;
 	VINT		fixedcolormap;
 	VINT 		viewisubsector;
-	angle_t		clipangle, doubleclipangle;
-	VINT 		*viewangletox;
 
 	/* */
 	/* walls */
