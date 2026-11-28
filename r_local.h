@@ -696,9 +696,9 @@ typedef struct
 	/* !!! THE FOLLOWING SECTION MUST BE LARGE ENOUGH */
 	/* !!! TO ACCOMODATE VISSPRITE_T STRUCTURE, GETS */
 	/* !!! OVERWRITTEN AFTER PHASE 7 - BEGIN */
-	unsigned	centerangle;
-	unsigned	offset;
-	unsigned	distance;
+	fixed_t		uzstart;	/* u = ustep*(x-start) * iscale(x) */
+	fixed_t 	uoffset;    /* u at x = start */
+	fixed_t		uzstep;		/* u is linear in x */
 
 	int			t_topheight;
 	int			t_bottomheight;
@@ -883,6 +883,7 @@ __attribute__((aligned(16)))
 	sector_t    *heightsec;
 	sector_t    *fofsec;
 	fixed_t		viewcos, viewsin;
+	int32_t		rcpcenterx;	/* 2^32 / centerX, for dividing by centerX with a multiply */
 	player_t	*viewplayer;
 	boolean     underwater;
 	VINT        viewx_t;

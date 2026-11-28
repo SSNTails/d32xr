@@ -582,7 +582,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    segl->m_texturemid  = m_texturemid;
    segl->fof_texturemid = fof_texturemid;
    segl->seglightlevel = (lightshift << 8) | f_lightlevel;
-   segl->offset        = ((fixed_t)textureoffset + (seg->sideoffset >> 1)) << FRACBITS;
+   segl->uoffset       = textureoffset;
    if (f_floorpic != 0xff)
    {
          segl->floorpicnum = flattranslation[f_floorpic];

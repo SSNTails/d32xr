@@ -56,8 +56,8 @@ typedef struct
 #ifndef SIMPLELIGHT
     int lightsub, lightcoef;
 #endif
-    fixed_t scalestep, offset, distance;
-    unsigned centerangle;
+    fixed_t scalestep, uoffset;
+    fixed_t uzstep, uz;
     drawtex_t tex[2];
 #if MIPLEVELS > 1   
     unsigned minmip, maxmip;
@@ -257,6 +257,7 @@ static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
     #endif
 
     fixed_t scalefrac = segl->scalefrac;
+    fixed_t uz = lseg->uz;
 
     const int floorheight = segl->floorheight_t << FRACBITS;
     const int ceilingheight = segl->ceilingheight;
@@ -293,7 +294,7 @@ static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
     else {
         do
         {
-            fixed_t r;
+            fixed_t r, l;
             int floorclipx, ceilingclipx;
             fixed_t scale2;
             unsigned colnum, iscale;
@@ -315,6 +316,9 @@ static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
 
             scale2 = scalefrac;
             scalefrac += lseg->scalestep;
+
+            l = uz;
+            uz += lseg->uzstep;
 
             //
             // get ceilingclipx and floorclipx from clipbounds
@@ -373,17 +377,6 @@ static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
             }
 #endif
 
-            // calculate texture offset
-            r = finetangent((uint16_t)(lseg->centerangle + (*(uint16_t *)&cxtoviewangle[x])) >> (ANGLETOFINESHIFT-FRACBITS));
-            r = FixedMul(lseg->distance, r);
-
-#ifdef WALLDRAW2X
-            colnum = (lseg->offset - r) >> (FRACBITS + 1);
-#else
-            colnum = (lseg->offset - r) >> FRACBITS;
-#endif
-            colnum &= 0xff;
-
             if (csegcolmask)
                 *(uint16_t *)&csegcolmask[x] = texturelight | colnum;
 
@@ -405,6 +398,15 @@ static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
 #else
             iscale = 0xffffffffu / scale;
 #endif
+
+        // calculate texture offset: only bits 16..23 are used, so the
+        // product may wrap
+        r = FixedMul(l, (int)iscale);
+        r = ((unsigned)(lseg->uoffset + r) >> FRACBITS) & 0xff; // colnum
+        lightcol = (lightcol & ~0xff) | r;
+
+        if (segcolmask)
+            segcolmask[x] = lightcol;
 
 #if MIPLEVELS > 1
             // other texture drawing info
@@ -636,9 +638,9 @@ void R_SegCommands(void)
         }
 
         lseg.scalestep = segl->scalestep;
-        lseg.centerangle = segl->centerangle >> FRACBITS;
-        lseg.offset = segl->offset;
-        lseg.distance = segl->distance;
+        lseg.uoffset = segl->uoffset;
+        lseg.uzstep = segl->uzstep;
+        lseg.uz = segl->uzstart;
         R_DrawSeg(&lseg, clipbounds);
 
 #if MIPLEVELS > 1
