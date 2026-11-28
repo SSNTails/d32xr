@@ -250,7 +250,7 @@ static boolean R_CheckBBox(rbspWork_t *rbsp, int16_t bspcoord_[4])
 static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    fixed_t *restrict floorheight, fixed_t *restrict  floornewheight, fixed_t *restrict ceilingnewheight, fixed_t *restrict fofInfo)
 {
-   const seg_t     *seg  = segl->seg;
+//   const seg_t     *seg  = segl->seg;
    const line_t    *li   = rbsp->curldef;
    const side_t    *si   = rbsp->curside;
    fixed_t    f_floorheight, f_ceilingheight;

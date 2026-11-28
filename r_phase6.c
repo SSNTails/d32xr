@@ -280,7 +280,6 @@ static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
     char *restrict csegcolmask = ((segl->actionbits & AC_MIDTEXTURE) || (segl->actionbits & AC_FOFSIDE)) ? (char *)(segl->clipbounds + 1) + (stop - start) : NULL;
 
     char *restrict cclipbounds = (char*)clipbounds;
-    char *restrict cxtoviewangle = (char*)xtoviewangle;
 
     x = start;
     if (overlay_graphics == og_title) {
@@ -297,7 +296,7 @@ static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
             fixed_t r, l;
             int floorclipx, ceilingclipx;
             fixed_t scale2;
-            unsigned colnum, iscale;
+            unsigned iscale;
 
 #ifdef MARS
             volatile int32_t t;
@@ -377,9 +376,6 @@ static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
             }
 #endif
 
-            if (csegcolmask)
-                *(uint16_t *)&csegcolmask[x] = texturelight | colnum;
-
 #ifdef MARS
 #ifdef WALLDRAW2X
             __asm volatile (
@@ -403,10 +399,9 @@ static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
         // product may wrap
         r = FixedMul(l, (int)iscale);
         r = ((unsigned)(lseg->uoffset + r) >> FRACBITS) & 0xff; // colnum
-        lightcol = (lightcol & ~0xff) | r;
 
-        if (segcolmask)
-            segcolmask[x] = lightcol;
+        if (csegcolmask)
+                *(uint16_t *)&csegcolmask[x] = (texturelight & ~0xff) | r;
 
 #if MIPLEVELS > 1
             // other texture drawing info
@@ -418,7 +413,7 @@ static void R_DrawSeg(seglocal_t *lseg, unsigned short *restrict clipbounds)
 #endif
 
             for (tex = lseg->first; tex < lseg->last; tex++)
-                R_DrawTexture(x/2, iscale, colnum, scale2, floorclipx, ceilingclipx, texturelight, tex, miplevel);
+                R_DrawTexture(x/2, iscale, r, scale2, floorclipx, ceilingclipx, texturelight, tex, miplevel);
         } while (++x, ++x <= stop);
     }
 }
