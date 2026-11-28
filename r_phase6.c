@@ -633,7 +633,11 @@ void R_SegCommands(void)
         }
 
         lseg.scalestep = segl->scalestep;
+#ifdef WALLDRAW2X
+        lseg.uoffset = segl->uoffset >> 1;
+#else
         lseg.uoffset = segl->uoffset;
+#endif
         lseg.uzstep = segl->uzstep;
         lseg.uz = segl->uzstart;
         R_DrawSeg(&lseg, clipbounds);
