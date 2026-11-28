@@ -250,7 +250,7 @@ static boolean R_CheckBBox(rbspWork_t *rbsp, int16_t bspcoord_[4])
 static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    fixed_t *restrict floorheight, fixed_t *restrict  floornewheight, fixed_t *restrict ceilingnewheight, fixed_t *restrict fofInfo)
 {
-   const seg_t     *seg  = segl->seg;
+//   const seg_t     *seg  = segl->seg;
    const line_t    *li   = rbsp->curldef;
    const side_t    *si   = rbsp->curside;
    fixed_t    f_floorheight, f_ceilingheight;
@@ -582,7 +582,7 @@ static void R_WallEarlyPrep(rbspWork_t *rbsp, viswall_t* segl,
    segl->m_texturemid  = m_texturemid;
    segl->fof_texturemid = fof_texturemid;
    segl->seglightlevel = (lightshift << 8) | f_lightlevel;
-   segl->offset        = ((fixed_t)textureoffset + (seg->sideoffset >> 1)) << FRACBITS;
+   segl->uoffset       = textureoffset;
    if (f_floorpic != 0xff)
    {
          segl->floorpicnum = flattranslation[f_floorpic];

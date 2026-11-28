@@ -1471,6 +1471,7 @@ static void R_Setup (int displayplayer, visplane_t *visplanes_,
 
 	vd.viewsin = finesine(vd.viewangle>>ANGLETOFINESHIFT);
 	vd.viewcos = finecosine(vd.viewangle>>ANGLETOFINESHIFT);
+	vd.rcpcenterx = 0xffffffffu / (unsigned)centerX;
 
 	// look up/down
 	int dy;
