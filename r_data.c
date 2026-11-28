@@ -488,7 +488,6 @@ void R_InitMathTables(void)
 
 	I_FreeWorkBuffer();
 
-	viewangletox = (VINT *)I_AllocWorkBuffer(sizeof(*viewangletox) * (FINEANGLES / 2));
 	distscale = (uint16_t *)I_AllocWorkBuffer(sizeof(*distscale) * SCREENWIDTH);
 	yslopetab = (fixed_t *)I_AllocWorkBuffer(sizeof(*yslopetab) * SCREENHEIGHT * 4);
 	xtoviewangle = (uint16_t *)I_AllocWorkBuffer(sizeof(*xtoviewangle) * (SCREENWIDTH+1));
@@ -535,18 +534,6 @@ void R_InitMathTables(void)
 		xtoviewangle[i] = ((x << ANGLETOFINESHIFT) - ANG90) >> FRACBITS;
 	}
 
-	// Take out the fencepost cases from viewangletox.
-	for (i = 0; i < FINEANGLES / 2; i++)
-	{
-		if (tempviewangletox[i] == -1) {
-			tempviewangletox[i] = 0;
-		}
-		else if (tempviewangletox[i] == viewportWidth + 1) {
-			tempviewangletox[i] = viewportWidth;
-		}
-		viewangletox[i] = tempviewangletox[i];
-	}
-
 	// Make the yslope table for floor and ceiling textures
 	stretchWidth = (SCREENWIDTH/2) / 2 * stretch;
 	for (i = 0; i < viewportHeight * 4; i++)
@@ -566,7 +553,6 @@ void R_InitMathTables(void)
 	}
 
 	// enable caching for LUTs
-	viewangletox = (void *)(((intptr_t)viewangletox) & ~0x20000000);
 	distscale = (void *)(((intptr_t)distscale) & ~0x20000000);
 	yslopetab = (void *)(((intptr_t)yslopetab) & ~0x20000000);
 	xtoviewangle = (void *)(((intptr_t)xtoviewangle) & ~0x20000000);

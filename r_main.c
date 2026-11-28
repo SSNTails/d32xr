@@ -133,8 +133,6 @@ fixed_t*                 yslopetab;
 fixed_t*                yslope;
 uint16_t *distscale/*[SCREENWIDTH]*/;
 
-VINT *viewangletox/*[FINEANGLES/2]*/;
-
 uint16_t *xtoviewangle/*[SCREENWIDTH+1]*/;
 
 uint8_t *skystretch/*[SCREENWIDTH/2]*/;
